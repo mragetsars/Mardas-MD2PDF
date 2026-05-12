@@ -1,0 +1,388 @@
+/*
+  MD2PDF Pro theme
+  Goal: polished printable output for Persian/English mixed Markdown.
+  Font files are not bundled. Install Vazirmatn locally or pass --font-dir.
+*/
+
+@page {
+  size: A4;
+  margin: var(--page-margin-top, 20mm) var(--page-margin-x, 18mm) var(--page-margin-bottom, 22mm);
+}
+
+:root {
+  --font-fa: "Vazirmatn", "Vazir", "Noto Sans Arabic", "Noto Naskh Arabic", "Segoe UI", sans-serif;
+  --font-en: "Inter", "Noto Sans", "Segoe UI", Arial, sans-serif;
+  --font-code: "JetBrains Mono", "Fira Code", "Cascadia Code", "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+  --ink: #172033;
+  --muted: #637083;
+  --soft: #f4f7fb;
+  --softer: #f8fafc;
+  --line: #dbe3ef;
+  --line-strong: #c6d2e1;
+  --accent: #2563eb;
+  --accent-2: #7c3aed;
+  --accent-soft: #eef4ff;
+  --quote: #eff6ff;
+  --code-bg: #0f172a;
+  --code-ink: #e2e8f0;
+  --radius: 14px;
+  --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  --text-size: 10.9pt;
+}
+
+* { box-sizing: border-box; }
+html {
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+  color: var(--ink);
+  background: white;
+}
+body {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--font-fa);
+  font-size: var(--text-size);
+  line-height: 1.86;
+  letter-spacing: -0.005em;
+  text-rendering: geometricPrecision;
+}
+
+.md2pdf-document {
+  direction: rtl;
+}
+
+.md2pdf-article {
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.md2pdf-cover {
+  margin-bottom: 22mm;
+  padding: 18mm 0 12mm;
+  border-bottom: 1px solid var(--line);
+  page-break-after: avoid;
+}
+.md2pdf-cover__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  color: var(--accent);
+  background: var(--accent-soft);
+  font: 700 8.6pt/1.7 var(--font-en), var(--font-fa);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.md2pdf-cover h1 {
+  margin: 9mm 0 3mm;
+  border: 0;
+  padding: 0;
+  font-size: 27pt;
+  line-height: 1.35;
+  letter-spacing: -0.04em;
+  color: #111827;
+}
+.md2pdf-cover__meta {
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3mm 7mm;
+  font-size: 9.4pt;
+}
+.md2pdf-cover__summary {
+  max-width: 85ch;
+  margin-top: 7mm;
+  color: #334155;
+  font-size: 12pt;
+  line-height: 1.85;
+}
+
+[dir="auto"] { unicode-bidi: plaintext; }
+[dir="rtl"] { direction: rtl; unicode-bidi: isolate; }
+[dir="ltr"] { direction: ltr; unicode-bidi: isolate; }
+
+h1, h2, h3, h4, h5, h6 {
+  page-break-after: avoid;
+  break-after: avoid;
+  color: #0f172a;
+  font-family: var(--font-fa);
+  font-weight: 850;
+  line-height: 1.45;
+  letter-spacing: -0.035em;
+  margin: 1.35em 0 0.62em;
+}
+h1 {
+  font-size: 24pt;
+  padding-bottom: 5mm;
+  border-bottom: 2px solid var(--line);
+}
+h2 {
+  position: relative;
+  font-size: 18pt;
+  padding-inline-start: 8mm;
+}
+h2::before {
+  content: "";
+  position: absolute;
+  inset-block-start: 0.48em;
+  inset-inline-start: 0;
+  width: 4mm;
+  height: 4mm;
+  border-radius: 1.2mm;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+}
+h3 { font-size: 14.2pt; color: #1e293b; }
+h4 { font-size: 12.2pt; color: #334155; }
+h5, h6 { font-size: 10.8pt; color: #475569; }
+
+p { margin: 0 0 0.95em; }
+a {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 0.6px solid rgba(37, 99, 235, 0.32);
+}
+a:hover { border-bottom-color: currentColor; }
+strong { font-weight: 850; }
+em { color: #29384f; }
+small { color: var(--muted); }
+mark {
+  padding: 0.05em 0.25em;
+  border-radius: 5px;
+  background: #fef08a;
+}
+
+ul, ol {
+  margin: 0.4em 0 1.05em;
+  padding-inline-start: 1.45em;
+}
+li { margin: 0.24em 0; }
+li::marker { color: var(--accent); font-weight: 700; }
+.task-list-item {
+  list-style: none;
+  margin-inline-start: -1.2em;
+}
+.task-list-item input[type="checkbox"] {
+  width: 0.95em;
+  height: 0.95em;
+  vertical-align: -0.12em;
+  margin-inline-end: 0.45em;
+  accent-color: var(--accent);
+}
+
+hr {
+  border: 0;
+  height: 1px;
+  margin: 10mm 0;
+  background: linear-gradient(90deg, transparent, var(--line-strong), transparent);
+}
+
+blockquote {
+  margin: 1.25em 0;
+  padding: 4.3mm 5.2mm;
+  border: 1px solid #bfdbfe;
+  border-inline-start: 4px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--quote);
+  color: #1e3a5f;
+  page-break-inside: avoid;
+  box-shadow: 0 4px 18px rgba(37, 99, 235, 0.06);
+}
+blockquote > :last-child { margin-bottom: 0; }
+.callout {
+  border-color: #d8b4fe;
+  border-inline-start-color: var(--accent-2);
+  background: #faf5ff;
+}
+.callout-title {
+  display: block;
+  margin-bottom: 1.5mm;
+  color: #6b21a8;
+  font-weight: 850;
+}
+
+.table-wrap {
+  margin: 1.2em 0 1.45em;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  page-break-inside: auto;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+  font-size: 9.6pt;
+  line-height: 1.7;
+  background: #fff;
+}
+thead { display: table-header-group; }
+tr { break-inside: avoid; page-break-inside: avoid; }
+th, td {
+  padding: 2.6mm 3.2mm;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+th {
+  color: #0f172a;
+  background: linear-gradient(180deg, #f8fbff, #eef4ff);
+  font-weight: 850;
+  text-align: start;
+}
+tbody tr:nth-child(even) td { background: var(--softer); }
+tbody tr:last-child td { border-bottom: 0; }
+
+img, svg, video, canvas {
+  max-width: 100%;
+  height: auto;
+}
+img {
+  display: block;
+  margin: 1.1em auto;
+  border-radius: 12px;
+  box-shadow: 0 9px 26px rgba(15, 23, 42, 0.12);
+}
+figure { margin: 1.25em 0; page-break-inside: avoid; }
+figcaption {
+  margin-top: 2mm;
+  color: var(--muted);
+  font-size: 8.8pt;
+  text-align: center;
+}
+
+:not(pre) > code {
+  direction: ltr;
+  display: inline;
+  padding: 0.09em 0.36em;
+  border: 1px solid #d8dee9;
+  border-radius: 7px;
+  background: #f8fafc;
+  color: #be123c;
+  font-family: var(--font-code);
+  font-size: 0.88em;
+  unicode-bidi: isolate;
+  white-space: nowrap;
+}
+
+.code-block {
+  direction: ltr;
+  margin: 1.35em 0;
+  border-radius: var(--radius);
+  background: var(--code-bg);
+  color: var(--code-ink);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  page-break-inside: avoid;
+}
+.code-block figcaption {
+  margin: 0;
+  padding: 2mm 4mm;
+  text-align: left;
+  color: #cbd5e1;
+  background: rgba(15, 23, 42, 0.95);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+  font: 700 8.2pt/1 var(--font-code);
+}
+.codehilite, .highlight {
+  margin: 0;
+  background: var(--code-bg) !important;
+  color: var(--code-ink);
+}
+.codehilite pre, .highlight pre, pre {
+  direction: ltr;
+  unicode-bidi: isolate;
+  margin: 0;
+  padding: 4.2mm 4.6mm;
+  overflow-wrap: normal;
+  white-space: pre-wrap;
+  word-break: normal;
+  color: var(--code-ink);
+  font-family: var(--font-code);
+  font-size: 8.8pt;
+  line-height: 1.65;
+  text-align: left;
+  tab-size: 2;
+}
+.codehilite code, .highlight code, pre code {
+  font-family: var(--font-code);
+  background: transparent;
+  border: 0;
+  color: inherit;
+  padding: 0;
+  white-space: inherit;
+}
+
+.math, mjx-container {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+.math.inline { display: inline; }
+.math.display, mjx-container[display="true"] {
+  display: block;
+  margin: 1.25em auto;
+  padding: 3mm 2mm;
+  overflow: hidden;
+  max-width: 100%;
+  text-align: center !important;
+  page-break-inside: avoid;
+}
+mjx-container svg { max-width: 100%; }
+
+.footnotes {
+  margin-top: 12mm;
+  padding-top: 5mm;
+  border-top: 1px solid var(--line);
+  color: #475569;
+  font-size: 8.9pt;
+}
+.footnotes ol { padding-inline-start: 1.4em; }
+.footnote-ref {
+  font-family: var(--font-en);
+  font-size: 0.78em;
+  font-weight: 700;
+  line-height: 0;
+}
+.footnote-backref { border: 0; color: var(--muted); }
+
+kbd {
+  direction: ltr;
+  display: inline-block;
+  padding: 0.08em 0.4em;
+  border: 1px solid #cbd5e1;
+  border-bottom-width: 2px;
+  border-radius: 7px;
+  background: #f8fafc;
+  font: 0.82em/1.5 var(--font-code);
+}
+
+.md2pdf-toc {
+  margin: 0 0 12mm;
+  padding: 5mm;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--softer);
+  page-break-inside: avoid;
+}
+.md2pdf-toc h2 {
+  margin-top: 0;
+  padding-inline-start: 0;
+  font-size: 14pt;
+}
+.md2pdf-toc h2::before { display: none; }
+.md2pdf-toc ol {
+  margin-bottom: 0;
+  columns: 2;
+  column-gap: 12mm;
+}
+.md2pdf-toc a { color: #334155; border: 0; }
+.md2pdf-toc li { break-inside: avoid; margin: 0.12em 0; }
+
+.md2pdf-page-break { page-break-after: always; break-after: page; }
+
+@media print {
+  a[href^="http"]::after {
+    content: "";
+  }
+  .no-print { display: none !important; }
+}

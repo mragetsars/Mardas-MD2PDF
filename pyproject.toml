@@ -1,0 +1,46 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "md2pdf-pro"
+version = "0.1.0"
+description = "Beautiful Persian/English Markdown to PDF converter with RTL/LTR typography, code highlighting, tables, and MathJax."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+  { name = "MD2PDF Pro" }
+]
+keywords = ["markdown", "pdf", "rtl", "persian", "mathjax", "pygments", "playwright"]
+dependencies = [
+  "markdown-it-py>=3.0.0",
+  "pygments>=2.17.0",
+  "beautifulsoup4>=4.12.0",
+  "playwright>=1.45.0",
+  "PyYAML>=6.0.0"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0.0",
+  "ruff>=0.5.0"
+]
+
+[project.scripts]
+md2pdf-pro = "md2pdf_pro.cli:main"
+md2pdf = "md2pdf_pro.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/md2pdf_pro"]
+include = [
+  "src/md2pdf_pro/assets/**/*.css",
+  "src/md2pdf_pro/assets/**/*.js"
+]
+
+[tool.ruff]
+line-length = 100
+src = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
