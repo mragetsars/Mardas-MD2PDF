@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "md2pdf-pro"
-version = "0.2.0"
+version = "0.3.0"
 description = "Beautiful Persian/English Markdown to PDF converter with RTL/LTR typography, code highlighting, tables, and MathJax."
 readme = "README.md"
 requires-python = ">=3.10"
