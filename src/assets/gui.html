@@ -2,81 +2,390 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mardas MD2PDF Studio</title>
-  <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet"/>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet"/>
-  <link id="highlight-theme" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css"/>
+  <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link id="highlight-theme" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" />
   <style>
     :root{
-      --bg:#0b1020; --panel:#111827; --panel2:#0f172a; --text:#e5e7eb; --muted:#9ca3af;
-      --border:#243044; --accent:#22d3ee; --accent2:#a78bfa; --editor:#050816;
-      --preview:#0b1020; --hover:rgba(255,255,255,.07); --radius:16px;
-      --font:'Inter','Vazirmatn',sans-serif; --code:'JetBrains Mono','Consolas','Monaco',monospace;
+      --bg:#0b1020;
+      --bg-soft:#111827;
+      --shell:rgba(11,16,32,.88);
+      --panel:#111827;
+      --panel-2:#0f172a;
+      --panel-3:#172033;
+      --editor:#080d1b;
+      --preview:#0b1020;
+      --text:#e5e7eb;
+      --muted:#9ca3af;
+      --faint:#64748b;
+      --border:#243044;
+      --border-strong:#334155;
+      --accent:#22d3ee;
+      --accent-2:#a78bfa;
+      --accent-3:#f472b6;
+      --ok:#34d399;
+      --danger:#fb7185;
+      --shadow:0 18px 50px rgba(0,0,0,.28);
+      --radius:16px;
+      --sidebar-width:318px;
+      --editor-width:50%;
+      --font:'Inter','Vazirmatn',sans-serif;
+      --code:'JetBrains Mono','SFMono-Regular','Consolas','Monaco',monospace;
     }
-    body.light-mode{--bg:#f7f7f7;--panel:#ffffff;--panel2:#f3f4f6;--text:#111827;--muted:#6b7280;--border:#d1d5db;--accent:#2563eb;--accent2:#7c3aed;--editor:#ffffff;--preview:#ffffff;--hover:rgba(17,24,39,.06)}
-    *{box-sizing:border-box} body{margin:0;height:100vh;background:radial-gradient(circle at 0 0, rgba(34,211,238,.16), transparent 28%),radial-gradient(circle at 100% 100%, rgba(167,139,250,.13), transparent 30%),var(--bg);color:var(--text);font-family:var(--font);overflow:hidden;}
-    .app{display:grid;grid-template-rows:58px 1fr 30px;height:100vh}.top{display:flex;align-items:center;justify-content:space-between;padding:0 18px;border-bottom:1px solid var(--border);background:rgba(5,8,22,.72);backdrop-filter:blur(16px);direction:ltr}.brand{display:flex;align-items:center;gap:10px;font-weight:900;letter-spacing:.03em}.brand-badge{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#020617;font-weight:900}.brand small{display:block;color:var(--muted);font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}.controls{display:flex;align-items:center;gap:8px}.btn,select,input[type=text],input[type=number]{height:34px;border:1px solid var(--border);background:var(--panel);color:var(--text);border-radius:10px;padding:0 11px;font:700 12px/1 var(--font);outline:none}.btn{cursor:pointer;display:inline-flex;align-items:center;gap:6px}.btn:hover{background:var(--hover);border-color:var(--accent)}.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#020617;border:0}.main{display:grid;grid-template-columns:minmax(260px,310px) 1fr 1fr;min-height:0}.sidebar{border-right:1px solid var(--border);background:rgba(15,23,42,.72);padding:14px;overflow:auto}.section{border:1px solid var(--border);background:rgba(255,255,255,.03);border-radius:var(--radius);padding:12px;margin-bottom:12px}.section h3{margin:0 0 10px;font-size:13px}.field{display:grid;gap:6px;margin-bottom:10px}.field label{font-size:11px;color:var(--muted);font-weight:800}.field input,.field select{width:100%;background:var(--panel2)}.check{display:flex;align-items:center;gap:8px;margin:8px 0;color:var(--text);font-size:12px;font-weight:700}.editor-wrap,.preview-wrap{min-width:0;min-height:0;display:flex;flex-direction:column}.pane-title{height:38px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.03);color:var(--muted);font-size:12px;font-weight:800;direction:ltr}.editor-wrap{border-right:1px solid var(--border)}textarea{flex:1;min-height:0;border:0;outline:none;background:var(--editor);color:var(--text);padding:18px;font:14px/1.72 var(--code);resize:none}.preview{flex:1;min-height:0;overflow:auto;background:var(--preview);padding:30px;line-height:1.82}.preview h1,.preview h2,.preview h3{border-bottom:1px solid var(--border);padding-bottom:.35em}.preview pre{background:#0f172a;padding:16px;border-radius:12px;overflow:auto;border:1px solid var(--border);direction:ltr;text-align:left}.preview code{font-family:var(--code)}.preview :not(pre)>code{background:var(--hover);border:1px solid var(--border);border-radius:6px;padding:.15em .35em}.preview table{width:100%;border-collapse:collapse}.preview th,.preview td{border:1px solid var(--border);padding:10px}.preview blockquote{border-left:4px solid var(--accent);margin:1em 0;padding:10px 16px;background:var(--hover);border-radius:8px}.footer{border-top:1px solid var(--border);height:30px;display:flex;align-items:center;justify-content:flex-end;padding:0 18px;color:var(--muted);font-size:11px;gap:16px;direction:ltr}.status{white-space:nowrap}.spinner{display:none}.busy .spinner{display:inline}.busy .btn-primary{opacity:.75;pointer-events:none}@media(max-width:1080px){.main{grid-template-columns:270px 1fr}.preview-wrap{display:none}} 
+    body.light-mode{
+      --bg:#f8fafc;
+      --bg-soft:#eef6ff;
+      --shell:rgba(255,255,255,.82);
+      --panel:#ffffff;
+      --panel-2:#f8fafc;
+      --panel-3:#eef2ff;
+      --editor:#ffffff;
+      --preview:#ffffff;
+      --text:#0f172a;
+      --muted:#475569;
+      --faint:#64748b;
+      --border:#e2e8f0;
+      --border-strong:#cbd5e1;
+      --accent:#2563eb;
+      --accent-2:#7c3aed;
+      --accent-3:#db2777;
+      --ok:#059669;
+      --danger:#e11d48;
+      --shadow:0 18px 45px rgba(15,23,42,.10);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      overflow:hidden;
+      color:var(--text);
+      font-family:var(--font);
+      background:
+        radial-gradient(circle at 3% 0%, color-mix(in srgb, var(--accent) 24%, transparent), transparent 27rem),
+        radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--accent-2) 18%, transparent), transparent 30rem),
+        radial-gradient(circle at 100% 100%, color-mix(in srgb, var(--accent-3) 13%, transparent), transparent 32rem),
+        var(--bg);
+    }
+    button,input,select,textarea{font:inherit}
+    .app{height:100%;display:grid;grid-template-rows:64px 1fr 32px;min-width:760px}
+    .topbar{
+      display:flex;align-items:center;justify-content:space-between;gap:18px;
+      padding:0 18px;border-bottom:1px solid var(--border);background:var(--shell);backdrop-filter:blur(18px);direction:ltr;
+    }
+    .brand{display:flex;align-items:center;gap:12px;min-width:260px;white-space:nowrap}
+    .brand-mark{width:36px;height:36px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--accent-2));box-shadow:0 10px 30px color-mix(in srgb, var(--accent) 25%, transparent);color:#020617;font-weight:900;letter-spacing:-.05em}
+    .brand-copy strong{display:block;font-size:15px;font-weight:900;letter-spacing:.02em;color:var(--text)}
+    .brand-copy span{display:block;margin-top:2px;color:var(--muted);font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
+    .toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+    .btn,.seg button,select,input[type=text],input[type=number]{
+      height:36px;border:1px solid var(--border);border-radius:12px;background:var(--panel);color:var(--text);
+      padding:0 12px;outline:none;font-size:12px;font-weight:750;line-height:1;transition:border-color .16s,background .16s,transform .16s,box-shadow .16s;color-scheme:dark;
+    }
+    body.light-mode .btn,body.light-mode .seg button,body.light-mode select,body.light-mode input[type=text],body.light-mode input[type=number]{color-scheme:light}
+    .btn{display:inline-flex;align-items:center;gap:7px;cursor:pointer;white-space:nowrap}
+    .btn:hover,.seg button:hover{border-color:color-mix(in srgb, var(--accent) 58%, var(--border));background:var(--panel-2);transform:translateY(-1px)}
+    .btn-primary{border:0;color:#020617;background:linear-gradient(135deg,var(--accent),var(--accent-2));box-shadow:0 12px 30px color-mix(in srgb, var(--accent) 20%, transparent)}
+    .btn-primary:hover{filter:saturate(1.08);box-shadow:0 16px 36px color-mix(in srgb, var(--accent) 28%, transparent)}
+    .btn-ghost{background:transparent}
+    .seg{display:inline-flex;align-items:center;gap:0;border:1px solid var(--border);border-radius:13px;overflow:hidden;background:var(--panel)}
+    .seg button{border:0;border-radius:0;background:transparent;padding:0 10px;color:var(--muted);cursor:pointer}
+    .seg button.active{color:#020617;background:linear-gradient(135deg,var(--accent),var(--accent-2))}
+    .workspace{display:grid;grid-template-columns:var(--sidebar-width) minmax(260px,var(--editor-width)) 7px minmax(260px,1fr);min-height:0;padding:14px;gap:0}
+    .sidebar,.pane{border:1px solid var(--border);background:color-mix(in srgb, var(--panel) 92%, transparent);box-shadow:var(--shadow);min-height:0;overflow:hidden}
+    .sidebar{border-radius:22px 0 0 22px;border-right:0;display:flex;flex-direction:column}
+    .pane.editor-pane{border-radius:0;border-right:0}
+    .pane.preview-pane{border-radius:0 22px 22px 0;border-left:0}
+    .gutter{cursor:col-resize;background:linear-gradient(180deg,transparent,var(--border),transparent);position:relative}
+    .gutter::after{content:"";position:absolute;left:2px;top:50%;width:3px;height:64px;transform:translateY(-50%);border-radius:99px;background:var(--border-strong)}
+    .sidebar-head,.pane-head{height:42px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 14px;border-bottom:1px solid var(--border);background:var(--panel-2);direction:ltr}
+    .sidebar-head strong,.pane-head strong{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+    .sidebar-body{padding:12px;overflow:auto;scrollbar-width:thin}
+    .card{border:1px solid var(--border);background:var(--panel);border-radius:18px;padding:12px;margin-bottom:12px}
+    .card h3{margin:0 0 12px;font-size:13px;color:var(--text);display:flex;align-items:center;gap:8px}
+    .field{display:grid;gap:6px;margin-bottom:11px}
+    .field label,.check span{font-size:11px;color:var(--muted);font-weight:800}
+    .field input,.field select{width:100%;background:var(--panel-2)}
+    .field input:focus,.field select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent)}
+    .check{display:flex;align-items:center;gap:9px;margin:10px 0;user-select:none;cursor:pointer}
+    .check input{appearance:none;width:18px;height:18px;border-radius:6px;border:1px solid var(--border-strong);background:var(--panel-2);display:grid;place-items:center;cursor:pointer}
+    .check input:checked{background:linear-gradient(135deg,var(--accent),var(--accent-2));border-color:transparent}
+    .check input:checked::after{content:"✓";font-size:12px;font-weight:900;color:#020617}
+    .hint{font-size:11px;line-height:1.55;color:var(--faint);margin-top:4px}
+    .editor-tools{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:11px;font-weight:800}
+    textarea{width:100%;height:calc(100% - 42px);border:0;outline:0;background:var(--editor);color:var(--text);padding:20px;resize:none;font:14px/1.72 var(--code);tab-size:4}
+    .preview{height:calc(100% - 42px);overflow:auto;background:var(--preview);padding:32px;line-height:1.85;font-size:15px;scrollbar-width:thin}
+    .preview h1,.preview h2,.preview h3{border-bottom:1px solid var(--border);padding-bottom:.35em;margin-top:1.6em;color:var(--text)}
+    .preview h1:first-child{margin-top:0}
+    .preview a{color:var(--accent);text-decoration:none}
+    .preview pre{background:var(--panel-2);padding:16px;border-radius:14px;overflow:auto;border:1px solid var(--border);direction:ltr;text-align:left}
+    .preview code{font-family:var(--code);font-size:.92em}
+    .preview :not(pre)>code{background:var(--panel-2);border:1px solid var(--border);border-radius:7px;padding:.16em .38em}
+    .preview table{width:100%;border-collapse:collapse;margin:18px 0;border-radius:14px;overflow:hidden}
+    .preview th,.preview td{border:1px solid var(--border);padding:10px 12px}
+    .preview th{background:var(--panel-2)}
+    .preview blockquote{border-left:4px solid var(--accent);margin:1em 0;padding:10px 16px;background:var(--panel-2);border-radius:10px;color:var(--text)}
+    .preview img{max-width:100%;border-radius:12px}
+    .footer{height:32px;border-top:1px solid var(--border);background:var(--shell);display:flex;align-items:center;justify-content:space-between;padding:0 16px;color:var(--muted);font-size:11px;direction:ltr}
+    .footer-group{display:flex;align-items:center;gap:16px}
+    .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);display:inline-block;margin-right:6px}
+    .spinner{display:none}.busy .spinner{display:inline-block}.busy .btn-primary{opacity:.78;pointer-events:none}
+    body.editor-focus .workspace{grid-template-columns:var(--sidebar-width) 1fr 0 0}
+    body.editor-focus .gutter,body.editor-focus .preview-pane{display:none}
+    body.editor-focus .editor-pane{border-radius:0 22px 22px 0;border-right:1px solid var(--border)}
+    body.preview-focus .workspace{grid-template-columns:var(--sidebar-width) 0 0 1fr}
+    body.preview-focus .gutter,body.preview-focus .editor-pane{display:none}
+    body.preview-focus .preview-pane{border-radius:0 22px 22px 0;border-left:1px solid var(--border)}
+    body.zen .workspace{grid-template-columns:1fr;padding:0}
+    body.zen .topbar,body.zen .sidebar,body.zen .editor-pane,body.zen .gutter,body.zen .footer{display:none}
+    body.zen .preview-pane{border:0;border-radius:0;box-shadow:none}
+    body.zen .preview{height:100vh;padding:56px max(8vw,70px)}
+    @media(max-width:1160px){
+      .app{min-width:0}.brand-copy span{display:none}.toolbar{gap:6px}.workspace{grid-template-columns:290px 1fr}.gutter,.preview-pane{display:none}.editor-pane{border-radius:0 22px 22px 0;border-right:1px solid var(--border)}
+    }
+    @media(max-width:800px){
+      .topbar{height:auto;min-height:64px;align-items:flex-start;padding:12px;flex-direction:column}.app{grid-template-rows:auto 1fr 32px}.workspace{grid-template-columns:1fr;padding:10px}.sidebar{display:none}.editor-pane{border-radius:20px}.toolbar{justify-content:flex-start}.preview-pane{display:none}
+    }
   </style>
 </head>
 <body>
-<div class="app">
-  <header class="top">
-    <div class="brand"><span class="brand-badge">M</span><span>Mardas MD2PDF Studio<small>Markdown to PDF Engine · v__MARDAS_VERSION__</small></span></div>
-    <div class="controls">
-      <button class="btn" onclick="openFile()">📂 Open</button><input type="file" id="fileInput" accept=".md,.markdown,.txt" hidden>
-      <button class="btn" onclick="downloadMarkdown()">💾 MD</button>
-      <button class="btn" onclick="copyCommand()">⌘ Command</button>
-      <button class="btn" onclick="toggleTheme()" id="themeBtn">☀️ Light</button>
-      <button class="btn btn-primary" onclick="renderPDF()"><span class="spinner">⏳</span>📄 Export PDF</button>
-    </div>
-  </header>
-  <main class="main">
-    <aside class="sidebar">
-      <div class="section"><h3>📌 Document</h3>
-        <div class="field"><label>Title</label><input id="title" type="text" placeholder="Document title"></div>
-        <div class="field"><label>Author</label><input id="author" type="text" placeholder="Author"></div>
-        <div class="field"><label>Output filename</label><input id="filename" type="text" value="mardas-document.pdf"></div>
-        <div class="field"><label>Page size</label><select id="pageSize"><option>A4</option><option>Letter</option></select></div>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">M</span>
+        <span class="brand-copy"><strong>Mardas MD2PDF Studio</strong><span>Markdown to PDF Engine · v__MARDAS_VERSION__</span></span>
       </div>
-      <div class="section"><h3>🎨 Theme</h3>
-        <div class="field"><label>Theme</label><select id="pdfTheme"><option value="modern">modern</option><option value="textbook-light" selected>textbook-light</option><option value="textbook-dark">textbook-dark</option><option value="academic">academic</option></select></div>
-        <label class="check"><input id="noCover" type="checkbox"> No cover page</label>
-        <label class="check"><input id="noHeaderFooter" type="checkbox"> Hide footer/page number</label>
+      <div class="toolbar">
+        <button class="btn" onclick="openFile()">📂 Open</button><input type="file" id="fileInput" accept=".md,.markdown,.txt" hidden>
+        <button class="btn" onclick="downloadMarkdown()">💾 Save MD</button>
+        <button class="btn" onclick="copyCommand()">⌘ Copy CLI</button>
+        <div class="seg" aria-label="Layout">
+          <button id="layoutSplit" class="active" onclick="setLayout('split')">Split</button>
+          <button id="layoutEditor" onclick="setLayout('editor')">Editor</button>
+          <button id="layoutPreview" onclick="setLayout('preview')">Preview</button>
+          <button id="layoutZen" onclick="setLayout('zen')">Zen</button>
+        </div>
+        <button class="btn btn-ghost" onclick="toggleTheme()" id="themeBtn">☀️ Light</button>
+        <button class="btn btn-primary" onclick="renderPDF()"><span class="spinner">⏳</span>📄 Export PDF</button>
       </div>
-      <div class="section"><h3>🧭 Structure</h3>
-        <label class="check"><input id="toc" type="checkbox" checked> Generate TOC</label>
-        <div class="field"><label>TOC depth</label><input id="tocDepth" type="number" min="1" max="6" value="6"></div>
-        <label class="check"><input id="tocPageBreak" type="checkbox" checked> Start content after TOC on new page</label>
-        <label class="check"><input id="h1PageBreak" type="checkbox" checked> Start each H1 on new page</label>
-      </div>
-      <div class="section"><h3>💧 Watermark</h3>
-        <div class="field"><label>Watermark text</label><input id="watermark" type="text" placeholder="Optional"></div>
-        <div class="field"><label>Opacity</label><input id="watermarkOpacity" type="number" min="0" max="1" step="0.01" value="0.065"></div>
-      </div>
-    </aside>
-    <section class="editor-wrap"><div class="pane-title"><span>Markdown Editor</span><span id="savedState">Live preview</span></div><textarea id="editor" dir="auto"></textarea></section>
-    <section class="preview-wrap"><div class="pane-title"><span>Preview</span><button class="btn" onclick="toggleDirection()" id="dirBtn">↔️ RTL</button></div><div id="preview" class="preview" dir="auto"></div></section>
-  </main>
-  <footer class="footer"><span id="statusWords">Words: 0</span><span id="statusChars">Chars: 0</span><span class="status" id="serverStatus">Ready</span></footer>
-</div>
+    </header>
+    <main class="workspace" id="workspace">
+      <aside class="sidebar">
+        <div class="sidebar-head"><strong>Export Settings</strong><span id="profileName">textbook-light</span></div>
+        <div class="sidebar-body">
+          <section class="card"><h3>📌 Document</h3>
+            <div class="field"><label for="titleInput">Title</label><input id="titleInput" type="text" placeholder="Document title"></div>
+            <div class="field"><label for="authorInput">Author</label><input id="authorInput" type="text" placeholder="Author"></div>
+            <div class="field"><label for="filenameInput">Output filename</label><input id="filenameInput" type="text" value="mardas-document.pdf"></div>
+            <div class="field"><label for="pageSizeInput">Page size</label><select id="pageSizeInput"><option>A4</option><option>Letter</option></select></div>
+          </section>
+          <section class="card"><h3>🎨 PDF Theme</h3>
+            <div class="field"><label for="pdfThemeInput">Theme</label><select id="pdfThemeInput"><option value="modern">modern</option><option value="textbook-light" selected>textbook-light</option><option value="textbook-dark">textbook-dark</option><option value="academic">academic</option></select></div>
+            <label class="check"><input id="noCoverInput" type="checkbox"><span>No cover page</span></label>
+            <label class="check"><input id="noHeaderFooterInput" type="checkbox"><span>Hide footer/page number</span></label>
+            <p class="hint">The hidden unbranded cover flag remains CLI-only and is not exposed in Studio.</p>
+          </section>
+          <section class="card"><h3>🧭 Structure</h3>
+            <label class="check"><input id="tocInput" type="checkbox" checked><span>Generate table of contents</span></label>
+            <div class="field"><label for="tocDepthInput">TOC depth</label><input id="tocDepthInput" type="number" min="1" max="6" value="6"></div>
+            <label class="check"><input id="tocPageBreakInput" type="checkbox" checked><span>Start content after TOC on new page</span></label>
+            <label class="check"><input id="h1PageBreakInput" type="checkbox" checked><span>Start each H1 on new page</span></label>
+          </section>
+          <section class="card"><h3>💧 Watermark</h3>
+            <div class="field"><label for="watermarkInput">Watermark text</label><input id="watermarkInput" type="text" placeholder="Optional"></div>
+            <div class="field"><label for="watermarkOpacityInput">Opacity</label><input id="watermarkOpacityInput" type="number" min="0" max="1" step="0.01" value="0.065"></div>
+          </section>
+        </div>
+      </aside>
+      <section class="pane editor-pane">
+        <div class="pane-head"><strong>Markdown Editor</strong><span class="editor-tools"><span id="savedState">Live preview</span></span></div>
+        <textarea id="editor" dir="auto" spellcheck="false"></textarea>
+      </section>
+      <div class="gutter" id="gutter" title="Drag to resize editor and preview"></div>
+      <section class="pane preview-pane">
+        <div class="pane-head"><strong>Preview</strong><button class="btn" onclick="toggleDirection()" id="dirBtn">↔️ RTL</button></div>
+        <div id="preview" class="preview" dir="auto"></div>
+      </section>
+    </main>
+    <footer class="footer">
+      <div class="footer-group"><span id="statusWords">Words: 0</span><span id="statusChars">Chars: 0</span></div>
+      <div class="footer-group"><span><i class="dot"></i><span id="serverStatus">Ready</span></span></div>
+    </footer>
+  </div>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.2/dist/purify.min.js"></script>
 <script>
-const editor=document.getElementById('editor'), preview=document.getElementById('preview'), statusWords=document.getElementById('statusWords'), statusChars=document.getElementById('statusChars'), serverStatus=document.getElementById('serverStatus');
-let timer=null;
-marked.setOptions({breaks:true,gfm:true,highlight:(code,lang)=>{const language=hljs.getLanguage(lang)?lang:'plaintext';return hljs.highlight(code,{language}).value;}});
-function getOptions(){return{title:title.value,author:author.value,filename:filename.value,pageSize:pageSize.value,theme:pdfTheme.value,noCover:noCover.checked,noHeaderFooter:noHeaderFooter.checked,toc:toc.checked,tocDepth:Number(tocDepth.value||6),tocPageBreak:tocPageBreak.checked,h1PageBreak:h1PageBreak.checked,watermark:watermark.value,watermarkOpacity:Number(watermarkOpacity.value||0.065)}}
-function renderPreview(){const text=editor.value;statusWords.textContent='Words: '+(text.trim()?text.trim().split(/\s+/).length:0);statusChars.textContent='Chars: '+text.length;preview.innerHTML=DOMPurify.sanitize(marked.parse(text));document.querySelectorAll('pre code').forEach(el=>hljs.highlightElement(el));}
-editor.addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(renderPreview,160)});
-function openFile(){fileInput.click()} fileInput.addEventListener('change',e=>{const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=ev=>{editor.value=ev.target.result; filename.value=f.name.replace(/\.(md|markdown|txt)$/i,'.pdf'); renderPreview()}; r.readAsText(f)});
-function downloadMarkdown(){const blob=new Blob([editor.value],{type:'text/markdown'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(filename.value||'document.pdf').replace(/\.pdf$/i,'.md');a.click();URL.revokeObjectURL(a.href)}
-async function renderPDF(){document.body.classList.add('busy');serverStatus.textContent='Rendering PDF...';try{const res=await fetch('/api/render',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({markdown:editor.value,options:getOptions()})});if(!res.ok){const err=await res.json().catch(()=>({error:'Render failed'}));throw new Error(err.error||'Render failed')}const blob=await res.blob();const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename.value||'mardas-document.pdf';a.click();URL.revokeObjectURL(a.href);serverStatus.textContent='PDF downloaded'}catch(e){serverStatus.textContent='Error: '+e.message;alert(e.message)}finally{document.body.classList.remove('busy')}}
-function copyCommand(){const o=getOptions();let cmd=['mrs-md2pdf input.md','-o '+(o.filename||'output.pdf'),'--theme '+o.theme];if(o.toc)cmd.push('--toc','--toc-depth '+o.tocDepth);if(o.tocPageBreak)cmd.push('--toc-page-break');if(o.h1PageBreak)cmd.push('--h1-page-break');if(o.noCover)cmd.push('--no-cover');if(o.noHeaderFooter)cmd.push('--no-header-footer');if(o.watermark)cmd.push('--watermark "'+o.watermark.replace(/"/g,'\\"')+'"');navigator.clipboard.writeText(cmd.join(' '));serverStatus.textContent='CLI command copied'}
-function toggleTheme(){document.body.classList.toggle('light-mode');themeBtn.textContent=document.body.classList.contains('light-mode')?'🌙 Dark':'☀️ Light'}
-function toggleDirection(){const d=preview.getAttribute('dir')==='rtl'?'ltr':'rtl';preview.setAttribute('dir',d);editor.setAttribute('dir',d);dirBtn.textContent=d==='rtl'?'↔️ LTR':'↔️ RTL'}
-editor.value=`---\ntitle: "نمونه سند Mardas MD2PDF"\nauthor: "Mardas"\ndate: "2026-05-12"\nlang: fa\n---\n\n# نمونه Markdown\n\nاین محیط برای ویرایش Markdown و گرفتن خروجی PDF با تنظیمات گرافیکی ساخته شده است.\n\n## Code\n\n\`\`\`python\nprint("Hello Mardas")\n\`\`\`\n\n| قابلیت | وضعیت |\n|---|---|\n| RTL/LTR | ✅ |\n| PDF Export | ✅ |\n`;
+const $ = (id) => document.getElementById(id);
+const editor = $('editor');
+const preview = $('preview');
+const statusWords = $('statusWords');
+const statusChars = $('statusChars');
+const serverStatus = $('serverStatus');
+const themeBtn = $('themeBtn');
+const highlightTheme = $('highlight-theme');
+let renderTimer = null;
+let currentLayout = 'split';
+
+marked.setOptions({
+  breaks: true,
+  gfm: true,
+  highlight: (code, lang) => {
+    const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+    return hljs.highlight(code, { language }).value;
+  }
+});
+
+function getOptions(){
+  return {
+    title: $('titleInput').value,
+    author: $('authorInput').value,
+    filename: $('filenameInput').value,
+    pageSize: $('pageSizeInput').value,
+    theme: $('pdfThemeInput').value,
+    noCover: $('noCoverInput').checked,
+    noHeaderFooter: $('noHeaderFooterInput').checked,
+    toc: $('tocInput').checked,
+    tocDepth: Number($('tocDepthInput').value || 6),
+    tocPageBreak: $('tocPageBreakInput').checked,
+    h1PageBreak: $('h1PageBreakInput').checked,
+    watermark: $('watermarkInput').value,
+    watermarkOpacity: Number($('watermarkOpacityInput').value || 0.065)
+  };
+}
+
+function renderPreview(){
+  const text = editor.value;
+  statusWords.textContent = 'Words: ' + (text.trim() ? text.trim().split(/\s+/).length : 0);
+  statusChars.textContent = 'Chars: ' + text.length;
+  preview.innerHTML = DOMPurify.sanitize(marked.parse(text));
+  document.querySelectorAll('pre code').forEach(el => hljs.highlightElement(el));
+}
+
+editor.addEventListener('input', () => {
+  clearTimeout(renderTimer);
+  renderTimer = setTimeout(renderPreview, 140);
+});
+
+editor.addEventListener('keydown', (event) => {
+  if (event.key === 'Tab') {
+    event.preventDefault();
+    const start = editor.selectionStart;
+    const end = editor.selectionEnd;
+    editor.value = editor.value.slice(0, start) + '    ' + editor.value.slice(end);
+    editor.selectionStart = editor.selectionEnd = start + 4;
+    renderPreview();
+  }
+});
+
+$('pdfThemeInput').addEventListener('change', () => {
+  $('profileName').textContent = $('pdfThemeInput').value;
+});
+
+function openFile(){ $('fileInput').click(); }
+$('fileInput').addEventListener('change', (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    editor.value = ev.target.result;
+    $('filenameInput').value = file.name.replace(/\.(md|markdown|txt)$/i, '.pdf');
+    renderPreview();
+  };
+  reader.readAsText(file);
+});
+
+function downloadMarkdown(){
+  const blob = new Blob([editor.value], { type: 'text/markdown' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = ($('filenameInput').value || 'document.pdf').replace(/\.pdf$/i, '.md');
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+async function renderPDF(){
+  document.body.classList.add('busy');
+  serverStatus.textContent = 'Rendering PDF...';
+  try {
+    const response = await fetch('/api/render', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ markdown: editor.value, options: getOptions() })
+    });
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Render failed' }));
+      throw new Error(error.error || 'Render failed');
+    }
+    const blob = await response.blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = $('filenameInput').value || 'mardas-document.pdf';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    serverStatus.textContent = 'PDF downloaded';
+  } catch (error) {
+    serverStatus.textContent = 'Error: ' + error.message;
+    alert(error.message);
+  } finally {
+    document.body.classList.remove('busy');
+  }
+}
+
+function copyCommand(){
+  const options = getOptions();
+  const cmd = ['mrs-md2pdf input.md', '-o ' + (options.filename || 'output.pdf'), '--theme ' + options.theme];
+  if (options.toc) cmd.push('--toc', '--toc-depth ' + options.tocDepth);
+  if (options.tocPageBreak) cmd.push('--toc-page-break');
+  if (options.h1PageBreak) cmd.push('--h1-page-break');
+  if (options.noCover) cmd.push('--no-cover');
+  if (options.noHeaderFooter) cmd.push('--no-header-footer');
+  if (options.watermark) cmd.push('--watermark "' + options.watermark.replace(/"/g, '\\"') + '"');
+  navigator.clipboard.writeText(cmd.join(' '));
+  serverStatus.textContent = 'CLI command copied';
+}
+
+function toggleTheme(){
+  document.body.classList.toggle('light-mode');
+  const light = document.body.classList.contains('light-mode');
+  themeBtn.textContent = light ? '🌙 Dark' : '☀️ Light';
+  highlightTheme.href = light
+    ? 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css'
+    : 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css';
+}
+
+function setLayout(layout){
+  currentLayout = layout;
+  document.body.classList.toggle('editor-focus', layout === 'editor');
+  document.body.classList.toggle('preview-focus', layout === 'preview');
+  document.body.classList.toggle('zen', layout === 'zen');
+  ['Split','Editor','Preview','Zen'].forEach(name => {
+    const button = $('layout' + name);
+    if (button) button.classList.toggle('active', name.toLowerCase() === layout);
+  });
+}
+
+function toggleDirection(){
+  const next = preview.getAttribute('dir') === 'rtl' ? 'ltr' : 'rtl';
+  preview.setAttribute('dir', next);
+  editor.setAttribute('dir', next);
+  $('dirBtn').textContent = next === 'rtl' ? '↔️ LTR' : '↔️ RTL';
+}
+
+let resizing = false;
+$('gutter').addEventListener('mousedown', () => { resizing = true; document.body.style.userSelect = 'none'; });
+window.addEventListener('mousemove', (event) => {
+  if (!resizing || currentLayout !== 'split') return;
+  const workspace = $('workspace').getBoundingClientRect();
+  const sidebar = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sidebar-width')) || 318;
+  const available = workspace.width - sidebar - 7;
+  const editorWidth = Math.max(260, Math.min(available - 260, event.clientX - workspace.left - sidebar));
+  document.documentElement.style.setProperty('--editor-width', editorWidth + 'px');
+});
+window.addEventListener('mouseup', () => { resizing = false; document.body.style.userSelect = ''; });
+
+editor.value = `---\ntitle: "نمونه سند Mardas MD2PDF"\nauthor: "mragetsars"\ndate: "2026-05-12"\nlang: fa\n---\n\n# نمونه Markdown\n\nاین محیط برای ویرایش Markdown و گرفتن خروجی PDF با تنظیمات گرافیکی ساخته شده است.\n\n## Code\n\n\`\`\`python\nprint("Hello Mardas")\n\`\`\`\n\n| قابلیت | وضعیت |\n|---|---|\n| RTL/LTR | ✅ |\n| PDF Export | ✅ |\n`;
 renderPreview();
 </script>
 </body>

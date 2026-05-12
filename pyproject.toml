@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mardas-md2pdf"
-version = "1.0.0"
+version = "1.0.1"
 description = "Beautiful Persian/English Markdown to PDF converter with RTL/LTR typography, hierarchical TOC, code highlighting, tables, GUI workflow, and MathJax."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [
-  { name = "Mardas MD2PDF" }
+  { name = "mragetsars", email = "mragetsars@yahoo.com" }
 ]
 keywords = ["markdown", "pdf", "rtl", "persian", "mathjax", "pygments", "playwright", "gui"]
 dependencies = [
