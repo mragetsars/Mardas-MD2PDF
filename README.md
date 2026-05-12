@@ -5,7 +5,7 @@
 ![Language](https://img.shields.io/badge/Language-Python-blue.svg)
 ![Renderer](https://img.shields.io/badge/Renderer-Playwright%20%2B%20Chromium-green.svg)
 ![Math](https://img.shields.io/badge/Math-MathJax-purple.svg)
-![Version](https://img.shields.io/badge/Version-v1.0.0-success.svg)
+![Version](https://img.shields.io/badge/Version-v1.0.1-success.svg)
 ![Status](https://img.shields.io/badge/Status-Stable-success.svg)
 
 ---
@@ -202,6 +202,9 @@ The GUI lets users:
 
 - open and edit Markdown files;
 - preview Markdown while editing;
+- switch between dark and light UI modes;
+- resize the editor/preview split by dragging the divider;
+- switch between Split, Editor, Preview, and Zen layouts;
 - choose the PDF theme;
 - enable or disable TOC;
 - set TOC depth;
@@ -210,7 +213,7 @@ The GUI lets users:
 - export the final PDF through the same Python rendering engine;
 - copy an equivalent CLI command.
 
-The GUI is intended for users who prefer visual configuration over command-line flags.
+The GUI is intended for users who prefer visual configuration over command-line flags. The light UI mode uses a clean white surface, soft borders, and restrained contrast so it stays readable without the muddy gray panels that often make editor interfaces feel cluttered.
 
 ---
 
@@ -437,6 +440,8 @@ Mardas-MD2PDF/
 ```
 
 ### Important Files
+
+The source code is intentionally kept directly under `src/` rather than inside an extra nested package directory. Packaging still exposes the installable Python package as `mardas_md2pdf`, but the repository file tree stays compact and easy to browse.
 
 - `src/cli.py`: command-line interface and argument parsing.
 - `src/gui.py`: local HTTP server for the graphical Markdown editor and PDF exporter.
