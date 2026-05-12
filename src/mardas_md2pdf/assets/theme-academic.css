@@ -744,3 +744,58 @@ blockquote {
 .md2pdf-cover__eyebrow::before { background: #7c2d12; }
 .md2pdf-cover h1 { text-align: right; font-size: 27pt; border: 0; }
 .md2pdf-cover__detail { border-radius: 3px; }
+
+/* v0.7 full-bleed cover refinements: circular optical logo frame */
+.md2pdf-cover-full-bleed .md2pdf-document,
+.md2pdf-cover-full-bleed .md2pdf-article {
+  min-height: 100vh;
+}
+.md2pdf-cover-full-bleed .md2pdf-cover {
+  min-height: 100vh;
+  width: 100%;
+  padding: 18mm 18mm 16mm;
+  box-sizing: border-box;
+  background:
+    radial-gradient(circle at 5% 4%, rgba(37, 99, 235, 0.13), transparent 27%),
+    radial-gradient(circle at 92% 86%, rgba(124, 58, 237, 0.10), transparent 31%),
+    linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+.md2pdf-cover__brand {
+  border-radius: 999px;
+  padding: 2.2mm 3.4mm 2.2mm 2.4mm;
+  gap: 3mm;
+}
+.md2pdf-cover__mark {
+  width: 12.2mm;
+  height: 12.2mm;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: linear-gradient(135deg, #0f172a, #1f2937);
+}
+.md2pdf-cover__logo {
+  width: 7.7mm !important;
+  height: 7.7mm !important;
+  object-fit: contain;
+  object-position: center center;
+  transform: translate(0.16mm, 0.22mm);
+}
+.md2pdf-cover__brand-copy strong {
+  font-size: 9.6pt;
+  letter-spacing: 0.04em;
+}
+.md2pdf-cover__brand-copy em {
+  color: #64748b;
+  font-size: 6.05pt;
+  letter-spacing: 0.105em;
+}
+.md2pdf-cover__release {
+  border: 1px solid rgba(15, 23, 42, 0.10);
+  box-shadow: none;
+}
+.md2pdf-cover h1 {
+  font-size: 30pt;
+  letter-spacing: -0.038em;
+}

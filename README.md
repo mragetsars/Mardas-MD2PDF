@@ -112,7 +112,7 @@ MathJax is vendored inside the project, so formulas can be rendered without rely
 
 By default, Mardas MD2PDF generates a designed cover page using the bundled Mardas logo, project brand lockup, document title, author, date, and summary/description.
 
-The cover page is generated separately from the main document. Therefore:
+The cover page is generated separately from the main document. The cover is full-bleed, uses a circular optical logo mark, and keeps brand, title, author, date, and summary in one balanced editorial layout. Therefore:
 
 - the cover has no footer;
 - the cover is not counted in page numbering;
@@ -204,15 +204,13 @@ Recommended for:
 - technical reports;
 - Markdown documents with tables and code blocks.
 
-### 2. `textbook` / `textbook-light`
+### 2. `textbook-light`
 
-A light academic theme inspired by Persian course notes and university handouts. It uses a flat layout, light code blocks, simple callouts, and a minimal footer.
+A light academic theme inspired by Persian course notes and university handouts. It uses a flat layout, white paper, light code blocks, simple callouts, and a minimal footer.
 
 ```bash
 mrs-md2pdf input.md -o output.pdf --toc --theme textbook-light
 ```
-
-`textbook` is kept as a short alias for `textbook-light`.
 
 Recommended for:
 
@@ -223,7 +221,7 @@ Recommended for:
 
 ### 3. `textbook-dark`
 
-A dark course-note theme for screen reading and low-light review. The background is dark, the text is light, and code blocks are rendered with a dark syntax theme.
+A dark course-note theme for screen reading and low-light review. It intentionally mirrors the simplicity of `textbook-light`: black paper, light text, gray borders, monochrome code blocks, and minimal color.
 
 ```bash
 mrs-md2pdf input.md -o output.pdf --toc --theme textbook-dark
@@ -352,7 +350,7 @@ mrs-md2pdf input.md -o output.pdf --debug-html output.html
 | `--toc-depth 1..6` | Maximum heading level included in TOC. Default: `6`. |
 | `--toc-page-break` | Put the main document content on a new page after the TOC. |
 | `--h1-page-break` | Start every top-level `#` heading on a new page. |
-| `--theme` | Choose `modern`, `textbook`, `textbook-light`, `textbook-dark`, or `academic`. |
+| `--theme` | Choose `modern`, `textbook-light`, `textbook-dark`, or `academic`. |
 | `--page-size` | PDF page size such as `A4` or `Letter`. |
 | `--margin-top` | Top page margin. Default: `18mm`. |
 | `--margin-bottom` | Bottom page margin. Default: `20mm`. |
@@ -383,7 +381,7 @@ Mardas-MD2PDF/
 │       ├── assets/
 │       │   ├── Mardas.png
 │       │   ├── theme.css
-│       │   ├── theme-textbook.css
+│       │   ├── theme-textbook-light.css
 │       │   ├── theme-textbook-dark.css
 │       │   ├── theme-academic.css
 │       │   └── mathjax/
@@ -408,7 +406,7 @@ Mardas-MD2PDF/
 - `markdown.py`: Markdown parsing, TOC generation, direction handling, footnotes, math protection, code highlighting.
 - `renderer.py`: HTML assembly, cover rendering, watermarking, Chromium PDF rendering, PDF merging.
 - `assets/theme.css`: modern theme.
-- `assets/theme-textbook.css`: light textbook theme.
+- `assets/theme-textbook-light.css`: light textbook theme.
 - `assets/theme-textbook-dark.css`: dark textbook theme.
 - `assets/theme-academic.css`: formal academic theme.
 
@@ -479,7 +477,7 @@ Manual page break:
 
 The project avoids direct low-level PDF drawing for document content. Instead, it uses browser-grade layout through Chromium. This makes typography, tables, RTL/LTR behavior, MathJax SVG output, and print CSS much easier to control.
 
-The cover page is rendered as a separate PDF and then merged with the content PDF. This keeps cover numbering and watermark behavior clean.
+The cover page is rendered as a separate full-bleed PDF and then merged with the content PDF. This keeps cover numbering and watermark behavior clean while allowing the cover background to reach the paper edges.
 
 ---
 
@@ -487,6 +485,7 @@ The cover page is rendered as a separate PDF and then merged with the content PD
 
 - Add automatic PDF outline/bookmarks.
 - Add per-section page numbering styles.
+- Add automatic theme previews in the README.
 - Add more theme presets.
 - Add optional source-code line numbers.
 - Add a small GUI wrapper for non-CLI users.

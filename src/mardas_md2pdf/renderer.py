@@ -99,8 +99,7 @@ def _mathjax_script() -> str:
 
 THEME_FILES = {
     "modern": "theme.css",
-    "textbook": "theme-textbook.css",
-    "textbook-light": "theme-textbook.css",
+    "textbook-light": "theme-textbook-light.css",
     "textbook-dark": "theme-textbook-dark.css",
     "academic": "theme-academic.css",
 }
@@ -118,8 +117,8 @@ def _theme_css(theme_name: str) -> str:
 def _code_style(theme_name: str) -> str:
     theme = normalize_theme_name(theme_name)
     if theme == "textbook-dark":
-        return "monokai"
-    if theme in {"textbook", "textbook-light", "academic"}:
+        return "bw"
+    if theme in {"textbook-light", "academic"}:
         return "friendly"
     return "github-dark"
 
@@ -173,17 +172,19 @@ def _watermark_html(options: PdfOptions) -> str:
     return ""
 
 
-def _layout_css(options: PdfOptions) -> str:
+def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False) -> str:
     classes: list[str] = []
     css_chunks = [
         f"""
       :root {{
-        --page-margin-top: {options.margin_top};
-        --page-margin-bottom: {options.margin_bottom};
-        --page-margin-x: {options.margin_x};
+        --page-margin-top: {"0" if cover_full_bleed else options.margin_top};
+        --page-margin-bottom: {"0" if cover_full_bleed else options.margin_bottom};
+        --page-margin-x: {"0" if cover_full_bleed else options.margin_x};
       }}
     """
     ]
+    if cover_full_bleed:
+        classes.append("md2pdf-cover-full-bleed")
     if options.toc_page_break:
         classes.append("md2pdf-toc-break")
     if options.h1_page_break:
@@ -273,6 +274,7 @@ def build_html(
     include_cover: bool = True,
     include_content: bool = True,
     include_watermark: bool = True,
+    cover_full_bleed: bool = False,
 ) -> str:
     theme = _theme_css(options.theme)
     font_faces = _font_faces(options.font_dir)
@@ -282,7 +284,7 @@ def build_html(
     lang = result.metadata.get("lang") or "fa"
     date = result.metadata.get("date") or ""
     base_href = options.input_path.resolve().parent.as_uri() + "/"
-    css_variables, body_classes = _layout_css(options)
+    css_variables, body_classes = _layout_css(options, cover_full_bleed=cover_full_bleed)
 
     cover = _cover_html(str(title), str(author), str(date), str(description), options) if include_cover and options.cover else ""
     content = ""
@@ -319,7 +321,7 @@ def build_html(
 
 def _footer_template(title: str, theme_name: str = "modern") -> str:
     theme = normalize_theme_name(theme_name)
-    if theme in {"textbook", "textbook-light"}:
+    if theme == "textbook-light":
         return """
     <div style="width:100%; font-size:9px; color:#374151; padding:0 18mm; font-family:Arial, sans-serif; direction:ltr; text-align:right;">
       <span class="pageNumber"></span>
@@ -429,7 +431,7 @@ def convert(options: PdfOptions) -> Path:
 
             if options.cover:
                 cover_pdf = tmp / "cover.pdf"
-                cover_html = build_html(result, options, include_cover=True, include_content=False, include_watermark=False)
+                cover_html = build_html(result, options, include_cover=True, include_content=False, include_watermark=False, cover_full_bleed=True)
                 _render_pdf(page, cover_html, options, cover_pdf, display_footer=False, title=str(title))
 
                 content_pdf = tmp / "content.pdf"
