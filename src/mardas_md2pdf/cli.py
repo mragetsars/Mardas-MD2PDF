@@ -31,7 +31,15 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--margin-x", default="16mm", help="Left/right CSS page margin")
     parser.add_argument("--font-dir", type=Path, help="Directory containing Vazirmatn font files")
     parser.add_argument("--chromium-path", help="Path to Chromium/Chrome executable")
-    parser.add_argument("--theme", choices=["modern", "textbook"], default="modern", help="Visual theme. modern is the polished flat theme; textbook is closer to academic Persian course notes.")
+    parser.add_argument(
+        "--theme",
+        choices=["modern", "textbook", "textbook-light", "textbook-dark", "academic"],
+        default="modern",
+        help=(
+            "Visual theme. modern is polished and colorful; textbook/textbook-light is a light course-note theme; "
+            "textbook-dark is a dark reading theme; academic is a formal serif report theme."
+        ),
+    )
     parser.add_argument("--no-cover", action="store_true", help="Do not generate the automatic cover page")
     parser.add_argument("--cover-logo", type=Path, help="Logo image for the cover page. Defaults to the bundled Mardas logo")
     parser.add_argument("--no-cover-logo", action="store_true", help="Hide the logo on the generated cover page")
