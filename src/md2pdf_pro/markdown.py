@@ -39,12 +39,12 @@ class MarkdownRenderResult:
     toc_html: str = ""
 
 
-class DarkHtmlFormatter(HtmlFormatter):
-    """Pygments formatter tuned for the dark code block in theme.css."""
+class CodeHtmlFormatter(HtmlFormatter):
+    """Pygments formatter. The style is selected by the renderer theme."""
 
-    def __init__(self) -> None:
+    def __init__(self, style: str = "github-dark") -> None:
         super().__init__(
-            style="github-dark",
+            style=style,
             cssclass="codehilite",
             nowrap=False,
             linenos=False,
@@ -97,7 +97,13 @@ def dominant_direction(text: str) -> str:
     return "auto"
 
 
-def highlight_code(code: str, lang: str | None, attrs: str | None = None) -> str:
+def highlight_code(
+    code: str,
+    lang: str | None,
+    attrs: str | None = None,
+    *,
+    code_style: str = "github-dark",
+) -> str:
     language = (lang or "").strip().split()[0]
     label = language or "text"
     try:
@@ -105,7 +111,7 @@ def highlight_code(code: str, lang: str | None, attrs: str | None = None) -> str
     except ClassNotFound:
         lexer = TextLexer(stripall=False)
         label = language or "text"
-    formatter = DarkHtmlFormatter()
+    formatter = CodeHtmlFormatter(code_style)
     highlighted = highlight(code, lexer, formatter)
     safe_label = html.escape(label.upper())
     extra_attrs = f" data-lang=\"{html.escape(language)}\"" if language else ""
@@ -343,7 +349,9 @@ def postprocess_html(body_html: str) -> str:
     return str(soup)
 
 
-def render_markdown(markdown: str, *, toc: bool = False) -> MarkdownRenderResult:
+def render_markdown(
+    markdown: str, *, toc: bool = False, code_style: str = "github-dark"
+) -> MarkdownRenderResult:
     metadata, markdown_body = extract_frontmatter(markdown)
     title = guess_title(markdown_body, metadata)
 
@@ -358,7 +366,9 @@ def render_markdown(markdown: str, *, toc: bool = False) -> MarkdownRenderResult
             "html": True,
             "linkify": False,
             "typographer": True,
-            "highlight": highlight_code,
+            "highlight": lambda code, lang, attrs=None: highlight_code(
+                code, lang, attrs, code_style=code_style
+            ),
         },
     )
     md.enable(["table", "strikethrough"])
@@ -369,7 +379,7 @@ def render_markdown(markdown: str, *, toc: bool = False) -> MarkdownRenderResult
     toc_html = build_toc(toc_entries, toc)
     body_html = postprocess_html(body_html)
 
-    formatter = DarkHtmlFormatter()
+    formatter = CodeHtmlFormatter(code_style)
     pygments_css = formatter.get_style_defs(".codehilite")
     return MarkdownRenderResult(
         body_html=body_html,
@@ -380,6 +390,8 @@ def render_markdown(markdown: str, *, toc: bool = False) -> MarkdownRenderResult
     )
 
 
-def render_markdown_file(path: str | Path, *, toc: bool = False) -> MarkdownRenderResult:
+def render_markdown_file(
+    path: str | Path, *, toc: bool = False, code_style: str = "github-dark"
+) -> MarkdownRenderResult:
     text = Path(path).read_text(encoding="utf-8")
-    return render_markdown(text, toc=toc)
+    return render_markdown(text, toc=toc, code_style=code_style)
