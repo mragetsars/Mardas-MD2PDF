@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <base href="file:///mnt/data/md2pdf-pro-v0.2/examples/">
+  <base href="file:///mnt/data/mardas-work/Mardas-MD2PDF/examples/">
   <title>نمونه حرفه‌ای تبدیل Markdown به PDF</title>
   <style></style>
   <style>pre { line-height: 125%; }
@@ -82,7 +82,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 .codehilite .vm { color: #BB60D5 } /* Name.Variable.Magic */
 .codehilite .il { color: #40A070 } /* Literal.Number.Integer.Long */</style>
   <style>/*
-  MD2PDF Pro textbook theme
+  Mardas MD2PDF textbook theme
   Flat, print-first styling inspired by Persian academic/course-note PDFs.
   Shadows are intentionally disabled for deterministic Chromium PDF rendering.
 */
@@ -434,24 +434,44 @@ kbd {
 .md2pdf-toc h2::before { display: none; }
 .md2pdf-toc ol {
   margin: 0;
-  padding-inline-start: 1.6em;
+  padding: 0;
+  list-style: none;
   columns: 1;
-  list-style-position: outside;
 }
 .md2pdf-toc li {
   break-inside: avoid;
-  margin: 0.15em 0;
-  border-bottom: 1px dotted #aeb6c2;
-  line-height: 1.55;
+  margin: 0.14em 0;
+  line-height: 1.58;
+}
+.md2pdf-toc li > ol {
+  margin: 0.12em 0 0.3em;
+  padding-inline-start: 5mm;
+  border-inline-start: 1px solid #d8dee8;
 }
 .md2pdf-toc a {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2.3mm;
+  align-items: start;
   color: #111827;
   border: 0;
   background: #ffffff;
-  padding-inline-start: 2mm;
 }
-.md2pdf-toc .toc-level-2 { margin-inline-start: 4mm; }
-.md2pdf-toc .toc-level-3 { margin-inline-start: 8mm; font-size: 0.94em; }
+.md2pdf-toc .toc-number {
+  direction: ltr;
+  unicode-bidi: isolate;
+  color: #374151;
+  font: 700 8.2pt/1.58 var(--font-code);
+  white-space: nowrap;
+}
+.md2pdf-toc .toc-title {
+  min-width: 0;
+}
+.md2pdf-toc .toc-depth-3,
+.md2pdf-toc .toc-depth-4,
+.md2pdf-toc .toc-depth-5,
+.md2pdf-toc .toc-depth-6 { font-size: 0.92em; }
+
 
 .md2pdf-page-break { page-break-after: always; break-after: page; }
 
@@ -519,10 +539,10 @@ Object.defineProperty(e,"__esModule",{value:!0}),e.mhchemParser=void 0;var r=fun
   <main class="md2pdf-document">
     <article class="md2pdf-article">
       
-      <nav class="md2pdf-toc" dir="auto"><h2>فهرست مطالب</h2><ol><li class="toc-level-1"><a href="#نمونه-markdown-فارسی-و-english-mixed">نمونه Markdown فارسی و English mixed</a></li><li class="toc-level-2"><a href="#فهرست-قابلیتها">فهرست قابلیت‌ها</a></li><li class="toc-level-2"><a href="#جدول-نمونه">جدول نمونه</a></li><li class="toc-level-2"><a href="#فرمول-ریاضی">فرمول ریاضی</a></li><li class="toc-level-2"><a href="#بلاک-کد-python">بلاک کد Python</a></li><li class="toc-level-2"><a href="#بلاک-کد-javascript">بلاک کد JavaScript</a></li><li class="toc-level-2"><a href="#نقلقول-و-لینک">نقل‌قول و لینک</a></li></ol></nav>
+      <nav class="md2pdf-toc" dir="auto" aria-label="Table of contents"><h2>فهرست مطالب</h2><ol class="toc-list toc-depth-1"><li class="toc-level-1" data-level="1"><a href="#نمونه-markdown-فارسی-و-english-mixed"><span class="toc-number">1</span><span class="toc-title">نمونه Markdown فارسی و English mixed</span></a><ol class="toc-list toc-depth-2"><li class="toc-level-2" data-level="2"><a href="#فهرست-قابلیتها"><span class="toc-number">1-1</span><span class="toc-title">فهرست قابلیت‌ها</span></a></li><li class="toc-level-2" data-level="2"><a href="#جدول-نمونه"><span class="toc-number">1-2</span><span class="toc-title">جدول نمونه</span></a></li><li class="toc-level-2" data-level="2"><a href="#فرمول-ریاضی"><span class="toc-number">1-3</span><span class="toc-title">فرمول ریاضی</span></a></li><li class="toc-level-2" data-level="2"><a href="#بلاک-کد-python"><span class="toc-number">1-4</span><span class="toc-title">بلاک کد Python</span></a></li><li class="toc-level-2" data-level="2"><a href="#بلاک-کد-javascript"><span class="toc-number">1-5</span><span class="toc-title">بلاک کد JavaScript</span></a></li><li class="toc-level-2" data-level="2"><a href="#نقلقول-و-لینک"><span class="toc-number">1-6</span><span class="toc-title">نقل‌قول و لینک</span></a></li></ol></li></ol></nav>
       <h1 class="mixed-script" dir="auto" id="نمونه-markdown-فارسی-و-english-mixed">نمونه Markdown فارسی و English mixed</h1>
 <p class="mixed-script" dir="auto">این یک پاراگراف فارسی است که در آن از عبارت‌های English مثل <code dir="ltr">Markdown</code>, <code dir="ltr">PDF</code>, <code dir="ltr">Playwright</code>, و <code dir="ltr">RTL/LTR</code> استفاده شده است. هدف این است که متن در PDF خوانا بماند و ترتیب کلمات فارسی و انگلیسی به‌هم نریزد.</p>
-<blockquote class="callout callout-note">
+<blockquote class="callout-note callout">
 <p class="mixed-script" dir="auto"><strong class="callout-title">نکته</strong> این قالب برای مستندات فنی، گزارش‌های آکادمیک، جزوه آموزشی، proposal، و documentation مناسب است.</p>
 </blockquote>
 <h2 dir="auto" id="فهرست-قابلیتها">فهرست قابلیت‌ها</h2>
@@ -576,7 +596,7 @@ Object.defineProperty(e,"__esModule",{value:!0}),e.mhchemParser=void 0;var r=fun
 \end{bmatrix},\quad
 \det(A) = -2\]</div>
 <h2 class="mixed-script" dir="auto" id="بلاک-کد-python">بلاک کد Python</h2>
-<pre dir="ltr"><code class="language-python" dir="ltr"><figure class="code-block" data-lang="python" dir="ltr"><figcaption dir="auto">PYTHON</figcaption><div class="codehilite"><pre dir="ltr"><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<figure class="code-block raw-code-block" data-lang="python" dir="ltr"><figcaption dir="auto">PYTHON</figcaption><div class="codehilite"><pre dir="ltr"><span></span><span class="n">PYTHONfrom</span> <span class="n">dataclasses</span> <span class="kn">import</span><span class="w"> </span><span class="nn">dataclass</span>
 
 <span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Document</span><span class="p">:</span>
@@ -587,15 +607,15 @@ Object.defineProperty(e,"__esModule",{value:!0}),e.mhchemParser=void 0;var r=fun
 <span class="k">def</span><span class="w"> </span><span class="nf">greet</span><span class="p">(</span><span class="n">doc</span><span class="p">:</span> <span class="n">Document</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
     <span class="k">return</span> <span class="sa">f</span><span class="s2">"Rendering </span><span class="si">{</span><span class="n">doc</span><span class="o">.</span><span class="n">title</span><span class="si">}</span><span class="s2"> as a beautiful PDF"</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="n">greet</span><span class="p">(</span><span class="n">Document</span><span class="p">(</span><span class="s2">"راهنمای MD2PDF"</span><span class="p">)))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">greet</span><span class="p">(</span><span class="n">Document</span><span class="p">(</span><span class="s2">"راهنمای Mardas MD2PDF"</span><span class="p">)))</span>
 </pre></div>
-</figure></code></pre>
+</figure>
 <h2 class="mixed-script" dir="auto" id="بلاک-کد-javascript">بلاک کد JavaScript</h2>
-<pre dir="ltr"><code class="language-javascript" dir="ltr"><figure class="code-block" data-lang="javascript" dir="ltr"><figcaption dir="auto">JAVASCRIPT</figcaption><div class="codehilite"><pre dir="ltr"><span></span><span class="kd">const</span><span class="w"> </span><span class="nx">items</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"Markdown"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Persian"</span><span class="p">,</span><span class="w"> </span><span class="s2">"MathJax"</span><span class="p">,</span><span class="w"> </span><span class="s2">"PDF"</span><span class="p">];</span>
+<figure class="code-block raw-code-block" data-lang="javascript" dir="ltr"><figcaption dir="auto">JAVASCRIPT</figcaption><div class="codehilite"><pre dir="ltr"><span></span><span class="nx">JAVASCRIPTconst</span><span class="w"> </span><span class="nx">items</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"Markdown"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Persian"</span><span class="p">,</span><span class="w"> </span><span class="s2">"MathJax"</span><span class="p">,</span><span class="w"> </span><span class="s2">"PDF"</span><span class="p">];</span>
 <span class="kd">const</span><span class="w"> </span><span class="nx">message</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">items</span><span class="p">.</span><span class="nx">map</span><span class="p">((</span><span class="nx">item</span><span class="p">,</span><span class="w"> </span><span class="nx">index</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="sb">`</span><span class="si">${</span><span class="nx">index</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mf">1</span><span class="si">}</span><span class="sb">. </span><span class="si">${</span><span class="nx">item</span><span class="si">}</span><span class="sb">`</span><span class="p">).</span><span class="nx">join</span><span class="p">(</span><span class="s2">"\n"</span><span class="p">);</span>
 <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">message</span><span class="p">);</span>
 </pre></div>
-</figure></code></pre>
+</figure>
 <h2 dir="auto" id="نقلقول-و-لینک">نقل‌قول و لینک</h2>
 <blockquote>
 <p class="mixed-script" dir="auto">زیبایی خروجی PDF فقط به تبدیل متن نیست؛ تایپوگرافی، فاصله‌ها، کنتراست، فونت، و رفتار صفحه‌بندی هم مهم هستند.</p>

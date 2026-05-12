@@ -39,6 +39,15 @@ class MarkdownRenderResult:
     toc_html: str = ""
 
 
+@dataclass(slots=True)
+class TocItem:
+    level: int
+    title: str
+    heading_id: str
+    number: str
+    children: list["TocItem"] = field(default_factory=list)
+
+
 class CodeHtmlFormatter(HtmlFormatter):
     """Pygments formatter. The style is selected by the renderer theme."""
 
@@ -271,9 +280,10 @@ def slugify(value: str, used: set[str]) -> str:
     return value
 
 
-def add_heading_ids(html_text: str) -> tuple[str, list[tuple[int, str, str]]]:
+def add_heading_ids(html_text: str, *, toc_depth: int = 6) -> tuple[str, list[tuple[int, str, str]]]:
     used: set[str] = set()
     toc: list[tuple[int, str, str]] = []
+    max_depth = max(1, min(int(toc_depth or 6), 6))
 
     def repl(match: re.Match[str]) -> str:
         level = int(match.group(1))
@@ -286,24 +296,71 @@ def add_heading_ids(html_text: str) -> tuple[str, list[tuple[int, str, str]]]:
             heading_id = slugify(content, used)
             attrs += f' id="{heading_id}"'
         plain = BeautifulSoup(content, "html.parser").get_text(" ", strip=True)
-        if level <= 3:
+        if level <= max_depth and plain:
             toc.append((level, plain, heading_id))
         return f"<h{level}{attrs}>{content}</h{level}>"
 
     return HEADING_RE.sub(repl, html_text), toc
 
 
+def _toc_tree(entries: list[tuple[int, str, str]]) -> list[TocItem]:
+    """Build a proper nested TOC tree based on Markdown heading levels.
+
+    The stack uses the original HTML heading level, so a skipped level such as
+    h1 -> h3 is still treated as a child of the nearest previous parent. The
+    displayed section number is based on the actual nesting depth in the tree,
+    producing values such as 2, 2-1, 2-2 and 2-2-3.
+    """
+    roots: list[TocItem] = []
+    stack: list[tuple[int, TocItem]] = []
+    counters: list[int] = []
+
+    for source_level, title, heading_id in entries:
+        while stack and stack[-1][0] >= source_level:
+            stack.pop()
+        depth = len(stack) + 1
+        counters = counters[:depth]
+        while len(counters) < depth:
+            counters.append(0)
+        counters[depth - 1] += 1
+        number = "-".join(str(value) for value in counters)
+        item = TocItem(source_level, title, heading_id, number)
+        if stack:
+            stack[-1][1].children.append(item)
+        else:
+            roots.append(item)
+        stack.append((source_level, item))
+    return roots
+
+
+def _render_toc_items(items: list[TocItem], *, depth: int = 1) -> str:
+    if not items:
+        return ""
+    parts = [f'<ol class="toc-list toc-depth-{depth}">']
+    for item in items:
+        parts.append(
+            f'<li class="toc-level-{item.level}" data-level="{item.level}">' 
+            f'<a href="#{html.escape(item.heading_id)}">'
+            f'<span class="toc-number">{html.escape(item.number)}</span>'
+            f'<span class="toc-title">{html.escape(item.title)}</span>'
+            f'</a>'
+        )
+        parts.append(_render_toc_items(item.children, depth=depth + 1))
+        parts.append('</li>')
+    parts.append('</ol>')
+    return "".join(parts)
+
+
 def build_toc(toc: list[tuple[int, str, str]], enabled: bool) -> str:
     if not enabled or not toc:
         return ""
-    items = []
-    for level, title, heading_id in toc:
-        indent_class = f" toc-level-{level}"
-        items.append(
-            f'<li class="{indent_class.strip()}"><a href="#{html.escape(heading_id)}">'
-            f"{html.escape(title)}</a></li>"
-        )
-    return '<nav class="md2pdf-toc" dir="auto"><h2>فهرست مطالب</h2><ol>' + "".join(items) + "</ol></nav>"
+    tree = _toc_tree(toc)
+    return (
+        '<nav class="md2pdf-toc" dir="auto" aria-label="Table of contents">'
+        '<h2>فهرست مطالب</h2>'
+        f'{_render_toc_items(tree)}'
+        '</nav>'
+    )
 
 
 def normalize_raw_code_blocks(soup: BeautifulSoup, *, code_style: str) -> None:
@@ -425,7 +482,7 @@ def postprocess_html(body_html: str, *, code_style: str = "github-dark") -> str:
 
 
 def render_markdown(
-    markdown: str, *, toc: bool = False, code_style: str = "github-dark"
+    markdown: str, *, toc: bool = False, toc_depth: int = 6, code_style: str = "github-dark"
 ) -> MarkdownRenderResult:
     metadata, markdown_body = extract_frontmatter(markdown)
     title = guess_title(markdown_body, metadata)
@@ -450,7 +507,7 @@ def render_markdown(
 
     body_html = md.render(markdown_body)
     body_html = append_footnotes(body_html, footnotes, md)
-    body_html, toc_entries = add_heading_ids(body_html)
+    body_html, toc_entries = add_heading_ids(body_html, toc_depth=toc_depth)
     toc_html = build_toc(toc_entries, toc)
     body_html = postprocess_html(body_html, code_style=code_style)
 
@@ -466,7 +523,7 @@ def render_markdown(
 
 
 def render_markdown_file(
-    path: str | Path, *, toc: bool = False, code_style: str = "github-dark"
+    path: str | Path, *, toc: bool = False, toc_depth: int = 6, code_style: str = "github-dark"
 ) -> MarkdownRenderResult:
     text = Path(path).read_text(encoding="utf-8")
-    return render_markdown(text, toc=toc, code_style=code_style)
+    return render_markdown(text, toc=toc, toc_depth=toc_depth, code_style=code_style)

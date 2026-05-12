@@ -3,14 +3,14 @@ requires = ["hatchling>=1.24"]
 build-backend = "hatchling.build"
 
 [project]
-name = "md2pdf-pro"
-version = "0.3.0"
-description = "Beautiful Persian/English Markdown to PDF converter with RTL/LTR typography, code highlighting, tables, and MathJax."
+name = "mardas-md2pdf"
+version = "0.4.0"
+description = "Beautiful Persian/English Markdown to PDF converter with RTL/LTR typography, hierarchical TOC, code highlighting, tables, and MathJax."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [
-  { name = "MD2PDF Pro" }
+  { name = "Mardas MD2PDF" }
 ]
 keywords = ["markdown", "pdf", "rtl", "persian", "mathjax", "pygments", "playwright"]
 dependencies = [
@@ -28,14 +28,14 @@ dev = [
 ]
 
 [project.scripts]
-md2pdf-pro = "md2pdf_pro.cli:main"
-md2pdf = "md2pdf_pro.cli:main"
+mrs-md2pdf = "mardas_md2pdf.cli:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/md2pdf_pro"]
+packages = ["src/mardas_md2pdf"]
 include = [
-  "src/md2pdf_pro/assets/**/*.css",
-  "src/md2pdf_pro/assets/**/*.js"
+  "src/mardas_md2pdf/assets/**/*.css",
+  "src/mardas_md2pdf/assets/**/*.js",
+  "src/mardas_md2pdf/assets/mathjax/*"
 ]
 
 [tool.ruff]

@@ -1,6 +1,6 @@
 ---
 title: "نمونه حرفه‌ای تبدیل Markdown به PDF"
-author: "تیم MD2PDF Pro"
+author: "تیم Mardas MD2PDF"
 date: "2026-05-12"
 summary: "این فایل برای تست متن فارسی/English mixed، جدول، فرمول ریاضی، بلاک کد، لینک، تصویر و نکته طراحی شده است."
 lang: fa
@@ -63,7 +63,7 @@ class Document:
 def greet(doc: Document) -> str:
     return f"Rendering {doc.title} as a beautiful PDF"
 
-print(greet(Document("راهنمای MD2PDF")))
+print(greet(Document("راهنمای Mardas MD2PDF")))
 ```
 
 ## بلاک کد JavaScript
