@@ -780,7 +780,7 @@ blockquote {
   height: 7.7mm !important;
   object-fit: contain;
   object-position: center center;
-  transform: translate(0.16mm, 0.22mm);
+  transform: translate(-0.24mm, -0.18mm);
 }
 .md2pdf-cover__brand-copy strong {
   font-size: 9.6pt;
