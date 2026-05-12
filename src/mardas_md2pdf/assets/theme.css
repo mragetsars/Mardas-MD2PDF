@@ -420,3 +420,104 @@ kbd {
   }
   .no-print { display: none !important; }
 }
+
+/* v0.5 cover, page-flow and watermark refinements */
+.md2pdf-cover {
+  min-height: calc(297mm - var(--page-margin-top, 18mm) - var(--page-margin-bottom, 20mm));
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 14mm;
+}
+.md2pdf-cover__brand {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 3mm;
+  padding: 2.8mm 4.2mm;
+  border-radius: 999px;
+  background: #0f172a;
+  color: #ffffff;
+  font: 800 8.4pt/1 var(--font-en), var(--font-fa);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.md2pdf-cover__logo {
+  display: block;
+  width: 12mm;
+  height: 10mm;
+  object-fit: contain;
+  margin: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.md2pdf-cover__content {
+  padding-block: 12mm 18mm;
+}
+.md2pdf-cover__eyebrow {
+  margin-bottom: 4mm;
+}
+.md2pdf-cover h1 {
+  max-width: 19cm;
+  margin: 8mm 0 5mm;
+  font-size: 30pt;
+  line-height: 1.32;
+}
+.md2pdf-cover::after {
+  content: "";
+  display: block;
+  width: 36mm;
+  height: 1.6mm;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+}
+body.md2pdf-toc-break .md2pdf-toc {
+  break-after: page;
+  page-break-after: always;
+  margin-bottom: 0;
+}
+body.md2pdf-h1-break .md2pdf-article > h1:not(:first-child) {
+  break-before: page;
+  page-break-before: always;
+  margin-top: 0;
+}
+body.md2pdf-toc-break.md2pdf-h1-break .md2pdf-toc + h1 {
+  break-before: auto;
+  page-break-before: auto;
+}
+.md2pdf-document {
+  position: relative;
+  z-index: 1;
+}
+.md2pdf-watermark {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 0;
+  opacity: var(--watermark-opacity, 0.065);
+}
+.md2pdf-watermark--image img {
+  width: var(--watermark-width, 105mm);
+  max-width: 72%;
+  height: auto;
+  margin: 0;
+  border-radius: 0;
+  box-shadow: none;
+  filter: brightness(0);
+  transform: rotate(-22deg);
+}
+.md2pdf-watermark--text {
+  direction: ltr;
+  color: #0f172a;
+  font: 900 46pt/1 var(--font-en), var(--font-fa);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transform: rotate(-28deg);
+  white-space: nowrap;
+}
