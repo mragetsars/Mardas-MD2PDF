@@ -103,6 +103,8 @@ def highlight_code(
     attrs: str | None = None,
     *,
     code_style: str = "github-dark",
+    caption: str | None = None,
+    extra_classes: str = "",
 ) -> str:
     language = (lang or "").strip().split()[0]
     label = language or "text"
@@ -113,14 +115,54 @@ def highlight_code(
         label = language or "text"
     formatter = CodeHtmlFormatter(code_style)
     highlighted = highlight(code, lexer, formatter)
-    safe_label = html.escape(label.upper())
+    caption_value = label.upper() if caption is None else caption
+    caption_html = f"<figcaption>{html.escape(caption_value)}</figcaption>" if caption_value else ""
     extra_attrs = f" data-lang=\"{html.escape(language)}\"" if language else ""
+    classes = "code-block" + (f" {html.escape(extra_classes)}" if extra_classes else "")
     return (
-        f'<figure class="code-block" dir="ltr"{extra_attrs}>'
-        f"<figcaption>{safe_label}</figcaption>"
+        f'<figure class="{classes}" dir="ltr"{extra_attrs}>'
+        f"{caption_html}"
         f"{highlighted}"
         f"</figure>"
     )
+
+
+def guess_code_language(code: str) -> tuple[str, str]:
+    """Best-effort language guess for indented Markdown code blocks.
+
+    Fenced blocks already carry their language, but many reports use 4-space
+    indented blocks. markdown-it emits those as plain ``<pre><code>`` nodes,
+    so we infer a readable highlighter and caption here. The heuristic is
+    deliberately conservative: when unsure, it returns plain text.
+    """
+    stripped = code.strip("\n")
+    lowered = stripped.lower()
+    lines = [line.strip() for line in stripped.splitlines() if line.strip()]
+    first = lines[0] if lines else ""
+
+    if not stripped:
+        return "text", ""
+    if "#include" in stripped or re.search(r"\bpid_t\b|\bint\s+main\s*\(", stripped):
+        return "c", "C"
+    if re.search(r"^\s*#\s*define\s+SYS_", stripped, re.M) or "SYSCALL(" in stripped:
+        return "c", "C"
+    if re.search(r"\bdef\s+\w+\s*\(|\bimport\s+\w+|\bfrom\s+\w+\s+import\b", stripped):
+        return "python", "PYTHON"
+    if re.search(r"\bconst\s+\w+\s*=|\blet\s+\w+\s*=|console\.log\s*\(", stripped):
+        return "javascript", "JAVASCRIPT"
+    if re.search(r"^\s*</?[-a-zA-Z][^>]*>\s*$", stripped, re.M):
+        return "html", "HTML"
+    if re.search(r"^\s*(make|gdb|qemu|cat|dice|ksort|usort|pidtest|ptest|makenums)(\s|$)", stripped, re.M):
+        return "bash", "BASH"
+    if re.search(r"^\s*\(gdb\)\s+", stripped, re.M):
+        return "bash", "GDB"
+    if first.startswith("# terminal") or "inside xv6" in lowered:
+        return "bash", "BASH"
+    if re.search(r"^\s*#\d+\s+\w+", stripped, re.M):
+        return "text", "TRACE"
+    if re.fullmatch(r"[-+*/=()0-9A-Za-z_\s.]+", stripped) and any(ch.isdigit() for ch in stripped):
+        return "text", ""
+    return "text", ""
 
 
 def protect_and_transform_math(markdown: str) -> str:
@@ -264,8 +306,41 @@ def build_toc(toc: list[tuple[int, str, str]], enabled: bool) -> str:
     return '<nav class="md2pdf-toc" dir="auto"><h2>فهرست مطالب</h2><ol>' + "".join(items) + "</ol></nav>"
 
 
-def postprocess_html(body_html: str) -> str:
+def normalize_raw_code_blocks(soup: BeautifulSoup, *, code_style: str) -> None:
+    """Wrap and highlight raw indented code blocks.
+
+    markdown-it applies the custom highlighter to fenced code, but not to every
+    4-space indented block. Without this pass, those blocks inherit light code
+    text without the dark/bright container, which makes them nearly invisible in
+    Chromium PDFs.
+    """
+    skip_parent_classes = {"code-block", "codehilite", "highlight"}
+    for pre in list(soup.find_all("pre")):
+        parents = list(pre.parents)
+        if any(skip_parent_classes.intersection(set(parent.get("class", []))) for parent in parents if isinstance(parent, Tag)):
+            continue
+        code_tag = pre.find("code")
+        code = code_tag.get_text() if code_tag else pre.get_text()
+        lang, caption = guess_code_language(code)
+        fragment = BeautifulSoup(
+            highlight_code(
+                code.rstrip("\n"),
+                lang,
+                code_style=code_style,
+                caption=caption,
+                extra_classes="raw-code-block",
+            ),
+            "html.parser",
+        )
+        figure = fragment.find("figure")
+        if figure is not None:
+            pre.replace_with(figure)
+
+
+def postprocess_html(body_html: str, *, code_style: str = "github-dark") -> str:
     soup = BeautifulSoup(body_html, "html.parser")
+
+    normalize_raw_code_blocks(soup, code_style=code_style)
 
     # Direction-aware blocks and inline content.
     for tag in soup.find_all(["p", "li", "td", "th", "h1", "h2", "h3", "h4", "h5", "h6", "figcaption"]):
@@ -377,7 +452,7 @@ def render_markdown(
     body_html = append_footnotes(body_html, footnotes, md)
     body_html, toc_entries = add_heading_ids(body_html)
     toc_html = build_toc(toc_entries, toc)
-    body_html = postprocess_html(body_html)
+    body_html = postprocess_html(body_html, code_style=code_style)
 
     formatter = CodeHtmlFormatter(code_style)
     pygments_css = formatter.get_style_defs(".codehilite")

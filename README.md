@@ -15,7 +15,7 @@ Markdown → HTML تایپوگرافی‌شده → Chromium PDF
 - پشتیبانی از متن فارسی، انگلیسی و جملات mixed مثل: «این پروژه از Markdown و PDF استفاده می‌کند»
 - تنظیم `dir="auto"` برای پاراگراف‌ها، عنوان‌ها، آیتم‌های لیست و سلول‌های جدول
 - خروجی PDF با دو تم: `modern` بدون سایه‌های مشکل‌ساز و `textbook` شبیه جزوه/کتاب فارسی
-- هایلایت سینتکس کد با Pygments
+- هایلایت سینتکس کد با Pygments؛ شامل fenced code و همچنین code blockهای indented چهار فاصله‌ای
 - فونت فارسی با اولویت Vazirmatn و fallback برای Noto Sans Arabic
 - فونت کدنویسی monospace برای code block و inline code
 - پشتیبانی از جدول‌های GFM، strikethrough، task list، لینک، تصویر، footnote ساده و page break
@@ -94,9 +94,14 @@ md2pdf-pro input.md -o output.pdf \
 md2pdf-pro input.md -o output.pdf --toc --theme textbook --no-cover
 ```
 
+
+### رفع code blockهای indented
+
+از نسخه 0.3.0، code blockهایی که با چهار فاصله نوشته شده‌اند هم مثل fenced code blockها داخل قاب خوانا قرار می‌گیرند. ابزار برای این بلوک‌ها زبان را به صورت محافظه‌کارانه حدس می‌زند؛ برای مثال C، Bash، GDB، JavaScript یا Python. این تغییر مخصوص گزارش‌هایی است که در آن‌ها قطعه‌کدها بدون سه بک‌تیک نوشته شده‌اند.
+
 ### حذف سایه‌ها
 
-در نسخه 0.2.0 سایه‌ی اطراف code block، جدول، blockquote، callout و تصویر حذف شده است تا در خروجی Chromium PDF لبه‌ها تمیز و بدون artifact چاپ شوند. تم `modern` همچنان ظاهر قبلی را نگه می‌دارد، اما به شکل flat و بدون shadow.
+از نسخه 0.2.0 سایه‌ی اطراف code block، جدول، blockquote، callout و تصویر حذف شده است تا در خروجی Chromium PDF لبه‌ها تمیز و بدون artifact چاپ شوند. تم `modern` همچنان ظاهر قبلی را نگه می‌دارد، اما به شکل flat و بدون shadow.
 
 ## Front matter
 
