@@ -42,3 +42,18 @@ def test_public_theme_choices_are_explicit_light_or_dark():
     assert "textbook-light" in theme_action.choices
     assert "textbook-dark" in theme_action.choices
     assert "textbook" not in theme_action.choices
+
+
+def test_hidden_unbranded_cover_option_is_not_in_help():
+    from mardas_md2pdf.cli import build_parser
+
+    parser = build_parser()
+    help_text = parser.format_help()
+    assert "--no-cover-brand" not in help_text
+    assert any("--no-cover-brand" in action.option_strings for action in parser._actions)
+
+
+def test_gui_entrypoint_module_exists():
+    import mardas_md2pdf.gui as gui
+
+    assert gui.build_parser().prog == "mrs-md2pdf-gui"

@@ -43,6 +43,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--no-cover", action="store_true", help="Do not generate the automatic cover page")
     parser.add_argument("--cover-logo", type=Path, help="Logo image for the cover page. Defaults to the bundled Mardas logo")
     parser.add_argument("--no-cover-logo", action="store_true", help="Hide the logo on the generated cover page")
+    parser.add_argument("--no-cover-brand", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--watermark", help="Text watermark to repeat on all content pages. The cover is never watermarked")
     parser.add_argument("--watermark-image", type=Path, help="Image watermark to repeat on all content pages. The cover is never watermarked")
     parser.add_argument("--watermark-opacity", type=float, default=0.065, help="Watermark opacity between 0 and 1; default: 0.065")
@@ -92,6 +93,7 @@ def main(argv: list[str] | None = None) -> int:
         cover=not args.no_cover,
         cover_logo=args.cover_logo,
         cover_logo_enabled=not args.no_cover_logo,
+        cover_brand_enabled=not args.no_cover_brand,
         watermark_text=args.watermark,
         watermark_image=args.watermark_image,
         watermark_opacity=args.watermark_opacity,
