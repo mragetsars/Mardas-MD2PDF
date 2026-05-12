@@ -32,3 +32,13 @@ def test_hierarchical_toc_numbers_and_nesting():
     assert '<span class="toc-number">1-2-1</span>' in result.toc_html
     assert '<span class="toc-number">2</span>' in result.toc_html
     assert 'toc-depth-2' in result.toc_html
+
+
+def test_public_theme_choices_are_explicit_light_or_dark():
+    from mardas_md2pdf.cli import build_parser
+
+    parser = build_parser()
+    theme_action = next(action for action in parser._actions if "--theme" in action.option_strings)
+    assert "textbook-light" in theme_action.choices
+    assert "textbook-dark" in theme_action.choices
+    assert "textbook" not in theme_action.choices

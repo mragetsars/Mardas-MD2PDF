@@ -33,10 +33,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--chromium-path", help="Path to Chromium/Chrome executable")
     parser.add_argument(
         "--theme",
-        choices=["modern", "textbook", "textbook-light", "textbook-dark", "academic"],
+        choices=["modern", "textbook-light", "textbook-dark", "academic"],
         default="modern",
         help=(
-            "Visual theme. modern is polished and colorful; textbook/textbook-light is a light course-note theme; "
+            "Visual theme. modern is polished and colorful; textbook-light is a light course-note theme; "
             "textbook-dark is a dark reading theme; academic is a formal serif report theme."
         ),
     )
