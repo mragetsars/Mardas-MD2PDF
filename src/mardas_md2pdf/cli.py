@@ -9,15 +9,16 @@ from .renderer import PdfOptions, convert
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="md2pdf-pro",
-        description="Convert Markdown to polished PDF with Persian RTL/LTR typography, code highlighting, tables, and MathJax.",
+        prog="mrs-md2pdf",
+        description="Convert Markdown to polished PDF with Persian RTL/LTR typography, hierarchical TOC, code highlighting, tables, and MathJax.",
     )
     parser.add_argument("input", type=Path, help="Input Markdown file")
     parser.add_argument("-o", "--output", type=Path, help="Output PDF path")
     parser.add_argument("--title", help="Override document title")
     parser.add_argument("--author", help="Override author metadata")
     parser.add_argument("--description", help="Override summary/description metadata")
-    parser.add_argument("--toc", action="store_true", help="Generate a table of contents from h1-h3")
+    parser.add_argument("--toc", action="store_true", help="Generate a hierarchical table of contents from Markdown headings")
+    parser.add_argument("--toc-depth", type=int, default=6, choices=range(1, 7), metavar="1..6", help="Maximum heading level to include in the TOC; default: 6")
     parser.add_argument("--debug-html", type=Path, help="Write the intermediate HTML for inspection")
     parser.add_argument("--page-size", default="A4", help="PDF page size, e.g. A4, Letter")
     parser.add_argument("--margin-top", default="18mm", help="Top CSS page margin")
@@ -48,6 +49,7 @@ def main(argv: list[str] | None = None) -> int:
         author=args.author,
         description=args.description,
         toc=args.toc,
+        toc_depth=args.toc_depth,
         debug_html=args.debug_html,
         page_size=args.page_size,
         margin_top=args.margin_top,

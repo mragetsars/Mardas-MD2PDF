@@ -1,5 +1,5 @@
 /*
-  MD2PDF Pro theme
+  Mardas MD2PDF theme
   Goal: polished printable output for Persian/English mixed Markdown.
   Font files are not bundled. Install Vazirmatn locally or pass --font-dir.
 */
@@ -371,12 +371,46 @@ kbd {
 }
 .md2pdf-toc h2::before { display: none; }
 .md2pdf-toc ol {
-  margin-bottom: 0;
-  columns: 2;
-  column-gap: 12mm;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  columns: 1;
 }
-.md2pdf-toc a { color: #334155; border: 0; }
-.md2pdf-toc li { break-inside: avoid; margin: 0.12em 0; }
+.md2pdf-toc li {
+  break-inside: avoid;
+  margin: 0.12em 0;
+  line-height: 1.55;
+}
+.md2pdf-toc li > ol {
+  margin: 0.15em 0 0.35em;
+  padding-inline-start: 5mm;
+  border-inline-start: 1px solid var(--line);
+}
+.md2pdf-toc a {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2.4mm;
+  align-items: start;
+  color: #334155;
+  border: 0;
+  padding: 0.7mm 1mm;
+  border-radius: 6px;
+}
+.md2pdf-toc a:hover { background: #ffffff; }
+.md2pdf-toc .toc-number {
+  direction: ltr;
+  unicode-bidi: isolate;
+  color: var(--accent);
+  font: 800 8.2pt/1.55 var(--font-code);
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+.md2pdf-toc .toc-title { min-width: 0; }
+.md2pdf-toc .toc-depth-3,
+.md2pdf-toc .toc-depth-4,
+.md2pdf-toc .toc-depth-5,
+.md2pdf-toc .toc-depth-6 { font-size: 0.93em; }
+
 
 .md2pdf-page-break { page-break-after: always; break-after: page; }
 

@@ -20,6 +20,7 @@ class PdfOptions:
     author: str | None = None
     description: str | None = None
     toc: bool = False
+    toc_depth: int = 6
     debug_html: Path | None = None
     page_size: str = "A4"
     margin_top: str = "18mm"
@@ -35,11 +36,11 @@ class PdfOptions:
 
 
 def _asset_text(relative_path: str) -> str:
-    return (resources.files("md2pdf_pro") / "assets" / relative_path).read_text(encoding="utf-8")
+    return (resources.files("mardas_md2pdf") / "assets" / relative_path).read_text(encoding="utf-8")
 
 
 def _asset_path(relative_path: str) -> Path:
-    return Path(str(resources.files("md2pdf_pro") / "assets" / relative_path))
+    return Path(str(resources.files("mardas_md2pdf") / "assets" / relative_path))
 
 
 def _font_faces(font_dir: Path | None) -> str:
@@ -123,7 +124,7 @@ def build_html(result: MarkdownRenderResult, options: PdfOptions) -> str:
     if options.cover:
         cover = f"""
       <header class="md2pdf-cover" dir="auto">
-        <span class="md2pdf-cover__eyebrow">MD2PDF Pro</span>
+        <span class="md2pdf-cover__eyebrow">Mardas MD2PDF</span>
         <h1 dir="auto">{html.escape(str(title))}</h1>
         {'<div class="md2pdf-cover__meta" dir="auto">' + ''.join(cover_meta) + '</div>' if cover_meta else ''}
         {'<p class="md2pdf-cover__summary" dir="auto">' + html.escape(str(description)) + '</p>' if description else ''}
@@ -199,7 +200,7 @@ def convert(options: PdfOptions) -> Path:
     options.input_path = Path(options.input_path)
     options.output_path = Path(options.output_path)
     result = render_markdown_file(
-        options.input_path, toc=options.toc, code_style=_code_style(options.theme)
+        options.input_path, toc=options.toc, toc_depth=options.toc_depth, code_style=_code_style(options.theme)
     )
     html_text = build_html(result, options)
 

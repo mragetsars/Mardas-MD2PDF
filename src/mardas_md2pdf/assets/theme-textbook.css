@@ -1,5 +1,5 @@
 /*
-  MD2PDF Pro textbook theme
+  Mardas MD2PDF textbook theme
   Flat, print-first styling inspired by Persian academic/course-note PDFs.
   Shadows are intentionally disabled for deterministic Chromium PDF rendering.
 */
@@ -351,24 +351,44 @@ kbd {
 .md2pdf-toc h2::before { display: none; }
 .md2pdf-toc ol {
   margin: 0;
-  padding-inline-start: 1.6em;
+  padding: 0;
+  list-style: none;
   columns: 1;
-  list-style-position: outside;
 }
 .md2pdf-toc li {
   break-inside: avoid;
-  margin: 0.15em 0;
-  border-bottom: 1px dotted #aeb6c2;
-  line-height: 1.55;
+  margin: 0.14em 0;
+  line-height: 1.58;
+}
+.md2pdf-toc li > ol {
+  margin: 0.12em 0 0.3em;
+  padding-inline-start: 5mm;
+  border-inline-start: 1px solid #d8dee8;
 }
 .md2pdf-toc a {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2.3mm;
+  align-items: start;
   color: #111827;
   border: 0;
   background: #ffffff;
-  padding-inline-start: 2mm;
 }
-.md2pdf-toc .toc-level-2 { margin-inline-start: 4mm; }
-.md2pdf-toc .toc-level-3 { margin-inline-start: 8mm; font-size: 0.94em; }
+.md2pdf-toc .toc-number {
+  direction: ltr;
+  unicode-bidi: isolate;
+  color: #374151;
+  font: 700 8.2pt/1.58 var(--font-code);
+  white-space: nowrap;
+}
+.md2pdf-toc .toc-title {
+  min-width: 0;
+}
+.md2pdf-toc .toc-depth-3,
+.md2pdf-toc .toc-depth-4,
+.md2pdf-toc .toc-depth-5,
+.md2pdf-toc .toc-depth-6 { font-size: 0.92em; }
+
 
 .md2pdf-page-break { page-break-after: always; break-after: page; }
 

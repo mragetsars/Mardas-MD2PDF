@@ -1,45 +1,259 @@
-# MD2PDF Pro
+# Mardas MD2PDF
 
-یک ابزار حرفه‌ای برای تبدیل فایل‌های Markdown به PDF زیبا، تمیز و مناسب متن‌های فارسی/انگلیسی.
+> Markdown to PDF Converter - Persian/English Typography - RTL/LTR Documents - Professional PDF Publishing
 
-این پروژه عمداً از مسیر زیر استفاده می‌کند:
+![Language](https://img.shields.io/badge/Language-Python-blue.svg)
+![Renderer](https://img.shields.io/badge/Renderer-Playwright%20%2B%20Chromium-green.svg)
+![Math](https://img.shields.io/badge/Math-MathJax-purple.svg)
+![Status](https://img.shields.io/badge/Status-Active-success.svg)
+
+## Overview
+
+This repository contains **Mardas MD2PDF**, a professional Markdown-to-PDF converter designed for clean, readable, and visually polished technical documents.
+
+The main focus of this project is high-quality PDF generation for documents that contain Persian text, English technical terms, mixed RTL/LTR sentences, tables, mathematical formulas, code blocks, images, links, notes, and long academic-style reports.
+
+The project intentionally uses the following rendering pipeline:
 
 ```text
-Markdown → HTML تایپوگرافی‌شده → Chromium PDF
+Markdown → Typographic HTML → Chromium PDF
 ```
 
-دلیل این انتخاب این است که مرورگر مدرن در شکل‌دهی متن فارسی، ترکیب RTL/LTR، SVGهای MathJax، CSS چاپی، جدول‌های پیچیده و فونت‌ها عملکرد بسیار قابل‌اعتمادی دارد.
+This architecture gives the project strong control over typography, print CSS, page margins, syntax highlighting, MathJax formulas, table styling, and mixed-direction text rendering.
 
-## قابلیت‌ها
+## Project Objectives
 
-- پشتیبانی از متن فارسی، انگلیسی و جملات mixed مثل: «این پروژه از Markdown و PDF استفاده می‌کند»
-- تنظیم `dir="auto"` برای پاراگراف‌ها، عنوان‌ها، آیتم‌های لیست و سلول‌های جدول
-- خروجی PDF با دو تم: `modern` بدون سایه‌های مشکل‌ساز و `textbook` شبیه جزوه/کتاب فارسی
-- هایلایت سینتکس کد با Pygments؛ شامل fenced code و همچنین code blockهای indented چهار فاصله‌ای
-- فونت فارسی با اولویت Vazirmatn و fallback برای Noto Sans Arabic
-- فونت کدنویسی monospace برای code block و inline code
-- پشتیبانی از جدول‌های GFM، strikethrough، task list، لینک، تصویر، footnote ساده و page break
-- پشتیبانی آفلاین از MathJax برای فرمول‌های `$...$` و `$$...$$`
-- تولید فهرست مطالب از headingهای سطح ۱ تا ۳
-- امکان حذف cover با `--no-cover` برای خروجی‌های آموزشی و جزوه‌ای
-- قابلیت خروجی گرفتن HTML میانی برای debug و سفارشی‌سازی
+- ✅ Convert Markdown files into polished PDF documents.
+- ✅ Preserve readability for Persian, English, and mixed RTL/LTR paragraphs.
+- ✅ Render code blocks with language-aware syntax highlighting.
+- ✅ Support both fenced code blocks and four-space indented code blocks.
+- ✅ Render tables, task lists, links, images, blockquotes, callouts, footnotes, and page breaks.
+- ✅ Render inline and display math formulas using vendored MathJax.
+- ✅ Generate a hierarchical Table of Contents based on Markdown heading levels.
+- ✅ Provide multiple visual themes for different document styles.
+- ✅ Keep the command-line interface simple and predictable through `mrs-md2pdf`.
 
-## نصب سریع
+## Features
+
+### Persian and Mixed-Direction Typography
+
+Mardas MD2PDF is designed for documents such as:
+
+```text
+این گزارش درباره xv6, system call, kernel, user space و PDF generation است.
+```
+
+The document body is RTL by default, while paragraphs, headings, lists, table cells, and captions use direction-aware processing. Code blocks, inline code, paths, commands, formulas, and technical identifiers are kept LTR for readability.
+
+### Hierarchical Table of Contents
+
+When `--toc` is enabled, the converter reads the Markdown heading structure:
+
+```markdown
+# Section 1
+## Section 1-1
+## Section 1-2
+### Section 1-2-1
+# Section 2
+```
+
+and generates a nested, numbered table of contents such as:
+
+```text
+1       Section 1
+1-1     Section 1-1
+1-2     Section 1-2
+1-2-1   Section 1-2-1
+2       Section 2
+```
+
+The maximum heading depth can be controlled with `--toc-depth`.
+
+### Code Block Rendering
+
+The converter supports:
+
+- fenced code blocks, such as ```` ```python ````;
+- indented code blocks written with four leading spaces;
+- automatic conservative language guessing for raw indented blocks;
+- monospace fonts for code;
+- Pygments-based syntax highlighting.
+
+Supported examples include C, Python, JavaScript, Bash, GDB traces, HTML, and plain text.
+
+### Math Rendering
+
+Math formulas can be written inline:
+
+```markdown
+Energy is $E = mc^2$.
+```
+
+or as display math:
+
+```markdown
+$$
+\int_{-\infty}^{\infty} e^{-x^2}\,dx = \sqrt{\pi}
+$$
+```
+
+MathJax is vendored inside the project, so formulas can be rendered without relying on a CDN.
+
+## Themes
+
+Mardas MD2PDF currently ships with two print-oriented themes.
+
+### 1. `modern`
+
+A polished, clean, flat theme for general technical documentation.
+
+```bash
+mrs-md2pdf input.md -o output.pdf --toc --theme modern
+```
+
+Recommended for:
+
+- software documentation;
+- proposals;
+- technical reports;
+- Markdown documents with tables and code blocks.
+
+### 2. `textbook`
+
+A simple academic theme inspired by Persian course notes and university handouts. It uses a flatter layout, light code blocks, simple callouts, and a minimal footer.
+
+```bash
+mrs-md2pdf input.md -o output.pdf --toc --theme textbook --no-cover
+```
+
+Recommended for:
+
+- university reports;
+- lecture notes;
+- educational PDFs;
+- long Persian documents similar to textbook-style outputs.
+
+## Getting Started
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/mragetsars/Mardas-MD2PDF.git
+cd Mardas-MD2PDF
+```
+
+### 2. Create a Virtual Environment
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
+```
+
+On Windows PowerShell:
+
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+```
+
+### 3. Install the Project
+
+```bash
 pip install -e .
+```
+
+For development tools:
+
+```bash
+pip install -e .[dev]
+```
+
+### 4. Install Chromium for Playwright
+
+```bash
 python -m playwright install chromium
 ```
 
-در سیستم‌هایی که Chromium نصب است، ابزار معمولاً همان Chromium سیستم را پیدا می‌کند. در غیر این صورت دستور بالا مرورگر مورد نیاز Playwright را نصب می‌کند.
+If Chromium or Google Chrome is already installed on your system, Mardas MD2PDF can usually detect it automatically. You can also pass a custom executable path with `--chromium-path`.
 
-## نصب فونت Vazirmatn
+## Basic Usage
 
-فایل فونت داخل پروژه بسته‌بندی نشده است. برای بهترین کیفیت فارسی، فونت Vazirmatn را روی سیستم نصب کنید یا فایل‌های آن را در یک پوشه قرار دهید و مسیر آن را با `--font-dir` بدهید.
+Convert a Markdown file into a PDF:
 
-نام فایل‌های پشتیبانی‌شده در `--font-dir`:
+```bash
+mrs-md2pdf input.md -o output.pdf
+```
+
+Generate a hierarchical table of contents:
+
+```bash
+mrs-md2pdf input.md -o output.pdf --toc
+```
+
+Use the textbook theme:
+
+```bash
+mrs-md2pdf input.md -o output.pdf --toc --theme textbook --no-cover
+```
+
+Export the intermediate HTML for debugging:
+
+```bash
+mrs-md2pdf input.md -o output.pdf --debug-html output.html
+```
+
+Use a local font directory:
+
+```bash
+mrs-md2pdf input.md -o output.pdf --font-dir ./fonts
+```
+
+## Command-Line Options
+
+| Option | Description | Default |
+|:--|:--|:--|
+| `input` | Input Markdown file. | Required |
+| `-o`, `--output` | Output PDF path. | Input filename with `.pdf` extension |
+| `--title` | Override the document title. | First `#` heading or front matter title |
+| `--author` | Override author metadata. | Front matter author |
+| `--description` | Override summary/description metadata. | Front matter description/summary |
+| `--toc` | Generate a hierarchical table of contents. | Disabled |
+| `--toc-depth 1..6` | Maximum heading level included in the TOC. | `6` |
+| `--theme modern\|textbook` | Select the visual PDF theme. | `modern` |
+| `--no-cover` | Disable the automatic cover section. | Cover enabled |
+| `--no-header-footer` | Disable PDF footer/page number template. | Footer enabled |
+| `--no-mathjax` | Disable MathJax processing. | MathJax enabled |
+| `--debug-html` | Write the intermediate HTML file. | Disabled |
+| `--page-size` | PDF page size such as `A4` or `Letter`. | `A4` |
+| `--margin-top` | Top page margin. | `18mm` |
+| `--margin-bottom` | Bottom page margin. | `20mm` |
+| `--margin-x` | Left and right page margins. | `16mm` |
+| `--font-dir` | Directory containing Vazirmatn font files. | System fonts |
+| `--chromium-path` | Custom Chromium/Chrome executable path. | Auto-detect |
+| `--timeout-ms` | Browser timeout in milliseconds. | `120000` |
+| `--version` | Print the installed version. | - |
+
+## Front Matter
+
+A Markdown file can start with YAML front matter:
+
+```yaml
+---
+title: "Operating Systems Lab Report"
+author: "Meraj Rastegar"
+date: "2026-05-12"
+summary: "A clean PDF report generated from Markdown."
+lang: fa
+---
+```
+
+These values are used for the PDF title, cover section, and metadata-like display fields.
+
+## Fonts
+
+For best Persian typography, install **Vazirmatn** on your system or provide the font files through `--font-dir`.
+
+Supported filenames inside `--font-dir`:
 
 ```text
 Vazirmatn-Regular.woff2
@@ -50,141 +264,104 @@ Vazirmatn-Bold.woff2
 Vazirmatn-Bold.ttf
 ```
 
-بدون این فونت هم خروجی ساخته می‌شود، اما کیفیت فارسی به فونت‌های نصب‌شده روی سیستم وابسته خواهد بود.
+Code blocks use a monospace font stack such as JetBrains Mono, Fira Code, Cascadia Code, Menlo, Consolas, and Liberation Mono.
 
-## استفاده
+## Page Breaks
 
-```bash
-md2pdf-pro examples/fa-en-math-code.md -o output.pdf --toc
-```
-
-با فونت محلی:
-
-```bash
-md2pdf-pro examples/fa-en-math-code.md \
-  -o output.pdf \
-  --toc \
-  --font-dir ./fonts
-```
-
-خروجی HTML برای بررسی:
-
-```bash
-md2pdf-pro examples/fa-en-math-code.md \
-  -o output.pdf \
-  --debug-html output.html
-```
-
-تنظیم حاشیه و سایز صفحه:
-
-```bash
-md2pdf-pro input.md -o output.pdf \
-  --page-size A4 \
-  --margin-top 20mm \
-  --margin-bottom 22mm \
-  --margin-x 18mm
-```
-
-
-### خروجی شبیه جزوه/نمونه دانشگاهی
-
-برای خروجی نزدیک‌تر به نمونه‌های آموزشی فارسی، از تم `textbook` استفاده کنید. این تم سایه‌ها را حذف می‌کند، code block روشن و تخت می‌سازد، callout آبیِ ساده دارد و فوتر را فقط به شماره صفحه محدود می‌کند:
-
-```bash
-md2pdf-pro input.md -o output.pdf --toc --theme textbook --no-cover
-```
-
-
-### رفع code blockهای indented
-
-از نسخه 0.3.0، code blockهایی که با چهار فاصله نوشته شده‌اند هم مثل fenced code blockها داخل قاب خوانا قرار می‌گیرند. ابزار برای این بلوک‌ها زبان را به صورت محافظه‌کارانه حدس می‌زند؛ برای مثال C، Bash، GDB، JavaScript یا Python. این تغییر مخصوص گزارش‌هایی است که در آن‌ها قطعه‌کدها بدون سه بک‌تیک نوشته شده‌اند.
-
-### حذف سایه‌ها
-
-از نسخه 0.2.0 سایه‌ی اطراف code block، جدول، blockquote، callout و تصویر حذف شده است تا در خروجی Chromium PDF لبه‌ها تمیز و بدون artifact چاپ شوند. تم `modern` همچنان ظاهر قبلی را نگه می‌دارد، اما به شکل flat و بدون shadow.
-
-## Front matter
-
-در ابتدای فایل Markdown می‌توانید metadata بنویسید:
-
-```yaml
----
-title: "عنوان سند"
-author: "نام نویسنده"
-date: "2026-05-12"
-summary: "خلاصه کوتاه سند"
-lang: fa
----
-```
-
-این اطلاعات در cover و عنوان PDF استفاده می‌شود.
-
-## فرمول ریاضی
-
-Inline:
-
-```markdown
-انرژی برابر است با $E = mc^2$.
-```
-
-Display:
-
-```markdown
-$$
-\int_{-\infty}^{\infty} e^{-x^2}\,dx = \sqrt{\pi}
-$$
-```
-
-MathJax به صورت vendored داخل پروژه قرار داده شده تا خروجی فرمول‌ها حتی بدون CDN ساخته شود.
-
-## Page break
-
-برای رفتن به صفحه بعد:
+Use the following marker to force a new page:
 
 ```markdown
 ---page---
 ```
 
-یا:
+or use raw HTML:
 
 ```html
 <div class="page-break"></div>
 ```
 
-## ساختار پروژه
+## Repository Structure
+
+The project is organized as follows:
 
 ```text
-md2pdf-pro/
-├── pyproject.toml
-├── README.md
-├── examples/
-│   └── fa-en-math-code.md
-├── scripts/
-│   └── install_playwright.sh
-├── src/md2pdf_pro/
-│   ├── __init__.py
-│   ├── cli.py
-│   ├── markdown.py
-│   ├── renderer.py
-│   └── assets/
-│       ├── theme.css
-│       └── mathjax/tex-svg-full.js
-└── tests/
-    └── test_markdown.py
+Mardas-MD2PDF/
+├── examples/                         # Example Markdown, HTML and PDF outputs
+│   ├── fa-en-math-code.md            # Persian/English sample document
+│   ├── fa-en-math-code.pdf           # Sample PDF with modern theme
+│   └── fa-en-math-code-textbook.pdf  # Sample PDF with textbook theme
+├── scripts/                          # Helper scripts
+│   └── install_playwright.sh         # Install Chromium for Playwright
+├── src/                              # Python package source code
+│   └── mardas_md2pdf/
+│       ├── __init__.py               # Package version
+│       ├── cli.py                    # Command-line interface
+│       ├── markdown.py               # Markdown parsing and HTML post-processing
+│       ├── renderer.py               # HTML-to-PDF rendering with Chromium
+│       └── assets/
+│           ├── theme.css             # Modern theme
+│           ├── theme-textbook.css    # Textbook theme
+│           └── mathjax/              # Vendored MathJax asset
+├── tests/                            # Unit tests
+│   └── test_markdown.py              # Markdown rendering tests
+├── pyproject.toml                    # Build system and dependencies
+├── LICENSE                           # Project license
+└── README.md                         # Project documentation
 ```
 
-## نکته‌های طراحی
+## Development & Testing
 
-- بدنه سند `rtl` است، اما هر بلوک متنی `dir="auto"` می‌گیرد تا ترکیب فارسی و انگلیسی درست خوانده شود.
-- `pre`, `code`, MathJax و عبارت‌های کدنویسی همیشه LTR هستند.
-- جدول‌ها داخل wrapper قرار می‌گیرند تا border-radius و صفحه‌بندی بهتری داشته باشند؛ سایه‌ها عمداً حذف شده‌اند.
-- در PDF از `print_background=True` استفاده می‌شود تا رنگ‌های جدول، code block و callout حفظ شوند.
-- اگر فرمول TeX خطا داشته باشد، تبدیل PDF متوقف نمی‌شود و سند همچنان ساخته می‌شود.
+Run the test suite:
 
-## توسعه آینده
+```bash
+pytest -q
+```
 
-- تم‌های بیشتر برای حالت مقاله، کتاب و گزارش
-- پشتیبانی اختیاری Mermaid
-- heading number خودکار
-- caption خودکار برای تصاویر
-- خروجی EPUB/HTML مستقل
+Generate a test PDF:
+
+```bash
+mrs-md2pdf examples/fa-en-math-code.md \
+  -o examples/fa-en-math-code.pdf \
+  --toc \
+  --theme modern
+```
+
+Generate a textbook-style PDF:
+
+```bash
+mrs-md2pdf examples/fa-en-math-code.md \
+  -o examples/fa-en-math-code-textbook.pdf \
+  --toc \
+  --theme textbook \
+  --no-cover
+```
+
+## Design Notes
+
+- The body of the document is RTL by default.
+- Textual blocks use `dir="auto"` to preserve mixed Persian/English readability.
+- Code, inline code, shell commands, file paths, stack traces, and math formulas are forced to LTR.
+- Tables are wrapped for stable borders, rounded corners, and clean page rendering.
+- Shadows are intentionally disabled to avoid Chromium PDF edge artifacts.
+- The Table of Contents is generated from actual Markdown heading levels, not from a flat heading list.
+- Invalid TeX should not stop the whole PDF generation process.
+
+## Future Improvements
+
+- Add more themes such as `article`, `book`, and `minimal`.
+- Add optional Mermaid diagram rendering.
+- Add optional automatic heading numbering inside the document body.
+- Add automatic figure and table captions.
+- Add export targets for standalone HTML and EPUB.
+- Add a visual regression test suite for generated PDFs.
+
+## Author
+
+This project is developed and maintained by:
+
+- **Meraj Rastegar** (`@mragetsars`)
+
+## Acknowledgments
+
+- Built with Python, Pygments, MathJax, and Playwright.
+- Designed for professional Persian/English technical documents.
