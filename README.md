@@ -11,9 +11,9 @@
 
 ## 📌 Overview
 
-**Mardas MD2PDF** is a professional Markdown-to-PDF converter designed for clean, readable, and visually polished technical documents.
+**Mardas MD2PDF** is a professional Markdown-to-PDF converter for clean, readable, and visually polished technical documents.
 
-The project is especially focused on documents that contain Persian text, English technical terms, mixed RTL/LTR sentences, tables, mathematical formulas, code blocks, images, links, notes, long academic reports, and software documentation.
+The project is especially focused on Persian documents that also contain English technical terms, mixed RTL/LTR sentences, tables, mathematical formulas, code blocks, images, links, notes, long academic reports, and software documentation.
 
 The rendering pipeline is intentionally simple and powerful:
 
@@ -34,9 +34,9 @@ This pipeline gives the project strong control over typography, print CSS, page 
 - Render tables, task lists, links, images, blockquotes, callouts, footnotes, and page breaks.
 - Render inline and display math formulas using vendored MathJax.
 - Generate a hierarchical Table of Contents based on Markdown heading levels.
-- Generate a real cover page that is not counted in document page numbering.
+- Generate a designed cover page that is not counted in document page numbering.
 - Support optional page-flow controls for TOC and top-level headings.
-- Support optional text or image watermarks on content pages.
+- Support optional text or image watermarks on content pages only.
 - Provide multiple visual themes for different document styles.
 - Keep the command-line interface simple through `mrs-md2pdf`.
 
@@ -110,7 +110,7 @@ MathJax is vendored inside the project, so formulas can be rendered without rely
 
 ### 🖼️ Professional Cover Page
 
-By default, Mardas MD2PDF generates a cover page using the bundled Mardas logo, document title, author, date, and summary/description.
+By default, Mardas MD2PDF generates a designed cover page using the bundled Mardas logo, project brand lockup, document title, author, date, and summary/description.
 
 The cover page is generated separately from the main document. Therefore:
 
@@ -161,11 +161,33 @@ mrs-md2pdf input.md -o output.pdf \
   --watermark-width 95mm
 ```
 
+### 📖 Page Flow Controls
+
+For reports, books, and course notes, you may want the TOC and top-level headings to behave like printed books.
+
+Start the main content on a new page after the table of contents:
+
+```bash
+mrs-md2pdf input.md -o output.pdf --toc --toc-page-break
+```
+
+Start every `#` heading on a new page:
+
+```bash
+mrs-md2pdf input.md -o output.pdf --h1-page-break
+```
+
+Both options can be used together:
+
+```bash
+mrs-md2pdf input.md -o output.pdf --toc --toc-page-break --h1-page-break
+```
+
 ---
 
 ## 🎨 Themes
 
-Mardas MD2PDF currently ships with two print-oriented themes.
+Mardas MD2PDF ships with multiple print-oriented themes.
 
 ### 1. `modern`
 
@@ -182,13 +204,15 @@ Recommended for:
 - technical reports;
 - Markdown documents with tables and code blocks.
 
-### 2. `textbook`
+### 2. `textbook` / `textbook-light`
 
-A simple academic theme inspired by Persian course notes and university handouts. It uses a flatter layout, light code blocks, simple callouts, and a minimal footer.
+A light academic theme inspired by Persian course notes and university handouts. It uses a flat layout, light code blocks, simple callouts, and a minimal footer.
 
 ```bash
-mrs-md2pdf input.md -o output.pdf --toc --theme textbook
+mrs-md2pdf input.md -o output.pdf --toc --theme textbook-light
 ```
+
+`textbook` is kept as a short alias for `textbook-light`.
 
 Recommended for:
 
@@ -196,6 +220,36 @@ Recommended for:
 - lecture notes;
 - educational PDFs;
 - long Persian documents similar to textbook-style outputs.
+
+### 3. `textbook-dark`
+
+A dark course-note theme for screen reading and low-light review. The background is dark, the text is light, and code blocks are rendered with a dark syntax theme.
+
+```bash
+mrs-md2pdf input.md -o output.pdf --toc --theme textbook-dark
+```
+
+Recommended for:
+
+- digital notes;
+- long screen-reading sessions;
+- draft PDFs shared for review;
+- technical material with many code blocks.
+
+### 4. `academic`
+
+A formal serif-inspired report theme with a more traditional academic feel.
+
+```bash
+mrs-md2pdf input.md -o output.pdf --toc --theme academic
+```
+
+Recommended for:
+
+- formal reports;
+- printable university documents;
+- thesis-like Markdown reports;
+- documents that need a calmer, less colorful visual style.
 
 ---
 
@@ -258,251 +312,195 @@ Generate a hierarchical table of contents:
 mrs-md2pdf input.md -o output.pdf --toc
 ```
 
-Use the textbook theme:
+Use a textbook-style report layout:
 
 ```bash
-mrs-md2pdf input.md -o output.pdf --toc --theme textbook
-```
-
-Start the main document after the TOC on a new page:
-
-```bash
-mrs-md2pdf input.md -o output.pdf --toc --toc-page-break
-```
-
-Start every `#` heading on a fresh page:
-
-```bash
-mrs-md2pdf input.md -o output.pdf --h1-page-break
-```
-
-A strong book/report-style command:
-
-```bash
-mrs-md2pdf input.md \
-  -o output.pdf \
+mrs-md2pdf input.md -o output.pdf \
   --toc \
   --toc-depth 6 \
   --toc-page-break \
   --h1-page-break \
-  --theme textbook
+  --theme textbook-light
 ```
 
-Export the intermediate HTML for debugging:
+Use the dark textbook theme:
+
+```bash
+mrs-md2pdf input.md -o output.pdf \
+  --toc \
+  --theme textbook-dark
+```
+
+Generate the intermediate HTML for debugging:
 
 ```bash
 mrs-md2pdf input.md -o output.pdf --debug-html output.html
 ```
 
-Use a local font directory:
+---
 
-```bash
-mrs-md2pdf input.md -o output.pdf --font-dir ./fonts
-```
+## 🧩 CLI Options
+
+| Option | Description |
+|:--|:--|
+| `input` | Input Markdown file. |
+| `-o`, `--output` | Output PDF path. If omitted, the input filename is used with `.pdf`. |
+| `--title` | Override document title. Otherwise front matter or first `#` heading is used. |
+| `--author` | Override author metadata. |
+| `--description` | Override summary/description metadata. |
+| `--toc` | Generate a hierarchical table of contents. |
+| `--toc-depth 1..6` | Maximum heading level included in TOC. Default: `6`. |
+| `--toc-page-break` | Put the main document content on a new page after the TOC. |
+| `--h1-page-break` | Start every top-level `#` heading on a new page. |
+| `--theme` | Choose `modern`, `textbook`, `textbook-light`, `textbook-dark`, or `academic`. |
+| `--page-size` | PDF page size such as `A4` or `Letter`. |
+| `--margin-top` | Top page margin. Default: `18mm`. |
+| `--margin-bottom` | Bottom page margin. Default: `20mm`. |
+| `--margin-x` | Left/right page margin. Default: `16mm`. |
+| `--font-dir` | Directory containing local Vazirmatn font files. |
+| `--chromium-path` | Path to Chromium/Chrome executable. |
+| `--debug-html` | Save intermediate HTML for inspection. |
+| `--no-cover` | Disable automatic cover page. |
+| `--cover-logo` | Use a custom logo on the cover. |
+| `--no-cover-logo` | Hide the logo while keeping the cover page. |
+| `--watermark` | Add a text watermark to content pages. |
+| `--watermark-image` | Add an image watermark to content pages. |
+| `--watermark-opacity` | Watermark opacity between `0` and `1`. Default: `0.065`. |
+| `--watermark-width` | CSS width for image watermarks. Default: `105mm`. |
+| `--no-header-footer` | Disable page number footer. |
+| `--no-mathjax` | Do not load MathJax. |
+| `--timeout-ms` | Browser rendering timeout in milliseconds. |
+| `--version` | Print the installed version. |
 
 ---
 
-## 🧩 Command-Line Options
+## 🗂️ Project Structure
 
-| Option | Description | Default |
-|:--|:--|:--|
-| `input` | Input Markdown file. | Required |
-| `-o`, `--output` | Output PDF path. | Input filename with `.pdf` extension |
-| `--title` | Override the document title. | First `#` heading or front matter title |
-| `--author` | Override author metadata. | Front matter author |
-| `--description` | Override summary/description metadata. | Front matter description/summary |
-| `--toc` | Generate a hierarchical table of contents. | Disabled |
-| `--toc-depth 1..6` | Maximum heading level included in the TOC. | `6` |
-| `--toc-page-break` | Force the document body to start on a new page after the TOC. | Disabled |
-| `--h1-page-break` | Force each top-level Markdown heading (`#`) to start on a new page. | Disabled |
-| `--theme modern\|textbook` | Select the visual PDF theme. | `modern` |
-| `--no-cover` | Disable the automatic cover page. | Cover enabled |
-| `--cover-logo PATH` | Use a custom logo image on the cover page. | Bundled Mardas logo |
-| `--no-cover-logo` | Hide the logo on the cover page. | Logo visible |
-| `--watermark TEXT` | Add a text watermark to content pages. | Disabled |
-| `--watermark-image PATH` | Add an image watermark to content pages. | Disabled |
-| `--watermark-opacity FLOAT` | Set watermark opacity from `0` to `1`. | `0.065` |
-| `--watermark-width SIZE` | Set image watermark width, for example `90mm` or `45%`. | `105mm` |
-| `--no-header-footer` | Disable PDF footer/page number template. | Footer enabled |
-| `--no-mathjax` | Disable MathJax processing. | MathJax enabled |
-| `--debug-html` | Write the intermediate HTML file. | Disabled |
-| `--page-size` | PDF page size such as `A4` or `Letter`. | `A4` |
-| `--margin-top` | Top page margin. | `18mm` |
-| `--margin-bottom` | Bottom page margin. | `20mm` |
-| `--margin-x` | Left and right page margins. | `16mm` |
-| `--font-dir` | Directory containing Vazirmatn font files. | System fonts |
-| `--chromium-path` | Custom Chromium/Chrome executable path. | Auto-detect |
-| `--timeout-ms` | Browser timeout in milliseconds. | `120000` |
-| `--version` | Print the installed version. | - |
+```text
+Mardas-MD2PDF/
+├── src/
+│   └── mardas_md2pdf/
+│       ├── assets/
+│       │   ├── Mardas.png
+│       │   ├── theme.css
+│       │   ├── theme-textbook.css
+│       │   ├── theme-textbook-dark.css
+│       │   ├── theme-academic.css
+│       │   └── mathjax/
+│       ├── cli.py
+│       ├── markdown.py
+│       ├── renderer.py
+│       └── __init__.py
+├── examples/
+│   └── fa-en-math-code.md
+├── tests/
+│   └── test_markdown.py
+├── scripts/
+│   └── install_playwright.sh
+├── pyproject.toml
+├── README.md
+└── LICENSE
+```
+
+### Important Files
+
+- `cli.py`: command-line interface and argument parsing.
+- `markdown.py`: Markdown parsing, TOC generation, direction handling, footnotes, math protection, code highlighting.
+- `renderer.py`: HTML assembly, cover rendering, watermarking, Chromium PDF rendering, PDF merging.
+- `assets/theme.css`: modern theme.
+- `assets/theme-textbook.css`: light textbook theme.
+- `assets/theme-textbook-dark.css`: dark textbook theme.
+- `assets/theme-academic.css`: formal academic theme.
+
+---
+
+## 🧪 Testing
+
+Run the test suite:
+
+```bash
+pytest
+```
+
+The current tests cover:
+
+- mixed Persian/English direction handling;
+- fenced code highlighting;
+- indented code block wrapping and language guessing;
+- tables and display math;
+- hierarchical TOC numbering and nesting.
 
 ---
 
 ## 🧾 Front Matter
 
-A Markdown file can start with YAML front matter:
+Mardas MD2PDF reads optional YAML front matter:
 
 ```yaml
 ---
-title: "Operating Systems Lab Report"
-author: "Meraj Rastegar"
+title: "گزارش کار پروژه دوم آزمایشگاه سیستم عامل"
+author: "تیم Mardas MD2PDF"
 date: "2026-05-12"
-summary: "A clean PDF report generated from Markdown."
+summary: "یک گزارش فنی درباره system call در xv6"
 lang: fa
 ---
 ```
 
-These values are used for the PDF title, cover page, and display fields.
+These fields are used for title detection, cover page metadata, document language, and HTML metadata.
 
 ---
 
-## 🔤 Fonts
+## 📄 Markdown Extensions
 
-For best Persian typography, install **Vazirmatn** on your system or provide the font files through `--font-dir`.
+Supported syntax includes:
 
-Supported filenames inside `--font-dir`:
+- headings `#` to `######`;
+- tables;
+- fenced code blocks;
+- indented code blocks;
+- task lists;
+- blockquotes;
+- callouts;
+- images;
+- inline code;
+- footnotes;
+- inline and display math;
+- manual page breaks.
 
-```text
-Vazirmatn-Regular.woff2
-Vazirmatn[wght].woff2
-Vazirmatn-Regular.ttf
-Vazirmatn.ttf
-Vazirmatn-Bold.woff2
-Vazirmatn-Bold.ttf
-```
-
-Code blocks use a monospace font stack such as JetBrains Mono, Fira Code, Cascadia Code, Menlo, Consolas, and Liberation Mono.
-
----
-
-## 📄 Page Breaks
-
-Use the following marker to force a new page:
-
-```markdown
----page---
-```
-
-or use raw HTML:
+Manual page break:
 
 ```html
-<div class="page-break"></div>
-```
-
-For automatic page flow:
-
-```bash
-# TOC ends, content starts on the next page
-mrs-md2pdf input.md -o output.pdf --toc --toc-page-break
-
-# Each main # heading starts on a new page
-mrs-md2pdf input.md -o output.pdf --h1-page-break
+<div class="md2pdf-page-break"></div>
 ```
 
 ---
 
-## 📁 Repository Structure
+## 🛠️ Development Notes
 
-```text
-Mardas-MD2PDF/
-├── examples/                         # Example Markdown, HTML and PDF outputs
-│   ├── fa-en-math-code.md            # Persian/English sample document
-│   ├── fa-en-math-code.pdf           # Sample PDF with modern theme
-│   └── fa-en-math-code-textbook.pdf  # Sample PDF with textbook theme
-├── scripts/                          # Helper scripts
-│   └── install_playwright.sh         # Install Chromium for Playwright
-├── src/                              # Python package source code
-│   └── mardas_md2pdf/
-│       ├── __init__.py               # Package version
-│       ├── cli.py                    # Command-line interface
-│       ├── markdown.py               # Markdown parsing and HTML post-processing
-│       ├── renderer.py               # HTML-to-PDF rendering with Chromium
-│       └── assets/
-│           ├── Mardas.png            # Bundled cover/watermark logo
-│           ├── theme.css             # Modern theme
-│           ├── theme-textbook.css    # Textbook theme
-│           └── mathjax/              # Vendored MathJax asset
-├── tests/                            # Unit tests
-│   └── test_markdown.py              # Markdown rendering tests
-├── pyproject.toml                    # Build system and dependencies
-├── LICENSE                           # Project license
-└── README.md                         # Project documentation
-```
+The project avoids direct low-level PDF drawing for document content. Instead, it uses browser-grade layout through Chromium. This makes typography, tables, RTL/LTR behavior, MathJax SVG output, and print CSS much easier to control.
 
----
-
-## 🧪 Development & Testing
-
-Run the test suite:
-
-```bash
-pytest -q
-```
-
-Generate a test PDF:
-
-```bash
-mrs-md2pdf examples/fa-en-math-code.md \
-  -o examples/fa-en-math-code.pdf \
-  --toc \
-  --theme modern
-```
-
-Generate a textbook-style PDF with book-like page flow:
-
-```bash
-mrs-md2pdf examples/fa-en-math-code.md \
-  -o examples/fa-en-math-code-textbook.pdf \
-  --toc \
-  --toc-page-break \
-  --h1-page-break \
-  --theme textbook
-```
-
-Generate a PDF with an image watermark:
-
-```bash
-mrs-md2pdf examples/fa-en-math-code.md \
-  -o examples/fa-en-math-code-watermark.pdf \
-  --toc \
-  --watermark-image src/mardas_md2pdf/assets/Mardas.png
-```
-
----
-
-## 🛠️ Design Notes
-
-- The body of the document is RTL by default.
-- Textual blocks use `dir="auto"` to preserve mixed Persian/English readability.
-- Code, inline code, shell commands, file paths, stack traces, and math formulas are forced to LTR.
-- Tables are wrapped for stable borders, rounded corners, and clean page rendering.
-- Shadows are intentionally disabled to avoid Chromium PDF edge artifacts.
-- The Table of Contents is generated from actual Markdown heading levels, not from a flat heading list.
-- The cover page is rendered separately, so it has no footer and does not affect content page numbering.
-- Watermarks are rendered only on content pages, never on the cover.
-- Invalid TeX should not stop the whole PDF generation process.
+The cover page is rendered as a separate PDF and then merged with the content PDF. This keeps cover numbering and watermark behavior clean.
 
 ---
 
 ## 🔮 Future Improvements
 
-- Add more themes such as `article`, `book`, and `minimal`.
-- Add optional Mermaid diagram rendering.
-- Add optional automatic heading numbering inside the document body.
-- Add automatic figure and table captions.
-- Add export targets for standalone HTML and EPUB.
-- Add a visual regression test suite for generated PDFs.
+- Add automatic PDF outline/bookmarks.
+- Add per-section page numbering styles.
+- Add more theme presets.
+- Add optional source-code line numbers.
+- Add a small GUI wrapper for non-CLI users.
+- Add automatic document quality checks after rendering.
 
 ---
 
 ## 👤 Author
 
-This project is developed and maintained by:
-
-- **Meraj Rastegar** (`@mragetsars`)
+**Mardas MD2PDF**  
+Designed for professional Persian/English Markdown publishing.
 
 ---
 
-## 🙏 Acknowledgments
+## 📜 License
 
-- Built with Python, Pygments, MathJax, Playwright, Chromium, and pypdf.
-- Designed for professional Persian/English technical documents.
+This project is licensed under the MIT License.

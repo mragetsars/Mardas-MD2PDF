@@ -97,15 +97,31 @@ def _mathjax_script() -> str:
     return ""
 
 
+THEME_FILES = {
+    "modern": "theme.css",
+    "textbook": "theme-textbook.css",
+    "textbook-light": "theme-textbook.css",
+    "textbook-dark": "theme-textbook-dark.css",
+    "academic": "theme-academic.css",
+}
+
+
+def normalize_theme_name(theme_name: str | None) -> str:
+    value = (theme_name or "modern").strip().lower()
+    return value if value in THEME_FILES else "modern"
+
+
 def _theme_css(theme_name: str) -> str:
-    theme_name = (theme_name or "modern").strip().lower()
-    if theme_name == "textbook":
-        return _asset_text("theme-textbook.css")
-    return _asset_text("theme.css")
+    return _asset_text(THEME_FILES[normalize_theme_name(theme_name)])
 
 
 def _code_style(theme_name: str) -> str:
-    return "friendly" if (theme_name or "").strip().lower() == "textbook" else "github-dark"
+    theme = normalize_theme_name(theme_name)
+    if theme == "textbook-dark":
+        return "monokai"
+    if theme in {"textbook", "textbook-light", "academic"}:
+        return "friendly"
+    return "github-dark"
 
 
 def _path_uri(path: Path | None) -> str | None:
@@ -176,29 +192,53 @@ def _layout_css(options: PdfOptions) -> str:
 
 
 def _cover_html(title: str, author: str, date: str, description: str, options: PdfOptions) -> str:
-    cover_meta = []
+    detail_cards: list[str] = []
     if author:
-        cover_meta.append(f"<span>{html.escape(str(author))}</span>")
+        detail_cards.append(
+            '<div class="md2pdf-cover__detail" dir="auto">'
+            '<span>Author</span>'
+            f'<strong>{html.escape(str(author))}</strong>'
+            '</div>'
+        )
     if date:
-        cover_meta.append(f"<span>{html.escape(str(date))}</span>")
+        detail_cards.append(
+            '<div class="md2pdf-cover__detail" dir="auto">'
+            '<span>Date</span>'
+            f'<strong>{html.escape(str(date))}</strong>'
+            '</div>'
+        )
     logo_uri = _cover_logo_uri(options)
     logo_html = (
         f'<img class="md2pdf-cover__logo" src="{html.escape(logo_uri)}" alt="Mardas logo">'
         if logo_uri
-        else ""
+        else '<span class="md2pdf-cover__logo md2pdf-cover__logo--fallback">M</span>'
     )
+    summary_html = (
+        '<p class="md2pdf-cover__summary" dir="auto">' + html.escape(str(description)) + '</p>'
+        if description
+        else ''
+    )
+    details_html = ''.join(detail_cards)
     return f"""
       <header class="md2pdf-cover" dir="auto">
-        <div class="md2pdf-cover__brand" dir="ltr">
-          {logo_html}
-          <span>Mardas MD2PDF</span>
-        </div>
-        <div class="md2pdf-cover__content">
-          <span class="md2pdf-cover__eyebrow">Markdown to PDF Engine</span>
+        <div class="md2pdf-cover__decor md2pdf-cover__decor--one" aria-hidden="true"></div>
+        <div class="md2pdf-cover__decor md2pdf-cover__decor--two" aria-hidden="true"></div>
+        <section class="md2pdf-cover__top">
+          <div class="md2pdf-cover__brand" dir="ltr">
+            <span class="md2pdf-cover__mark">{logo_html}</span>
+            <span class="md2pdf-cover__brand-copy">
+              <strong>Mardas MD2PDF</strong>
+              <em>Markdown to PDF Engine</em>
+            </span>
+          </div>
+          <span class="md2pdf-cover__release" dir="ltr">PDF Report</span>
+        </section>
+        <section class="md2pdf-cover__content">
+          <span class="md2pdf-cover__eyebrow">Generated Document</span>
           <h1 dir="auto">{html.escape(str(title))}</h1>
-          {'<div class="md2pdf-cover__meta" dir="auto">' + ''.join(cover_meta) + '</div>' if cover_meta else ''}
-          {'<p class="md2pdf-cover__summary" dir="auto">' + html.escape(str(description)) + '</p>' if description else ''}
-        </div>
+          {summary_html}
+        </section>
+        {'<section class="md2pdf-cover__details">' + details_html + '</section>' if details_html else '<div></div>'}
       </header>
     """
 
@@ -250,6 +290,8 @@ def build_html(
         content = f"{result.toc_html}{result.body_html}"
     watermark = _watermark_html(options) if include_content and include_watermark else ""
 
+    theme_name = normalize_theme_name(options.theme)
+
     return f"""<!doctype html>
 <html lang="{html.escape(str(lang))}" dir="rtl">
 <head>
@@ -263,7 +305,7 @@ def build_html(
   <style>{css_variables}</style>
   {_mathjax_block(options)}
 </head>
-<body class="{html.escape(body_classes)}">
+<body class="md2pdf-theme-{html.escape(theme_name)} {html.escape(body_classes)}">
   {watermark}
   <main class="md2pdf-document">
     <article class="md2pdf-article">
@@ -276,9 +318,22 @@ def build_html(
 
 
 def _footer_template(title: str, theme_name: str = "modern") -> str:
-    if (theme_name or "").strip().lower() == "textbook":
+    theme = normalize_theme_name(theme_name)
+    if theme in {"textbook", "textbook-light"}:
         return """
     <div style="width:100%; font-size:9px; color:#374151; padding:0 18mm; font-family:Arial, sans-serif; direction:ltr; text-align:right;">
+      <span class="pageNumber"></span>
+    </div>
+    """
+    if theme == "textbook-dark":
+        return """
+    <div style="width:100%; font-size:9px; color:#cbd5e1; padding:0 18mm; font-family:Arial, sans-serif; direction:ltr; text-align:right;">
+      <span class="pageNumber"></span>
+    </div>
+    """
+    if theme == "academic":
+        return """
+    <div style="width:100%; font-size:8.5px; color:#4b5563; padding:0 18mm; font-family:Georgia, 'Times New Roman', serif; direction:ltr; text-align:center;">
       <span class="pageNumber"></span>
     </div>
     """

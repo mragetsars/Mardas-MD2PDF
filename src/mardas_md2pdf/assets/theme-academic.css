@@ -694,3 +694,53 @@ body.md2pdf-toc-break.md2pdf-h1-break .md2pdf-toc + h1 {
   line-height: 1.55;
 }
 .md2pdf-cover::after { display: none; }
+
+
+/* v0.6 academic serif report theme overrides */
+:root {
+  --font-fa: "Vazirmatn", "Noto Naskh Arabic", "Noto Sans Arabic", "Segoe UI", Tahoma, sans-serif;
+  --font-en: "Times New Roman", "Noto Serif", Georgia, serif;
+  --ink: #171717;
+  --muted: #57534e;
+  --line: #d6d3d1;
+  --line-strong: #78716c;
+  --blue: #7c2d12;
+  --blue-soft: #fff7ed;
+  --blue-line: #c2410c;
+  --table-head: #fafaf9;
+  --radius: 3px;
+}
+body { line-height: 1.86; }
+h1 {
+  text-align: center;
+  border-bottom: 1.2px solid #78716c;
+  font-size: 19pt;
+}
+h2 { font-size: 15pt; color: #292524; }
+h3 { color: #44403c; }
+blockquote {
+  border: 1px solid #d6d3d1;
+  border-inline-start: 3px solid #7c2d12;
+  background: #fffaf5;
+}
+.callout {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+}
+.callout-title { border-bottom-color: #c2410c; }
+.md2pdf-toc a { font-family: var(--font-fa); }
+.md2pdf-toc .toc-number { color: #7c2d12; }
+.code-block { max-width: 96%; border-radius: 3px; }
+.code-block figcaption { color: #7c2d12; }
+.md2pdf-cover {
+  background:
+    linear-gradient(90deg, rgba(124, 45, 18, 0.06), transparent 30%),
+    linear-gradient(180deg, #fff 0%, #fafaf9 100%);
+}
+.md2pdf-cover__brand { border-radius: 3px; border-color: #d6d3d1; }
+.md2pdf-cover__mark { border-radius: 3px; background: #292524; }
+.md2pdf-cover__release { border-radius: 3px; background: #292524; }
+.md2pdf-cover__eyebrow { color: #7c2d12; }
+.md2pdf-cover__eyebrow::before { background: #7c2d12; }
+.md2pdf-cover h1 { text-align: right; font-size: 27pt; border: 0; }
+.md2pdf-cover__detail { border-radius: 3px; }

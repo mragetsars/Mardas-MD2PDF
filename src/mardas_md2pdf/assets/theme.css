@@ -521,3 +521,194 @@ body.md2pdf-toc-break.md2pdf-h1-break .md2pdf-toc + h1 {
   transform: rotate(-28deg);
   white-space: nowrap;
 }
+
+
+/* v0.6 balanced editorial cover */
+.md2pdf-cover {
+  min-height: calc(297mm - var(--page-margin-top, 18mm) - var(--page-margin-bottom, 20mm));
+  margin: 0;
+  padding: 0;
+  border: 0;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 12mm;
+  background:
+    radial-gradient(circle at 8% 10%, rgba(37, 99, 235, 0.11), transparent 28%),
+    radial-gradient(circle at 90% 85%, rgba(124, 58, 237, 0.10), transparent 30%),
+    linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+.md2pdf-cover__decor {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 999px;
+  opacity: 0.85;
+}
+.md2pdf-cover__decor--one {
+  width: 86mm;
+  height: 86mm;
+  inset-block-start: -46mm;
+  inset-inline-end: -31mm;
+  border: 1px solid rgba(37, 99, 235, 0.18);
+}
+.md2pdf-cover__decor--two {
+  width: 54mm;
+  height: 54mm;
+  inset-block-end: 20mm;
+  inset-inline-start: -29mm;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.10), rgba(124, 58, 237, 0.10));
+}
+.md2pdf-cover__top,
+.md2pdf-cover__content,
+.md2pdf-cover__details { position: relative; z-index: 2; }
+.md2pdf-cover__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8mm;
+}
+.md2pdf-cover__brand {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 2.6mm;
+  padding: 2.4mm 3.2mm;
+  border: 1px solid rgba(15, 23, 42, 0.10);
+  border-radius: 16px;
+  background: #ffffff;
+  color: #0f172a;
+  font-family: var(--font-en), var(--font-fa);
+  letter-spacing: 0;
+  text-transform: none;
+}
+.md2pdf-cover__mark {
+  width: 9.2mm;
+  height: 9.2mm;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #0f172a, #334155);
+}
+.md2pdf-cover__logo {
+  display: block;
+  width: 6.4mm !important;
+  height: 5.6mm !important;
+  object-fit: contain;
+  margin: 0;
+  border-radius: 0;
+  box-shadow: none;
+  filter: none;
+}
+.md2pdf-cover__logo--fallback {
+  color: #ffffff;
+  font: 900 8pt/1 var(--font-en);
+}
+.md2pdf-cover__brand-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9mm;
+  text-align: left;
+  line-height: 1;
+}
+.md2pdf-cover__brand-copy strong {
+  color: #0f172a;
+  font: 900 9pt/1.05 var(--font-en), var(--font-fa);
+  letter-spacing: 0.035em;
+  text-transform: uppercase;
+}
+.md2pdf-cover__brand-copy em {
+  color: #64748b;
+  font: 700 5.8pt/1 var(--font-code), var(--font-en);
+  font-style: normal;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+.md2pdf-cover__release {
+  display: inline-flex;
+  align-items: center;
+  min-height: 8mm;
+  padding: 1.8mm 3mm;
+  border-radius: 999px;
+  background: #0f172a;
+  color: #ffffff;
+  font: 800 6.8pt/1 var(--font-code), var(--font-en);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.md2pdf-cover__content {
+  max-width: 168mm;
+  margin: 0 auto;
+  padding: 7mm 0 9mm;
+  text-align: right;
+}
+.md2pdf-cover__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 2mm;
+  margin: 0 0 6mm;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #2563eb;
+  font: 850 8.5pt/1.4 var(--font-fa), var(--font-en);
+  letter-spacing: 0;
+  text-transform: none;
+}
+.md2pdf-cover__eyebrow::before {
+  content: "";
+  width: 13mm;
+  height: 1.2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #2563eb, #7c3aed);
+}
+.md2pdf-cover h1 {
+  max-width: 100%;
+  margin: 0;
+  padding: 0 0 7mm;
+  border: 0;
+  color: #0f172a;
+  font-size: 28pt;
+  line-height: 1.36;
+  letter-spacing: -0.035em;
+}
+.md2pdf-cover__summary {
+  max-width: 132mm;
+  margin: 5mm 0 0 auto;
+  padding-top: 5mm;
+  border-top: 1px solid #dbe3ef;
+  color: #475569;
+  font-size: 10.8pt;
+  line-height: 1.9;
+  text-align: right;
+}
+.md2pdf-cover__details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(52mm, 1fr));
+  gap: 4mm;
+  padding-block-end: 2mm;
+}
+.md2pdf-cover__detail {
+  padding: 4mm 4.5mm;
+  border: 1px solid #dbe3ef;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.86);
+}
+.md2pdf-cover__detail span {
+  display: block;
+  margin-bottom: 1.3mm;
+  color: #64748b;
+  font: 700 7pt/1 var(--font-code), var(--font-en);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+.md2pdf-cover__detail strong {
+  display: block;
+  color: #0f172a;
+  font-weight: 850;
+  font-size: 10.2pt;
+  line-height: 1.55;
+}
+.md2pdf-cover::after { display: none; }
