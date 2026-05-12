@@ -1,18 +1,18 @@
 [build-system]
-requires = ["hatchling>=1.24"]
-build-backend = "hatchling.build"
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "mardas-md2pdf"
-version = "0.7.1"
-description = "Beautiful Persian/English Markdown to PDF converter with RTL/LTR typography, hierarchical TOC, code highlighting, tables, and MathJax."
+version = "1.0.0"
+description = "Beautiful Persian/English Markdown to PDF converter with RTL/LTR typography, hierarchical TOC, code highlighting, tables, GUI workflow, and MathJax."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [
   { name = "Mardas MD2PDF" }
 ]
-keywords = ["markdown", "pdf", "rtl", "persian", "mathjax", "pygments", "playwright"]
+keywords = ["markdown", "pdf", "rtl", "persian", "mathjax", "pygments", "playwright", "gui"]
 dependencies = [
   "markdown-it-py>=3.0.0",
   "pygments>=2.17.0",
@@ -30,14 +30,19 @@ dev = [
 
 [project.scripts]
 mrs-md2pdf = "mardas_md2pdf.cli:main"
+mrs-md2pdf-gui = "mardas_md2pdf.gui:main"
 
-[tool.hatch.build.targets.wheel]
-packages = ["src/mardas_md2pdf"]
-include = [
-  "src/mardas_md2pdf/assets/**/*.css",
-  "src/mardas_md2pdf/assets/**/*.js",
-  "src/mardas_md2pdf/assets/**/*.png",
-  "src/mardas_md2pdf/assets/mathjax/*"
+[tool.setuptools]
+packages = ["mardas_md2pdf"]
+package-dir = {"mardas_md2pdf" = "src"}
+include-package-data = true
+
+[tool.setuptools.package-data]
+mardas_md2pdf = [
+  "assets/*.css",
+  "assets/*.png",
+  "assets/*.html",
+  "assets/mathjax/*"
 ]
 
 [tool.ruff]
@@ -45,4 +50,4 @@ line-length = 100
 src = ["src"]
 
 [tool.pytest.ini_options]
-pythonpath = ["src"]
+testpaths = ["tests"]

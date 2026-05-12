@@ -5,13 +5,14 @@
 ![Language](https://img.shields.io/badge/Language-Python-blue.svg)
 ![Renderer](https://img.shields.io/badge/Renderer-Playwright%20%2B%20Chromium-green.svg)
 ![Math](https://img.shields.io/badge/Math-MathJax-purple.svg)
-![Status](https://img.shields.io/badge/Status-Active-success.svg)
+![Version](https://img.shields.io/badge/Version-v1.0.0-success.svg)
+![Status](https://img.shields.io/badge/Status-Stable-success.svg)
 
 ---
 
 ## 📌 Overview
 
-**Mardas MD2PDF** is a professional Markdown-to-PDF converter for clean, readable, and visually polished technical documents.
+**Mardas MD2PDF** is a professional Markdown-to-PDF engine for clean, readable, and visually polished technical documents.
 
 The project is especially focused on Persian documents that also contain English technical terms, mixed RTL/LTR sentences, tables, mathematical formulas, code blocks, images, links, notes, long academic reports, and software documentation.
 
@@ -29,16 +30,15 @@ This pipeline gives the project strong control over typography, print CSS, page 
 
 - Convert Markdown files into polished PDF documents.
 - Preserve readability for Persian, English, and mixed RTL/LTR paragraphs.
-- Render code blocks with language-aware syntax highlighting.
-- Support both fenced code blocks and four-space indented code blocks.
-- Render tables, task lists, links, images, blockquotes, callouts, footnotes, and page breaks.
+- Render fenced and indented code blocks with syntax highlighting.
+- Support tables, task lists, links, images, blockquotes, callouts, footnotes, and page breaks.
 - Render inline and display math formulas using vendored MathJax.
-- Generate a hierarchical Table of Contents based on Markdown heading levels.
+- Generate a hierarchical Table of Contents from Markdown heading levels.
 - Generate a designed cover page that is not counted in document page numbering.
 - Support optional page-flow controls for TOC and top-level headings.
 - Support optional text or image watermarks on content pages only.
 - Provide multiple visual themes for different document styles.
-- Keep the command-line interface simple through `mrs-md2pdf`.
+- Provide both a command-line workflow and a local graphical editor/exporter.
 
 ---
 
@@ -110,13 +110,14 @@ MathJax is vendored inside the project, so formulas can be rendered without rely
 
 ### 🖼️ Professional Cover Page
 
-By default, Mardas MD2PDF generates a designed cover page using the bundled Mardas logo, project brand lockup, document title, author, date, and summary/description.
+By default, Mardas MD2PDF generates a designed cover page using the bundled Mardas logo, document title, author, date, and summary/description.
 
-The cover page is generated separately from the main document. The cover is full-bleed, uses a circular optical logo mark, and keeps brand, title, author, date, and summary in one balanced editorial layout. Therefore:
+The cover page is rendered separately from the main document. Therefore:
 
 - the cover has no footer;
 - the cover is not counted in page numbering;
-- watermarks are not applied to the cover.
+- watermarks are not applied to the cover;
+- the cover background reaches the full page edge.
 
 Disable the cover:
 
@@ -130,7 +131,7 @@ Use a custom cover logo:
 mrs-md2pdf input.md -o output.pdf --cover-logo ./assets/logo.png
 ```
 
-Hide only the logo while keeping the cover:
+Hide only the logo while keeping the cover layout:
 
 ```bash
 mrs-md2pdf input.md -o output.pdf --no-cover-logo
@@ -185,13 +186,41 @@ mrs-md2pdf input.md -o output.pdf --toc --toc-page-break --h1-page-break
 
 ---
 
+## 🖥️ Graphical Interface
+
+Mardas MD2PDF also includes a local browser-based GUI named **Mardas MD2PDF Studio**.
+
+Start it with:
+
+```bash
+mrs-md2pdf-gui
+```
+
+Then open the shown local URL in your browser. By default, the app opens automatically.
+
+The GUI lets users:
+
+- open and edit Markdown files;
+- preview Markdown while editing;
+- choose the PDF theme;
+- enable or disable TOC;
+- set TOC depth;
+- enable TOC page break and H1 page break;
+- set title, author, page size, output filename, and watermark text;
+- export the final PDF through the same Python rendering engine;
+- copy an equivalent CLI command.
+
+The GUI is intended for users who prefer visual configuration over command-line flags.
+
+---
+
 ## 🎨 Themes
 
 Mardas MD2PDF ships with multiple print-oriented themes.
 
 ### 1. `modern`
 
-A polished, clean, flat theme for general technical documentation.
+A polished, colorful, flat theme for general technical documentation. Its cover uses blue, cyan, violet, and pink gradients.
 
 ```bash
 mrs-md2pdf input.md -o output.pdf --toc --theme modern
@@ -206,7 +235,7 @@ Recommended for:
 
 ### 2. `textbook-light`
 
-A light academic theme inspired by Persian course notes and university handouts. It uses a flat layout, white paper, light code blocks, simple callouts, and a minimal footer.
+A light course-note theme inspired by Persian university handouts. It is intentionally simple, clean, and neutral. Its cover uses grayscale gradients.
 
 ```bash
 mrs-md2pdf input.md -o output.pdf --toc --theme textbook-light
@@ -221,7 +250,7 @@ Recommended for:
 
 ### 3. `textbook-dark`
 
-A dark course-note theme for screen reading and low-light review. It intentionally mirrors the simplicity of `textbook-light`: black paper, light text, gray borders, monochrome code blocks, and minimal color.
+A dark course-note theme for screen reading and low-light review. It mirrors the simplicity of `textbook-light`: black paper, light text, gray borders, monochrome code blocks, and minimal color.
 
 ```bash
 mrs-md2pdf input.md -o output.pdf --toc --theme textbook-dark
@@ -236,7 +265,7 @@ Recommended for:
 
 ### 4. `academic`
 
-A formal serif-inspired report theme with a more traditional academic feel.
+A formal report theme with a warmer academic visual style. Its cover uses brown, warm, maroon, and muted red gradients.
 
 ```bash
 mrs-md2pdf input.md -o output.pdf --toc --theme academic
@@ -329,6 +358,12 @@ mrs-md2pdf input.md -o output.pdf \
   --theme textbook-dark
 ```
 
+Launch the GUI:
+
+```bash
+mrs-md2pdf-gui
+```
+
 Generate the intermediate HTML for debugging:
 
 ```bash
@@ -377,18 +412,19 @@ mrs-md2pdf input.md -o output.pdf --debug-html output.html
 ```text
 Mardas-MD2PDF/
 ├── src/
-│   └── mardas_md2pdf/
-│       ├── assets/
-│       │   ├── Mardas.png
-│       │   ├── theme.css
-│       │   ├── theme-textbook-light.css
-│       │   ├── theme-textbook-dark.css
-│       │   ├── theme-academic.css
-│       │   └── mathjax/
-│       ├── cli.py
-│       ├── markdown.py
-│       ├── renderer.py
-│       └── __init__.py
+│   ├── assets/
+│   │   ├── Mardas.png
+│   │   ├── gui.html
+│   │   ├── theme-modern.css
+│   │   ├── theme-textbook-light.css
+│   │   ├── theme-textbook-dark.css
+│   │   ├── theme-academic.css
+│   │   └── mathjax/
+│   ├── __init__.py
+│   ├── cli.py
+│   ├── gui.py
+│   ├── markdown.py
+│   └── renderer.py
 ├── examples/
 │   └── fa-en-math-code.md
 ├── tests/
@@ -402,17 +438,25 @@ Mardas-MD2PDF/
 
 ### Important Files
 
-- `cli.py`: command-line interface and argument parsing.
-- `markdown.py`: Markdown parsing, TOC generation, direction handling, footnotes, math protection, code highlighting.
-- `renderer.py`: HTML assembly, cover rendering, watermarking, Chromium PDF rendering, PDF merging.
-- `assets/theme.css`: modern theme.
-- `assets/theme-textbook-light.css`: light textbook theme.
-- `assets/theme-textbook-dark.css`: dark textbook theme.
-- `assets/theme-academic.css`: formal academic theme.
+- `src/cli.py`: command-line interface and argument parsing.
+- `src/gui.py`: local HTTP server for the graphical Markdown editor and PDF exporter.
+- `src/markdown.py`: Markdown parsing, TOC generation, direction handling, footnotes, math protection, and code highlighting.
+- `src/renderer.py`: HTML assembly, cover rendering, watermarking, Chromium PDF rendering, and PDF merging.
+- `src/assets/gui.html`: browser UI for editing Markdown and configuring exports.
+- `src/assets/theme-modern.css`: modern theme.
+- `src/assets/theme-textbook-light.css`: light textbook theme.
+- `src/assets/theme-textbook-dark.css`: dark textbook theme.
+- `src/assets/theme-academic.css`: formal academic theme.
 
 ---
 
 ## 🧪 Testing
+
+Install the project first:
+
+```bash
+pip install -e .[dev]
+```
 
 Run the test suite:
 
@@ -426,7 +470,10 @@ The current tests cover:
 - fenced code highlighting;
 - indented code block wrapping and language guessing;
 - tables and display math;
-- hierarchical TOC numbering and nesting.
+- hierarchical TOC numbering and nesting;
+- explicit public theme choices;
+- hidden unbranded-cover option behavior;
+- GUI entrypoint availability.
 
 ---
 
@@ -479,6 +526,8 @@ The project avoids direct low-level PDF drawing for document content. Instead, i
 
 The cover page is rendered as a separate full-bleed PDF and then merged with the content PDF. This keeps cover numbering and watermark behavior clean while allowing the cover background to reach the paper edges.
 
+The source package intentionally uses a flattened `src/` layout: the package name is still `mardas_md2pdf`, but source files live directly in `src/` to keep the repository tree compact.
+
 ---
 
 ## 🔮 Future Improvements
@@ -486,9 +535,8 @@ The cover page is rendered as a separate full-bleed PDF and then merged with the
 - Add automatic PDF outline/bookmarks.
 - Add per-section page numbering styles.
 - Add automatic theme previews in the README.
-- Add more theme presets.
 - Add optional source-code line numbers.
-- Add a small GUI wrapper for non-CLI users.
+- Add GUI support for custom cover logos and image watermarks.
 - Add automatic document quality checks after rendering.
 
 ---

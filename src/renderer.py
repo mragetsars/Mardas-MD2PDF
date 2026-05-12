@@ -41,6 +41,7 @@ class PdfOptions:
     cover: bool = True
     cover_logo: Path | None = None
     cover_logo_enabled: bool = True
+    cover_brand_enabled: bool = True
     watermark_text: str | None = None
     watermark_image: Path | None = None
     watermark_opacity: float = 0.065
@@ -98,7 +99,7 @@ def _mathjax_script() -> str:
 
 
 THEME_FILES = {
-    "modern": "theme.css",
+    "modern": "theme-modern.css",
     "textbook-light": "theme-textbook-light.css",
     "textbook-dark": "theme-textbook-dark.css",
     "academic": "theme-academic.css",
@@ -220,11 +221,11 @@ def _cover_html(title: str, author: str, date: str, description: str, options: P
         else ''
     )
     details_html = ''.join(detail_cards)
-    return f"""
-      <header class="md2pdf-cover" dir="auto">
-        <div class="md2pdf-cover__decor md2pdf-cover__decor--one" aria-hidden="true"></div>
-        <div class="md2pdf-cover__decor md2pdf-cover__decor--two" aria-hidden="true"></div>
-        <section class="md2pdf-cover__top">
+    brand_html = ""
+    release_html = ""
+    cover_classes = "md2pdf-cover"
+    if options.cover_brand_enabled:
+        brand_html = f"""
           <div class="md2pdf-cover__brand" dir="ltr">
             <span class="md2pdf-cover__mark">{logo_html}</span>
             <span class="md2pdf-cover__brand-copy">
@@ -232,7 +233,18 @@ def _cover_html(title: str, author: str, date: str, description: str, options: P
               <em>Markdown to PDF Engine</em>
             </span>
           </div>
-          <span class="md2pdf-cover__release" dir="ltr">PDF Report</span>
+        """
+        release_html = '<span class="md2pdf-cover__release" dir="ltr">PDF Report</span>'
+    else:
+        cover_classes += " md2pdf-cover--unbranded"
+
+    return f"""
+      <header class="{cover_classes}" dir="auto">
+        <div class="md2pdf-cover__decor md2pdf-cover__decor--one" aria-hidden="true"></div>
+        <div class="md2pdf-cover__decor md2pdf-cover__decor--two" aria-hidden="true"></div>
+        <section class="md2pdf-cover__top">
+          {brand_html}
+          {release_html}
         </section>
         <section class="md2pdf-cover__content">
           <span class="md2pdf-cover__eyebrow">Generated Document</span>

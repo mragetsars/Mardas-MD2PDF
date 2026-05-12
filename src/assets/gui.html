@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mardas MD2PDF Studio</title>
+  <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet"/>
+  <link id="highlight-theme" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css"/>
+  <style>
+    :root{
+      --bg:#0b1020; --panel:#111827; --panel2:#0f172a; --text:#e5e7eb; --muted:#9ca3af;
+      --border:#243044; --accent:#22d3ee; --accent2:#a78bfa; --editor:#050816;
+      --preview:#0b1020; --hover:rgba(255,255,255,.07); --radius:16px;
+      --font:'Inter','Vazirmatn',sans-serif; --code:'JetBrains Mono','Consolas','Monaco',monospace;
+    }
+    body.light-mode{--bg:#f7f7f7;--panel:#ffffff;--panel2:#f3f4f6;--text:#111827;--muted:#6b7280;--border:#d1d5db;--accent:#2563eb;--accent2:#7c3aed;--editor:#ffffff;--preview:#ffffff;--hover:rgba(17,24,39,.06)}
+    *{box-sizing:border-box} body{margin:0;height:100vh;background:radial-gradient(circle at 0 0, rgba(34,211,238,.16), transparent 28%),radial-gradient(circle at 100% 100%, rgba(167,139,250,.13), transparent 30%),var(--bg);color:var(--text);font-family:var(--font);overflow:hidden;}
+    .app{display:grid;grid-template-rows:58px 1fr 30px;height:100vh}.top{display:flex;align-items:center;justify-content:space-between;padding:0 18px;border-bottom:1px solid var(--border);background:rgba(5,8,22,.72);backdrop-filter:blur(16px);direction:ltr}.brand{display:flex;align-items:center;gap:10px;font-weight:900;letter-spacing:.03em}.brand-badge{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#020617;font-weight:900}.brand small{display:block;color:var(--muted);font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}.controls{display:flex;align-items:center;gap:8px}.btn,select,input[type=text],input[type=number]{height:34px;border:1px solid var(--border);background:var(--panel);color:var(--text);border-radius:10px;padding:0 11px;font:700 12px/1 var(--font);outline:none}.btn{cursor:pointer;display:inline-flex;align-items:center;gap:6px}.btn:hover{background:var(--hover);border-color:var(--accent)}.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#020617;border:0}.main{display:grid;grid-template-columns:minmax(260px,310px) 1fr 1fr;min-height:0}.sidebar{border-right:1px solid var(--border);background:rgba(15,23,42,.72);padding:14px;overflow:auto}.section{border:1px solid var(--border);background:rgba(255,255,255,.03);border-radius:var(--radius);padding:12px;margin-bottom:12px}.section h3{margin:0 0 10px;font-size:13px}.field{display:grid;gap:6px;margin-bottom:10px}.field label{font-size:11px;color:var(--muted);font-weight:800}.field input,.field select{width:100%;background:var(--panel2)}.check{display:flex;align-items:center;gap:8px;margin:8px 0;color:var(--text);font-size:12px;font-weight:700}.editor-wrap,.preview-wrap{min-width:0;min-height:0;display:flex;flex-direction:column}.pane-title{height:38px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.03);color:var(--muted);font-size:12px;font-weight:800;direction:ltr}.editor-wrap{border-right:1px solid var(--border)}textarea{flex:1;min-height:0;border:0;outline:none;background:var(--editor);color:var(--text);padding:18px;font:14px/1.72 var(--code);resize:none}.preview{flex:1;min-height:0;overflow:auto;background:var(--preview);padding:30px;line-height:1.82}.preview h1,.preview h2,.preview h3{border-bottom:1px solid var(--border);padding-bottom:.35em}.preview pre{background:#0f172a;padding:16px;border-radius:12px;overflow:auto;border:1px solid var(--border);direction:ltr;text-align:left}.preview code{font-family:var(--code)}.preview :not(pre)>code{background:var(--hover);border:1px solid var(--border);border-radius:6px;padding:.15em .35em}.preview table{width:100%;border-collapse:collapse}.preview th,.preview td{border:1px solid var(--border);padding:10px}.preview blockquote{border-left:4px solid var(--accent);margin:1em 0;padding:10px 16px;background:var(--hover);border-radius:8px}.footer{border-top:1px solid var(--border);height:30px;display:flex;align-items:center;justify-content:flex-end;padding:0 18px;color:var(--muted);font-size:11px;gap:16px;direction:ltr}.status{white-space:nowrap}.spinner{display:none}.busy .spinner{display:inline}.busy .btn-primary{opacity:.75;pointer-events:none}@media(max-width:1080px){.main{grid-template-columns:270px 1fr}.preview-wrap{display:none}} 
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand"><span class="brand-badge">M</span><span>Mardas MD2PDF Studio<small>Markdown to PDF Engine · v__MARDAS_VERSION__</small></span></div>
+    <div class="controls">
+      <button class="btn" onclick="openFile()">📂 Open</button><input type="file" id="fileInput" accept=".md,.markdown,.txt" hidden>
+      <button class="btn" onclick="downloadMarkdown()">💾 MD</button>
+      <button class="btn" onclick="copyCommand()">⌘ Command</button>
+      <button class="btn" onclick="toggleTheme()" id="themeBtn">☀️ Light</button>
+      <button class="btn btn-primary" onclick="renderPDF()"><span class="spinner">⏳</span>📄 Export PDF</button>
+    </div>
+  </header>
+  <main class="main">
+    <aside class="sidebar">
+      <div class="section"><h3>📌 Document</h3>
+        <div class="field"><label>Title</label><input id="title" type="text" placeholder="Document title"></div>
+        <div class="field"><label>Author</label><input id="author" type="text" placeholder="Author"></div>
+        <div class="field"><label>Output filename</label><input id="filename" type="text" value="mardas-document.pdf"></div>
+        <div class="field"><label>Page size</label><select id="pageSize"><option>A4</option><option>Letter</option></select></div>
+      </div>
+      <div class="section"><h3>🎨 Theme</h3>
+        <div class="field"><label>Theme</label><select id="pdfTheme"><option value="modern">modern</option><option value="textbook-light" selected>textbook-light</option><option value="textbook-dark">textbook-dark</option><option value="academic">academic</option></select></div>
+        <label class="check"><input id="noCover" type="checkbox"> No cover page</label>
+        <label class="check"><input id="noHeaderFooter" type="checkbox"> Hide footer/page number</label>
+      </div>
+      <div class="section"><h3>🧭 Structure</h3>
+        <label class="check"><input id="toc" type="checkbox" checked> Generate TOC</label>
+        <div class="field"><label>TOC depth</label><input id="tocDepth" type="number" min="1" max="6" value="6"></div>
+        <label class="check"><input id="tocPageBreak" type="checkbox" checked> Start content after TOC on new page</label>
+        <label class="check"><input id="h1PageBreak" type="checkbox" checked> Start each H1 on new page</label>
+      </div>
+      <div class="section"><h3>💧 Watermark</h3>
+        <div class="field"><label>Watermark text</label><input id="watermark" type="text" placeholder="Optional"></div>
+        <div class="field"><label>Opacity</label><input id="watermarkOpacity" type="number" min="0" max="1" step="0.01" value="0.065"></div>
+      </div>
+    </aside>
+    <section class="editor-wrap"><div class="pane-title"><span>Markdown Editor</span><span id="savedState">Live preview</span></div><textarea id="editor" dir="auto"></textarea></section>
+    <section class="preview-wrap"><div class="pane-title"><span>Preview</span><button class="btn" onclick="toggleDirection()" id="dirBtn">↔️ RTL</button></div><div id="preview" class="preview" dir="auto"></div></section>
+  </main>
+  <footer class="footer"><span id="statusWords">Words: 0</span><span id="statusChars">Chars: 0</span><span class="status" id="serverStatus">Ready</span></footer>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.2/dist/purify.min.js"></script>
+<script>
+const editor=document.getElementById('editor'), preview=document.getElementById('preview'), statusWords=document.getElementById('statusWords'), statusChars=document.getElementById('statusChars'), serverStatus=document.getElementById('serverStatus');
+let timer=null;
+marked.setOptions({breaks:true,gfm:true,highlight:(code,lang)=>{const language=hljs.getLanguage(lang)?lang:'plaintext';return hljs.highlight(code,{language}).value;}});
+function getOptions(){return{title:title.value,author:author.value,filename:filename.value,pageSize:pageSize.value,theme:pdfTheme.value,noCover:noCover.checked,noHeaderFooter:noHeaderFooter.checked,toc:toc.checked,tocDepth:Number(tocDepth.value||6),tocPageBreak:tocPageBreak.checked,h1PageBreak:h1PageBreak.checked,watermark:watermark.value,watermarkOpacity:Number(watermarkOpacity.value||0.065)}}
+function renderPreview(){const text=editor.value;statusWords.textContent='Words: '+(text.trim()?text.trim().split(/\s+/).length:0);statusChars.textContent='Chars: '+text.length;preview.innerHTML=DOMPurify.sanitize(marked.parse(text));document.querySelectorAll('pre code').forEach(el=>hljs.highlightElement(el));}
+editor.addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(renderPreview,160)});
+function openFile(){fileInput.click()} fileInput.addEventListener('change',e=>{const f=e.target.files[0]; if(!f)return; const r=new FileReader(); r.onload=ev=>{editor.value=ev.target.result; filename.value=f.name.replace(/\.(md|markdown|txt)$/i,'.pdf'); renderPreview()}; r.readAsText(f)});
+function downloadMarkdown(){const blob=new Blob([editor.value],{type:'text/markdown'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(filename.value||'document.pdf').replace(/\.pdf$/i,'.md');a.click();URL.revokeObjectURL(a.href)}
+async function renderPDF(){document.body.classList.add('busy');serverStatus.textContent='Rendering PDF...';try{const res=await fetch('/api/render',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({markdown:editor.value,options:getOptions()})});if(!res.ok){const err=await res.json().catch(()=>({error:'Render failed'}));throw new Error(err.error||'Render failed')}const blob=await res.blob();const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename.value||'mardas-document.pdf';a.click();URL.revokeObjectURL(a.href);serverStatus.textContent='PDF downloaded'}catch(e){serverStatus.textContent='Error: '+e.message;alert(e.message)}finally{document.body.classList.remove('busy')}}
+function copyCommand(){const o=getOptions();let cmd=['mrs-md2pdf input.md','-o '+(o.filename||'output.pdf'),'--theme '+o.theme];if(o.toc)cmd.push('--toc','--toc-depth '+o.tocDepth);if(o.tocPageBreak)cmd.push('--toc-page-break');if(o.h1PageBreak)cmd.push('--h1-page-break');if(o.noCover)cmd.push('--no-cover');if(o.noHeaderFooter)cmd.push('--no-header-footer');if(o.watermark)cmd.push('--watermark "'+o.watermark.replace(/"/g,'\\"')+'"');navigator.clipboard.writeText(cmd.join(' '));serverStatus.textContent='CLI command copied'}
+function toggleTheme(){document.body.classList.toggle('light-mode');themeBtn.textContent=document.body.classList.contains('light-mode')?'🌙 Dark':'☀️ Light'}
+function toggleDirection(){const d=preview.getAttribute('dir')==='rtl'?'ltr':'rtl';preview.setAttribute('dir',d);editor.setAttribute('dir',d);dirBtn.textContent=d==='rtl'?'↔️ LTR':'↔️ RTL'}
+editor.value=`---\ntitle: "نمونه سند Mardas MD2PDF"\nauthor: "Mardas"\ndate: "2026-05-12"\nlang: fa\n---\n\n# نمونه Markdown\n\nاین محیط برای ویرایش Markdown و گرفتن خروجی PDF با تنظیمات گرافیکی ساخته شده است.\n\n## Code\n\n\`\`\`python\nprint("Hello Mardas")\n\`\`\`\n\n| قابلیت | وضعیت |\n|---|---|\n| RTL/LTR | ✅ |\n| PDF Export | ✅ |\n`;
+renderPreview();
+</script>
+</body>
+</html>
