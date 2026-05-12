@@ -25,6 +25,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--margin-x", default="16mm", help="Left/right CSS page margin")
     parser.add_argument("--font-dir", type=Path, help="Directory containing Vazirmatn font files")
     parser.add_argument("--chromium-path", help="Path to Chromium/Chrome executable")
+    parser.add_argument("--theme", choices=["modern", "textbook"], default="modern", help="Visual theme. modern is the polished flat theme; textbook is closer to academic Persian course notes.")
+    parser.add_argument("--no-cover", action="store_true", help="Do not generate the automatic cover page")
     parser.add_argument("--no-header-footer", action="store_true", help="Disable page number footer")
     parser.add_argument("--no-mathjax", action="store_true", help="Do not load MathJax")
     parser.add_argument("--timeout-ms", type=int, default=120_000, help="Browser timeout in milliseconds")
@@ -56,6 +58,8 @@ def main(argv: list[str] | None = None) -> int:
         no_header_footer=args.no_header_footer,
         no_mathjax=args.no_mathjax,
         timeout_ms=args.timeout_ms,
+        theme=args.theme,
+        cover=not args.no_cover,
     )
     pdf_path = convert(options)
     print(f"PDF created: {pdf_path}")

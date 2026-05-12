@@ -26,7 +26,7 @@
   --code-bg: #0f172a;
   --code-ink: #e2e8f0;
   --radius: 14px;
-  --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  --shadow: none;
   --text-size: 10.9pt;
 }
 
@@ -186,7 +186,7 @@ blockquote {
   background: var(--quote);
   color: #1e3a5f;
   page-break-inside: avoid;
-  box-shadow: 0 4px 18px rgba(37, 99, 235, 0.06);
+  box-shadow: none;
 }
 blockquote > :last-child { margin-bottom: 0; }
 .callout {
@@ -206,7 +206,7 @@ blockquote > :last-child { margin-bottom: 0; }
   border: 1px solid var(--line);
   border-radius: var(--radius);
   overflow: hidden;
-  box-shadow: var(--shadow);
+  box-shadow: none;
   page-break-inside: auto;
 }
 table {
@@ -241,7 +241,7 @@ img {
   display: block;
   margin: 1.1em auto;
   border-radius: 12px;
-  box-shadow: 0 9px 26px rgba(15, 23, 42, 0.12);
+  box-shadow: none;
 }
 figure { margin: 1.25em 0; page-break-inside: avoid; }
 figcaption {
@@ -271,7 +271,7 @@ figcaption {
   border-radius: var(--radius);
   background: var(--code-bg);
   color: var(--code-ink);
-  box-shadow: var(--shadow);
+  box-shadow: none;
   overflow: hidden;
   page-break-inside: avoid;
 }

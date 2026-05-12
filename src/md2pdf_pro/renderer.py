@@ -30,6 +30,8 @@ class PdfOptions:
     no_header_footer: bool = False
     no_mathjax: bool = False
     timeout_ms: int = 120_000
+    theme: str = "modern"
+    cover: bool = True
 
 
 def _asset_text(relative_path: str) -> str:
@@ -83,8 +85,19 @@ def _mathjax_script() -> str:
     return ""
 
 
+def _theme_css(theme_name: str) -> str:
+    theme_name = (theme_name or "modern").strip().lower()
+    if theme_name == "textbook":
+        return _asset_text("theme-textbook.css")
+    return _asset_text("theme.css")
+
+
+def _code_style(theme_name: str) -> str:
+    return "friendly" if (theme_name or "").strip().lower() == "textbook" else "github-dark"
+
+
 def build_html(result: MarkdownRenderResult, options: PdfOptions) -> str:
-    theme = _asset_text("theme.css")
+    theme = _theme_css(options.theme)
     font_faces = _font_faces(options.font_dir)
     title = options.title or result.title
     author = options.author or result.metadata.get("author") or ""
@@ -106,7 +119,9 @@ def build_html(result: MarkdownRenderResult, options: PdfOptions) -> str:
         cover_meta.append(f"<span>{html.escape(str(author))}</span>")
     if date:
         cover_meta.append(f"<span>{html.escape(str(date))}</span>")
-    cover = f"""
+    cover = ""
+    if options.cover:
+        cover = f"""
       <header class="md2pdf-cover" dir="auto">
         <span class="md2pdf-cover__eyebrow">MD2PDF Pro</span>
         <h1 dir="auto">{html.escape(str(title))}</h1>
@@ -145,9 +160,9 @@ def build_html(result: MarkdownRenderResult, options: PdfOptions) -> str:
   <base href="{base_href}">
   <title>{html.escape(str(title))}</title>
   <style>{font_faces}</style>
+  <style>{result.pygments_css}</style>
   <style>{theme}</style>
   <style>{css_variables}</style>
-  <style>{result.pygments_css}</style>
   {mathjax_block}
 </head>
 <body>
@@ -162,7 +177,13 @@ def build_html(result: MarkdownRenderResult, options: PdfOptions) -> str:
 </html>"""
 
 
-def _footer_template(title: str) -> str:
+def _footer_template(title: str, theme_name: str = "modern") -> str:
+    if (theme_name or "").strip().lower() == "textbook":
+        return """
+    <div style="width:100%; font-size:9px; color:#374151; padding:0 18mm; font-family:Arial, sans-serif; direction:ltr; text-align:right;">
+      <span class="pageNumber"></span>
+    </div>
+    """
     safe_title = html.escape(title)
     return f"""
     <div style="width:100%; font-size:8px; color:#64748b; padding:0 16mm; font-family:Arial, sans-serif;">
@@ -177,7 +198,9 @@ def _footer_template(title: str) -> str:
 def convert(options: PdfOptions) -> Path:
     options.input_path = Path(options.input_path)
     options.output_path = Path(options.output_path)
-    result = render_markdown_file(options.input_path, toc=options.toc)
+    result = render_markdown_file(
+        options.input_path, toc=options.toc, code_style=_code_style(options.theme)
+    )
     html_text = build_html(result, options)
 
     options.output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -232,7 +255,7 @@ def convert(options: PdfOptions) -> Path:
                 {
                     "display_header_footer": True,
                     "header_template": "<div></div>",
-                    "footer_template": _footer_template(str(title)),
+                    "footer_template": _footer_template(str(title), options.theme),
                 }
             )
         page.pdf(**pdf_kwargs)
