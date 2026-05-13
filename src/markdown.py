@@ -498,12 +498,27 @@ def render_markdown(
             "html": True,
             "linkify": False,
             "typographer": True,
-            "highlight": lambda code, lang, attrs=None: highlight_code(
-                code, lang, attrs, code_style=code_style
-            ),
         },
     )
     md.enable(["table", "strikethrough"])
+
+    def render_fence(tokens: list[Any], idx: int, options: dict[str, Any], env: dict[str, Any]) -> str:
+        """Render fenced code blocks as complete figures, not nested inside <pre><code>.
+
+        markdown-it wraps custom highlighter output unless it starts with <pre>. Our
+        highlighter returns a semantic <figure> with a separate language caption, so
+        using a renderer rule prevents invalid <pre><code><figure> nesting. That
+        nesting used to be normalized later as raw text and could turn ```c into
+        a literal leading "C" inside the code content.
+        """
+        token = tokens[idx]
+        info = (token.info or "").strip()
+        parts = info.split(maxsplit=1)
+        lang = parts[0] if parts else ""
+        attrs = parts[1] if len(parts) > 1 else None
+        return highlight_code(token.content, lang, attrs, code_style=code_style) + "\n"
+
+    md.renderer.rules["fence"] = render_fence
 
     body_html = md.render(markdown_body)
     body_html = append_footnotes(body_html, footnotes, md)
