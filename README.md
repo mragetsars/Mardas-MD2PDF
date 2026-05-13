@@ -2,13 +2,7 @@
 
 > Markdown to PDF Converter - Persian/English Typography - RTL/LTR Documents - Professional PDF Publishing
 
-![Language](https://img.shields.io/badge/Language-Python-blue.svg)
-![Renderer](https://img.shields.io/badge/Renderer-Playwright%20%2B%20Chromium-green.svg)
-![Math](https://img.shields.io/badge/Math-MathJax-purple.svg)
-![Version](https://img.shields.io/badge/Version-v1.0.1-success.svg)
-![Status](https://img.shields.io/badge/Status-Stable-success.svg)
-
----
+![Language](https://img.shields.io/badge/Language-Python-blue.svg) ![Renderer](https://img.shields.io/badge/Renderer-Playwright%20%2B%20Chromium-green.svg) ![Math](https://img.shields.io/badge/Math-MathJax-purple.svg) ![Version](https://img.shields.io/badge/Version-v1.0.1-success.svg) ![Status](https://img.shields.io/badge/Status-Stable-success.svg)
 
 ## 📌 Overview
 
@@ -24,7 +18,7 @@ Markdown → Typographic HTML → Chromium PDF
 
 This pipeline gives the project strong control over typography, print CSS, page margins, syntax highlighting, MathJax formulas, table styling, cover pages, watermarks, and mixed-direction text rendering.
 
----
+![Mardas MD2PDF](./README.png)
 
 ## 🎯 Project Objectives
 
@@ -40,8 +34,6 @@ This pipeline gives the project strong control over typography, print CSS, page 
 - Provide multiple visual themes for different document styles.
 - Provide both a command-line workflow and a local graphical editor/exporter.
 
----
-
 ## ✨ Features
 
 ### 📝 Persian and Mixed-Direction Typography
@@ -49,7 +41,7 @@ This pipeline gives the project strong control over typography, print CSS, page 
 Mardas MD2PDF is designed for documents such as:
 
 ```text
-این گزارش درباره xv6, system call, kernel, user space و PDF generation است.
+متن های فارسی ای که در آن ها از English words استفاده شده است.
 ```
 
 The document body is RTL by default, while paragraphs, headings, lists, table cells, and captions use direction-aware processing. Code blocks, inline code, paths, commands, formulas, and technical identifiers are kept LTR for readability.
@@ -82,7 +74,7 @@ The maximum heading depth can be controlled with `--toc-depth`.
 
 The converter supports:
 
-- fenced code blocks, such as ```` ```python ````;
+- fenced code blocks, such as `` ```python ``;
 - indented code blocks written with four leading spaces;
 - automatic conservative language guessing for raw indented blocks;
 - monospace fonts for code;
@@ -184,8 +176,6 @@ Both options can be used together:
 mrs-md2pdf input.md -o output.pdf --toc --toc-page-break --h1-page-break
 ```
 
----
-
 ## 🖥️ Graphical Interface
 
 Mardas MD2PDF also includes a local browser-based GUI named **Mardas MD2PDF Studio**.
@@ -214,8 +204,6 @@ The GUI lets users:
 - copy an equivalent CLI command.
 
 The GUI is intended for users who prefer visual configuration over command-line flags. The light UI mode uses a clean white surface, soft borders, and restrained contrast so it stays readable without the muddy gray panels that often make editor interfaces feel cluttered.
-
----
 
 ## 🎨 Themes
 
@@ -281,8 +269,6 @@ Recommended for:
 - thesis-like Markdown reports;
 - documents that need a calmer, less colorful visual style.
 
----
-
 ## 🚀 Getting Started
 
 ### 1. Clone the Repository
@@ -325,8 +311,6 @@ python -m playwright install chromium
 ```
 
 If Chromium or Google Chrome is already installed on your system, Mardas MD2PDF can usually detect it automatically. You can also pass a custom executable path with `--chromium-path`.
-
----
 
 ## ⚙️ Basic Usage
 
@@ -373,44 +357,42 @@ Generate the intermediate HTML for debugging:
 mrs-md2pdf input.md -o output.pdf --debug-html output.html
 ```
 
----
-
 ## 🧩 CLI Options
 
-| Option | Description |
-|:--|:--|
-| `input` | Input Markdown file. |
-| `-o`, `--output` | Output PDF path. If omitted, the input filename is used with `.pdf`. |
-| `--title` | Override document title. Otherwise front matter or first `#` heading is used. |
-| `--author` | Override author metadata. |
-| `--description` | Override summary/description metadata. |
-| `--toc` | Generate a hierarchical table of contents. |
-| `--toc-depth 1..6` | Maximum heading level included in TOC. Default: `6`. |
-| `--toc-page-break` | Put the main document content on a new page after the TOC. |
-| `--h1-page-break` | Start every top-level `#` heading on a new page. |
-| `--theme` | Choose `modern`, `textbook-light`, `textbook-dark`, or `academic`. |
-| `--page-size` | PDF page size such as `A4` or `Letter`. |
-| `--margin-top` | Top page margin. Default: `18mm`. |
-| `--margin-bottom` | Bottom page margin. Default: `20mm`. |
-| `--margin-x` | Left/right page margin. Default: `16mm`. |
-| `--font-dir` | Directory containing local Vazirmatn font files. |
-| `--chromium-path` | Path to Chromium/Chrome executable. |
-| `--debug-html` | Save intermediate HTML for inspection. |
-| `--no-cover` | Disable automatic cover page. |
-| `--cover-logo` | Use a custom logo on the cover. |
-| `--no-cover-logo` | Hide the logo while keeping the cover page. |
-| `--watermark` | Add a text watermark to content pages. |
-| `--watermark-image` | Add an image watermark to content pages. |
-| `--watermark-opacity` | Watermark opacity between `0` and `1`. Default: `0.065`. |
-| `--watermark-width` | CSS width for image watermarks. Default: `105mm`. |
-| `--no-header-footer` | Disable page number footer. |
-| `--no-mathjax` | Do not load MathJax. |
-| `--timeout-ms` | Browser rendering timeout in milliseconds. |
-| `--version` | Print the installed version. |
-
----
+| Option                  | Description                                                                     |
+| :---------------------- | :------------------------------------------------------------------------------ |
+| `input`               | Input Markdown file.                                                            |
+| `-o`, `--output`    | Output PDF path. If omitted, the input filename is used with `.pdf`.          |
+| `--title`             | Override document title. Otherwise front matter or first `#` heading is used. |
+| `--author`            | Override author metadata.                                                       |
+| `--description`       | Override summary/description metadata.                                          |
+| `--toc`               | Generate a hierarchical table of contents.                                      |
+| `--toc-depth 1..6`    | Maximum heading level included in TOC. Default:`6`.                           |
+| `--toc-page-break`    | Put the main document content on a new page after the TOC.                      |
+| `--h1-page-break`     | Start every top-level `#` heading on a new page.                              |
+| `--theme`             | Choose `modern`, `textbook-light`, `textbook-dark`, or `academic`.      |
+| `--page-size`         | PDF page size such as `A4` or `Letter`.                                     |
+| `--margin-top`        | Top page margin. Default:`18mm`.                                              |
+| `--margin-bottom`     | Bottom page margin. Default:`20mm`.                                           |
+| `--margin-x`          | Left/right page margin. Default:`16mm`.                                       |
+| `--font-dir`          | Directory containing local Vazirmatn font files.                                |
+| `--chromium-path`     | Path to Chromium/Chrome executable.                                             |
+| `--debug-html`        | Save intermediate HTML for inspection.                                          |
+| `--no-cover`          | Disable automatic cover page.                                                   |
+| `--cover-logo`        | Use a custom logo on the cover.                                                 |
+| `--no-cover-logo`     | Hide the logo while keeping the cover page.                                     |
+| `--watermark`         | Add a text watermark to content pages.                                          |
+| `--watermark-image`   | Add an image watermark to content pages.                                        |
+| `--watermark-opacity` | Watermark opacity between `0` and `1`. Default: `0.065`.                  |
+| `--watermark-width`   | CSS width for image watermarks. Default:`105mm`.                              |
+| `--no-header-footer`  | Disable page number footer.                                                     |
+| `--no-mathjax`        | Do not load MathJax.                                                            |
+| `--timeout-ms`        | Browser rendering timeout in milliseconds.                                      |
+| `--version`           | Print the installed version.                                                    |
 
 ## 🗂️ Project Structure
+
+The project is organized as follows:
 
 ```text
 Mardas-MD2PDF/
@@ -453,8 +435,6 @@ The source code is intentionally kept directly under `src/` rather than inside a
 - `src/assets/theme-textbook-dark.css`: dark textbook theme.
 - `src/assets/theme-academic.css`: formal academic theme.
 
----
-
 ## 🧪 Testing
 
 Install the project first:
@@ -480,25 +460,21 @@ The current tests cover:
 - hidden unbranded-cover option behavior;
 - GUI entrypoint availability.
 
----
-
 ## 🧾 Front Matter
 
 Mardas MD2PDF reads optional YAML front matter:
 
 ```yaml
 ---
-title: "گزارش کار پروژه دوم آزمایشگاه سیستم عامل"
-author: "تیم Mardas MD2PDF"
-date: "2026-05-12"
-summary: "یک گزارش فنی درباره system call در xv6"
+title: "نمونه حرفه‌ای تبدیل Markdown به PDF"
+author: "Mardas"
+date: "1404-04-12"
+summary: "این فایل برای تست متن فارسی/English mixed، جدول، فرمول ریاضی، بلاک کد، لینک، تصویر و نکته طراحی شده است."
 lang: fa
 ---
 ```
 
 These fields are used for title detection, cover page metadata, document language, and HTML metadata.
-
----
 
 ## 📄 Markdown Extensions
 
@@ -523,8 +499,6 @@ Manual page break:
 <div class="md2pdf-page-break"></div>
 ```
 
----
-
 ## 🛠️ Development Notes
 
 The project avoids direct low-level PDF drawing for document content. Instead, it uses browser-grade layout through Chromium. This makes typography, tables, RTL/LTR behavior, MathJax SVG output, and print CSS much easier to control.
@@ -532,8 +506,6 @@ The project avoids direct low-level PDF drawing for document content. Instead, i
 The cover page is rendered as a separate full-bleed PDF and then merged with the content PDF. This keeps cover numbering and watermark behavior clean while allowing the cover background to reach the paper edges.
 
 The source package intentionally uses a flattened `src/` layout: the package name is still `mardas_md2pdf`, but source files live directly in `src/` to keep the repository tree compact.
-
----
 
 ## 🔮 Future Improvements
 
@@ -544,14 +516,11 @@ The source package intentionally uses a flattened `src/` layout: the package nam
 - Add GUI support for custom cover logos and image watermarks.
 - Add automatic document quality checks after rendering.
 
----
-
 ## 👤 Author
 
-**Mardas MD2PDF**  
-Designed for professional Persian/English Markdown publishing.
+**Mardas MD2PDF**Designed for professional Persian/English Markdown publishing.
 
----
+* **[Meraj Rastegar](https://github.com/mragetsars)**
 
 ## 📜 License
 
