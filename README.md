@@ -359,36 +359,36 @@ mrs-md2pdf input.md -o output.pdf --debug-html output.html
 
 ## 🧩 CLI Options
 
-| Option                  | Description                                                                     |
-| :---------------------- | :------------------------------------------------------------------------------ |
-| `input`               | Input Markdown file.                                                            |
-| `-o`, `--output`    | Output PDF path. If omitted, the input filename is used with `.pdf`.          |
-| `--title`             | Override document title. Otherwise front matter or first `#` heading is used. |
-| `--author`            | Override author metadata.                                                       |
-| `--description`       | Override summary/description metadata.                                          |
-| `--toc`               | Generate a hierarchical table of contents.                                      |
-| `--toc-depth 1..6`    | Maximum heading level included in TOC. Default:`6`.                           |
-| `--toc-page-break`    | Put the main document content on a new page after the TOC.                      |
-| `--h1-page-break`     | Start every top-level `#` heading on a new page.                              |
-| `--theme`             | Choose `modern`, `textbook-light`, `textbook-dark`, or `academic`.      |
-| `--page-size`         | PDF page size such as `A4` or `Letter`.                                     |
-| `--margin-top`        | Top page margin. Default:`18mm`.                                              |
-| `--margin-bottom`     | Bottom page margin. Default:`20mm`.                                           |
-| `--margin-x`          | Left/right page margin. Default:`16mm`.                                       |
-| `--font-dir`          | Directory containing local Vazirmatn font files.                                |
-| `--chromium-path`     | Path to Chromium/Chrome executable.                                             |
-| `--debug-html`        | Save intermediate HTML for inspection.                                          |
-| `--no-cover`          | Disable automatic cover page.                                                   |
-| `--cover-logo`        | Use a custom logo on the cover.                                                 |
-| `--no-cover-logo`     | Hide the logo while keeping the cover page.                                     |
-| `--watermark`         | Add a text watermark to content pages.                                          |
-| `--watermark-image`   | Add an image watermark to content pages.                                        |
-| `--watermark-opacity` | Watermark opacity between `0` and `1`. Default: `0.065`.                  |
-| `--watermark-width`   | CSS width for image watermarks. Default:`105mm`.                              |
-| `--no-header-footer`  | Disable page number footer.                                                     |
-| `--no-mathjax`        | Do not load MathJax.                                                            |
-| `--timeout-ms`        | Browser rendering timeout in milliseconds.                                      |
-| `--version`           | Print the installed version.                                                    |
+| Option | Description | Default |
+| :--- | :--- | :--- |
+| `input` | Input Markdown file. | Required. |
+| `-o`, `--output` | Output PDF path. | Input filename with `.pdf` suffix. |
+| `--title` | Override document title. | Front matter `title`, otherwise first `#` heading, otherwise `Document`. |
+| `--author` | Override author metadata. | Front matter `author`, otherwise blank. |
+| `--description` | Override summary/description metadata. | Front matter `description` or `summary`, otherwise blank. |
+| `--toc` | Generate a hierarchical table of contents. | Disabled. |
+| `--toc-depth 1..6` | Maximum heading level included in TOC. | `6`. |
+| `--toc-page-break` | Put the main document content on a new page after the TOC. | Disabled. |
+| `--h1-page-break` | Start every top-level `#` heading on a new page. | Disabled. |
+| `--theme` | Choose `modern`, `textbook-light`, `textbook-dark`, or `academic`. | `modern`. |
+| `--page-size` | PDF page size such as `A4` or `Letter`. | `A4`. |
+| `--margin-top` | Top page margin. | `18mm`. |
+| `--margin-bottom` | Bottom page margin. | `20mm`. |
+| `--margin-x` | Left/right page margin. | `16mm`. |
+| `--font-dir` | Directory containing local Vazirmatn font files. | Not set; Chromium uses available system fonts and the theme font stack. |
+| `--chromium-path` | Path to Chromium/Chrome executable. | Auto-detected from `chromium` or `google-chrome`; otherwise Playwright's installed Chromium is used. |
+| `--debug-html` | Save intermediate HTML for inspection. | Disabled. |
+| `--no-cover` | Disable automatic cover page. | Cover is enabled. |
+| `--cover-logo` | Use a custom logo on the cover. | Bundled Mardas logo. |
+| `--no-cover-logo` | Hide the logo while keeping the cover page. | Logo is shown. |
+| `--watermark` | Add a text watermark to content pages. | No text watermark. |
+| `--watermark-image` | Add an image watermark to content pages. | No image watermark. |
+| `--watermark-opacity` | Watermark opacity between `0` and `1`. | `0.065`. |
+| `--watermark-width` | CSS width for image watermarks. | `105mm`. |
+| `--no-header-footer` | Disable page number footer. | Footer is enabled. |
+| `--no-mathjax` | Do not load MathJax. | MathJax is enabled. |
+| `--timeout-ms` | Browser rendering timeout in milliseconds. | `120000`. |
+| `--version` | Print the installed version. | Not applicable. |
 
 ## 🗂️ Project Structure
 

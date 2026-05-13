@@ -340,7 +340,8 @@ kbd {
   border: 0;
   border-radius: 0;
   background: transparent;
-  page-break-inside: avoid;
+  page-break-inside: auto;
+  break-inside: auto;
 }
 .md2pdf-toc h2 {
   margin: 0 0 5mm;
@@ -356,10 +357,12 @@ kbd {
   columns: 1;
 }
 .md2pdf-toc li {
-  break-inside: avoid;
+  break-inside: auto;
+  page-break-inside: auto;
   margin: 0.14em 0;
   line-height: 1.58;
 }
+
 .md2pdf-toc li > ol {
   margin: 0.12em 0 0.3em;
   padding-inline-start: 5mm;
@@ -370,6 +373,8 @@ kbd {
   grid-template-columns: auto 1fr;
   gap: 2.3mm;
   align-items: start;
+  page-break-inside: avoid;
+  break-inside: avoid;
   color: #111827;
   border: 0;
   background: #ffffff;

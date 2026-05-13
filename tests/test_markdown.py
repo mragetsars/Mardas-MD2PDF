@@ -8,6 +8,14 @@ def test_mixed_direction_and_code_highlight():
     assert "PYTHON" in result.body_html
 
 
+def test_fenced_code_language_caption_is_not_merged_into_code():
+    result = render_markdown("```c\nint setSeed(void);\n```\n")
+    assert '<figure class="code-block"' in result.body_html
+    assert '>C</figcaption>' in result.body_html
+    assert 'Cint setSeed' not in result.body_html
+    assert '<pre><code class="language-c"><figure' not in result.body_html
+
+
 def test_table_and_math():
     result = render_markdown("|a|b|\n|-|-|\n|1|2|\n\n$$\nx^2\n$$")
     assert "table-wrap" in result.body_html
