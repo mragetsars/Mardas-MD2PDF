@@ -1,7 +1,7 @@
 ---
 title: "نمونه حرفه‌ای تبدیل Markdown به PDF"
-author: "تیم Mardas MD2PDF"
-date: "2026-05-12"
+author: "Mardas"
+date: "1404-04-12"
 summary: "این فایل برای تست متن فارسی/English mixed، جدول، فرمول ریاضی، بلاک کد، لینک، تصویر و نکته طراحی شده است."
 lang: fa
 ---
