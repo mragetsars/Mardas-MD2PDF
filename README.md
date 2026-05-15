@@ -26,6 +26,7 @@ This pipeline gives the project strong control over typography, print CSS, page 
 - Preserve readability for Persian, English, and mixed RTL/LTR paragraphs.
 - Render fenced and indented code blocks with syntax highlighting.
 - Support tables, task lists, links, images, blockquotes, callouts, footnotes, and page breaks.
+- Embed local Markdown images into the generated HTML/PDF so exported PDFs keep their figures even when Chromium renders from a temporary context.
 - Render inline and display math formulas using vendored MathJax.
 - Generate a hierarchical Table of Contents from Markdown heading levels.
 - Generate a designed cover page that is not counted in document page numbering.
@@ -69,6 +70,16 @@ and generates a nested, numbered table of contents such as:
 ```
 
 The maximum heading depth can be controlled with `--toc-depth`.
+
+### 🖼️ Local Image Rendering
+
+Markdown images and raw HTML images are resolved relative to the input Markdown file and embedded as data URIs before the PDF print step. This makes figure rendering deterministic in Chromium and prevents missing-image placeholders when a report references local screenshots such as:
+
+```markdown
+![Executive Overview](images/executive_overview.png)
+```
+
+If a document references `images/name.png` but the image file was copied next to the Markdown file as `name.png`, the converter also tries that basename as a safe fallback. Remote `http`, `https`, and existing `data:` images are left unchanged.
 
 ### 💻 Code Block Rendering
 
