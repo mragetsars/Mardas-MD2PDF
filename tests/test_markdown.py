@@ -65,3 +65,37 @@ def test_gui_entrypoint_module_exists():
     import mardas_md2pdf.gui as gui
 
     assert gui.build_parser().prog == "mrs-md2pdf-gui"
+
+
+def test_local_markdown_images_are_embedded_as_data_uris(tmp_path):
+    from mardas_md2pdf.markdown import render_markdown_file
+
+    png = tmp_path / "chart.png"
+    png.write_bytes(
+        b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
+        b"\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\rIDATx\x9cc\xf8\xff\xff?\x00\x05\xfe\x02\xfeA\xe2\x08\x9b\x00\x00\x00\x00IEND\xaeB`\x82"
+    )
+    md = tmp_path / "report.md"
+    md.write_text("![Chart](chart.png)\n", encoding="utf-8")
+
+    result = render_markdown_file(md)
+
+    assert 'src="data:image/png;base64,' in result.body_html
+    assert 'data-md2pdf-source="chart.png"' in result.body_html
+
+
+def test_local_image_lookup_falls_back_to_markdown_directory_basename(tmp_path):
+    from mardas_md2pdf.markdown import render_markdown_file
+
+    png = tmp_path / "executive_overview.png"
+    png.write_bytes(
+        b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
+        b"\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\rIDATx\x9cc\xf8\xff\xff?\x00\x05\xfe\x02\xfeA\xe2\x08\x9b\x00\x00\x00\x00IEND\xaeB`\x82"
+    )
+    md = tmp_path / "report.md"
+    md.write_text('<img src="./images/executive_overview.png" alt="Overview">\n', encoding="utf-8")
+
+    result = render_markdown_file(md)
+
+    assert 'src="data:image/png;base64,' in result.body_html
+    assert 'data-md2pdf-source="./images/executive_overview.png"' in result.body_html

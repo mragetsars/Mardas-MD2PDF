@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import base64
 import html
+import mimetypes
 import re
 import unicodedata
+from urllib.parse import unquote, urlparse
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -394,6 +397,88 @@ def normalize_raw_code_blocks(soup: BeautifulSoup, *, code_style: str) -> None:
             pre.replace_with(figure)
 
 
+def _local_image_candidates(src: str, base_dir: Path) -> list[Path]:
+    """Return likely local filesystem candidates for an image src."""
+    parsed = urlparse(src)
+    if parsed.scheme in {"http", "https", "data", "mailto"}:
+        return []
+    if parsed.scheme == "file":
+        return [Path(unquote(parsed.path))]
+    if parsed.scheme:
+        return []
+
+    clean_src = unquote(src.split("#", 1)[0].split("?", 1)[0]).strip()
+    if not clean_src:
+        return []
+
+    raw_path = Path(clean_src)
+    if raw_path.is_absolute():
+        return [raw_path]
+
+    base_dir = base_dir.resolve()
+    candidates = [base_dir / raw_path]
+
+    # A common authoring mistake is to keep the Markdown reference as
+    # images/foo.png while exporting or copying foo.png beside the Markdown file.
+    # Falling back to the basename makes the converter forgiving without changing
+    # valid paths that already exist.
+    if len(raw_path.parts) > 1:
+        candidates.append(base_dir / raw_path.name)
+
+    # If the current working directory contains the referenced asset, keep that
+    # as a final fallback for scripts that launch the CLI from the project root.
+    candidates.append(Path.cwd() / raw_path)
+    if len(raw_path.parts) > 1:
+        candidates.append(Path.cwd() / raw_path.name)
+
+    unique: list[Path] = []
+    seen: set[str] = set()
+    for candidate in candidates:
+        key = str(candidate.resolve()) if candidate.exists() else str(candidate)
+        if key not in seen:
+            unique.append(candidate)
+            seen.add(key)
+    return unique
+
+
+def _image_file_to_data_uri(path: Path) -> str | None:
+    if not path.exists() or not path.is_file():
+        return None
+    mime_type = mimetypes.guess_type(str(path))[0] or "image/png"
+    if not mime_type.startswith("image/"):
+        return None
+    encoded = base64.b64encode(path.read_bytes()).decode("ascii")
+    return f"data:{mime_type};base64,{encoded}"
+
+
+def embed_local_images(body_html: str, base_dir: str | Path) -> str:
+    """Inline local images as data URIs for reliable Chromium PDF rendering.
+
+    Chromium can render relative image paths when every asset is present beside
+    the Markdown file. In practice, reports are often copied without their
+    ``images/`` directory, or generated from a temporary working directory. This
+    pass resolves local ``<img src=...>`` values against the Markdown location and
+    embeds the image bytes directly into the HTML, so the PDF no longer depends
+    on external files during the print step. Remote URLs and existing data URIs
+    are left unchanged.
+    """
+    soup = BeautifulSoup(body_html, "html.parser")
+    root = Path(base_dir)
+    for img in soup.find_all("img"):
+        src = str(img.get("src") or "").strip()
+        if not src:
+            continue
+        for candidate in _local_image_candidates(src, root):
+            data_uri = _image_file_to_data_uri(candidate)
+            if not data_uri:
+                continue
+            img["src"] = data_uri
+            img["data-md2pdf-source"] = src
+            img["class"] = list(set(img.get("class", []) + ["md2pdf-image"]))
+            break
+    return str(soup)
+
+
 def postprocess_html(body_html: str, *, code_style: str = "github-dark") -> str:
     soup = BeautifulSoup(body_html, "html.parser")
 
@@ -540,5 +625,8 @@ def render_markdown(
 def render_markdown_file(
     path: str | Path, *, toc: bool = False, toc_depth: int = 6, code_style: str = "github-dark"
 ) -> MarkdownRenderResult:
-    text = Path(path).read_text(encoding="utf-8")
-    return render_markdown(text, toc=toc, toc_depth=toc_depth, code_style=code_style)
+    input_path = Path(path)
+    text = input_path.read_text(encoding="utf-8")
+    result = render_markdown(text, toc=toc, toc_depth=toc_depth, code_style=code_style)
+    result.body_html = embed_local_images(result.body_html, input_path.resolve().parent)
+    return result
