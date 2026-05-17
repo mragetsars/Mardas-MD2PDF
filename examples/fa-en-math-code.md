@@ -1,8 +1,23 @@
 ---
 title: "نمونه حرفه‌ای تبدیل Markdown به PDF"
-author: "Mardas"
+subtitle: "نمونه کامل قابلیت‌های متن، جدول، فرمول، کد، تصویر و جلد"
+authors:
+  - name: "Meraj Rastegar"
+    email: "mragetsars@gmail.com"
+  - "Mardas MD2PDF Team"
 date: "1404-04-12"
-summary: "این فایل برای تست متن فارسی/English mixed، جدول، فرمول ریاضی، بلاک کد، لینک، تصویر و نکته طراحی شده است."
+summary: |
+  این فایل برای تست متن فارسی/English mixed، جدول، فرمول ریاضی، بلاک کد، لینک، تصویر، فهرست مطالب و نکته طراحی شده است.
+  خط دوم summary نشان می‌دهد متن چندخطی YAML روی جلد PDF با شکست خط تمیز حفظ می‌شود.
+
+  این پاراگراف دوم summary است و جدا از پاراگراف اول روی جلد چاپ می‌شود.
+institution: "Mardas Lab"
+course: "Markdown Publishing"
+version: "1.1"
+keywords:
+  - RTL/LTR
+  - MathJax
+  - Local Images
 lang: fa
 ---
 
@@ -20,6 +35,8 @@ lang: fa
 - [x] فرمول ریاضی inline مثل $E = mc^2$
 - [x] فرمول display با MathJax
 - [x] هایلایت کد براساس زبان برنامه‌نویسی
+- [x] نمایش تصویرهای محلی Markdown و HTML در PDF
+- [x] پشتیبانی از summary چندخطی و چند author در YAML
 - [ ] افزودن تم‌های بیشتر در نسخه بعدی
 
 ## جدول نمونه
@@ -29,7 +46,22 @@ lang: fa
 | RTL/LTR | ✅ | تشخیص جهت متن برای پاراگراف، عنوان، سلول جدول و لیست |
 | Code Highlight | ✅ | رنگ‌بندی با Pygments و فونت monospace |
 | MathJax | ✅ | خروجی SVG دقیق برای فرمول‌ها |
+| Local Images | ✅ | تبدیل تصویرهای محلی به data URI برای نمایش پایدار در PDF |
 | PDF Print CSS | ✅ | حاشیه، فوتر، رنگ‌بندی و break مناسب |
+
+## تصویر محلی Markdown
+
+تصویر زیر از مسیر نسبی `examples/images/md2pdf-sample-chart.png` خوانده می‌شود و قبل از چاپ PDF داخل HTML جاسازی می‌شود؛ بنابراین خروجی PDF وابسته به مسیر فایل تصویر در زمان باز شدن PDF نیست.
+
+![نمونه نمودار محلی](images/md2pdf-sample-chart.png)
+
+## تصویر محلی با HTML
+
+همان تصویر را می‌توان با تگ HTML و اندازه‌ی دلخواه هم نوشت:
+
+<p align="center">
+  <img src="./images/md2pdf-sample-chart.png" alt="HTML local image example" width="75%"/>
+</p>
 
 ## فرمول ریاضی
 
@@ -48,6 +80,17 @@ A = \begin{bmatrix}
 \end{bmatrix},\quad
 \det(A) = -2
 $$
+
+## بلاک کد C
+
+در این بلاک، برچسب زبان `C` باید بالای کد نمایش داده شود و نباید وارد متن کد شود:
+
+```c
+int setSeed(void);
+int getRandomNumber(int n, int *buf);
+int process_information(int pid);
+int sort_numbers(const char *src_file);
+```
 
 ## بلاک کد Python
 

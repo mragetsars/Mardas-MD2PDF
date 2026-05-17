@@ -3,9 +3,10 @@ from __future__ import annotations
 import base64
 import html
 import mimetypes
+import re
 import shutil
 import tempfile
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from importlib import resources
 from pathlib import Path
 from typing import Any
@@ -173,6 +174,103 @@ def _watermark_html(options: PdfOptions) -> str:
     return ""
 
 
+def _first_metadata_value(metadata: dict[str, Any], *keys: str) -> Any:
+    for key in keys:
+        value = metadata.get(key)
+        if value not in (None, ""):
+            return value
+    return ""
+
+
+def _stringify_metadata_value(value: Any, *, item_separator: str = "، ") -> str:
+    """Convert front-matter values into readable cover text.
+
+    YAML front matter may contain strings, numbers, block strings, lists, or
+    small dictionaries such as author records. The cover renderer should handle
+    all of them without leaking Python list/dict syntax into the PDF.
+    """
+    if value in (None, ""):
+        return ""
+    if isinstance(value, (list, tuple, set)):
+        return item_separator.join(
+            part
+            for part in (_stringify_metadata_value(item, item_separator=item_separator) for item in value)
+            if part
+        )
+    if isinstance(value, dict):
+        name = value.get("name") or value.get("title") or value.get("label") or ""
+        details = []
+        for key in ("email", "affiliation", "role"):
+            if value.get(key):
+                details.append(str(value[key]))
+        if name and details:
+            return f"{name} ({' - '.join(details)})"
+        if name:
+            return str(name)
+        return item_separator.join(f"{key}: {val}" for key, val in value.items() if val not in (None, ""))
+    return str(value)
+
+
+def _metadata_items(value: Any) -> list[str]:
+    if value in (None, ""):
+        return []
+    if isinstance(value, (list, tuple, set)):
+        items: list[str] = []
+        for item in value:
+            items.extend(_metadata_items(item))
+        return [item for item in items if item]
+    text = _stringify_metadata_value(value)
+    return [text] if text else []
+
+
+def _paragraph_block_html(value: Any, class_name: str) -> str:
+    text = _stringify_metadata_value(value, item_separator="\n")
+    if not text.strip():
+        return ""
+    paragraphs = [
+        paragraph.strip() for paragraph in re.split(r"\n\s*\n", text.strip()) if paragraph.strip()
+    ]
+    if not paragraphs:
+        return ""
+    rendered = []
+    for paragraph in paragraphs:
+        escaped = html.escape(paragraph).replace("\n", "<br>")
+        rendered.append(f'<p dir="auto">{escaped}</p>')
+    return f'<div class="{html.escape(class_name)}" dir="auto">{"".join(rendered)}</div>'
+
+
+def _cover_detail(label: str, value: Any, *, multiline: bool = False) -> str:
+    if multiline:
+        items = _metadata_items(value)
+        if not items:
+            return ""
+        value_html = "".join(
+            f'<span class="md2pdf-cover__detail-line" dir="auto">{html.escape(item)}</span>'
+            for item in items
+        )
+    else:
+        text = _stringify_metadata_value(value)
+        if not text.strip():
+            return ""
+        value_html = html.escape(text).replace("\n", "<br>")
+    return (
+        '<div class="md2pdf-cover__detail" dir="auto">'
+        f'<span>{html.escape(label)}</span>'
+        f'<strong>{value_html}</strong>'
+        '</div>'
+    )
+
+
+def _metadata_path(value: Any, base_dir: Path) -> Path | None:
+    text = _stringify_metadata_value(value)
+    if not text.strip():
+        return None
+    path = Path(text).expanduser()
+    if not path.is_absolute():
+        path = base_dir / path
+    return path if path.exists() else None
+
+
 def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False) -> str:
     classes: list[str] = []
     css_chunks = [
@@ -193,33 +291,39 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False) -> str:
     return "\n".join(css_chunks), " ".join(classes)
 
 
-def _cover_html(title: str, author: str, date: str, description: str, options: PdfOptions) -> str:
+def _cover_html(
+    title: str,
+    author: Any,
+    date: Any,
+    description: Any,
+    options: PdfOptions,
+    *,
+    subtitle: Any = "",
+    extra_details: list[tuple[str, Any]] | None = None,
+    eyebrow: Any = "Generated Document",
+) -> str:
     detail_cards: list[str] = []
-    if author:
-        detail_cards.append(
-            '<div class="md2pdf-cover__detail" dir="auto">'
-            '<span>Author</span>'
-            f'<strong>{html.escape(str(author))}</strong>'
-            '</div>'
-        )
+    author_items = _metadata_items(author)
+    if author_items:
+        label = "Authors" if len(author_items) > 1 else "Author"
+        detail_cards.append(_cover_detail(label, author_items, multiline=True))
     if date:
-        detail_cards.append(
-            '<div class="md2pdf-cover__detail" dir="auto">'
-            '<span>Date</span>'
-            f'<strong>{html.escape(str(date))}</strong>'
-            '</div>'
-        )
+        detail_cards.append(_cover_detail("Date", date))
+    for label, value in extra_details or []:
+        card = _cover_detail(label, value, multiline=isinstance(value, (list, tuple, set)))
+        if card:
+            detail_cards.append(card)
     logo_uri = _cover_logo_uri(options)
     logo_html = (
         f'<img class="md2pdf-cover__logo" src="{html.escape(logo_uri)}" alt="Mardas logo">'
         if logo_uri
         else '<span class="md2pdf-cover__logo md2pdf-cover__logo--fallback">M</span>'
     )
-    summary_html = (
-        '<p class="md2pdf-cover__summary" dir="auto">' + html.escape(str(description)) + '</p>'
-        if description
-        else ''
+    subtitle_text = _stringify_metadata_value(subtitle)
+    subtitle_html = (
+        f'<p class="md2pdf-cover__subtitle" dir="auto">{html.escape(subtitle_text)}</p>' if subtitle_text else ""
     )
+    summary_html = _paragraph_block_html(description, "md2pdf-cover__summary")
     details_html = ''.join(detail_cards)
     brand_html = ""
     release_html = ""
@@ -247,8 +351,9 @@ def _cover_html(title: str, author: str, date: str, description: str, options: P
           {release_html}
         </section>
         <section class="md2pdf-cover__content">
-          <span class="md2pdf-cover__eyebrow">Generated Document</span>
+          <span class="md2pdf-cover__eyebrow">{html.escape(_stringify_metadata_value(eyebrow) or "Generated Document")}</span>
           <h1 dir="auto">{html.escape(str(title))}</h1>
+          {subtitle_html}
           {summary_html}
         </section>
         {'<section class="md2pdf-cover__details">' + details_html + '</section>' if details_html else '<div></div>'}
@@ -290,15 +395,57 @@ def build_html(
 ) -> str:
     theme = _theme_css(options.theme)
     font_faces = _font_faces(options.font_dir)
-    title = options.title or result.title
-    author = options.author or result.metadata.get("author") or ""
-    description = options.description or result.metadata.get("description") or result.metadata.get("summary") or ""
-    lang = result.metadata.get("lang") or "fa"
-    date = result.metadata.get("date") or ""
+    metadata = result.metadata
+    title = options.title or _stringify_metadata_value(metadata.get("title")) or result.title
+    author = options.author if options.author is not None else _first_metadata_value(metadata, "authors", "author")
+    description = (
+        options.description
+        if options.description is not None
+        else _first_metadata_value(metadata, "description", "summary")
+    )
+    lang = _stringify_metadata_value(metadata.get("lang")) or "fa"
+    date = _first_metadata_value(metadata, "date")
+    subtitle = _first_metadata_value(metadata, "subtitle", "subject")
+    eyebrow = _first_metadata_value(metadata, "eyebrow", "document_type", "type") or "Generated Document"
     base_href = options.input_path.resolve().parent.as_uri() + "/"
     css_variables, body_classes = _layout_css(options, cover_full_bleed=cover_full_bleed)
 
-    cover = _cover_html(str(title), str(author), str(date), str(description), options) if include_cover and options.cover else ""
+    cover_options = options
+    metadata_logo = _metadata_path(_first_metadata_value(metadata, "cover_logo", "logo"), options.input_path.resolve().parent)
+    if metadata_logo and not options.cover_logo:
+        cover_options = replace(options, cover_logo=metadata_logo)
+
+    extra_details: list[tuple[str, Any]] = []
+    detail_fields = [
+        ("Institution", "institution", "university", "organization"),
+        ("Course", "course", "lesson"),
+        ("Department", "department"),
+        ("Supervisor", "supervisor", "teacher", "advisor"),
+        ("Student ID", "student_id", "student_number"),
+        ("Group", "group", "team"),
+        ("Version", "version"),
+        ("Status", "status"),
+        ("Keywords", "keywords", "tags"),
+    ]
+    for label, *keys in detail_fields:
+        value = _first_metadata_value(metadata, *keys)
+        if value not in (None, ""):
+            extra_details.append((label, value))
+
+    cover = (
+        _cover_html(
+            str(title),
+            author,
+            date,
+            description,
+            cover_options,
+            subtitle=subtitle,
+            extra_details=extra_details,
+            eyebrow=eyebrow,
+        )
+        if include_cover and options.cover
+        else ""
+    )
     content = ""
     if include_content:
         content = f"{result.toc_html}{result.body_html}"

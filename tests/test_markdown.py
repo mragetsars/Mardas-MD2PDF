@@ -99,3 +99,45 @@ def test_local_image_lookup_falls_back_to_markdown_directory_basename(tmp_path):
 
     assert 'src="data:image/png;base64,' in result.body_html
     assert 'data-md2pdf-source="./images/executive_overview.png"' in result.body_html
+
+
+def test_cover_supports_multiline_summary_and_multiple_authors(tmp_path):
+    from mardas_md2pdf.renderer import PdfOptions, build_html
+
+    md = """---
+title: "گزارش نمونه"
+subtitle: "نمونه metadata پیشرفته"
+authors:
+  - name: "Meraj Rastegar"
+    email: "mragetsars@gmail.com"
+  - "Mardas Team"
+summary: |
+  خط اول خلاصه برای جلد PDF.
+  خط دوم خلاصه باید در همان پاراگراف با شکست خط بماند.
+
+  این پاراگراف دوم خلاصه است.
+institution: "Tehran University"
+course: "Data Science"
+keywords:
+  - RTL
+  - PDF
+lang: fa
+---
+
+# بدنه
+"""
+    result = render_markdown(md)
+    input_path = tmp_path / "sample.md"
+    input_path.write_text(md, encoding="utf-8")
+
+    html = build_html(result, PdfOptions(input_path=input_path, output_path=tmp_path / "sample.pdf"))
+
+    assert "Authors" in html
+    assert "Meraj Rastegar (mragetsars@gmail.com)" in html
+    assert "Mardas Team" in html
+    assert "خط اول خلاصه برای جلد PDF.<br>خط دوم خلاصه" in html
+    assert "این پاراگراف دوم خلاصه است." in html
+    assert "Tehran University" in html
+    assert "Data Science" in html
+    assert "RTL" in html
+    assert "PDF" in html

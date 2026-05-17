@@ -2,7 +2,7 @@
 
 > Markdown to PDF Converter - Persian/English Typography - RTL/LTR Documents - Professional PDF Publishing
 
-![Language](https://img.shields.io/badge/Language-Python-blue.svg) ![Renderer](https://img.shields.io/badge/Renderer-Playwright%20%2B%20Chromium-green.svg) ![Math](https://img.shields.io/badge/Math-MathJax-purple.svg) ![Version](https://img.shields.io/badge/Version-v1.0.1-success.svg) ![Status](https://img.shields.io/badge/Status-Stable-success.svg)
+![Language](https://img.shields.io/badge/Language-Python-blue.svg) ![Renderer](https://img.shields.io/badge/Renderer-Playwright%20%2B%20Chromium-green.svg) ![Math](https://img.shields.io/badge/Math-MathJax-purple.svg) ![Version](https://img.shields.io/badge/Version-v1.1.0-success.svg) ![Status](https://img.shields.io/badge/Status-Stable-success.svg)
 
 ## 📌 Overview
 
@@ -30,6 +30,7 @@ This pipeline gives the project strong control over typography, print CSS, page 
 - Render inline and display math formulas using vendored MathJax.
 - Generate a hierarchical Table of Contents from Markdown heading levels.
 - Generate a designed cover page that is not counted in document page numbering.
+- Read rich YAML front matter, including multiline summaries and multiple authors.
 - Support optional page-flow controls for TOC and top-level headings.
 - Support optional text or image watermarks on content pages only.
 - Provide multiple visual themes for different document styles.
@@ -113,7 +114,7 @@ MathJax is vendored inside the project, so formulas can be rendered without rely
 
 ### 🖼️ Professional Cover Page
 
-By default, Mardas MD2PDF generates a designed cover page using the bundled Mardas logo, document title, author, date, and summary/description.
+By default, Mardas MD2PDF generates a designed cover page using the bundled Mardas logo, document title, subtitle, author/authors, date, and summary/description.
 
 The cover page is rendered separately from the main document. Therefore:
 
@@ -375,8 +376,8 @@ mrs-md2pdf input.md -o output.pdf --debug-html output.html
 | `input` | Input Markdown file. | Required. |
 | `-o`, `--output` | Output PDF path. | Input filename with `.pdf` suffix. |
 | `--title` | Override document title. | Front matter `title`, otherwise first `#` heading, otherwise `Document`. |
-| `--author` | Override author metadata. | Front matter `author`, otherwise blank. |
-| `--description` | Override summary/description metadata. | Front matter `description` or `summary`, otherwise blank. |
+| `--author` | Override author metadata. | Front matter `authors` or `author`, otherwise blank. |
+| `--description` | Override summary/description metadata. | Front matter `description` or `summary`, including multiline YAML text, otherwise blank. |
 | `--toc` | Generate a hierarchical table of contents. | Disabled. |
 | `--toc-depth 1..6` | Maximum heading level included in TOC. | `6`. |
 | `--toc-page-break` | Put the main document content on a new page after the TOC. | Disabled. |
@@ -422,6 +423,8 @@ Mardas-MD2PDF/
 │   ├── markdown.py
 │   └── renderer.py
 ├── examples/
+│   ├── images/
+│   │   └── md2pdf-sample-chart.png
 │   └── fa-en-math-code.md
 ├── tests/
 │   └── test_markdown.py
@@ -469,23 +472,56 @@ The current tests cover:
 - hierarchical TOC numbering and nesting;
 - explicit public theme choices;
 - hidden unbranded-cover option behavior;
-- GUI entrypoint availability.
+- GUI entrypoint availability;
+- local image embedding;
+- multiline front-matter summaries and multiple cover authors.
 
 ## 🧾 Front Matter
 
-Mardas MD2PDF reads optional YAML front matter:
+Mardas MD2PDF reads optional YAML front matter. It supports simple strings as well as richer YAML values for cover-page metadata:
 
 ```yaml
 ---
 title: "نمونه حرفه‌ای تبدیل Markdown به PDF"
-author: "Mardas"
+subtitle: "نمونه کامل قابلیت‌های متن، کد، فرمول و تصویر"
+authors:
+  - name: "Meraj Rastegar"
+    email: "mragetsars@gmail.com"
+  - "Mardas MD2PDF Team"
 date: "1404-04-12"
-summary: "این فایل برای تست متن فارسی/English mixed، جدول، فرمول ریاضی، بلاک کد، لینک، تصویر و نکته طراحی شده است."
+summary: |
+  این فایل برای تست متن فارسی/English mixed، جدول، فرمول ریاضی، بلاک کد، لینک، تصویر و نکته طراحی شده است.
+  خط دوم summary در جلد PDF با شکست خط تمیز نمایش داده می‌شود.
+
+  پاراگراف دوم summary هم جدا و خوانا روی جلد چاپ می‌شود.
+institution: "Mardas Lab"
+course: "Markdown Publishing"
+version: "1.1"
+keywords:
+  - RTL
+  - MathJax
+  - PDF
 lang: fa
 ---
 ```
 
-These fields are used for title detection, cover page metadata, document language, and HTML metadata.
+Common fields:
+
+| Field | Type | Used for |
+| :--- | :--- | :--- |
+| `title` | string | PDF title and cover title. |
+| `subtitle` | string | Optional subtitle below the main cover title. |
+| `author` | string or list | One author or a list of authors. |
+| `authors` | list of strings or objects | Multiple authors. Objects can include `name`, `email`, `affiliation`, and `role`. |
+| `summary` / `description` | string or multiline block | Cover summary. YAML block scalars with `|` keep line breaks and paragraphs. |
+| `date` | string | Date card on the cover. |
+| `institution`, `course`, `department`, `supervisor`, `student_id`, `group`, `version`, `status` | string | Optional cover detail cards. |
+| `keywords` / `tags` | list or string | Optional keyword card on the cover. |
+| `cover_logo` / `logo` | path | Optional cover logo path relative to the Markdown file. CLI `--cover-logo` has priority. |
+| `lang` | string | HTML document language, e.g. `fa` or `en`. |
+| `eyebrow` / `document_type` | string | Small label above the cover title. Defaults to `Generated Document`. |
+
+These fields are used for title detection, cover page metadata, document language, and HTML metadata. CLI options such as `--title`, `--author`, `--description`, and `--cover-logo` override the matching front-matter values.
 
 ## 📄 Markdown Extensions
 
