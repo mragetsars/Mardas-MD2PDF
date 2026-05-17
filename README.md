@@ -2,7 +2,7 @@
 
 > Markdown to PDF Converter - Persian/English Typography - RTL/LTR Documents - Professional PDF Publishing
 
-![Language](https://img.shields.io/badge/Language-Python-blue.svg) ![Renderer](https://img.shields.io/badge/Renderer-Playwright%20%2B%20Chromium-green.svg) ![Math](https://img.shields.io/badge/Math-MathJax-purple.svg) ![Version](https://img.shields.io/badge/Version-v1.1.0-success.svg) ![Status](https://img.shields.io/badge/Status-Stable-success.svg)
+![Language](https://img.shields.io/badge/Language-Python-blue.svg) ![Renderer](https://img.shields.io/badge/Renderer-Playwright%20%2B%20Chromium-green.svg) ![Math](https://img.shields.io/badge/Math-MathJax-purple.svg) ![Version](https://img.shields.io/badge/Version-v1.1.1-success.svg) ![Status](https://img.shields.io/badge/Status-Stable-success.svg)
 
 ## 📌 Overview
 
@@ -100,7 +100,10 @@ Math formulas can be written inline:
 
 ```markdown
 Energy is $E = mc^2$.
+اثر $T$ و $\epsilon$ روی دقت
 ```
+
+Inline math is preserved even inside Persian/RTL paragraphs and headings, so symbols such as `$\epsilon$`, `$\Sigma$`, and `$T$` are handed to MathJax instead of being printed as raw backslash text.
 
 or as display math:
 
@@ -483,10 +486,10 @@ Mardas MD2PDF reads optional YAML front matter. It supports simple strings as we
 ```yaml
 ---
 title: "نمونه حرفه‌ای تبدیل Markdown به PDF"
-subtitle: "نمونه کامل قابلیت‌های متن، کد، فرمول و تصویر"
+subtitle: "نمونه کامل قابلیت‌های متن، جدول، فرمول، کد، تصویر و جلد"
 authors:
-  - name: "Meraj Rastegar"
-    email: "mragetsars@gmail.com"
+  - name: "Mardas"
+    email: "mragetsars@yahoo.com"
   - "Mardas MD2PDF Team"
 date: "1404-04-12"
 summary: |

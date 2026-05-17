@@ -141,3 +141,17 @@ lang: fa
     assert "Data Science" in html
     assert "RTL" in html
     assert "PDF" in html
+
+
+def test_inline_math_keeps_mathjax_delimiters_after_markdown_parsing():
+    result = render_markdown("متن فارسی با $T=500$ و $\\epsilon=0.05$ وسط جمله.")
+    assert '<span class="math inline">\\(T=500\\)</span>' in result.body_html
+    assert '<span class="math inline">\\(\\epsilon=0.05\\)</span>' in result.body_html
+    assert '<span class="math inline">(T=500)</span>' not in result.body_html
+    assert '<span class="math inline">(\\epsilon=0.05)</span>' not in result.body_html
+
+
+def test_toc_preserves_inline_math_for_mathjax_rendering():
+    result = render_markdown("## استنتاج\n\n### اثر $T$ و $\\epsilon$ روی دقت\n", toc=True)
+    assert '<span class="toc-title">اثر <span class="math inline">\\(T\\)</span> و <span class="math inline">\\(\\epsilon\\)</span> روی دقت</span>' in result.toc_html
+    assert '(\\epsilon)' not in result.toc_html

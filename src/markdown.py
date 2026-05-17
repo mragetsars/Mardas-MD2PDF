@@ -48,6 +48,7 @@ class TocItem:
     title: str
     heading_id: str
     number: str
+    title_html: str = ""
     children: list["TocItem"] = field(default_factory=list)
 
 
@@ -221,7 +222,7 @@ def protect_and_transform_math(markdown: str) -> str:
             expr = match.group(1).strip()
             if not expr:
                 return match.group(0)
-            return f'<span class="math inline">\\({html.escape(expr)}\\)</span>'
+            return f'<span class="math inline">\\\\({html.escape(expr)}\\\\)</span>'
 
         output.append(INLINE_MATH_RE.sub(repl_inline, line))
 
@@ -283,9 +284,9 @@ def slugify(value: str, used: set[str]) -> str:
     return value
 
 
-def add_heading_ids(html_text: str, *, toc_depth: int = 6) -> tuple[str, list[tuple[int, str, str]]]:
+def add_heading_ids(html_text: str, *, toc_depth: int = 6) -> tuple[str, list[tuple[int, str, str, str]]]:
     used: set[str] = set()
-    toc: list[tuple[int, str, str]] = []
+    toc: list[tuple[int, str, str, str]] = []
     max_depth = max(1, min(int(toc_depth or 6), 6))
 
     def repl(match: re.Match[str]) -> str:
@@ -300,13 +301,13 @@ def add_heading_ids(html_text: str, *, toc_depth: int = 6) -> tuple[str, list[tu
             attrs += f' id="{heading_id}"'
         plain = BeautifulSoup(content, "html.parser").get_text(" ", strip=True)
         if level <= max_depth and plain:
-            toc.append((level, plain, heading_id))
+            toc.append((level, plain, heading_id, content))
         return f"<h{level}{attrs}>{content}</h{level}>"
 
     return HEADING_RE.sub(repl, html_text), toc
 
 
-def _toc_tree(entries: list[tuple[int, str, str]]) -> list[TocItem]:
+def _toc_tree(entries: list[tuple[int, str, str, str]]) -> list[TocItem]:
     """Build a proper nested TOC tree based on Markdown heading levels.
 
     The stack uses the original HTML heading level, so a skipped level such as
@@ -318,7 +319,12 @@ def _toc_tree(entries: list[tuple[int, str, str]]) -> list[TocItem]:
     stack: list[tuple[int, TocItem]] = []
     counters: list[int] = []
 
-    for source_level, title, heading_id in entries:
+    for entry in entries:
+        if len(entry) == 3:
+            source_level, title, heading_id = entry
+            title_html = html.escape(title)
+        else:
+            source_level, title, heading_id, title_html = entry
         while stack and stack[-1][0] >= source_level:
             stack.pop()
         depth = len(stack) + 1
@@ -327,7 +333,7 @@ def _toc_tree(entries: list[tuple[int, str, str]]) -> list[TocItem]:
             counters.append(0)
         counters[depth - 1] += 1
         number = "-".join(str(value) for value in counters)
-        item = TocItem(source_level, title, heading_id, number)
+        item = TocItem(source_level, title, heading_id, number, title_html)
         if stack:
             stack[-1][1].children.append(item)
         else:
@@ -345,7 +351,7 @@ def _render_toc_items(items: list[TocItem], *, depth: int = 1) -> str:
             f'<li class="toc-level-{item.level}" data-level="{item.level}">' 
             f'<a href="#{html.escape(item.heading_id)}">'
             f'<span class="toc-number">{html.escape(item.number)}</span>'
-            f'<span class="toc-title">{html.escape(item.title)}</span>'
+            f'<span class="toc-title">{item.title_html or html.escape(item.title)}</span>'
             f'</a>'
         )
         parts.append(_render_toc_items(item.children, depth=depth + 1))
@@ -354,7 +360,7 @@ def _render_toc_items(items: list[TocItem], *, depth: int = 1) -> str:
     return "".join(parts)
 
 
-def build_toc(toc: list[tuple[int, str, str]], enabled: bool) -> str:
+def build_toc(toc: list[tuple[int, str, str, str]], enabled: bool) -> str:
     if not enabled or not toc:
         return ""
     tree = _toc_tree(toc)
