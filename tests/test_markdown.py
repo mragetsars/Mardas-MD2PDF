@@ -169,6 +169,7 @@ def test_multiline_footnotes_render_as_markdown_blocks():
     assert "خط دوم همان پانویس" in result.body_html
     assert "<strong>تاکید</strong>" in result.body_html
     assert '<li dir="auto">مورد اول</li>' in result.body_html
+    assert '<section class="footnotes"><ol><li class="footnote-item" id="fn-n"><span class="footnote-marker"' in result.body_html
 
 
 def test_raw_html_is_sanitized_by_default():

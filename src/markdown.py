@@ -365,14 +365,16 @@ def append_footnotes(body_html: str, footnotes: list[tuple[str, str]], md: Markd
     if not footnotes:
         return body_html
     items = []
-    for fid, raw in footnotes:
+    for index, (fid, raw) in enumerate(footnotes, start=1):
         safe_id = html.escape(fid)
         rendered = md.render(raw).strip()
         items.append(
-            f'<li id="fn-{safe_id}" dir="auto"><div class="footnote-body">{rendered}</div> '
+            f'<li class="footnote-item" id="fn-{safe_id}">'
+            f'<span class="footnote-marker" aria-hidden="true">{index}.</span>'
+            f'<div class="footnote-body" dir="auto">{rendered}</div> '
             f'<a class="footnote-backref" href="#fnref-{safe_id}">↩</a></li>'
         )
-    return body_html + '<section class="footnotes" dir="auto"><ol>' + "".join(items) + "</ol></section>"
+    return body_html + '<section class="footnotes"><ol>' + "".join(items) + "</ol></section>"
 
 
 def slugify(value: str, used: set[str]) -> str:
@@ -645,6 +647,8 @@ def postprocess_html(body_html: str, *, code_style: str = "github-dark") -> str:
     # Direction-aware blocks and inline content.
     for tag in soup.find_all(["p", "li", "td", "th", "h1", "h2", "h3", "h4", "h5", "h6", "figcaption"]):
         if tag.get("dir"):
+            continue
+        if "footnote-item" in tag.get("class", []):
             continue
         text = tag.get_text(" ", strip=True)
         if not text:

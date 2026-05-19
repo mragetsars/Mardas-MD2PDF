@@ -847,3 +847,42 @@ blockquote {
   letter-spacing: normal;
   text-transform: none;
 }
+
+/* Footnotes: keep markers and content aligned with the resolved document direction. */
+body.md2pdf-dir-rtl .footnotes,
+body.md2pdf-dir-rtl .footnotes ol { direction: rtl; }
+body.md2pdf-dir-ltr .footnotes,
+body.md2pdf-dir-ltr .footnotes ol { direction: ltr; }
+.footnotes ol {
+  list-style: none;
+  padding-inline-start: 0;
+  padding-inline-end: 0;
+}
+.footnote-item {
+  display: flex;
+  gap: 0.55em;
+  align-items: flex-start;
+  margin: 0.45em 0;
+}
+.footnote-marker {
+  flex: 0 0 auto;
+  color: var(--accent);
+  font-family: var(--font-en);
+  font-weight: 800;
+}
+.footnote-body { flex: 1 1 auto; min-width: 0; }
+.footnote-body > :last-child { margin-bottom: 0; }
+.footnote-body ul,
+.footnote-body ol {
+  margin-top: 0.35em;
+  margin-bottom: 0.35em;
+  padding-inline-start: 1.45em;
+  padding-inline-end: 0;
+}
+body.md2pdf-dir-rtl .footnote-body ul,
+body.md2pdf-dir-rtl .footnote-body ol {
+  padding-inline-start: 0;
+  padding-inline-end: 1.45em;
+}
+.footnote-body li::marker { content: "• "; }
+
