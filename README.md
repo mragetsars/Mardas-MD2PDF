@@ -2,7 +2,7 @@
 
 > Markdown to PDF Converter - Persian/English Typography - RTL/LTR Documents - Professional PDF Publishing
 
-![Language](https://img.shields.io/badge/Language-Python-blue.svg) ![Renderer](https://img.shields.io/badge/Renderer-Playwright%20%2B%20Chromium-green.svg) ![Math](https://img.shields.io/badge/Math-MathJax-purple.svg) ![Version](https://img.shields.io/badge/Version-v1.1.1-success.svg) ![Status](https://img.shields.io/badge/Status-Stable-success.svg)
+![Language](https://img.shields.io/badge/Language-Python-blue.svg) ![Renderer](https://img.shields.io/badge/Renderer-Playwright%20%2B%20Chromium-green.svg) ![Math](https://img.shields.io/badge/Math-MathJax-purple.svg) ![Version](https://img.shields.io/badge/Version-v1.2.0-success.svg) ![Status](https://img.shields.io/badge/Status-Stable-success.svg)
 
 ## 📌 Overview
 
@@ -46,7 +46,7 @@ Mardas MD2PDF is designed for documents such as:
 متن های فارسی ای که در آن ها از English words استفاده شده است.
 ```
 
-The document body is RTL by default, while paragraphs, headings, lists, table cells, and captions use direction-aware processing. Code blocks, inline code, paths, commands, formulas, and technical identifiers are kept LTR for readability.
+The document shell direction is now resolved from `--dir`, front matter (`dir`, `direction`, `text_direction`, or `document_direction`), or automatic text/language detection. Paragraphs, headings, lists, table cells, and captions still use direction-aware processing, while code blocks, inline code, paths, commands, formulas, and technical identifiers are kept LTR for readability.
 
 ### 📚 Hierarchical Table of Contents
 
@@ -74,7 +74,7 @@ The maximum heading depth can be controlled with `--toc-depth`.
 
 ### 🖼️ Local Image Rendering
 
-Markdown images and raw HTML images are resolved relative to the input Markdown file and embedded as data URIs before the PDF print step. This makes figure rendering deterministic in Chromium and prevents missing-image placeholders when a report references local screenshots such as:
+Markdown images and safe raw HTML images are resolved relative to the input Markdown file and embedded as data URIs before the PDF print step. This makes figure rendering deterministic in Chromium and prevents missing-image placeholders when a report references local screenshots such as:
 
 ```markdown
 ![Executive Overview](images/executive_overview.png)
@@ -214,11 +214,12 @@ The GUI lets users:
 - enable or disable TOC;
 - set TOC depth;
 - enable TOC page break and H1 page break;
-- set title, author, page size, output filename, and watermark text;
+- set title, author, page size, document direction, output filename, and watermark text;
+- attach a local image folder/files so GUI exports can embed `images/...` Markdown references;
 - export the final PDF through the same Python rendering engine;
 - copy an equivalent CLI command.
 
-The GUI is intended for users who prefer visual configuration over command-line flags. The light UI mode uses a clean white surface, soft borders, and restrained contrast so it stays readable without the muddy gray panels that often make editor interfaces feel cluttered.
+The GUI is intended for users who prefer visual configuration over command-line flags. It no longer depends on CDN JavaScript or web fonts for its editor/preview shell, so it opens reliably in offline local environments. The light UI mode uses a clean white surface, soft borders, and restrained contrast so it stays readable without the muddy gray panels that often make editor interfaces feel cluttered.
 
 ## 🎨 Themes
 
@@ -386,7 +387,8 @@ mrs-md2pdf input.md -o output.pdf --debug-html output.html
 | `--toc-page-break` | Put the main document content on a new page after the TOC. | Disabled. |
 | `--h1-page-break` | Start every top-level `#` heading on a new page. | Disabled. |
 | `--theme` | Choose `modern`, `textbook-light`, `textbook-dark`, or `academic`. | `modern`. |
-| `--page-size` | PDF page size such as `A4` or `Letter`. | `A4`. |
+| `--page-size` | PDF page size such as `A4`, `Letter`, or `Legal`. A late CSS `@page` override keeps the selected size from being overwritten by theme CSS. | `A4`. |
+| `--dir auto|rtl|ltr` | Document shell direction. Individual paragraphs still use `dir="auto"`. | Front matter direction, then automatic detection. |
 | `--margin-top` | Top page margin. | `18mm`. |
 | `--margin-bottom` | Bottom page margin. | `20mm`. |
 | `--margin-x` | Left/right page margin. | `16mm`. |
@@ -402,6 +404,7 @@ mrs-md2pdf input.md -o output.pdf --debug-html output.html
 | `--watermark-width` | CSS width for image watermarks. | `105mm`. |
 | `--no-header-footer` | Disable page number footer. | Footer is enabled. |
 | `--no-mathjax` | Do not load MathJax. | MathJax is enabled. |
+| `--unsafe-html` | Skip the built-in raw HTML sanitizer. Use only for trusted local Markdown. | Raw HTML is sanitized to a safe document-oriented subset. |
 | `--timeout-ms` | Browser rendering timeout in milliseconds. | `120000`. |
 | `--version` | Print the installed version. | Not applicable. |
 
@@ -477,7 +480,10 @@ The current tests cover:
 - hidden unbranded-cover option behavior;
 - GUI entrypoint availability;
 - local image embedding;
-- multiline front-matter summaries and multiple cover authors.
+- multiline front-matter summaries and multiple cover authors;
+- safe raw HTML sanitization;
+- multiline footnotes;
+- page-size and document-direction overrides.
 
 ## 🧾 Front Matter
 
@@ -499,12 +505,13 @@ summary: |
   پاراگراف دوم summary هم جدا و خوانا روی جلد چاپ می‌شود.
 institution: "Mardas Lab"
 course: "Markdown Publishing"
-version: "1.1"
+version: "1.2"
 keywords:
   - RTL
   - MathJax
   - PDF
 lang: fa
+dir: auto
 ---
 ```
 
@@ -522,9 +529,10 @@ Common fields:
 | `keywords` / `tags` | list or string | Optional keyword card on the cover. |
 | `cover_logo` / `logo` | path | Optional cover logo path relative to the Markdown file. CLI `--cover-logo` has priority. |
 | `lang` | string | HTML document language, e.g. `fa` or `en`. |
+| `dir` / `direction` / `text_direction` / `document_direction` | `auto`, `rtl`, or `ltr` | Document shell direction. CLI `--dir` has priority. |
 | `eyebrow` / `document_type` | string | Small label above the cover title. Defaults to `Generated Document`. |
 
-These fields are used for title detection, cover page metadata, document language, and HTML metadata. CLI options such as `--title`, `--author`, `--description`, and `--cover-logo` override the matching front-matter values.
+These fields are used for title detection, cover page metadata, document language, document direction, and PDF metadata (`Title`, `Author`, `Subject`, and `Keywords`). CLI options such as `--title`, `--author`, `--description`, `--dir`, and `--cover-logo` override the matching front-matter values.
 
 ## 📄 Markdown Extensions
 
@@ -538,6 +546,7 @@ Supported syntax includes:
 - blockquotes;
 - callouts;
 - images;
+- safe raw HTML blocks such as `<img>` and page-break `<div>`;
 - inline code;
 - footnotes;
 - inline and display math;
@@ -549,11 +558,13 @@ Manual page break:
 <div class="md2pdf-page-break"></div>
 ```
 
+Raw HTML is sanitized by default: active content such as `<script>`, inline event handlers, remote stylesheets, iframes, forms, and unsafe URL schemes are removed before Chromium sees the document. Use `--unsafe-html` only for trusted local Markdown when you intentionally need unrestricted HTML.
+
 ## 🛠️ Development Notes
 
 The project avoids direct low-level PDF drawing for document content. Instead, it uses browser-grade layout through Chromium. This makes typography, tables, RTL/LTR behavior, MathJax SVG output, and print CSS much easier to control.
 
-The cover page is rendered as a separate full-bleed PDF and then merged with the content PDF. This keeps cover numbering and watermark behavior clean while allowing the cover background to reach the paper edges.
+The cover page is rendered as a separate full-bleed PDF and then merged with the content PDF. This keeps cover numbering and watermark behavior clean while allowing the cover background to reach the paper edges. The final PDF is then written with document metadata from front matter and CLI overrides.
 
 The source package intentionally uses a flattened `src/` layout: the package name is still `mardas_md2pdf`, but source files live directly in `src/` to keep the repository tree compact.
 

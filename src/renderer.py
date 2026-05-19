@@ -6,13 +6,15 @@ import mimetypes
 import re
 import shutil
 import tempfile
+import unicodedata
 from dataclasses import dataclass, replace
+from datetime import datetime, timezone
 from importlib import resources
 from pathlib import Path
 from typing import Any
 
 from playwright.sync_api import Page, sync_playwright
-from pypdf import PdfWriter
+from pypdf import PdfReader, PdfWriter
 
 from .markdown import MarkdownRenderResult, render_markdown_file
 
@@ -30,6 +32,7 @@ class PdfOptions:
     h1_page_break: bool = False
     debug_html: Path | None = None
     page_size: str = "A4"
+    document_direction: str | None = None
     margin_top: str = "18mm"
     margin_bottom: str = "20mm"
     margin_x: str = "16mm"
@@ -47,6 +50,7 @@ class PdfOptions:
     watermark_image: Path | None = None
     watermark_opacity: float = 0.065
     watermark_width: str = "105mm"
+    unsafe_html: bool = False
 
 
 def _asset_text(relative_path: str) -> str:
@@ -211,6 +215,89 @@ def _stringify_metadata_value(value: Any, *, item_separator: str = "، ") -> str
     return str(value)
 
 
+CSS_PAGE_SIZE_RE = re.compile(
+    r"^(?:[A-Za-z][A-Za-z0-9-]*(?:\s+(?:portrait|landscape))?|\d+(?:\.\d+)?(?:mm|cm|in|px|pt)\s+\d+(?:\.\d+)?(?:mm|cm|in|px|pt))$",
+    re.IGNORECASE,
+)
+
+RTL_LANG_PREFIXES = ("ar", "fa", "he", "iw", "ku", "ps", "sd", "ug", "ur", "yi")
+
+
+def _css_page_size(value: str | None) -> str:
+    """Return a safe CSS @page size value.
+
+    Playwright is asked to prefer CSS page size so the theme can control print
+    margins. Therefore the selected CLI/GUI page size must also be emitted as a
+    late CSS override; otherwise the theme-level ``@page { size: A4; }`` wins.
+    """
+    text = (value or "A4").strip()
+    return text if CSS_PAGE_SIZE_RE.match(text) else "A4"
+
+
+def normalize_document_direction(value: Any, *, default: str = "auto") -> str:
+    text = _stringify_metadata_value(value).strip().lower()
+    if text in {"rtl", "right-to-left", "right_to_left"}:
+        return "rtl"
+    if text in {"ltr", "left-to-right", "left_to_right"}:
+        return "ltr"
+    if text in {"auto", "automatic", "detect", "detected", ""}:
+        return default if default in {"rtl", "ltr", "auto"} else "auto"
+    return default if default in {"rtl", "ltr", "auto"} else "auto"
+
+
+def _plain_html_text(html_text: str) -> str:
+    text = re.sub(r"<script\b.*?</script>", " ", html_text, flags=re.IGNORECASE | re.DOTALL)
+    text = re.sub(r"<style\b.*?</style>", " ", text, flags=re.IGNORECASE | re.DOTALL)
+    text = re.sub(r"<[^>]+>", " ", text)
+    return html.unescape(re.sub(r"\s+", " ", text)).strip()
+
+
+def _detect_document_direction(text: str, lang: str | None = None) -> str:
+    """Choose a stable document-level direction for the root and layout.
+
+    Individual paragraphs still use ``dir=auto``. This function only controls
+    the page shell, TOC/list indentation direction, and default alignment.
+    """
+    rtl = 0
+    ltr = 0
+    for char in text:
+        direction = unicodedata.bidirectional(char)
+        if direction in {"R", "AL"}:
+            rtl += 1
+        elif direction == "L":
+            ltr += 1
+    if rtl or ltr:
+        return "rtl" if rtl >= ltr else "ltr"
+
+    lang_value = (lang or "").strip().lower()
+    if lang_value.startswith(RTL_LANG_PREFIXES):
+        return "rtl"
+    return "ltr"
+
+
+def _resolved_document_direction(result: MarkdownRenderResult, options: PdfOptions, lang: str) -> str:
+    metadata = result.metadata
+    requested = normalize_document_direction(
+        options.document_direction
+        if options.document_direction not in (None, "")
+        else _first_metadata_value(metadata, "dir", "direction", "text_direction", "document_direction"),
+        default="auto",
+    )
+    if requested in {"rtl", "ltr"}:
+        return requested
+    sample = " ".join(
+        part
+        for part in [
+            _stringify_metadata_value(metadata.get("title")),
+            _stringify_metadata_value(metadata.get("subtitle")),
+            _plain_html_text(result.toc_html),
+            _plain_html_text(result.body_html),
+        ]
+        if part
+    )
+    return _detect_document_direction(sample, lang)
+
+
 def _metadata_items(value: Any) -> list[str]:
     if value in (None, ""):
         return []
@@ -271,19 +358,30 @@ def _metadata_path(value: Any, base_dir: Path) -> Path | None:
     return path if path.exists() else None
 
 
-def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False) -> str:
+def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document_direction: str = "rtl") -> str:
     classes: list[str] = []
+    doc_dir = normalize_document_direction(document_direction, default="rtl")
     css_chunks = [
         f"""
+      @page {{
+        size: {_css_page_size(options.page_size)};
+        margin: {"0" if cover_full_bleed else f"var(--page-margin-top, {options.margin_top}) var(--page-margin-x, {options.margin_x}) var(--page-margin-bottom, {options.margin_bottom})"};
+      }}
       :root {{
         --page-margin-top: {"0" if cover_full_bleed else options.margin_top};
         --page-margin-bottom: {"0" if cover_full_bleed else options.margin_bottom};
         --page-margin-x: {"0" if cover_full_bleed else options.margin_x};
+        --md2pdf-document-direction: {doc_dir};
       }}
+      body.md2pdf-dir-rtl .md2pdf-document,
+      body.md2pdf-dir-rtl .md2pdf-article {{ direction: rtl; }}
+      body.md2pdf-dir-ltr .md2pdf-document,
+      body.md2pdf-dir-ltr .md2pdf-article {{ direction: ltr; }}
     """
     ]
     if cover_full_bleed:
         classes.append("md2pdf-cover-full-bleed")
+    classes.append(f"md2pdf-dir-{doc_dir}")
     if options.toc_page_break:
         classes.append("md2pdf-toc-break")
     if options.h1_page_break:
@@ -404,11 +502,16 @@ def build_html(
         else _first_metadata_value(metadata, "description", "summary")
     )
     lang = _stringify_metadata_value(metadata.get("lang")) or "fa"
+    document_direction = _resolved_document_direction(result, options, str(lang))
     date = _first_metadata_value(metadata, "date")
     subtitle = _first_metadata_value(metadata, "subtitle", "subject")
     eyebrow = _first_metadata_value(metadata, "eyebrow", "document_type", "type") or "Generated Document"
     base_href = options.input_path.resolve().parent.as_uri() + "/"
-    css_variables, body_classes = _layout_css(options, cover_full_bleed=cover_full_bleed)
+    css_variables, body_classes = _layout_css(
+        options,
+        cover_full_bleed=cover_full_bleed,
+        document_direction=document_direction,
+    )
 
     cover_options = options
     metadata_logo = _metadata_path(_first_metadata_value(metadata, "cover_logo", "logo"), options.input_path.resolve().parent)
@@ -454,7 +557,7 @@ def build_html(
     theme_name = normalize_theme_name(options.theme)
 
     return f"""<!doctype html>
-<html lang="{html.escape(str(lang))}" dir="rtl">
+<html lang="{html.escape(str(lang))}" dir="{html.escape(document_direction)}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -466,7 +569,7 @@ def build_html(
   <style>{css_variables}</style>
   {_mathjax_block(options)}
 </head>
-<body class="md2pdf-theme-{html.escape(theme_name)} {html.escape(body_classes)}">
+<body class="md2pdf-theme-{html.escape(theme_name)} {html.escape(body_classes)}" dir="{html.escape(document_direction)}">
   {watermark}
   <main class="md2pdf-document">
     <article class="md2pdf-article">
@@ -545,10 +648,70 @@ def _render_pdf(page: Page, html_text: str, options: PdfOptions, path: Path, *, 
     page.pdf(**pdf_kwargs)
 
 
-def _merge_pdfs(parts: list[Path], output_path: Path) -> None:
+def _pdf_date(value: datetime | None = None) -> str:
+    dt = value or datetime.now(timezone.utc).astimezone()
+    offset = dt.strftime("%z")
+    tz = "Z" if not offset else f"{offset[:3]}'{offset[3:]}'"
+    return dt.strftime("D:%Y%m%d%H%M%S") + tz
+
+
+def _keywords_metadata(metadata: dict[str, Any]) -> str:
+    value = _first_metadata_value(metadata, "keywords", "tags")
+    if isinstance(value, (list, tuple, set)):
+        return ", ".join(_metadata_items(value))
+    return _stringify_metadata_value(value, item_separator=", ")
+
+
+def _pdf_metadata(result: MarkdownRenderResult, options: PdfOptions, title: str) -> dict[str, str]:
+    source = result.metadata
+    author = options.author if options.author is not None else _first_metadata_value(source, "authors", "author")
+    description = (
+        options.description
+        if options.description is not None
+        else _first_metadata_value(source, "description", "summary", "subject")
+    )
+    data = {
+        "/Title": str(title or result.title or "Document"),
+        "/Creator": "Mardas MD2PDF",
+        "/Producer": "Mardas MD2PDF + Playwright/Chromium + pypdf",
+        "/CreationDate": _pdf_date(),
+        "/ModDate": _pdf_date(),
+    }
+    author_text = _stringify_metadata_value(author)
+    if author_text:
+        data["/Author"] = author_text
+    subject_text = _stringify_metadata_value(description)
+    if subject_text:
+        data["/Subject"] = subject_text
+    keywords_text = _keywords_metadata(source)
+    if keywords_text:
+        data["/Keywords"] = keywords_text
+    return data
+
+
+def _copy_pdf_with_metadata(input_path: Path, output_path: Path, metadata: dict[str, str]) -> None:
+    reader = PdfReader(str(input_path))
+    writer = PdfWriter()
+    for page in reader.pages:
+        writer.add_page(page)
+    writer.add_metadata(metadata)
+    with output_path.open("wb") as fh:
+        writer.write(fh)
+    writer.close()
+
+
+def _apply_pdf_metadata(pdf_path: Path, metadata: dict[str, str]) -> None:
+    tmp_path = pdf_path.with_suffix(pdf_path.suffix + ".metadata.tmp")
+    _copy_pdf_with_metadata(pdf_path, tmp_path, metadata)
+    tmp_path.replace(pdf_path)
+
+
+def _merge_pdfs(parts: list[Path], output_path: Path, metadata: dict[str, str] | None = None) -> None:
     writer = PdfWriter()
     for part in parts:
         writer.append(str(part))
+    if metadata:
+        writer.add_metadata(metadata)
     with output_path.open("wb") as fh:
         writer.write(fh)
     writer.close()
@@ -558,9 +721,14 @@ def convert(options: PdfOptions) -> Path:
     options.input_path = Path(options.input_path)
     options.output_path = Path(options.output_path)
     result = render_markdown_file(
-        options.input_path, toc=options.toc, toc_depth=options.toc_depth, code_style=_code_style(options.theme)
+        options.input_path,
+        toc=options.toc,
+        toc_depth=options.toc_depth,
+        code_style=_code_style(options.theme),
+        unsafe_html=options.unsafe_html,
     )
-    title = options.title or result.title
+    title = options.title or _stringify_metadata_value(result.metadata.get("title")) or result.title
+    pdf_metadata = _pdf_metadata(result, options, str(title))
 
     options.output_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -598,9 +766,11 @@ def convert(options: PdfOptions) -> Path:
                 _render_pdf(page, content_html, options, content_pdf, display_footer=True, title=str(title))
 
                 browser.close()
-                _merge_pdfs([cover_pdf, content_pdf], options.output_path)
+                _merge_pdfs([cover_pdf, content_pdf], options.output_path, pdf_metadata)
             else:
+                content_pdf = tmp / "content.pdf"
                 html_text = build_html(result, options, include_cover=False, include_content=True, include_watermark=True)
-                _render_pdf(page, html_text, options, options.output_path, display_footer=True, title=str(title))
+                _render_pdf(page, html_text, options, content_pdf, display_footer=True, title=str(title))
                 browser.close()
+                _copy_pdf_with_metadata(content_pdf, options.output_path, pdf_metadata)
     return options.output_path

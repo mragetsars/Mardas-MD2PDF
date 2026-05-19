@@ -31,6 +31,72 @@ INLINE_MATH_RE = re.compile(r"(?<!\\)\$(?![\s$])(.+?)(?<!\\)\$(?!\d)")
 DISPLAY_MATH_FENCE_RE = re.compile(r"^\s*\$\$\s*$")
 FENCE_RE = re.compile(r"^\s*(```+|~~~+)")
 HEADING_RE = re.compile(r"<h([1-6])([^>]*)>(.*?)</h\1>", re.DOTALL | re.IGNORECASE)
+BLOCKED_RAW_HTML_TAGS = {"script", "style", "iframe", "object", "embed", "form", "meta", "link", "base"}
+SAFE_RAW_HTML_TAGS = {
+    "a",
+    "abbr",
+    "b",
+    "blockquote",
+    "br",
+    "caption",
+    "cite",
+    "code",
+    "col",
+    "colgroup",
+    "dd",
+    "del",
+    "details",
+    "div",
+    "dl",
+    "dt",
+    "em",
+    "figcaption",
+    "figure",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "hr",
+    "i",
+    "img",
+    "ins",
+    "kbd",
+    "li",
+    "mark",
+    "ol",
+    "p",
+    "pre",
+    "s",
+    "section",
+    "small",
+    "span",
+    "strong",
+    "sub",
+    "summary",
+    "sup",
+    "table",
+    "tbody",
+    "td",
+    "tfoot",
+    "th",
+    "thead",
+    "tr",
+    "u",
+    "ul",
+}
+GLOBAL_SAFE_ATTRS = {"class", "id", "dir", "lang", "title", "role", "aria-label"}
+TAG_SAFE_ATTRS = {
+    "a": {"href", "name", "target", "rel"},
+    "img": {"src", "alt", "width", "height"},
+    "th": {"align", "colspan", "rowspan", "scope"},
+    "td": {"align", "colspan", "rowspan"},
+    "ol": {"start", "type"},
+    "ul": {"type"},
+    "code": {"class"},
+}
+SAFE_URL_SCHEMES = {"", "http", "https", "mailto", "file", "data"}
 
 
 @dataclass(slots=True)
@@ -232,16 +298,55 @@ def protect_and_transform_math(markdown: str) -> str:
     return "".join(output)
 
 
+def _dedent_footnote_line(line: str) -> str:
+    if line.startswith("    "):
+        return line[4:]
+    if line.startswith("\t"):
+        return line[1:]
+    return line
+
+
 def extract_footnotes(markdown: str) -> tuple[str, list[tuple[str, str]]]:
+    """Extract Markdown footnotes, including indented multi-line bodies.
+
+    The previous implementation only supported single-line definitions such as
+    ``[^id]: text``. Standard Markdown footnotes often continue with four-space
+    indented paragraphs, lists, or code. This parser keeps those continuation
+    blocks together and removes them from the main document body before normal
+    rendering.
+    """
     lines = markdown.splitlines()
     body_lines: list[str] = []
     footnotes: list[tuple[str, str]] = []
-    for line in lines:
+    index = 0
+    while index < len(lines):
+        line = lines[index]
         match = FOOTNOTE_DEF_RE.match(line)
-        if match:
-            footnotes.append((match.group(1).strip(), match.group(2).strip()))
-        else:
+        if not match:
             body_lines.append(line)
+            index += 1
+            continue
+
+        fid = match.group(1).strip()
+        raw_lines = [match.group(2).strip()]
+        index += 1
+        while index < len(lines):
+            current = lines[index]
+            next_line = lines[index + 1] if index + 1 < len(lines) else ""
+            if FOOTNOTE_DEF_RE.match(current):
+                break
+            if current.startswith(("    ", "\t")):
+                raw_lines.append(_dedent_footnote_line(current))
+                index += 1
+                continue
+            if not current.strip() and (next_line.startswith(("    ", "\t")) or not next_line.strip()):
+                raw_lines.append("")
+                index += 1
+                continue
+            break
+        footnote_text = "\n".join(raw_lines).strip()
+        if footnote_text:
+            footnotes.append((fid, footnote_text))
     return "\n".join(body_lines), footnotes
 
 
@@ -262,9 +367,9 @@ def append_footnotes(body_html: str, footnotes: list[tuple[str, str]], md: Markd
     items = []
     for fid, raw in footnotes:
         safe_id = html.escape(fid)
-        rendered = md.renderInline(raw)
+        rendered = md.render(raw).strip()
         items.append(
-            f'<li id="fn-{safe_id}" dir="auto">{rendered} '
+            f'<li id="fn-{safe_id}" dir="auto"><div class="footnote-body">{rendered}</div> '
             f'<a class="footnote-backref" href="#fnref-{safe_id}">↩</a></li>'
         )
     return body_html + '<section class="footnotes" dir="auto"><ol>' + "".join(items) + "</ol></section>"
@@ -457,6 +562,53 @@ def _image_file_to_data_uri(path: Path) -> str | None:
     return f"data:{mime_type};base64,{encoded}"
 
 
+def _is_safe_url(value: str) -> bool:
+    parsed = urlparse((value or "").strip())
+    if parsed.scheme.lower() not in SAFE_URL_SCHEMES:
+        return False
+    if parsed.scheme.lower() == "data":
+        return value.lower().startswith("data:image/")
+    return True
+
+
+def sanitize_html(body_html: str) -> str:
+    """Keep a safe, document-oriented subset of raw HTML.
+
+    Markdown authors can still use useful HTML such as ``<img>`` and explicit
+    page-break ``<div>`` markers. Active content and event handlers are removed
+    before the HTML is handed to Chromium.
+    """
+    soup = BeautifulSoup(body_html, "html.parser")
+    for tag in list(soup.find_all(True)):
+        name = (tag.name or "").lower()
+        if name in BLOCKED_RAW_HTML_TAGS:
+            tag.decompose()
+            continue
+        if name not in SAFE_RAW_HTML_TAGS:
+            tag.unwrap()
+            continue
+
+        allowed = GLOBAL_SAFE_ATTRS | TAG_SAFE_ATTRS.get(name, set())
+        for attr in list(tag.attrs):
+            lower_attr = attr.lower()
+            if lower_attr.startswith("on") or lower_attr == "style" or lower_attr not in allowed:
+                del tag.attrs[attr]
+                continue
+            value = tag.attrs.get(attr)
+            if lower_attr in {"href", "src"}:
+                values = value if isinstance(value, list) else [str(value)]
+                if not values or any(not _is_safe_url(str(item)) for item in values):
+                    del tag.attrs[attr]
+            elif lower_attr in {"target", "rel"}:
+                if name != "a":
+                    del tag.attrs[attr]
+        if name == "a" and tag.get("target") == "_blank":
+            rel = set(str(tag.get("rel") or "").split())
+            rel.update({"noopener", "noreferrer"})
+            tag["rel"] = " ".join(sorted(rel))
+    return str(soup)
+
+
 def embed_local_images(body_html: str, base_dir: str | Path) -> str:
     """Inline local images as data URIs for reliable Chromium PDF rendering.
 
@@ -573,7 +725,12 @@ def postprocess_html(body_html: str, *, code_style: str = "github-dark") -> str:
 
 
 def render_markdown(
-    markdown: str, *, toc: bool = False, toc_depth: int = 6, code_style: str = "github-dark"
+    markdown: str,
+    *,
+    toc: bool = False,
+    toc_depth: int = 6,
+    code_style: str = "github-dark",
+    unsafe_html: bool = False,
 ) -> MarkdownRenderResult:
     metadata, markdown_body = extract_frontmatter(markdown)
     title = guess_title(markdown_body, metadata)
@@ -613,6 +770,8 @@ def render_markdown(
 
     body_html = md.render(markdown_body)
     body_html = append_footnotes(body_html, footnotes, md)
+    if not unsafe_html:
+        body_html = sanitize_html(body_html)
     body_html, toc_entries = add_heading_ids(body_html, toc_depth=toc_depth)
     toc_html = build_toc(toc_entries, toc)
     body_html = postprocess_html(body_html, code_style=code_style)
@@ -629,10 +788,21 @@ def render_markdown(
 
 
 def render_markdown_file(
-    path: str | Path, *, toc: bool = False, toc_depth: int = 6, code_style: str = "github-dark"
+    path: str | Path,
+    *,
+    toc: bool = False,
+    toc_depth: int = 6,
+    code_style: str = "github-dark",
+    unsafe_html: bool = False,
 ) -> MarkdownRenderResult:
     input_path = Path(path)
     text = input_path.read_text(encoding="utf-8")
-    result = render_markdown(text, toc=toc, toc_depth=toc_depth, code_style=code_style)
+    result = render_markdown(
+        text,
+        toc=toc,
+        toc_depth=toc_depth,
+        code_style=code_style,
+        unsafe_html=unsafe_html,
+    )
     result.body_html = embed_local_images(result.body_html, input_path.resolve().parent)
     return result

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import argparse
+import base64
+import binascii
 import json
 import tempfile
 import threading
@@ -29,6 +31,53 @@ def _safe_filename(value: str | None, default: str = "mardas-document") -> str:
             keep.append("-")
     name = "".join(keep).strip("-_.")
     return name or default
+
+
+def _safe_asset_relative_path(value: str | None, fallback: str = "asset") -> Path:
+    raw = str(value or fallback).replace("\\", "/").strip("/")
+    parts = []
+    for part in raw.split("/"):
+        safe = _safe_filename(part, default="")
+        if safe and safe not in {".", ".."}:
+            parts.append(safe)
+    return Path(*parts) if parts else Path(_safe_filename(fallback))
+
+
+def _write_gui_assets(tmp: Path, assets: Any) -> None:
+    if not isinstance(assets, list):
+        return
+    for index, asset in enumerate(assets[:250]):
+        if not isinstance(asset, dict):
+            continue
+        name = str(asset.get("path") or asset.get("name") or f"asset-{index}")
+        data_url = str(asset.get("data") or "")
+        if "," not in data_url:
+            continue
+        header, payload = data_url.split(",", 1)
+        if "base64" not in header.lower():
+            continue
+        try:
+            data = base64.b64decode(payload, validate=True)
+        except (binascii.Error, ValueError):
+            continue
+        if len(data) > 12 * 1024 * 1024:
+            continue
+        rel_path = _safe_asset_relative_path(name, fallback=f"asset-{index}")
+        target = tmp / rel_path
+        try:
+            target.relative_to(tmp)
+        except ValueError:
+            continue
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(data)
+
+        # Also copy a basename fallback beside document.md. This mirrors the CLI
+        # image resolver and helps when a browser only provides selected files
+        # without their original directory names.
+        if len(rel_path.parts) > 1:
+            fallback_target = tmp / rel_path.name
+            if not fallback_target.exists():
+                fallback_target.write_bytes(data)
 
 
 class GuiRequestHandler(BaseHTTPRequestHandler):
@@ -70,6 +119,7 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
             payload = json.loads(raw.decode("utf-8"))
             markdown = str(payload.get("markdown") or "")
             options = payload.get("options") or {}
+            assets = payload.get("assets") or []
             if not markdown.strip():
                 raise ValueError("Markdown content is empty.")
 
@@ -83,6 +133,7 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
                 md_path = tmp / "document.md"
                 pdf_path = tmp / filename
                 md_path.write_text(markdown, encoding="utf-8")
+                _write_gui_assets(tmp, assets)
 
                 pdf_options = PdfOptions(
                     input_path=md_path,
@@ -95,6 +146,7 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
                     toc_page_break=bool(options.get("tocPageBreak", True)),
                     h1_page_break=bool(options.get("h1PageBreak", True)),
                     page_size=str(options.get("pageSize") or "A4"),
+                    document_direction=(str(options.get("direction") or "").strip() or None),
                     theme=theme,
                     cover=not bool(options.get("noCover", False)),
                     watermark_text=(str(options.get("watermark") or "").strip() or None),

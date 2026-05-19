@@ -26,6 +26,13 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--h1-page-break", action="store_true", help="Start every top-level Markdown heading (# / h1) on a new page")
     parser.add_argument("--debug-html", type=Path, help="Write the intermediate HTML for inspection")
     parser.add_argument("--page-size", default="A4", help="PDF page size, e.g. A4, Letter")
+    parser.add_argument(
+        "--dir",
+        dest="document_direction",
+        choices=["auto", "rtl", "ltr"],
+        default=None,
+        help="Document shell direction. Defaults to front matter dir/direction, then auto-detection.",
+    )
     parser.add_argument("--margin-top", default="18mm", help="Top CSS page margin")
     parser.add_argument("--margin-bottom", default="20mm", help="Bottom CSS page margin")
     parser.add_argument("--margin-x", default="16mm", help="Left/right CSS page margin")
@@ -50,6 +57,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--watermark-width", default="105mm", help="CSS width for image watermarks, e.g. 90mm or 45%%; default: 105mm")
     parser.add_argument("--no-header-footer", action="store_true", help="Disable page number footer")
     parser.add_argument("--no-mathjax", action="store_true", help="Do not load MathJax")
+    parser.add_argument(
+        "--unsafe-html",
+        action="store_true",
+        help="Allow raw HTML without sanitizing it first. Use only for trusted local Markdown.",
+    )
     parser.add_argument("--timeout-ms", type=int, default=120_000, help="Browser timeout in milliseconds")
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     return parser
@@ -81,6 +93,7 @@ def main(argv: list[str] | None = None) -> int:
         h1_page_break=args.h1_page_break,
         debug_html=args.debug_html,
         page_size=args.page_size,
+        document_direction=args.document_direction,
         margin_top=args.margin_top,
         margin_bottom=args.margin_bottom,
         margin_x=args.margin_x,
@@ -98,6 +111,7 @@ def main(argv: list[str] | None = None) -> int:
         watermark_image=args.watermark_image,
         watermark_opacity=args.watermark_opacity,
         watermark_width=args.watermark_width,
+        unsafe_html=args.unsafe_html,
     )
     pdf_path = convert(options)
     print(f"PDF created: {pdf_path}")

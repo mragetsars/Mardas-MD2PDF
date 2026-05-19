@@ -4,9 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mardas MD2PDF Studio</title>
-  <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link id="highlight-theme" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" />
   <style>
     :root{
       --bg:#0b1020;
@@ -31,7 +28,7 @@
       --radius:16px;
       --sidebar-width:318px;
       --editor-width:50%;
-      --font:'Inter','Vazirmatn',sans-serif;
+      --font:'Inter','Vazirmatn','Segoe UI',Arial,sans-serif;
       --code:'JetBrains Mono','SFMono-Regular','Consolas','Monaco',monospace;
     }
     body.light-mode{
@@ -113,6 +110,8 @@
     .check input:checked{background:linear-gradient(135deg,var(--accent),var(--accent-2));border-color:transparent}
     .check input:checked::after{content:"✓";font-size:12px;font-weight:900;color:#020617}
     .hint{font-size:11px;line-height:1.55;color:var(--faint);margin-top:4px}
+    .asset-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+    .asset-chip{max-width:100%;border:1px solid var(--border);border-radius:999px;padding:4px 8px;font-size:10px;color:var(--muted);background:var(--panel-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .editor-tools{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:11px;font-weight:800}
     textarea{width:100%;height:calc(100% - 42px);border:0;outline:0;background:var(--editor);color:var(--text);padding:20px;resize:none;font:14px/1.72 var(--code);tab-size:4}
     .preview{height:calc(100% - 42px);overflow:auto;background:var(--preview);padding:32px;line-height:1.85;font-size:15px;scrollbar-width:thin}
@@ -158,6 +157,7 @@
       </div>
       <div class="toolbar">
         <button class="btn" onclick="openFile()">📂 Open</button><input type="file" id="fileInput" accept=".md,.markdown,.txt" hidden>
+        <button class="btn" onclick="attachAssets()">🖼️ Attach Assets</button><input type="file" id="assetInput" multiple webkitdirectory hidden>
         <button class="btn" onclick="downloadMarkdown()">💾 Save MD</button>
         <button class="btn" onclick="copyCommand()">⌘ Copy CLI</button>
         <div class="seg" aria-label="Layout">
@@ -178,7 +178,8 @@
             <div class="field"><label for="titleInput">Title</label><input id="titleInput" type="text" placeholder="Document title"></div>
             <div class="field"><label for="authorInput">Author</label><input id="authorInput" type="text" placeholder="Author"></div>
             <div class="field"><label for="filenameInput">Output filename</label><input id="filenameInput" type="text" value="mardas-document.pdf"></div>
-            <div class="field"><label for="pageSizeInput">Page size</label><select id="pageSizeInput"><option>A4</option><option>Letter</option></select></div>
+            <div class="field"><label for="pageSizeInput">Page size</label><select id="pageSizeInput"><option>A4</option><option>Letter</option><option>Legal</option></select></div>
+            <div class="field"><label for="directionInput">Document direction</label><select id="directionInput"><option value="auto" selected>auto</option><option value="rtl">rtl</option><option value="ltr">ltr</option></select></div>
           </section>
           <section class="card"><h3>🎨 PDF Theme</h3>
             <div class="field"><label for="pdfThemeInput">Theme</label><select id="pdfThemeInput"><option value="modern">modern</option><option value="textbook-light" selected>textbook-light</option><option value="textbook-dark">textbook-dark</option><option value="academic">academic</option></select></div>
@@ -195,6 +196,11 @@
           <section class="card"><h3>💧 Watermark</h3>
             <div class="field"><label for="watermarkInput">Watermark text</label><input id="watermarkInput" type="text" placeholder="Optional"></div>
             <div class="field"><label for="watermarkOpacityInput">Opacity</label><input id="watermarkOpacityInput" type="number" min="0" max="1" step="0.01" value="0.065"></div>
+          </section>
+          <section class="card"><h3>🖼️ Local Assets</h3>
+            <button class="btn" onclick="attachAssets()">Attach image folder/files</button>
+            <p class="hint">For Markdown image links such as <code>images/chart.png</code>, attach the image folder or files before exporting. Assets are embedded by the local Python renderer.</p>
+            <div id="assetList" class="asset-list"></div>
           </section>
         </div>
       </aside>
@@ -213,9 +219,6 @@
       <div class="footer-group"><span><i class="dot"></i><span id="serverStatus">Ready</span></span></div>
     </footer>
   </div>
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.2/dist/purify.min.js"></script>
 <script>
 const $ = (id) => document.getElementById(id);
 const editor = $('editor');
@@ -224,18 +227,8 @@ const statusWords = $('statusWords');
 const statusChars = $('statusChars');
 const serverStatus = $('serverStatus');
 const themeBtn = $('themeBtn');
-const highlightTheme = $('highlight-theme');
 let renderTimer = null;
 let currentLayout = 'split';
-
-marked.setOptions({
-  breaks: true,
-  gfm: true,
-  highlight: (code, lang) => {
-    const language = hljs.getLanguage(lang) ? lang : 'plaintext';
-    return hljs.highlight(code, { language }).value;
-  }
-});
 
 function getOptions(){
   return {
@@ -243,6 +236,7 @@ function getOptions(){
     author: $('authorInput').value,
     filename: $('filenameInput').value,
     pageSize: $('pageSizeInput').value,
+    direction: $('directionInput').value,
     theme: $('pdfThemeInput').value,
     noCover: $('noCoverInput').checked,
     noHeaderFooter: $('noHeaderFooterInput').checked,
@@ -255,12 +249,147 @@ function getOptions(){
   };
 }
 
+function escapeHtml(value){
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function renderInlineMarkdown(value){
+  let text = escapeHtml(value);
+  text = text.replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+&quot;([^&]*)&quot;)?\)/g, '<img alt="$1" src="$2" title="$3">');
+  text = text.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+  text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+  text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  text = text.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+  text = text.replace(/(^|\W)\*([^*\n]+)\*/g, '$1<em>$2</em>');
+  text = text.replace(/(^|\W)_([^_\n]+)_/g, '$1<em>$2</em>');
+  text = text.replace(/~~([^~]+)~~/g, '<del>$1</del>');
+  return text;
+}
+
+function isTableSeparator(line){
+  return /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(line);
+}
+
+function splitTableRow(line){
+  return line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(cell => cell.trim());
+}
+
+function renderMarkdownPreview(markdown){
+  const lines = markdown.replace(/\r\n?/g, '\n').split('\n');
+  const out = [];
+  let paragraph = [];
+  let inCode = false;
+  let codeLang = '';
+  let code = [];
+  let listStack = null;
+  let inBlockquote = false;
+
+  const flushParagraph = () => {
+    if (!paragraph.length) return;
+    out.push('<p dir="auto">' + renderInlineMarkdown(paragraph.join(' ')) + '</p>');
+    paragraph = [];
+  };
+  const closeList = () => {
+    if (listStack) {
+      out.push('</' + listStack + '>');
+      listStack = null;
+    }
+  };
+  const closeBlockquote = () => {
+    if (inBlockquote) {
+      flushParagraph();
+      closeList();
+      out.push('</blockquote>');
+      inBlockquote = false;
+    }
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const fence = line.match(/^\s*```\s*([^`]*)$/);
+    if (fence) {
+      if (inCode) {
+        out.push('<pre dir="ltr"><code class="language-' + escapeHtml(codeLang || 'text') + '">' + escapeHtml(code.join('\n')) + '</code></pre>');
+        inCode = false;
+        code = [];
+        codeLang = '';
+      } else {
+        flushParagraph(); closeList(); closeBlockquote();
+        inCode = true;
+        codeLang = (fence[1] || '').trim().split(/\s+/)[0];
+      }
+      continue;
+    }
+    if (inCode) { code.push(line); continue; }
+
+    if (!line.trim()) {
+      flushParagraph(); closeList(); closeBlockquote();
+      continue;
+    }
+
+    if (line.trim() === '---' || line.trim() === '***') {
+      flushParagraph(); closeList(); closeBlockquote();
+      out.push('<hr>');
+      continue;
+    }
+
+    if (line.startsWith('>')) {
+      flushParagraph(); closeList();
+      if (!inBlockquote) { out.push('<blockquote>'); inBlockquote = true; }
+      paragraph.push(line.replace(/^>\s?/, ''));
+      continue;
+    } else if (inBlockquote) {
+      closeBlockquote();
+    }
+
+    const heading = line.match(/^(#{1,6})\s+(.+)$/);
+    if (heading) {
+      flushParagraph(); closeList();
+      const level = heading[1].length;
+      out.push('<h' + level + ' dir="auto">' + renderInlineMarkdown(heading[2]) + '</h' + level + '>');
+      continue;
+    }
+
+    if (i + 1 < lines.length && line.includes('|') && isTableSeparator(lines[i + 1])) {
+      flushParagraph(); closeList();
+      const headers = splitTableRow(line);
+      i += 2;
+      const rows = [];
+      while (i < lines.length && lines[i].includes('|') && lines[i].trim()) {
+        rows.push(splitTableRow(lines[i]));
+        i++;
+      }
+      i--;
+      out.push('<table><thead><tr>' + headers.map(cell => '<th>' + renderInlineMarkdown(cell) + '</th>').join('') + '</tr></thead><tbody>' + rows.map(row => '<tr>' + row.map(cell => '<td>' + renderInlineMarkdown(cell) + '</td>').join('') + '</tr>').join('') + '</tbody></table>');
+      continue;
+    }
+
+    const list = line.match(/^\s*([-*+] |\d+\. )(.+)$/);
+    if (list) {
+      flushParagraph();
+      const type = /^\d+\./.test(list[1]) ? 'ol' : 'ul';
+      if (listStack !== type) { closeList(); out.push('<' + type + '>'); listStack = type; }
+      out.push('<li dir="auto">' + renderInlineMarkdown(list[2]) + '</li>');
+      continue;
+    }
+
+    paragraph.push(line.trim());
+  }
+  if (inCode) out.push('<pre dir="ltr"><code>' + escapeHtml(code.join('\n')) + '</code></pre>');
+  flushParagraph(); closeList(); closeBlockquote();
+  return out.join('\n');
+}
+
 function renderPreview(){
   const text = editor.value;
   statusWords.textContent = 'Words: ' + (text.trim() ? text.trim().split(/\s+/).length : 0);
   statusChars.textContent = 'Chars: ' + text.length;
-  preview.innerHTML = DOMPurify.sanitize(marked.parse(text));
-  document.querySelectorAll('pre code').forEach(el => hljs.highlightElement(el));
+  preview.innerHTML = renderMarkdownPreview(text);
 }
 
 editor.addEventListener('input', () => {
@@ -281,6 +410,35 @@ editor.addEventListener('keydown', (event) => {
 
 $('pdfThemeInput').addEventListener('change', () => {
   $('profileName').textContent = $('pdfThemeInput').value;
+});
+
+let attachedAssets = [];
+
+function attachAssets(){ $('assetInput').click(); }
+
+function renderAssetList(){
+  const list = $('assetList');
+  if (!list) return;
+  list.innerHTML = attachedAssets.length
+    ? attachedAssets.map(asset => '<span class="asset-chip" title="' + escapeHtml(asset.path) + '">' + escapeHtml(asset.path) + '</span>').join('')
+    : '<span class="hint">No assets attached.</span>';
+}
+
+$('assetInput').addEventListener('change', async (event) => {
+  const files = Array.from(event.target.files || []);
+  attachedAssets = await Promise.all(files.map(file => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = ev => resolve({
+      name: file.name,
+      path: file.webkitRelativePath || file.name,
+      type: file.type || 'application/octet-stream',
+      data: ev.target.result
+    });
+    reader.onerror = () => reject(reader.error || new Error('Failed to read asset'));
+    reader.readAsDataURL(file);
+  })));
+  renderAssetList();
+  serverStatus.textContent = 'Assets attached: ' + attachedAssets.length;
 });
 
 function openFile(){ $('fileInput').click(); }
@@ -312,7 +470,7 @@ async function renderPDF(){
     const response = await fetch('/api/render', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ markdown: editor.value, options: getOptions() })
+      body: JSON.stringify({ markdown: editor.value, options: getOptions(), assets: attachedAssets })
     });
     if (!response.ok) {
       const error = await response.json().catch(() => ({ error: 'Render failed' }));
@@ -341,6 +499,7 @@ function copyCommand(){
   if (options.h1PageBreak) cmd.push('--h1-page-break');
   if (options.noCover) cmd.push('--no-cover');
   if (options.noHeaderFooter) cmd.push('--no-header-footer');
+  if (options.direction && options.direction !== 'auto') cmd.push('--dir ' + options.direction);
   if (options.watermark) cmd.push('--watermark "' + options.watermark.replace(/"/g, '\\"') + '"');
   navigator.clipboard.writeText(cmd.join(' '));
   serverStatus.textContent = 'CLI command copied';
@@ -350,9 +509,6 @@ function toggleTheme(){
   document.body.classList.toggle('light-mode');
   const light = document.body.classList.contains('light-mode');
   themeBtn.textContent = light ? '🌙 Dark' : '☀️ Light';
-  highlightTheme.href = light
-    ? 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css'
-    : 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css';
 }
 
 function setLayout(layout){
@@ -386,6 +542,7 @@ window.addEventListener('mousemove', (event) => {
 window.addEventListener('mouseup', () => { resizing = false; document.body.style.userSelect = ''; });
 
 editor.value = `---\ntitle: "نمونه سند Mardas MD2PDF"\nauthor: "mragetsars"\ndate: "2026-05-12"\nlang: fa\n---\n\n# نمونه Markdown\n\nاین محیط برای ویرایش Markdown و گرفتن خروجی PDF با تنظیمات گرافیکی ساخته شده است.\n\n## Code\n\n\`\`\`python\nprint("Hello Mardas")\n\`\`\`\n\n| قابلیت | وضعیت |\n|---|---|\n| RTL/LTR | ✅ |\n| PDF Export | ✅ |\n`;
+renderAssetList();
 renderPreview();
 </script>
 </body>

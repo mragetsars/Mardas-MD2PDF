@@ -155,3 +155,49 @@ def test_toc_preserves_inline_math_for_mathjax_rendering():
     result = render_markdown("## استنتاج\n\n### اثر $T$ و $\\epsilon$ روی دقت\n", toc=True)
     assert '<span class="toc-title">اثر <span class="math inline">\\(T\\)</span> و <span class="math inline">\\(\\epsilon\\)</span> روی دقت</span>' in result.toc_html
     assert '(\\epsilon)' not in result.toc_html
+
+
+def test_multiline_footnotes_render_as_markdown_blocks():
+    result = render_markdown(
+        "متن دارای ارجاع[^n].\n\n"
+        "[^n]: خط اول پانویس.\n"
+        "    خط دوم همان پانویس با **تاکید**.\n\n"
+        "    - مورد اول\n"
+        "    - مورد دوم\n"
+    )
+    assert 'class="footnote-body"' in result.body_html
+    assert "خط دوم همان پانویس" in result.body_html
+    assert "<strong>تاکید</strong>" in result.body_html
+    assert '<li dir="auto">مورد اول</li>' in result.body_html
+
+
+def test_raw_html_is_sanitized_by_default():
+    result = render_markdown('<img src="chart.png" onerror="alert(1)"><script>alert(1)</script>')
+    assert "<script" not in result.body_html
+    assert "onerror" not in result.body_html
+    assert '<img src="chart.png"' in result.body_html
+
+
+def test_renderer_page_size_and_direction_are_late_css_overrides(tmp_path):
+    from mardas_md2pdf.renderer import PdfOptions, build_html
+
+    md = """---
+title: English report
+lang: en
+dir: ltr
+---
+
+# English report
+
+Only English text.
+"""
+    result = render_markdown(md)
+    input_path = tmp_path / "english.md"
+    input_path.write_text(md, encoding="utf-8")
+    html = build_html(
+        result,
+        PdfOptions(input_path=input_path, output_path=tmp_path / "english.pdf", page_size="Letter"),
+    )
+    assert "size: Letter;" in html
+    assert '<html lang="en" dir="ltr">' in html
+    assert "md2pdf-dir-ltr" in html

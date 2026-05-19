@@ -12,10 +12,15 @@ summary: |
   این پاراگراف دوم summary است و جدا از پاراگراف اول روی جلد چاپ می‌شود.
 institution: "Mardas Lab"
 course: "Markdown Publishing"
-version: "1.1"
+version: "1.2"
 keywords:
-  - MD2PDF , Chromium
+  - RTL/LTR
+  - MathJax
+  - Local Images
+  - Safe HTML
+  - PDF Metadata
 lang: fa
+dir: auto
 ---
 
 # نمونه Markdown فارسی و English mixed
@@ -34,6 +39,9 @@ lang: fa
 - [x] هایلایت کد براساس زبان برنامه‌نویسی
 - [x] نمایش تصویرهای محلی Markdown و HTML در PDF
 - [x] پشتیبانی از summary چندخطی و چند author در YAML
+- [x] ثبت metadata در PDF نهایی
+- [x] sanitization برای HTML خام قابل اعتمادتر
+- [x] پانویس چندخطی با Markdown داخلی
 - [ ] افزودن تم‌های بیشتر در نسخه بعدی
 
 ## جدول نمونه
@@ -44,6 +52,8 @@ lang: fa
 | Code Highlight | ✅ | رنگ‌بندی با Pygments و فونت monospace |
 | MathJax | ✅ | خروجی SVG دقیق برای فرمول‌ها |
 | Local Images | ✅ | تبدیل تصویرهای محلی به data URI برای نمایش پایدار در PDF |
+| Safe Raw HTML | ✅ | حذف script، event handler، iframe و URLهای ناامن قبل از چاپ |
+| PDF Metadata | ✅ | ثبت Title، Author، Subject و Keywords از YAML یا CLI |
 | PDF Print CSS | ✅ | حاشیه، فوتر، رنگ‌بندی و break مناسب |
 
 ## تصویر محلی Markdown
@@ -131,3 +141,8 @@ console.log(message);
 برای ساخت PDF، پروژه از یک HTML میانی استفاده می‌کند و سپس آن را با Chromium به PDF تبدیل می‌کند.[^html]
 
 [^html]: این روش برای استایل‌دهی پیشرفته و کنترل دقیق روی خروجی چاپی بسیار مناسب است.
+
+    ادامه‌ی همین پانویس به‌صورت چندخطی نوشته شده است تا parser جدید بتواند indentation استاندارد Markdown را حفظ کند.
+
+    - خروجی HTML پانویس می‌تواند لیست داشته باشد.
+    - تاکید مثل **print CSS** و inline code مثل `@page` هم باید درست رندر شود.
