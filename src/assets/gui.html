@@ -113,6 +113,8 @@
     .asset-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
     .asset-chip{max-width:100%;border:1px solid var(--border);border-radius:999px;padding:4px 8px;font-size:10px;color:var(--muted);background:var(--panel-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .editor-tools{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:11px;font-weight:800}
+    .preview-tools{display:flex;align-items:center;gap:8px}
+    .preview-note{font-size:10px;font-weight:800;color:var(--faint);letter-spacing:.02em;text-transform:none}
     textarea{width:100%;height:calc(100% - 42px);border:0;outline:0;background:var(--editor);color:var(--text);padding:20px;resize:none;font:14px/1.72 var(--code);tab-size:4}
     .preview{height:calc(100% - 42px);overflow:auto;background:var(--preview);padding:32px;line-height:1.85;font-size:15px;scrollbar-width:thin}
     .preview h1,.preview h2,.preview h3{border-bottom:1px solid var(--border);padding-bottom:.35em;margin-top:1.6em;color:var(--text)}
@@ -178,7 +180,7 @@
             <div class="field"><label for="titleInput">Title</label><input id="titleInput" type="text" placeholder="Document title"></div>
             <div class="field"><label for="authorInput">Author</label><input id="authorInput" type="text" placeholder="Author"></div>
             <div class="field"><label for="filenameInput">Output filename</label><input id="filenameInput" type="text" value="mardas-document.pdf"></div>
-            <div class="field"><label for="pageSizeInput">Page size</label><select id="pageSizeInput"><option>A4</option><option>Letter</option><option>Legal</option></select></div>
+            <div class="field"><label for="pageSizeInput">Page size</label><select id="pageSizeInput"><option>A4</option><option>A4 landscape</option><option>Letter</option><option>Legal</option><option>210mm 297mm</option></select></div>
             <div class="field"><label for="directionInput">Document direction</label><select id="directionInput"><option value="auto" selected>auto</option><option value="rtl">rtl</option><option value="ltr">ltr</option></select></div>
           </section>
           <section class="card"><h3>🎨 PDF Theme</h3>
@@ -210,7 +212,7 @@
       </section>
       <div class="gutter" id="gutter" title="Drag to resize editor and preview"></div>
       <section class="pane preview-pane">
-        <div class="pane-head"><strong>Preview</strong><button class="btn" onclick="toggleDirection()" id="dirBtn">↔️ RTL</button></div>
+        <div class="pane-head"><strong>Preview</strong><span class="preview-tools"><span class="preview-note" title="The exported PDF uses the Python renderer, MathJax, theme CSS, TOC, page breaks, and Chromium print layout.">Approximate preview</span><button class="btn" onclick="toggleDirection()" id="dirBtn">↔️ RTL</button></span></div>
         <div id="preview" class="preview" dir="auto"></div>
       </section>
     </main>

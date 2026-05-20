@@ -124,7 +124,7 @@ Use `lang: fa` for Persian UI labels and RTL defaults, or `lang: en` for English
 | `--toc`, `--toc-depth` | Generate and configure the Table of Contents. |
 | `--toc-page-break`, `--h1-page-break` | Control printed page flow. |
 | `--theme` | Choose `modern`, `textbook-light`, `textbook-dark`, or `academic`. |
-| `--page-size` | Use `A4`, `Letter`, `Legal`, or a CSS page size. |
+| `--page-size` | Use `A4`, `Letter`, `Legal`, `A4 landscape`, or dimensions like `210mm 297mm`. |
 | `--dir` | Force `auto`, `rtl`, or `ltr`. |
 | `--no-cover`, `--cover-logo`, `--no-cover-logo` | Control the cover page. |
 | `--watermark`, `--watermark-image` | Add content-page watermarks. |
@@ -164,7 +164,7 @@ pip install -e .[dev]
 pytest
 ```
 
-The test suite covers direction handling, TOC generation, code highlighting, MathJax preservation, cover metadata, local images, sanitization, multiline footnotes, page-size overrides, language-aware labels, GUI entrypoint availability, and inline/display math sizing.
+The test suite covers direction handling, TOC generation, code highlighting, MathJax preservation, cover metadata, local images, sanitization, multiline footnotes, page-size overrides, language-aware labels, GUI entrypoint availability, and inline/display math sizing, code-span protection, renderer fallback warnings, and custom CSS page sizes.
 
 ## Author
 

@@ -378,10 +378,10 @@ Watermark فقط روی صفحات محتوا اعمال می‌شود و روی
 | `--toc`, `--toc-depth` | فعال‌سازی و تنظیم فهرست مطالب. |
 | `--toc-page-break`, `--h1-page-break` | کنترل صفحه‌بندی چاپی. |
 | `--theme` | انتخاب `modern`، `textbook-light`، `textbook-dark` یا `academic`. |
-| `--page-size` | اندازه صفحه مثل `A4`، `Letter`، `Legal` یا اندازه CSS. |
+| `--page-size` | اندازه صفحه مثل `A4`، `Letter`، `Legal`، `A4 landscape` یا ابعادی مثل `210mm 297mm`. |
 | `--dir` | اجبار جهت به `auto`، `ltr` یا `rtl`. |
 | `--margin-top`, `--margin-bottom`, `--margin-x` | کنترل margin صفحه. |
-| `--font-dir` | مسیر فونت‌های محلی Vazirmatn. |
+| `--font-dir` | مسیر فونت‌های محلی Vazirmatn؛ اگر مسیر یا فایل‌های شناخته‌شده پیدا نشود، renderer هشدار می‌دهد و از فونت‌های سیستم استفاده می‌کند. |
 | `--chromium-path` | مسیر سفارشی Chromium/Chrome. |
 | `--debug-html` | ذخیره HTML میانی. |
 | `--no-cover`, `--cover-logo`, `--no-cover-logo` | تنظیم جلد. |
@@ -409,11 +409,11 @@ mrs-md2pdf input.md -o output.pdf --chromium-path /path/to/chrome
 
 ## تصویرها در PDF دیده نمی‌شوند
 
-مطمئن شوید مسیر تصویرها نسبت به فایل Markdown درست است. در GUI، پوشه یا فایل‌های تصویر را attach کنید تا backend بتواند آن‌ها را قبل از رندر embed کند.
+مطمئن شوید مسیر تصویرها نسبت به فایل Markdown درست است. در GUI، پوشه یا فایل‌های تصویر را attach کنید تا backend بتواند آن‌ها را قبل از رندر embed کند. تصویرهای محلی خیلی بزرگ embed نمی‌شوند؛ renderer لینک اصلی را نگه می‌دارد و برای جلوگیری از مصرف زیاد حافظه هشدار می‌دهد.
 
 ## فرمول‌ها به شکل TeX خام دیده می‌شوند
 
-مطمئن شوید MathJax فعال است. از `--no-mathjax` فقط وقتی استفاده کنید که عمداً نمی‌خواهید فرمول‌ها پردازش شوند.
+مطمئن شوید MathJax فعال است. از `--no-mathjax` فقط وقتی استفاده کنید که عمداً نمی‌خواهید فرمول‌ها پردازش شوند. اگر MathJax هنگام رندر Chromium شکست بخورد، converter هشدار می‌دهد تا fallback در اجرای خودکار پنهان نماند.
 
 ## نیاز به بررسی layout دارید
 

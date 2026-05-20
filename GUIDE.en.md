@@ -378,10 +378,10 @@ Watermarks are applied to content pages only, not to the cover.
 | `--toc`, `--toc-depth` | Enable/configure the Table of Contents. |
 | `--toc-page-break`, `--h1-page-break` | Control print page flow. |
 | `--theme` | Choose `modern`, `textbook-light`, `textbook-dark`, or `academic`. |
-| `--page-size` | `A4`, `Letter`, `Legal`, or a CSS page size. |
+| `--page-size` | `A4`, `Letter`, `Legal`, `A4 landscape`, or dimensions such as `210mm 297mm`. |
 | `--dir` | Force `auto`, `ltr`, or `rtl`. |
 | `--margin-top`, `--margin-bottom`, `--margin-x` | Control page margins. |
-| `--font-dir` | Directory containing local Vazirmatn font files. |
+| `--font-dir` | Directory containing local Vazirmatn font files; missing or unrecognized directories produce a fallback warning. |
 | `--chromium-path` | Custom Chromium/Chrome executable path. |
 | `--debug-html` | Save the intermediate HTML. |
 | `--no-cover`, `--cover-logo`, `--no-cover-logo` | Configure the cover. |
@@ -409,11 +409,11 @@ mrs-md2pdf input.md -o output.pdf --chromium-path /path/to/chrome
 
 ## Missing images
 
-Check that image paths are relative to the Markdown file. For GUI exports, attach the image folder/files so the backend can embed them before rendering.
+Check that image paths are relative to the Markdown file. For GUI exports, attach the image folder/files so the backend can embed them before rendering. Very large local images are not embedded; the renderer keeps the original link and emits a warning to avoid excessive memory use.
 
 ## Math appears as raw TeX
 
-Make sure MathJax is enabled. Avoid `--no-mathjax` unless you intentionally want raw math markers.
+Make sure MathJax is enabled. Avoid `--no-mathjax` unless you intentionally want raw math markers. If MathJax fails during Chromium rendering, the converter emits a warning so the fallback is visible during automation.
 
 ## Need to debug layout
 
