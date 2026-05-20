@@ -132,7 +132,7 @@ lang: fa
 
     html = build_html(result, PdfOptions(input_path=input_path, output_path=tmp_path / "sample.pdf"))
 
-    assert "Authors" in html
+    assert "نویسندگان" in html
     assert "Meraj Rastegar (mragetsars@gmail.com)" in html
     assert "Mardas Team" in html
     assert "خط اول خلاصه برای جلد PDF.<br>خط دوم خلاصه" in html
@@ -202,3 +202,68 @@ Only English text.
     assert "size: Letter;" in html
     assert '<html lang="en" dir="ltr">' in html
     assert "md2pdf-dir-ltr" in html
+
+
+def test_lang_en_localizes_toc_callouts_and_cover_direction(tmp_path):
+    from mardas_md2pdf.renderer import PdfOptions, build_html
+
+    md = """---
+title: English report
+lang: en
+---
+
+# English report
+
+> [!NOTE]
+> This is a localized callout.
+
+## Analysis
+"""
+    result = render_markdown(md, toc=True)
+    input_path = tmp_path / "english.md"
+    input_path.write_text(md, encoding="utf-8")
+    html = build_html(result, PdfOptions(input_path=input_path, output_path=tmp_path / "english.pdf"))
+
+    assert "Table of Contents" in result.toc_html
+    assert "فهرست مطالب" not in result.toc_html
+    assert "Note" in result.body_html
+    assert '<html lang="en" dir="ltr">' in html
+    assert 'class="md2pdf-cover" lang="en" dir="ltr"' in html
+    assert "Generated Document" in html
+
+
+def test_lang_en_drives_ltr_shell_even_when_body_contains_persian(tmp_path):
+    from mardas_md2pdf.renderer import PdfOptions, build_html
+
+    md = """---
+title: Mixed language notes
+lang: en
+dir: auto
+---
+
+# English title
+
+این پاراگراف فارسی است اما پوسته سند باید با lang انگلیسی LTR شود.
+"""
+    result = render_markdown(md, toc=True)
+    input_path = tmp_path / "mixed.md"
+    input_path.write_text(md, encoding="utf-8")
+    html = build_html(result, PdfOptions(input_path=input_path, output_path=tmp_path / "mixed.pdf"))
+
+    assert '<html lang="en" dir="ltr">' in html
+    assert "Table of Contents" in result.toc_html
+
+
+def test_math_scaling_rules_distinguish_inline_and_display_math(tmp_path):
+    from mardas_md2pdf.renderer import PdfOptions, build_html
+
+    md = "متن با $E=mc^2$ و سپس:\n\n$$\nE=mc^2\n$$\n"
+    result = render_markdown(md)
+    input_path = tmp_path / "math.md"
+    input_path.write_text(md, encoding="utf-8")
+    html = build_html(result, PdfOptions(input_path=input_path, output_path=tmp_path / "math.pdf"))
+
+    assert "--md2pdf-inline-math-scale: 100%;" in html
+    assert "--md2pdf-display-math-scale: 130%;" in html
+    assert "mjx-container:not([display=\"true\"])" in html
+    assert "mjx-container[display=\"true\"]" in html

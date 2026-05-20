@@ -97,6 +97,66 @@ TAG_SAFE_ATTRS = {
     "code": {"class"},
 }
 SAFE_URL_SCHEMES = {"", "http", "https", "mailto", "file", "data"}
+RTL_LANG_PREFIXES = ("ar", "fa", "he", "iw", "ku", "ps", "sd", "ug", "ur", "yi")
+
+
+def normalize_language(value: Any, fallback: str = "auto") -> str:
+    """Return a compact BCP-47-ish language code used for UI labels.
+
+    The converter only needs the primary subtag for built-in labels such as the
+    table-of-contents title and callout captions. Unknown or empty values are
+    kept as ``fallback`` so direction detection can still infer a sensible
+    default from the actual Markdown body.
+    """
+    text = str(value or "").strip().replace("_", "-").lower()
+    return text or fallback
+
+
+def is_rtl_language(lang: str | None) -> bool:
+    return normalize_language(lang, "").startswith(RTL_LANG_PREFIXES)
+
+
+def language_family(lang: str | None, text_hint: str = "") -> str:
+    """Choose ``fa`` or ``en`` for bundled UI strings.
+
+    Persian is used for RTL languages and Persian-dominant documents. English is
+    used for explicit English metadata and for LTR/Latin-dominant documents.
+    """
+    normalized = normalize_language(lang, "auto")
+    if normalized.startswith("en"):
+        return "en"
+    if is_rtl_language(normalized):
+        return "fa"
+    if normalized not in {"", "auto", "und"}:
+        return "en"
+    return "fa" if dominant_direction(text_hint) == "rtl" else "en"
+
+
+def ui_label(key: str, *, lang: str | None = None, text_hint: str = "") -> str:
+    labels = {
+        "fa": {
+            "toc_title": "فهرست مطالب",
+            "toc_aria": "فهرست مطالب",
+            "callout_note": "نکته",
+            "callout_tip": "پیشنهاد",
+            "callout_important": "مهم",
+            "callout_warning": "هشدار",
+            "callout_caution": "احتیاط",
+            "footnote": "پانویس",
+        },
+        "en": {
+            "toc_title": "Table of Contents",
+            "toc_aria": "Table of contents",
+            "callout_note": "Note",
+            "callout_tip": "Tip",
+            "callout_important": "Important",
+            "callout_warning": "Warning",
+            "callout_caution": "Caution",
+            "footnote": "Footnote",
+        },
+    }
+    family = language_family(lang, text_hint)
+    return labels[family].get(key, labels["en"].get(key, key))
 
 
 @dataclass(slots=True)
@@ -350,12 +410,14 @@ def extract_footnotes(markdown: str) -> tuple[str, list[tuple[str, str]]]:
     return "\n".join(body_lines), footnotes
 
 
-def replace_footnote_refs(markdown: str) -> str:
+def replace_footnote_refs(markdown: str, *, lang: str | None = None, text_hint: str = "") -> str:
+    label = ui_label("footnote", lang=lang, text_hint=text_hint)
+
     def repl(match: re.Match[str]) -> str:
         fid = html.escape(match.group(1).strip())
         return (
             f'<sup class="footnote-ref" id="fnref-{fid}">'
-            f'<a href="#fn-{fid}" aria-label="Footnote {fid}">{fid}</a></sup>'
+            f'<a href="#fn-{fid}" aria-label="{html.escape(label)} {fid}">{fid}</a></sup>'
         )
 
     return INLINE_FOOTNOTE_RE.sub(repl, markdown)
@@ -467,13 +529,21 @@ def _render_toc_items(items: list[TocItem], *, depth: int = 1) -> str:
     return "".join(parts)
 
 
-def build_toc(toc: list[tuple[int, str, str, str]], enabled: bool) -> str:
+def build_toc(
+    toc: list[tuple[int, str, str, str]],
+    enabled: bool,
+    *,
+    lang: str | None = None,
+    text_hint: str = "",
+) -> str:
     if not enabled or not toc:
         return ""
     tree = _toc_tree(toc)
+    title = ui_label("toc_title", lang=lang, text_hint=text_hint)
+    aria = ui_label("toc_aria", lang=lang, text_hint=text_hint)
     return (
-        '<nav class="md2pdf-toc" dir="auto" aria-label="Table of contents">'
-        '<h2>فهرست مطالب</h2>'
+        f'<nav class="md2pdf-toc" dir="auto" aria-label="{html.escape(aria)}">'
+        f'<h2>{html.escape(title)}</h2>'
         f'{_render_toc_items(tree)}'
         '</nav>'
     )
@@ -639,7 +709,7 @@ def embed_local_images(body_html: str, base_dir: str | Path) -> str:
     return str(soup)
 
 
-def postprocess_html(body_html: str, *, code_style: str = "github-dark") -> str:
+def postprocess_html(body_html: str, *, code_style: str = "github-dark", lang: str | None = None) -> str:
     soup = BeautifulSoup(body_html, "html.parser")
 
     normalize_raw_code_blocks(soup, code_style=code_style)
@@ -695,12 +765,13 @@ def postprocess_html(body_html: str, *, code_style: str = "github-dark") -> str:
             li.parent["class"] = list(set(li.parent.get("class", []) + ["task-list"]))
 
     # Obsidian/GitHub flavored callouts: > [!NOTE]
+    text_hint = soup.get_text(" ", strip=True)
     callout_titles = {
-        "NOTE": "نکته",
-        "TIP": "پیشنهاد",
-        "IMPORTANT": "مهم",
-        "WARNING": "هشدار",
-        "CAUTION": "احتیاط",
+        "NOTE": ui_label("callout_note", lang=lang, text_hint=text_hint),
+        "TIP": ui_label("callout_tip", lang=lang, text_hint=text_hint),
+        "IMPORTANT": ui_label("callout_important", lang=lang, text_hint=text_hint),
+        "WARNING": ui_label("callout_warning", lang=lang, text_hint=text_hint),
+        "CAUTION": ui_label("callout_caution", lang=lang, text_hint=text_hint),
     }
     for blockquote in soup.find_all("blockquote"):
         first_p = blockquote.find("p")
@@ -738,9 +809,10 @@ def render_markdown(
 ) -> MarkdownRenderResult:
     metadata, markdown_body = extract_frontmatter(markdown)
     title = guess_title(markdown_body, metadata)
+    lang = normalize_language(metadata.get("lang"), "auto")
 
     markdown_body, footnotes = extract_footnotes(markdown_body)
-    markdown_body = replace_footnote_refs(markdown_body)
+    markdown_body = replace_footnote_refs(markdown_body, lang=lang, text_hint=markdown_body)
     markdown_body = protect_and_transform_math(markdown_body)
     markdown_body = markdown_body.replace("\n---page---\n", '\n<div class="md2pdf-page-break"></div>\n')
 
@@ -777,8 +849,9 @@ def render_markdown(
     if not unsafe_html:
         body_html = sanitize_html(body_html)
     body_html, toc_entries = add_heading_ids(body_html, toc_depth=toc_depth)
-    toc_html = build_toc(toc_entries, toc)
-    body_html = postprocess_html(body_html, code_style=code_style)
+    text_hint = BeautifulSoup(body_html, "html.parser").get_text(" ", strip=True)
+    toc_html = build_toc(toc_entries, toc, lang=lang, text_hint=text_hint)
+    body_html = postprocess_html(body_html, code_style=code_style, lang=lang)
 
     formatter = CodeHtmlFormatter(code_style)
     pygments_css = formatter.get_style_defs(".codehilite")

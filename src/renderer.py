@@ -129,6 +129,22 @@ def _code_style(theme_name: str) -> str:
     return "github-dark"
 
 
+def _math_scale_vars(theme_name: str) -> tuple[str, str]:
+    """Return CSS font-size scales for inline and display MathJax.
+
+    MathJax SVG dimensions are emitted in ``ex`` units. Chromium resolves those
+    units differently across the theme font stacks, so each bundled theme gets a
+    small optical correction: inline formulas align with the surrounding text,
+    while display formulas remain visibly larger and centered.
+    """
+    theme = normalize_theme_name(theme_name)
+    if theme == "academic":
+        return "70%", "105%"
+    if theme in {"textbook-light", "textbook-dark"}:
+        return "78%", "115%"
+    return "100%", "130%"
+
+
 def _path_uri(path: Path | None) -> str | None:
     if not path:
         return None
@@ -223,6 +239,60 @@ CSS_PAGE_SIZE_RE = re.compile(
 RTL_LANG_PREFIXES = ("ar", "fa", "he", "iw", "ku", "ps", "sd", "ug", "ur", "yi")
 
 
+def normalize_language(value: Any, fallback: str = "") -> str:
+    text = _stringify_metadata_value(value).strip().replace("_", "-").lower()
+    return text or fallback
+
+
+def _language_direction(lang: str | None) -> str:
+    normalized = normalize_language(lang)
+    if not normalized:
+        return "auto"
+    if normalized.startswith(RTL_LANG_PREFIXES):
+        return "rtl"
+    return "ltr"
+
+
+def _localized_labels(lang: str | None) -> dict[str, str]:
+    normalized = normalize_language(lang, "fa")
+    family = "fa" if normalized.startswith(RTL_LANG_PREFIXES) else "en"
+    labels = {
+        "fa": {
+            "generated_document": "سند تولیدشده",
+            "pdf_report": "گزارش PDF",
+            "author": "نویسنده",
+            "authors": "نویسندگان",
+            "date": "تاریخ",
+            "institution": "مؤسسه",
+            "course": "درس / دوره",
+            "department": "دپارتمان",
+            "supervisor": "راهنما / استاد",
+            "student_id": "شماره دانشجویی",
+            "group": "گروه",
+            "version": "نسخه",
+            "status": "وضعیت",
+            "keywords": "کلیدواژه‌ها",
+        },
+        "en": {
+            "generated_document": "Generated Document",
+            "pdf_report": "PDF Report",
+            "author": "Author",
+            "authors": "Authors",
+            "date": "Date",
+            "institution": "Institution",
+            "course": "Course",
+            "department": "Department",
+            "supervisor": "Supervisor",
+            "student_id": "Student ID",
+            "group": "Group",
+            "version": "Version",
+            "status": "Status",
+            "keywords": "Keywords",
+        },
+    }
+    return labels[family]
+
+
 def _css_page_size(value: str | None) -> str:
     """Return a safe CSS @page size value.
 
@@ -285,6 +355,9 @@ def _resolved_document_direction(result: MarkdownRenderResult, options: PdfOptio
     )
     if requested in {"rtl", "ltr"}:
         return requested
+    lang_direction = _language_direction(lang)
+    if lang_direction in {"rtl", "ltr"}:
+        return lang_direction
     sample = " ".join(
         part
         for part in [
@@ -361,6 +434,7 @@ def _metadata_path(value: Any, base_dir: Path) -> Path | None:
 def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document_direction: str = "rtl") -> str:
     classes: list[str] = []
     doc_dir = normalize_document_direction(document_direction, default="rtl")
+    inline_math_scale, display_math_scale = _math_scale_vars(options.theme)
     css_chunks = [
         f"""
       @page {{
@@ -372,11 +446,63 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
         --page-margin-bottom: {"0" if cover_full_bleed else options.margin_bottom};
         --page-margin-x: {"0" if cover_full_bleed else options.margin_x};
         --md2pdf-document-direction: {doc_dir};
+        --md2pdf-inline-math-scale: {inline_math_scale};
+        --md2pdf-display-math-scale: {display_math_scale};
       }}
       body.md2pdf-dir-rtl .md2pdf-document,
       body.md2pdf-dir-rtl .md2pdf-article {{ direction: rtl; }}
       body.md2pdf-dir-ltr .md2pdf-document,
       body.md2pdf-dir-ltr .md2pdf-article {{ direction: ltr; }}
+      body.md2pdf-dir-ltr .md2pdf-cover h1,
+      body.md2pdf-dir-ltr .md2pdf-cover__subtitle,
+      body.md2pdf-dir-ltr .md2pdf-cover__summary,
+      body.md2pdf-dir-ltr .md2pdf-cover__detail {{ text-align: left; }}
+      body.md2pdf-dir-rtl .md2pdf-cover h1,
+      body.md2pdf-dir-rtl .md2pdf-cover__subtitle,
+      body.md2pdf-dir-rtl .md2pdf-cover__summary,
+      body.md2pdf-dir-rtl .md2pdf-cover__detail {{ text-align: right; }}
+      body.md2pdf-dir-ltr .md2pdf-cover__details {{ direction: ltr; }}
+      body.md2pdf-dir-rtl .md2pdf-cover__details {{ direction: rtl; }}
+      .math,
+      .md2pdf-article mjx-container {{
+        direction: ltr;
+        unicode-bidi: isolate;
+      }}
+      .math.inline {{
+        display: inline;
+        white-space: nowrap;
+        font-size: 1em;
+      }}
+      .math.inline mjx-container,
+      .md2pdf-article mjx-container:not([display="true"]) {{
+        display: inline-block !important;
+        font-size: var(--md2pdf-inline-math-scale) !important;
+        line-height: 0 !important;
+        margin: 0 0.06em !important;
+        max-width: 100%;
+        vertical-align: -0.12em !important;
+      }}
+      .math.display {{
+        display: block;
+        margin: 1.25em auto;
+        padding: 3mm 2mm;
+        overflow: hidden;
+        max-width: 100%;
+        text-align: center !important;
+        page-break-inside: avoid;
+        break-inside: avoid;
+        font-size: 1em;
+      }}
+      .math.display mjx-container,
+      .md2pdf-article mjx-container[display="true"] {{
+        display: block !important;
+        font-size: var(--md2pdf-display-math-scale) !important;
+        line-height: 1.25 !important;
+        margin: 0 auto !important;
+        max-width: 100%;
+        text-align: center !important;
+      }}
+      .md2pdf-article mjx-container svg {{ max-width: 100%; }}
     """
     ]
     if cover_full_bleed:
@@ -399,14 +525,18 @@ def _cover_html(
     subtitle: Any = "",
     extra_details: list[tuple[str, Any]] | None = None,
     eyebrow: Any = "Generated Document",
+    lang: str = "fa",
+    document_direction: str = "rtl",
+    labels: dict[str, str] | None = None,
 ) -> str:
+    labels = labels or _localized_labels(lang)
     detail_cards: list[str] = []
     author_items = _metadata_items(author)
     if author_items:
-        label = "Authors" if len(author_items) > 1 else "Author"
+        label = labels["authors"] if len(author_items) > 1 else labels["author"]
         detail_cards.append(_cover_detail(label, author_items, multiline=True))
     if date:
-        detail_cards.append(_cover_detail("Date", date))
+        detail_cards.append(_cover_detail(labels["date"], date))
     for label, value in extra_details or []:
         card = _cover_detail(label, value, multiline=isinstance(value, (list, tuple, set)))
         if card:
@@ -436,12 +566,12 @@ def _cover_html(
             </span>
           </div>
         """
-        release_html = '<span class="md2pdf-cover__release" dir="ltr">PDF Report</span>'
+        release_html = f'<span class="md2pdf-cover__release" dir="auto">{html.escape(labels["pdf_report"])}</span>'
     else:
         cover_classes += " md2pdf-cover--unbranded"
 
     return f"""
-      <header class="{cover_classes}" dir="auto">
+      <header class="{cover_classes}" lang="{html.escape(str(lang))}" dir="{html.escape(document_direction)}">
         <div class="md2pdf-cover__decor md2pdf-cover__decor--one" aria-hidden="true"></div>
         <div class="md2pdf-cover__decor md2pdf-cover__decor--two" aria-hidden="true"></div>
         <section class="md2pdf-cover__top">
@@ -449,7 +579,7 @@ def _cover_html(
           {release_html}
         </section>
         <section class="md2pdf-cover__content">
-          <span class="md2pdf-cover__eyebrow">{html.escape(_stringify_metadata_value(eyebrow) or "Generated Document")}</span>
+          <span class="md2pdf-cover__eyebrow">{html.escape(_stringify_metadata_value(eyebrow) or labels["generated_document"])}</span>
           <h1 dir="auto">{html.escape(str(title))}</h1>
           {subtitle_html}
           {summary_html}
@@ -501,11 +631,13 @@ def build_html(
         if options.description is not None
         else _first_metadata_value(metadata, "description", "summary")
     )
-    lang = _stringify_metadata_value(metadata.get("lang")) or "fa"
-    document_direction = _resolved_document_direction(result, options, str(lang))
+    raw_lang = _stringify_metadata_value(metadata.get("lang"))
+    document_direction = _resolved_document_direction(result, options, raw_lang)
+    lang = raw_lang or ("fa" if document_direction == "rtl" else "en")
+    labels = _localized_labels(lang)
     date = _first_metadata_value(metadata, "date")
     subtitle = _first_metadata_value(metadata, "subtitle", "subject")
-    eyebrow = _first_metadata_value(metadata, "eyebrow", "document_type", "type") or "Generated Document"
+    eyebrow = _first_metadata_value(metadata, "eyebrow", "document_type", "type") or labels["generated_document"]
     base_href = options.input_path.resolve().parent.as_uri() + "/"
     css_variables, body_classes = _layout_css(
         options,
@@ -520,15 +652,15 @@ def build_html(
 
     extra_details: list[tuple[str, Any]] = []
     detail_fields = [
-        ("Institution", "institution", "university", "organization"),
-        ("Course", "course", "lesson"),
-        ("Department", "department"),
-        ("Supervisor", "supervisor", "teacher", "advisor"),
-        ("Student ID", "student_id", "student_number"),
-        ("Group", "group", "team"),
-        ("Version", "version"),
-        ("Status", "status"),
-        ("Keywords", "keywords", "tags"),
+        (labels["institution"], "institution", "university", "organization"),
+        (labels["course"], "course", "lesson"),
+        (labels["department"], "department"),
+        (labels["supervisor"], "supervisor", "teacher", "advisor"),
+        (labels["student_id"], "student_id", "student_number"),
+        (labels["group"], "group", "team"),
+        (labels["version"], "version"),
+        (labels["status"], "status"),
+        (labels["keywords"], "keywords", "tags"),
     ]
     for label, *keys in detail_fields:
         value = _first_metadata_value(metadata, *keys)
@@ -545,6 +677,9 @@ def build_html(
             subtitle=subtitle,
             extra_details=extra_details,
             eyebrow=eyebrow,
+            lang=str(lang),
+            document_direction=document_direction,
+            labels=labels,
         )
         if include_cover and options.cover
         else ""
