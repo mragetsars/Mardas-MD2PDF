@@ -2,7 +2,7 @@
 
 > Markdown to PDF Converter - Persian/English Typography - RTL/LTR Documents - Professional PDF Publishing
 
-![Language](https://img.shields.io/badge/Language-Python-blue.svg) ![Renderer](https://img.shields.io/badge/Renderer-Playwright%20%2B%20Chromium-green.svg) ![Math](https://img.shields.io/badge/Math-MathJax-purple.svg) ![Version](https://img.shields.io/badge/Version-v1.2.0-success.svg) ![Status](https://img.shields.io/badge/Status-Stable-success.svg)
+![Language](https://img.shields.io/badge/Language-Python-blue.svg) ![Renderer](https://img.shields.io/badge/Renderer-Playwright%20%2B%20Chromium-green.svg) ![Math](https://img.shields.io/badge/Math-MathJax-purple.svg) ![Version](https://img.shields.io/badge/Version-v1.3.0-success.svg) ![Status](https://img.shields.io/badge/Status-Stable-success.svg)
 
 ## 📌 Overview
 
@@ -27,10 +27,10 @@ This pipeline gives the project strong control over typography, print CSS, page 
 - Render fenced and indented code blocks with syntax highlighting.
 - Support tables, task lists, links, images, blockquotes, callouts, footnotes, and page breaks.
 - Embed local Markdown images into the generated HTML/PDF so exported PDFs keep their figures even when Chromium renders from a temporary context.
-- Render inline and display math formulas using vendored MathJax.
-- Generate a hierarchical Table of Contents from Markdown heading levels.
+- Render inline and display math formulas using vendored MathJax with separate inline/display sizing.
+- Generate a hierarchical and language-aware Table of Contents from Markdown heading levels.
 - Generate a designed cover page that is not counted in document page numbering.
-- Read rich YAML front matter, including multiline summaries and multiple authors.
+- Read rich YAML front matter, including language, direction, multiline summaries, and multiple authors.
 - Support optional page-flow controls for TOC and top-level headings.
 - Support optional text or image watermarks on content pages only.
 - Provide multiple visual themes for different document styles.
@@ -46,7 +46,7 @@ Mardas MD2PDF is designed for documents such as:
 متن های فارسی ای که در آن ها از English words استفاده شده است.
 ```
 
-The document shell direction is now resolved from `--dir`, front matter (`dir`, `direction`, `text_direction`, or `document_direction`), or automatic text/language detection. Paragraphs, headings, lists, table cells, and captions still use direction-aware processing, while code blocks, inline code, paths, commands, formulas, and technical identifiers are kept LTR for readability.
+The document shell direction is resolved from `--dir`, front matter (`dir`, `direction`, `text_direction`, or `document_direction`), and then the `lang` field. For example, `lang: en` produces an LTR document shell and English UI labels, while `lang: fa` produces an RTL shell and Persian UI labels. If neither is provided, the converter falls back to text detection. Paragraphs, headings, lists, table cells, and captions still use direction-aware processing, while code blocks, inline code, paths, commands, formulas, and technical identifiers are kept LTR for readability.
 
 ### 📚 Hierarchical Table of Contents
 
@@ -70,7 +70,7 @@ and generates a nested, numbered table of contents such as:
 2       Section 2
 ```
 
-The maximum heading depth can be controlled with `--toc-depth`.
+The maximum heading depth can be controlled with `--toc-depth`. The TOC title is localized from YAML `lang`: Persian documents show `فهرست مطالب`, while English documents show `Table of Contents`.
 
 ### 🖼️ Local Image Rendering
 
@@ -113,11 +113,11 @@ $$
 $$
 ```
 
-MathJax is vendored inside the project, so formulas can be rendered without relying on a CDN.
+MathJax is vendored inside the project, so formulas can be rendered without relying on a CDN. Display formulas are scaled separately and slightly larger than inline formulas, matching the usual Markdown/LaTeX reading behavior.
 
 ### 🖼️ Professional Cover Page
 
-By default, Mardas MD2PDF generates a designed cover page using the bundled Mardas logo, document title, subtitle, author/authors, date, and summary/description.
+By default, Mardas MD2PDF generates a designed cover page using the bundled Mardas logo, document title, subtitle, author/authors, date, and summary/description. Cover direction and labels follow the document language: `lang: fa` uses an RTL Persian cover shell, and `lang: en` uses an LTR English cover shell.
 
 The cover page is rendered separately from the main document. Therefore:
 
@@ -431,7 +431,8 @@ Mardas-MD2PDF/
 ├── examples/
 │   ├── images/
 │   │   └── md2pdf-sample-chart.png
-│   └── fa-en-math-code.md
+│   ├── fa-en-math-code.md
+│   └── en-lang-math-demo.md
 ├── tests/
 │   └── test_markdown.py
 ├── scripts/
@@ -483,7 +484,9 @@ The current tests cover:
 - multiline front-matter summaries and multiple cover authors;
 - safe raw HTML sanitization;
 - multiline footnotes;
-- page-size and document-direction overrides.
+- page-size and document-direction overrides;
+- language-aware TOC/callout/cover labels;
+- separate CSS scaling for inline and display MathJax output.
 
 ## 🧾 Front Matter
 
@@ -505,7 +508,7 @@ summary: |
   پاراگراف دوم summary هم جدا و خوانا روی جلد چاپ می‌شود.
 institution: "Mardas Lab"
 course: "Markdown Publishing"
-version: "1.2"
+version: "1.3"
 keywords:
   - RTL
   - MathJax
@@ -528,9 +531,9 @@ Common fields:
 | `institution`, `course`, `department`, `supervisor`, `student_id`, `group`, `version`, `status` | string | Optional cover detail cards. |
 | `keywords` / `tags` | list or string | Optional keyword card on the cover. |
 | `cover_logo` / `logo` | path | Optional cover logo path relative to the Markdown file. CLI `--cover-logo` has priority. |
-| `lang` | string | HTML document language, e.g. `fa` or `en`. |
+| `lang` | string | HTML document language and built-in UI language, e.g. `fa` or `en`. It controls default shell direction, TOC title, callout captions, and cover labels unless `dir` or CLI `--dir` explicitly overrides direction. |
 | `dir` / `direction` / `text_direction` / `document_direction` | `auto`, `rtl`, or `ltr` | Document shell direction. CLI `--dir` has priority. |
-| `eyebrow` / `document_type` | string | Small label above the cover title. Defaults to `Generated Document`. |
+| `eyebrow` / `document_type` | string | Small label above the cover title. Defaults to the localized equivalent of `Generated Document`. |
 
 These fields are used for title detection, cover page metadata, document language, document direction, and PDF metadata (`Title`, `Author`, `Subject`, and `Keywords`). CLI options such as `--title`, `--author`, `--description`, `--dir`, and `--cover-logo` override the matching front-matter values.
 
