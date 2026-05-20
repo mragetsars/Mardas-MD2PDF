@@ -245,7 +245,8 @@ def highlight_code(
     caption: str | None = None,
     extra_classes: str = "",
 ) -> str:
-    language = (lang or "").strip().split()[0]
+    parts = (lang or "").strip().split()
+    language = parts[0] if parts else ""
     label = language or "text"
     try:
         lexer = get_lexer_by_name(language, stripall=False) if language else TextLexer(stripall=False)
@@ -304,24 +305,85 @@ def guess_code_language(code: str) -> tuple[str, str]:
     return "text", ""
 
 
+def _replace_outside_inline_code(
+    text: str,
+    pattern: re.Pattern[str],
+    repl: Any,
+) -> str:
+    """Apply a regex replacement only outside Markdown inline code spans.
+
+    The Markdown parser will later turn backtick-delimited spans into ``<code>``.
+    Pre-processing steps such as math and footnote expansion must therefore leave
+    literal examples like ``$x$`` and ``[^note]`` untouched. This lightweight
+    scanner follows the common Markdown rule that a code span opens with one or
+    more backticks and closes with the same run length on the same line.
+    """
+    output: list[str] = []
+    index = 0
+    while index < len(text):
+        marker_match = re.search(r"`+", text[index:])
+        if not marker_match:
+            output.append(pattern.sub(repl, text[index:]))
+            break
+
+        start = index + marker_match.start()
+        marker = marker_match.group(0)
+        output.append(pattern.sub(repl, text[index:start]))
+
+        content_start = start + len(marker)
+        close = text.find(marker, content_start)
+        if close == -1:
+            output.append(pattern.sub(repl, text[start:]))
+            break
+
+        output.append(text[start : close + len(marker)])
+        index = close + len(marker)
+    return "".join(output)
+
+
+def _fence_transition(
+    line: str, in_fence: bool, fence_char: str, fence_len: int
+) -> tuple[bool, str, int]:
+    match = FENCE_RE.match(line)
+    if not match:
+        return in_fence, fence_char, fence_len
+
+    marker = match.group(1)
+    marker_char = marker[0]
+    marker_len = len(marker)
+    if not in_fence:
+        return True, marker_char, marker_len
+    if marker_char == fence_char and marker_len >= fence_len:
+        return False, "", 0
+    return in_fence, fence_char, fence_len
+
+
 def protect_and_transform_math(markdown: str) -> str:
-    """Transform $...$ and $$...$$ into HTML MathJax wrappers outside code fences."""
+    """Transform $...$ and $$...$$ into HTML MathJax wrappers outside code."""
     output: list[str] = []
     in_fence = False
-    fence_marker = ""
+    fence_char = ""
+    fence_len = 0
     in_display_math = False
     display_buffer: list[str] = []
 
+    def repl_inline(match: re.Match[str]) -> str:
+        expr = match.group(1).strip()
+        if not expr:
+            return match.group(0)
+        return f'<span class="math inline">\\\\({html.escape(expr)}\\\\)</span>'
+
     for line in markdown.splitlines(keepends=True):
-        fence_match = FENCE_RE.match(line)
-        if fence_match and not in_display_math:
-            marker = fence_match.group(1)
-            if not in_fence:
-                in_fence = True
-                fence_marker = marker[0]
-            elif marker.startswith(fence_marker):
-                in_fence = False
-                fence_marker = ""
+        next_in_fence, next_fence_char, next_fence_len = _fence_transition(
+            line, in_fence, fence_char, fence_len
+        )
+        fence_changed = (next_in_fence, next_fence_char, next_fence_len) != (
+            in_fence,
+            fence_char,
+            fence_len,
+        )
+        if fence_changed and not in_display_math:
+            in_fence, fence_char, fence_len = next_in_fence, next_fence_char, next_fence_len
             output.append(line)
             continue
 
@@ -332,7 +394,7 @@ def protect_and_transform_math(markdown: str) -> str:
         if DISPLAY_MATH_FENCE_RE.match(line):
             if in_display_math:
                 expr = "".join(display_buffer).strip()
-                output.append(f'<div class="math display">\\[{html.escape(expr)}\\]</div>\n')
+                output.append(f'<div class="math display">\\\\[{html.escape(expr)}\\\\]</div>\n')
                 display_buffer.clear()
                 in_display_math = False
             else:
@@ -344,13 +406,7 @@ def protect_and_transform_math(markdown: str) -> str:
             display_buffer.append(line)
             continue
 
-        def repl_inline(match: re.Match[str]) -> str:
-            expr = match.group(1).strip()
-            if not expr:
-                return match.group(0)
-            return f'<span class="math inline">\\\\({html.escape(expr)}\\\\)</span>'
-
-        output.append(INLINE_MATH_RE.sub(repl_inline, line))
+        output.append(_replace_outside_inline_code(line, INLINE_MATH_RE, repl_inline))
 
     if in_display_math:
         output.append("$$\n")
@@ -420,7 +476,28 @@ def replace_footnote_refs(markdown: str, *, lang: str | None = None, text_hint: 
             f'<a href="#fn-{fid}" aria-label="{html.escape(label)} {fid}">{fid}</a></sup>'
         )
 
-    return INLINE_FOOTNOTE_RE.sub(repl, markdown)
+    output: list[str] = []
+    in_fence = False
+    fence_char = ""
+    fence_len = 0
+    for line in markdown.splitlines(keepends=True):
+        next_in_fence, next_fence_char, next_fence_len = _fence_transition(
+            line, in_fence, fence_char, fence_len
+        )
+        fence_changed = (next_in_fence, next_fence_char, next_fence_len) != (
+            in_fence,
+            fence_char,
+            fence_len,
+        )
+        if fence_changed:
+            in_fence, fence_char, fence_len = next_in_fence, next_fence_char, next_fence_len
+            output.append(line)
+            continue
+        if in_fence:
+            output.append(line)
+            continue
+        output.append(_replace_outside_inline_code(line, INLINE_FOOTNOTE_RE, repl))
+    return "".join(output)
 
 
 def append_footnotes(body_html: str, footnotes: list[tuple[str, str]], md: MarkdownIt) -> str:

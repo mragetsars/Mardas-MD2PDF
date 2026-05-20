@@ -238,6 +238,51 @@ CSS_PAGE_SIZE_RE = re.compile(
 
 RTL_LANG_PREFIXES = ("ar", "fa", "he", "iw", "ku", "ps", "sd", "ug", "ur", "yi")
 
+PLAYWRIGHT_NAMED_PAGE_FORMATS = {
+    "letter",
+    "legal",
+    "tabloid",
+    "ledger",
+    "a0",
+    "a1",
+    "a2",
+    "a3",
+    "a4",
+    "a5",
+    "a6",
+}
+
+CUSTOM_PAGE_DIMENSIONS_RE = re.compile(
+    r"^(?P<width>\d+(?:\.\d+)?(?:mm|cm|in|px|pt))\s+"
+    r"(?P<height>\d+(?:\.\d+)?(?:mm|cm|in|px|pt))$",
+    re.IGNORECASE,
+)
+
+
+def _playwright_page_size_kwargs(value: str | None) -> dict[str, str]:
+    """Return Playwright-compatible page size arguments.
+
+    Playwright's ``format`` parameter accepts named formats such as A4 and
+    Letter, but it rejects CSS size expressions like ``210mm 297mm`` or
+    ``A4 landscape``. Those values are already emitted in a late ``@page`` CSS
+    rule and honored through ``prefer_css_page_size=True``. For explicit
+    width/height pairs we also pass the dimensions directly for renderer
+    compatibility.
+    """
+    text = _css_page_size(value)
+    dimension_match = CUSTOM_PAGE_DIMENSIONS_RE.match(text)
+    if dimension_match:
+        return {
+            "width": dimension_match.group("width"),
+            "height": dimension_match.group("height"),
+        }
+    if (
+        re.fullmatch(r"[A-Za-z][A-Za-z0-9-]*", text)
+        and text.lower() in PLAYWRIGHT_NAMED_PAGE_FORMATS
+    ):
+        return {"format": text}
+    return {}
+
 
 def normalize_language(value: Any, fallback: str = "") -> str:
     text = _stringify_metadata_value(value).strip().replace("_", "-").lower()
@@ -808,11 +853,11 @@ def _render_pdf(page: Page, html_text: str, options: PdfOptions, path: Path, *, 
     page.emulate_media(media="print")
     pdf_kwargs: dict[str, Any] = {
         "path": str(path),
-        "format": options.page_size,
         "print_background": True,
         "prefer_css_page_size": True,
         "margin": {"top": "0", "right": "0", "bottom": "0", "left": "0"},
     }
+    pdf_kwargs.update(_playwright_page_size_kwargs(options.page_size))
     if display_footer and not options.no_header_footer:
         pdf_kwargs.update(
             {

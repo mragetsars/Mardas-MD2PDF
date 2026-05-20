@@ -25,7 +25,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--toc-page-break", action="store_true", help="Start the main document body on a new page after the TOC")
     parser.add_argument("--h1-page-break", action="store_true", help="Start every top-level Markdown heading (# / h1) on a new page")
     parser.add_argument("--debug-html", type=Path, help="Write the intermediate HTML for inspection")
-    parser.add_argument("--page-size", default="A4", help="PDF page size, e.g. A4, Letter")
+    parser.add_argument(
+        "--page-size",
+        default="A4",
+        help='PDF page size, e.g. A4, Letter, "A4 landscape", or "210mm 297mm"',
+    )
     parser.add_argument(
         "--dir",
         dest="document_direction",

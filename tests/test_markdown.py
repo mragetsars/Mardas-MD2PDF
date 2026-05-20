@@ -301,3 +301,26 @@ lang: en
     assert "body.md2pdf-dir-ltr .md2pdf-cover__summary { margin: 5mm auto 0 0; }" in html
     assert "body.md2pdf-dir-rtl .md2pdf-cover__detail > span" in html
     assert "font-family: var(--font-fa), var(--font-en);" in html
+
+
+def test_fenced_code_without_language_renders_as_text_block():
+    result = render_markdown("````\nplain $x$ and [^n]\n````\n\n[^n]: footnote\n")
+    assert '<figure class="code-block" dir="ltr">' in result.body_html
+    assert '<figcaption dir="auto">TEXT</figcaption>' in result.body_html
+    assert "plain $x$ and [^n]" in result.body_html
+
+
+def test_math_and_footnotes_are_not_expanded_inside_inline_code():
+    result = render_markdown(
+        "Use `$x$` and `[^note]` literally, but render $y$[^note].\n\n[^note]: fn"
+    )
+    assert '<code dir="ltr">$x$</code>' in result.body_html
+    assert '<code dir="ltr">[^note]</code>' in result.body_html
+    assert '<span class="math inline">\\(y\\)</span>' in result.body_html
+    assert '<sup class="footnote-ref" id="fnref-note">' in result.body_html
+
+
+def test_footnote_refs_are_not_expanded_inside_fenced_code():
+    result = render_markdown("```text\n[^note]\n```\n\n[^note]: fn")
+    assert '[^note]' in result.body_html
+    assert '<sup class="footnote-ref" id="fnref-note">' not in result.body_html.split("</figure>", 1)[0]
