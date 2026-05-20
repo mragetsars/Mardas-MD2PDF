@@ -1,39 +1,52 @@
 # Mardas MD2PDF
 
-> Professional Markdown to PDF converter for Persian, English, and mixed RTL/LTR technical documents.
+> **Professional Markdown to PDF converter for Persian, English, and mixed RTL/LTR technical documents**
 
-![Language](https://img.shields.io/badge/Language-Python-blue.svg) ![Renderer](https://img.shields.io/badge/Renderer-Playwright%20%2B%20Chromium-green.svg) ![Math](https://img.shields.io/badge/Math-MathJax-purple.svg) ![Version](https://img.shields.io/badge/Version-v1.3.1-success.svg) ![Status](https://img.shields.io/badge/Status-Stable-success.svg)
+![Language](https://img.shields.io/badge/Language-Python-blue) ![Renderer](https://img.shields.io/badge/Renderer-Playwright%20%2B%20Chromium-green) ![Math](https://img.shields.io/badge/Math-MathJax-purple) ![Version](https://img.shields.io/badge/Version-v1.3.1-success) ![Status](https://img.shields.io/badge/Status-Stable-success)
 
-**Mardas MD2PDF** turns Markdown into polished PDFs with Persian/English typography, MathJax formulas, syntax-highlighted code, local images, front-matter driven covers, hierarchical tables of contents, watermarks, and multiple print themes.
+## Overview
+
+This repository contains **Mardas MD2PDF**, a Markdown-to-PDF publishing tool designed for clean Persian, English, and mixed-language documents.
+
+The project converts Markdown into print-ready PDF files with support for RTL/LTR direction handling, Persian-friendly typography, cover pages, tables of contents, MathJax formulas, syntax-highlighted code, local images, footnotes, callouts, safe HTML, watermarks, and multiple visual themes.
+
+The main goal of the project is to make technical Markdown documents publishable as polished PDF outputs without forcing the author to leave the Markdown workflow.
 
 ```text
-Markdown -> typographic HTML -> Chromium PDF
+Markdown -> Structured HTML -> Chromium PDF
 ```
 
 ![Mardas MD2PDF](./README.png)
 
-## Quick links
+## Architecture
 
-- [English Guide](./GUIDE.en.md) - complete feature tour and usage manual.
-- [راهنمای فارسی](./GUIDE.fa.md) - راهنمای کامل امکانات و شیوه استفاده.
-- [Examples](./examples/) - Markdown inputs and generated PDF samples.
+The system is organized around a browser-based rendering pipeline. Markdown is first parsed and normalized, then converted into a complete HTML document with theme CSS, cover metadata, table of contents, MathJax configuration, and print rules. Finally, Playwright controls Chromium to generate the final PDF.
 
-## Highlights
+### Markdown Processing
 
-- Persian, English, and mixed RTL/LTR documents.
-- `lang: fa` and `lang: en` aware cover, TOC, callout, and document direction behavior.
-- Designed cover page with YAML metadata, custom `cover_label`, logo, authors, summary, date, version, keywords, and more.
-- Hierarchical Table of Contents with configurable depth.
-- Inline and display math with vendored MathJax and separate sizing.
-- Fenced and indented code blocks with Pygments highlighting.
-- Tables, task lists, blockquotes, callouts, links, footnotes, and manual page breaks.
-- Local Markdown/HTML images embedded as data URIs for stable PDF output.
-- Safe raw HTML sanitization by default, with `--unsafe-html` for trusted local files.
-- Text or image watermarks on content pages only.
-- Four bundled themes: `modern`, `textbook-light`, `textbook-dark`, and `academic`.
-- CLI and local browser-based GUI.
+The Markdown layer handles front matter, heading collection, table of contents generation, code highlighting, footnotes, callouts, safe HTML, local image embedding, math protection, and direction-aware document metadata.
 
-## Installation
+### PDF Rendering
+
+The renderer builds the final printable HTML, applies the selected theme, configures page size and margins, renders MathJax when enabled, separates the cover from numbered content pages, applies optional watermarks, and exports the result through Chromium.
+
+### Interfaces
+
+The project provides two user-facing interfaces:
+
+- `mrs-md2pdf` for command-line and automation workflows.
+- `mrs-md2pdf-gui` for local browser-based editing, previewing, option selection, and PDF export.
+
+## Documentation
+
+The README is intentionally short and is meant to introduce the project. Complete usage details are maintained in the guide files:
+
+- [English Guide](./GUIDE.en.md)
+- [راهنمای فارسی](./GUIDE.fa.md)
+
+Generated PDF versions of the guides are available in the [`examples/`](./examples/) directory.
+
+## Quick Start
 
 ```bash
 git clone https://github.com/mragetsars/Mardas-MD2PDF.git
@@ -44,49 +57,10 @@ pip install -e .
 python -m playwright install chromium
 ```
 
-Windows PowerShell:
-
-```powershell
-python -m venv .venv
-.venv\Scripts\Activate.ps1
-pip install -e .
-python -m playwright install chromium
-```
-
-For development:
-
-```bash
-pip install -e .[dev]
-pytest
-```
-
-## Basic usage
-
-```bash
-mrs-md2pdf input.md -o output.pdf
-```
-
-With a table of contents and the modern theme:
+Render a PDF:
 
 ```bash
 mrs-md2pdf input.md -o output.pdf --toc --theme modern
-```
-
-With book-like page flow:
-
-```bash
-mrs-md2pdf input.md -o output.pdf \
-  --toc \
-  --toc-depth 4 \
-  --toc-page-break \
-  --h1-page-break \
-  --theme textbook-light
-```
-
-Generate debug HTML:
-
-```bash
-mrs-md2pdf input.md -o output.pdf --debug-html output.html
 ```
 
 Launch the GUI:
@@ -95,67 +69,39 @@ Launch the GUI:
 mrs-md2pdf-gui
 ```
 
-## Minimal front matter
+## Repository Structure
 
-```yaml
----
-title: "My PDF Report"
-subtitle: "A Markdown-powered document"
-authors:
-  - name: "Mardas"
-    email: "mragetsars@yahoo.com"
-summary: |
-  This text appears on the cover.
-  Multiline summaries are supported.
-lang: en
-dir: ltr
-cover_label: "Technical Report"
-keywords: [Markdown, PDF, MathJax, RTL]
----
-```
-
-Use `lang: fa` for Persian UI labels and RTL defaults, or `lang: en` for English UI labels and LTR defaults. Explicit `dir: rtl` / `dir: ltr` or CLI `--dir` still has priority when you need to force the document shell direction.
-
-## CLI overview
-
-| Option | Purpose |
-| :--- | :--- |
-| `-o, --output` | Output PDF path. |
-| `--toc`, `--toc-depth` | Generate and configure the Table of Contents. |
-| `--toc-page-break`, `--h1-page-break` | Control printed page flow. |
-| `--theme` | Choose `modern`, `textbook-light`, `textbook-dark`, or `academic`. |
-| `--page-size` | Use `A4`, `Letter`, `Legal`, `A4 landscape`, or dimensions like `210mm 297mm`. |
-| `--dir` | Force `auto`, `rtl`, or `ltr`. |
-| `--no-cover`, `--cover-logo`, `--no-cover-logo` | Control the cover page. |
-| `--watermark`, `--watermark-image` | Add content-page watermarks. |
-| `--debug-html` | Save intermediate HTML for inspection. |
-| `--unsafe-html` | Disable built-in raw HTML sanitization for trusted files. |
-| `--no-mathjax` | Disable MathJax loading. |
-
-Run `mrs-md2pdf --help` for the full option list.
-
-## Example outputs
-
-The `examples/` directory includes compact demos and generated PDFs:
-
-- `fa-en-math-code.md` - Persian/English mixed document with math, code, images, cover metadata, and footnotes.
-- `en-lang-math-demo.md` - English language/direction demo.
-- `guide-en-modern.pdf` - complete English guide rendered as a feature-rich sample PDF.
-- `guide-fa-modern.pdf` - complete Persian guide rendered as a feature-rich sample PDF.
-
-## Project structure
+The project is organized as follows:
 
 ```text
 Mardas-MD2PDF/
-├── src/                 # Python package source
-├── src/assets/          # themes, GUI shell, logo, vendored MathJax
-├── examples/            # sample Markdown files, images, and PDF outputs
-├── tests/               # pytest suite
-├── GUIDE.en.md          # complete English guide
-├── GUIDE.fa.md          # complete Persian guide
-├── README.md            # short project overview
-└── pyproject.toml
+├── src/                    # Python package source
+│   ├── markdown.py         # Markdown parsing, front matter, TOC, math, footnotes, safe HTML
+│   ├── renderer.py         # HTML assembly, themes, MathJax, Chromium PDF rendering
+│   ├── cli.py              # Command-line interface
+│   ├── gui.py              # Local browser-based GUI backend
+│   └── assets/             # Themes, GUI shell, logo, and vendored MathJax files
+├── tests/                  # Automated pytest test suite
+├── scripts/                # Helper scripts
+├── examples/               # Generated PDF examples from the guide files
+├── GUIDE.en.md             # Complete English user guide
+├── GUIDE.fa.md             # Complete Persian user guide
+├── README.png              # Project preview image
+├── pyproject.toml          # Package metadata and dependencies
+└── README.md               # Project introduction
 ```
+
+## Examples
+
+The `examples/` directory contains generated PDF outputs of the guide files:
+
+```text
+examples/
+├── GUIDE.en.pdf
+└── GUIDE.fa.pdf
+```
+
+These files are intended to show the real PDF output produced by the current documentation.
 
 ## Testing
 
@@ -164,12 +110,14 @@ pip install -e .[dev]
 pytest
 ```
 
-The test suite covers direction handling, TOC generation, code highlighting, MathJax preservation, cover metadata, local images, sanitization, multiline footnotes, page-size overrides, language-aware labels, GUI entrypoint availability, and inline/display math sizing, code-span protection, renderer fallback warnings, and custom CSS page sizes.
+The test suite covers Markdown transformation, direction handling, table of contents generation, code highlighting, MathJax preservation, safe HTML, footnotes, local images, renderer options, GUI availability, page-size handling, and fallback warnings.
 
-## Author
+## Contributors
 
-Designed for professional Persian/English Markdown publishing by [Meraj Rastegar](https://github.com/mragetsars).
+This project was developed and maintained by:
+
+- **[Meraj Rastegar](https://github.com/mragetsars)**
 
 ## License
 
-MIT License. See [LICENSE](./LICENSE).
+This project is licensed under the MIT License. See [LICENSE](./LICENSE) for details.

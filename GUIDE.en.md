@@ -1,15 +1,15 @@
 ---
 title: "Mardas MD2PDF Guide"
-subtitle: "Complete usage manual and feature sample"
+subtitle: "Complete user manual and feature reference"
 authors:
   - name: "Mardas MD2PDF Team"
     role: "Documentation"
   - name: "Meraj Rastegar"
-    email: "mragetsars@yahoo.com"
+    email: "mragetsars@gmail.com"
 date: "2026-05-20"
 summary: |
-  Install, configure, and render professional Markdown PDFs.
-  The generated PDF demonstrates cover pages, TOC, math, code, tables, images, HTML, page breaks, and footnotes.
+  A complete guide for installing, configuring, and using Mardas MD2PDF.
+  This document also acts as a live rendering sample for cover pages, tables of contents, mixed RTL/LTR text, formulas, code, images, tables, footnotes, page breaks, and safe HTML.
 institution: "Mardas Lab"
 course: "Markdown Publishing"
 version: "1.3.1"
@@ -27,22 +27,52 @@ lang: en
 dir: ltr
 ---
 
-# Getting Started
+# Introduction
 
-Mardas MD2PDF converts Markdown files into polished PDFs by using a browser-grade rendering pipeline:
+Mardas MD2PDF is a Markdown-to-PDF publishing tool designed for documents that mix Persian and English content. It keeps the writing workflow simple while giving the final PDF a professional printed layout.
+
+The project is useful for reports, university documents, technical guides, educational notes, research drafts, project documentation, and any Markdown file that needs a clean PDF output.
 
 ```text
-Markdown -> typographic HTML -> Chromium PDF
+Markdown -> Structured HTML -> Chromium PDF
 ```
 
-This approach keeps Markdown authoring simple while giving the renderer strong control over printed layout, MathJax output, local images, cover pages, page breaks, and mixed RTL/LTR typography.
+The renderer does not draw paragraphs manually on a PDF canvas. Instead, it converts Markdown into a structured HTML document, applies print-oriented CSS, renders formulas with MathJax, and asks Chromium to produce the final PDF. This gives the project better support for CSS print layout, mixed text direction, SVG formulas, syntax-highlighted code, local images, and complex tables.
 
 > [!NOTE]
-> This file is both a user guide and a visual test case. Render it to PDF to review most of the features supported by the project.
+> This guide is both documentation and a rendering sample. The PDF version of this file is available in the `examples/` directory.
 
-## Installation
+## Main capabilities
 
-Clone the repository, create a virtual environment, install the package, and install Chromium for Playwright:
+Mardas MD2PDF focuses on the features that matter most for polished technical PDFs:
+
+| Capability | Description |
+| :--- | :--- |
+| Persian and English documents | `lang: fa`, `lang: en`, RTL/LTR shell direction, and mixed inline text. |
+| Cover pages | Title, subtitle, authors, summary, logo, date, version, status, keywords, and academic metadata. |
+| Table of contents | Hierarchical TOC generated from Markdown headings. |
+| MathJax | Inline and display formulas with browser-rendered output. |
+| Code blocks | Pygments syntax highlighting for fenced and indented code blocks. |
+| Local images | Markdown and safe HTML images can be embedded as data URIs. |
+| Safe HTML | Raw HTML is sanitized by default. |
+| Footnotes | Multiline Markdown footnotes are supported. |
+| Themes | Modern, textbook-light, textbook-dark, and academic layouts. |
+| Automation | CLI workflow suitable for local scripts and CI jobs. |
+| GUI | Local browser-based editor, preview, option selector, and exporter. |
+
+# Installation
+
+## Requirements
+
+Before using the project, make sure you have:
+
+- Python 3.10 or newer;
+- a working virtual environment;
+- Playwright Chromium installed;
+- a Persian-capable font on the system, preferably Vazirmatn;
+- Git, if you plan to clone the repository.
+
+## Install from source
 
 ```bash
 git clone https://github.com/mragetsars/Mardas-MD2PDF.git
@@ -53,7 +83,7 @@ pip install -e .
 python -m playwright install chromium
 ```
 
-Windows PowerShell:
+On Windows PowerShell:
 
 ```powershell
 python -m venv .venv
@@ -62,28 +92,37 @@ pip install -e .
 python -m playwright install chromium
 ```
 
-For development and tests:
+## Development installation
+
+For development, install the optional test dependencies:
 
 ```bash
 pip install -e .[dev]
 pytest
 ```
 
-## First PDF
+The package exposes two console commands:
 
-Create a PDF with the default modern theme:
+| Command | Purpose |
+| :--- | :--- |
+| `mrs-md2pdf` | Convert Markdown files to PDF from the command line. |
+| `mrs-md2pdf-gui` | Launch the local browser-based graphical interface. |
+
+# First PDF
+
+Create a simple PDF:
 
 ```bash
 mrs-md2pdf input.md -o output.pdf
 ```
 
-Create a report with a table of contents:
+Create a PDF with a table of contents and the modern theme:
 
 ```bash
-mrs-md2pdf input.md -o output.pdf --toc --toc-depth 4 --theme modern
+mrs-md2pdf input.md -o output.pdf --toc --theme modern
 ```
 
-Create a book-like PDF where the TOC ends on its own page and each top-level heading starts on a new page:
+Create a long report with book-like page flow:
 
 ```bash
 mrs-md2pdf input.md -o output.pdf \
@@ -94,36 +133,51 @@ mrs-md2pdf input.md -o output.pdf \
   --theme textbook-light
 ```
 
-## When to use the GUI
-
-Launch the local editor/exporter:
+Save the intermediate HTML for debugging:
 
 ```bash
-mrs-md2pdf-gui
+mrs-md2pdf input.md -o output.pdf --debug-html output.html
 ```
 
-The GUI is useful when you want to edit Markdown, preview the document, choose a theme, set export options, attach local image files/folders, and export the PDF without remembering CLI flags.
+# Recommended Workflow
 
-# Front Matter and Cover Pages
+A clean PDF workflow usually looks like this:
 
-Front matter is optional YAML placed at the beginning of a Markdown file. It controls the cover page, PDF metadata, language, direction, and many document details.
+1. Write the content in Markdown.
+2. Add YAML front matter for title, authors, language, direction, and cover metadata.
+3. Render a first PDF with `--toc` and the desired theme.
+4. Review the cover, table of contents, math pages, code pages, image pages, and footer numbering.
+5. If layout debugging is needed, export `--debug-html` and inspect the generated HTML in a browser.
+6. Finalize the Markdown and render again.
+
+For important documents, always review the final PDF visually. Automated tests can catch many problems, but typography, spacing, and page breaks still need human review.
+
+# Front Matter
+
+Front matter is optional YAML placed at the beginning of the Markdown file. It controls the cover page, PDF metadata, document language, document direction, and several report-specific fields.
 
 ```yaml
 ---
-title: "Mardas MD2PDF Complete Guide"
-subtitle: "Feature tour and usage manual"
+title: "My Technical Report"
+subtitle: "A Markdown-powered PDF document"
 authors:
-  - name: "Mardas MD2PDF Team"
-    role: "Documentation"
-  - name: "Meraj Rastegar"
-    email: "mragetsars@yahoo.com"
+  - name: "Mardas"
+    email: "mragetsars@gmail.com"
+    affiliation: "Mardas Lab"
+    role: "Author"
 summary: |
-  Multiline summaries are preserved on the cover.
-  Blank lines create separate paragraphs.
-institution: "Mardas Lab"
+  This text appears on the cover.
+  Multiline summaries are supported.
+institution: "University or Organization"
+department: "Department name"
+course: "Course or project title"
+supervisor: "Supervisor name"
+date: "2026-05-20"
 version: "1.3.1"
-keywords: [Markdown, PDF, RTL/LTR, MathJax]
-cover_label: "Complete Guide"
+status: "Draft"
+keywords: [Markdown, PDF, RTL, MathJax]
+cover_label: "Technical Report"
+cover_logo: "src/assets/Mardas.png"
 lang: en
 dir: ltr
 ---
@@ -134,25 +188,28 @@ dir: ltr
 | Field | Purpose |
 | :--- | :--- |
 | `title` | Cover title and PDF metadata title. |
-| `subtitle` | Optional text under the title. |
-| `author` / `authors` | Single or multiple authors. Author objects may include `name`, `email`, `affiliation`, and `role`. |
-| `summary` / `description` | Cover summary and PDF metadata subject. Multiline YAML blocks are supported. |
-| `date`, `version`, `status` | Optional cover cards. |
-| `institution`, `course`, `department`, `supervisor`, `group`, `student_id` | Optional academic/report metadata cards. |
-| `keywords` / `tags` | Cover keyword card and PDF metadata keywords. |
+| `subtitle` | Optional text under the main title. |
+| `author` | Simple single-author value. |
+| `authors` | List of author objects with optional `name`, `email`, `affiliation`, and `role`. |
+| `summary` / `description` | Cover summary and PDF metadata subject. |
+| `institution`, `department`, `course` | Academic or organizational context. |
+| `supervisor`, `group`, `student_id` | Optional report metadata fields. |
+| `date`, `version`, `status` | Cover cards used for document state. |
+| `keywords` / `tags` | Cover keywords and PDF metadata keywords. |
 | `cover_label` | Small label above the cover title. |
-| `cover_logo` / `logo` | Custom cover logo path relative to the Markdown file. |
-| `lang` | Built-in UI language, such as `en` or `fa`. |
+| `cover_logo` / `logo` | Custom logo path relative to the Markdown file. |
+| `lang` | Built-in UI language, usually `en` or `fa`. |
 | `dir` | Document shell direction: `auto`, `ltr`, or `rtl`. |
 
 ## Cover behavior
 
-The cover is rendered separately from the main document. That means:
+The cover is rendered separately from the main document. This gives the output cleaner page numbering and better watermark behavior:
 
-- the cover is not counted in content page numbering;
-- header/footer numbering starts after the cover;
+- the cover is not counted as a content page;
+- footer page numbering starts after the cover;
 - watermarks are applied to content pages only;
-- the cover can use full-bleed theme backgrounds.
+- the cover may use full-page theme backgrounds;
+- the cover can be disabled when a plain document is needed.
 
 Disable the cover:
 
@@ -163,86 +220,115 @@ mrs-md2pdf input.md -o output.pdf --no-cover
 Use a custom logo:
 
 ```bash
-mrs-md2pdf input.md -o output.pdf --cover-logo ./assets/logo.png
+mrs-md2pdf input.md -o output.pdf --cover-logo ./src/assets/Mardas.png
 ```
 
-Hide the logo while keeping the cover:
+Keep the cover but hide the logo:
 
 ```bash
 mrs-md2pdf input.md -o output.pdf --no-cover-logo
 ```
 
-# Language, Direction, and Typography
+# Language and Direction
 
-`lang: en` creates an English/LTR document shell, English cover labels, English callout titles, and a `Table of Contents` heading. `lang: fa` creates a Persian/RTL document shell, Persian labels, and `فهرست مطالب`.
+Direction is one of the most important parts of Persian/English PDF generation. Mardas MD2PDF separates language selection from direction control.
 
-The direction resolution order is:
+`lang: en` creates an English/LTR document shell, English cover labels, English callout titles, and a `Table of Contents` heading.
+
+`lang: fa` creates a Persian/RTL document shell, Persian cover labels, Persian callout titles, and a `فهرست مطالب` heading.
+
+## Direction priority
+
+The document direction is resolved in this order:
 
 1. CLI `--dir rtl|ltr|auto`
-2. front matter `dir`, `direction`, `text_direction`, or `document_direction`
+2. front matter fields such as `dir`, `direction`, `text_direction`, or `document_direction`
 3. language-derived default from `lang`
 4. automatic detection from the Markdown body
 
-## Mixed text example
+## Mixed text examples
 
-English technical writing can include Persian terms such as راست به چپ, چپ به راست, and فونت فارسی without breaking the surrounding sentence. Persian documents can also include English identifiers such as `Playwright`, `MathJax`, `PDF`, and `RTL/LTR` inside one paragraph.
+English writing can include Persian terms such as راست به چپ, فونت فارسی, and گزارش فنی without breaking the surrounding sentence.
 
-Inline code remains readable: `mrs-md2pdf input.md -o output.pdf --toc`.
+Persian writing can include English identifiers such as `Playwright`, `MathJax`, `GitHub Actions`, `PDF`, and `RTL/LTR` inside the same paragraph.
 
-## Direction control tips
-
-- Use `lang: en` for English guides, API documents, and reports.
-- Use `lang: fa` for Persian reports and course notes.
-- Use `dir: auto` when you want the converter to infer the shell direction.
-- Use `--dir ltr` or `--dir rtl` when a CI/CD job must force a specific layout.
+Inline code remains stable: `mrs-md2pdf input.md -o output.pdf --toc`.
 
 # Table of Contents
 
-Enable the TOC with:
+Enable the table of contents:
 
 ```bash
 mrs-md2pdf input.md -o output.pdf --toc
 ```
 
-Control depth:
+Control the depth:
 
 ```bash
 mrs-md2pdf input.md -o output.pdf --toc --toc-depth 3
 ```
 
-Start the body after the TOC on a new page:
+Start the body on a new page after the TOC:
 
 ```bash
 mrs-md2pdf input.md -o output.pdf --toc --toc-page-break
 ```
 
-The TOC is built from Markdown headings and keeps inline math readable when headings contain formulas such as $E = mc^2$ or $\epsilon$.
+Start each top-level heading on a new page:
 
-# Markdown Features
+```bash
+mrs-md2pdf input.md -o output.pdf --h1-page-break
+```
+
+The TOC is generated from Markdown headings and preserves readable inline math in headings such as $E = mc^2$ and $\epsilon$.
+
+# Markdown Feature Reference
+
+## Paragraphs and emphasis
+
+Markdown paragraphs, **bold text**, *italic text*, `inline code`, links, ordered lists, unordered lists, task lists, and blockquotes are supported.
+
+## Lists
+
+- Write content in Markdown.
+- Add front matter for metadata.
+- Render with the desired theme.
+- Review the final PDF.
+
+1. Install the package.
+2. Install Chromium.
+3. Run the CLI.
+4. Inspect the output.
+
+## Task lists
+
+- [x] Markdown input
+- [x] Persian/English typography
+- [x] MathJax rendering
+- [x] Code highlighting
+- [ ] Final human review
 
 ## Tables
 
 | Feature | Status | Notes |
 | :--- | :---: | :--- |
-| Mixed RTL/LTR text | ✅ | Paragraphs, headings, list items, and table cells receive direction-aware handling. |
-| Local images | ✅ | Markdown and safe HTML images are embedded as data URIs. |
-| MathJax | ✅ | Inline and display formulas use separate scaling. |
-| Code highlighting | ✅ | Fenced and indented code blocks are highlighted with Pygments. |
-| Footnotes | ✅ | Multiline footnotes with Markdown content are supported. |
-| Raw HTML sanitizer | ✅ | Unsafe tags and event handlers are removed by default. |
-
-## Task lists
-
-- [x] Write Markdown.
-- [x] Configure front matter.
-- [x] Render a PDF.
-- [ ] Review the output in more than one viewer if the document is critical.
+| Mixed RTL/LTR text | Yes | Paragraphs, headings, lists, and table cells receive direction-aware styling. |
+| Local images | Yes | Markdown and safe HTML images are embedded when possible. |
+| MathJax | Yes | Inline and display math use separate sizing rules. |
+| Code highlighting | Yes | Pygments is used for fenced and indented code blocks. |
+| Footnotes | Yes | Multiline Markdown footnotes are supported. |
+| Raw HTML sanitizer | Yes | Unsafe tags and event handlers are removed by default. |
 
 ## Blockquotes
 
-> Good PDF publishing is not just text conversion. Typography, page flow, figure stability, contrast, and predictable rendering all matter.
+> Good PDF publishing is more than text conversion. Typography, line height, contrast, page flow, images, formulas, and predictable rendering all matter.
 
 ## Callouts
+
+Callouts use GitHub-style markers and are translated according to the document language.
+
+> [!NOTE]
+> Use callouts for explanatory notes that should stand out visually.
 
 > [!TIP]
 > Use `--debug-html output.html` when you need to inspect the exact HTML sent to Chromium.
@@ -252,9 +338,9 @@ The TOC is built from Markdown headings and keeps inline math readable when head
 
 # MathJax
 
-Inline math should match the surrounding line height: $E = mc^2$, $\Sigma = I \cdot \epsilon$, and $T = 500$ should sit naturally inside a paragraph.
+Inline math should match the surrounding line height: $E = mc^2$, $T = 500$, and $\Sigma = I \cdot \epsilon$ should sit naturally inside a paragraph.
 
-Display math gets more space and a larger visual scale:
+Display math receives more visual space:
 
 $$
 \int_{-\infty}^{\infty} e^{-x^2}\,dx = \sqrt{\pi}
@@ -278,9 +364,18 @@ $$
 \end{aligned}
 $$
 
-# Code Highlighting
+## Math troubleshooting
 
-Fenced code blocks show the language label and syntax highlighting.
+If math appears as raw TeX:
+
+- make sure `--no-mathjax` was not used;
+- check the terminal for MathJax warnings;
+- increase the browser timeout for very large math-heavy documents;
+- render a smaller test file to isolate the problematic formula.
+
+# Code Blocks
+
+Fenced code blocks support syntax highlighting and language labels.
 
 ```python
 from dataclasses import dataclass
@@ -292,7 +387,7 @@ class Document:
 
 
 def render_message(doc: Document) -> str:
-    return f"Rendering {doc.title} as a polished PDF"
+    return f"Rendering {doc.title} as PDF"
 
 print(render_message(Document("Mardas Guide")))
 ```
@@ -303,34 +398,52 @@ const message = items.map((item, index) => `${index + 1}. ${item}`).join("\n");
 console.log(message);
 ```
 
-```c
-int setSeed(void);
-int getRandomNumber(int n, int *buf);
-int process_information(int pid);
-int sort_numbers(const char *src_file);
+Code fences without a language are also valid:
+
+```
+This block has no explicit language.
+It should still render safely.
 ```
 
-Indented code blocks are also supported:
+Indented code blocks are supported:
 
     SELECT title, lang, version
     FROM documents
     WHERE renderer = 'mardas-md2pdf';
 
+Inline code is protected from math and footnote processing. For example, `$x$` and `[^note]` remain literal when they are inside backticks.
+
 # Images and Safe HTML
 
-Markdown images are resolved relative to the Markdown file and embedded into the generated HTML/PDF.
+Images are resolved relative to the Markdown file. Local images are embedded into the generated HTML/PDF when they are small enough to embed safely.
 
-![Local chart embedded from the examples folder](examples/images/md2pdf-sample-chart.png)
+![Project preview image](README.png)
 
-Safe raw HTML images can also be used when you need explicit sizing:
+Safe raw HTML images can also be used when explicit sizing is needed:
 
-<img src="examples/images/md2pdf-sample-chart.png" width="70%" alt="Local chart embedded with safe HTML">
+<img src="README.png" width="70%" alt="Project preview image with explicit width">
 
-Raw HTML is sanitized by default. The sanitizer keeps document-oriented elements such as `<div>`, `<span>`, `<table>`, `<figure>`, and `<img>`, while removing active content such as scripts, event handlers, iframes, forms, remote stylesheets, and unsafe URL schemes.
+## Image rules
+
+- Prefer local images for stable PDF output.
+- Keep images reasonably sized before embedding them.
+- Use paths relative to the Markdown file.
+- In the GUI, attach local image files or image folders before exporting.
+- Very large images are left as links and a warning is printed to avoid excessive memory usage.
+
+## Safe HTML
+
+Raw HTML is sanitized by default. The sanitizer keeps document-oriented elements such as `<div>`, `<span>`, `<table>`, `<figure>`, and `<img>`, while removing active or unsafe content such as scripts, event handlers, iframes, forms, remote stylesheets, and unsafe URL schemes.
+
+Use unsafe HTML only for trusted local files:
+
+```bash
+mrs-md2pdf input.md -o output.pdf --unsafe-html
+```
 
 <div class="md2pdf-page-break"></div>
 
-# Page Flow, Watermarks, and Themes
+# Page Flow and Layout
 
 ## Manual page breaks
 
@@ -340,7 +453,36 @@ A manual page break can be inserted with safe HTML:
 <div class="md2pdf-page-break"></div>
 ```
 
-## Watermarks
+## Page size
+
+Use a named page size:
+
+```bash
+mrs-md2pdf input.md -o output.pdf --page-size A4
+```
+
+Use landscape orientation:
+
+```bash
+mrs-md2pdf input.md -o output.pdf --page-size "A4 landscape"
+```
+
+Use explicit dimensions:
+
+```bash
+mrs-md2pdf input.md -o output.pdf --page-size "210mm 297mm"
+```
+
+## Margins
+
+```bash
+mrs-md2pdf input.md -o output.pdf \
+  --margin-top 18mm \
+  --margin-bottom 18mm \
+  --margin-x 16mm
+```
+
+# Watermarks
 
 Text watermark:
 
@@ -352,21 +494,48 @@ Image watermark:
 
 ```bash
 mrs-md2pdf input.md -o output.pdf \
-  --watermark-image ./Mardas.png \
+  --watermark-image ./src/assets/Mardas.png \
   --watermark-opacity 0.05 \
   --watermark-width 95mm
 ```
 
-Watermarks are applied to content pages only, not to the cover.
+Watermarks are applied to content pages only, not to the cover page.
 
-## Themes
+# Themes
+
+Mardas MD2PDF includes four built-in themes.
 
 | Theme | Best for |
 | :--- | :--- |
-| `modern` | General documentation, proposals, software reports. |
-| `textbook-light` | Course notes, long Persian/English educational PDFs. |
-| `textbook-dark` | Screen reading and low-light review. |
-| `academic` | Formal reports, university-style documents, thesis-like drafts. |
+| `modern` | General documentation, proposals, software reports, and product-style guides. |
+| `textbook-light` | Long educational documents, course notes, Persian/English learning material. |
+| `textbook-dark` | Screen reading, low-light review, and presentation-like technical notes. |
+| `academic` | Formal reports, university documents, thesis-like drafts, and structured papers. |
+
+Choose a theme with:
+
+```bash
+mrs-md2pdf input.md -o output.pdf --theme academic
+```
+
+# GUI Workflow
+
+Launch the GUI:
+
+```bash
+mrs-md2pdf-gui
+```
+
+The GUI is useful for users who prefer a visual workflow:
+
+1. Paste or type Markdown.
+2. Select theme, language, direction, page size, and export options.
+3. Attach local image files or image folders.
+4. Preview the document approximately.
+5. Export the final PDF.
+
+> [!IMPORTANT]
+> The GUI preview is approximate. The final PDF is produced by the backend renderer, which applies the full Markdown processing, theme CSS, MathJax rendering, cover logic, and Chromium print layout.
 
 # CLI Reference
 
@@ -375,25 +544,57 @@ Watermarks are applied to content pages only, not to the cover.
 | `input` | Input Markdown file. |
 | `-o`, `--output` | Output PDF path. |
 | `--title`, `--author`, `--description` | Override metadata from front matter. |
-| `--toc`, `--toc-depth` | Enable/configure the Table of Contents. |
-| `--toc-page-break`, `--h1-page-break` | Control print page flow. |
+| `--toc`, `--toc-depth` | Enable and configure the table of contents. |
+| `--toc-page-break`, `--h1-page-break` | Control printed page flow. |
 | `--theme` | Choose `modern`, `textbook-light`, `textbook-dark`, or `academic`. |
-| `--page-size` | `A4`, `Letter`, `Legal`, `A4 landscape`, or dimensions such as `210mm 297mm`. |
+| `--page-size` | Use `A4`, `Letter`, `Legal`, `A4 landscape`, or dimensions such as `210mm 297mm`. |
 | `--dir` | Force `auto`, `ltr`, or `rtl`. |
 | `--margin-top`, `--margin-bottom`, `--margin-x` | Control page margins. |
-| `--font-dir` | Directory containing local Vazirmatn font files; missing or unrecognized directories produce a fallback warning. |
-| `--chromium-path` | Custom Chromium/Chrome executable path. |
+| `--font-dir` | Directory containing local Vazirmatn font files. |
+| `--chromium-path` | Custom Chromium or Chrome executable path. |
 | `--debug-html` | Save the intermediate HTML. |
 | `--no-cover`, `--cover-logo`, `--no-cover-logo` | Configure the cover. |
-| `--watermark`, `--watermark-image` | Add watermarks. |
-| `--no-header-footer` | Disable the footer. |
+| `--watermark`, `--watermark-image` | Add text or image watermarks. |
+| `--no-header-footer` | Disable printed footer. |
 | `--no-mathjax` | Do not load MathJax. |
-| `--unsafe-html` | Disable raw HTML sanitization. |
+| `--unsafe-html` | Disable raw HTML sanitization for trusted files. |
 | `--timeout-ms` | Browser timeout in milliseconds. |
+
+Run the full help command when needed:
+
+```bash
+mrs-md2pdf --help
+```
+
+# Automation and CI
+
+A typical automation command can be as simple as:
+
+```bash
+mrs-md2pdf docs/report.md -o build/report.pdf --toc --theme modern
+```
+
+For CI workflows, prefer explicit options:
+
+```bash
+mrs-md2pdf docs/report.md -o build/report.pdf \
+  --toc \
+  --toc-depth 4 \
+  --theme modern \
+  --page-size A4 \
+  --dir auto \
+  --timeout-ms 60000
+```
+
+For debugging CI failures, save the intermediate HTML as an artifact:
+
+```bash
+mrs-md2pdf docs/report.md -o build/report.pdf --debug-html build/report.html
+```
 
 # Troubleshooting
 
-## Missing browser
+## Chromium is missing
 
 Run:
 
@@ -407,41 +608,60 @@ or pass a custom browser path:
 mrs-md2pdf input.md -o output.pdf --chromium-path /path/to/chrome
 ```
 
-## Missing images
+## Persian text looks wrong
 
-Check that image paths are relative to the Markdown file. For GUI exports, attach the image folder/files so the backend can embed them before rendering. Very large local images are not embedded; the renderer keeps the original link and emits a warning to avoid excessive memory use.
+Install a Persian-capable font such as Vazirmatn, or pass a font directory:
+
+```bash
+mrs-md2pdf input.md -o output.pdf --font-dir ./fonts
+```
+
+If the directory is missing or does not contain recognized font files, the renderer prints a fallback warning and uses system fonts.
+
+## Images do not appear
+
+Check that image paths are relative to the Markdown file. If you use the GUI, attach the local images or folders before export. Very large images are not embedded and produce a warning.
 
 ## Math appears as raw TeX
 
-Make sure MathJax is enabled. Avoid `--no-mathjax` unless you intentionally want raw math markers. If MathJax fails during Chromium rendering, the converter emits a warning so the fallback is visible during automation.
+Make sure MathJax is enabled and check for renderer warnings. For large documents, increase the timeout:
 
-## Need to debug layout
+```bash
+mrs-md2pdf input.md -o output.pdf --timeout-ms 90000
+```
 
-Generate intermediate HTML:
+## Layout needs inspection
+
+Export debug HTML:
 
 ```bash
 mrs-md2pdf input.md -o output.pdf --debug-html output.html
 ```
 
+Open `output.html` in a browser and inspect the generated structure and CSS.
+
 # Footnotes
 
-Footnotes are useful for technical notes and references.[^pipeline]
+Footnotes are useful for references, technical notes, and extra explanations.[^pipeline]
 
 [^pipeline]: Mardas MD2PDF intentionally uses Chromium for layout instead of drawing every paragraph directly on a PDF canvas.
     This gives the project strong support for CSS print rules, mixed direction text, MathJax SVG output, tables, local images, and syntax-highlighted code.
 
     - Multiline footnotes are supported.
     - Markdown inside footnotes is preserved.
-    - Inline code like `@page` remains readable.
+    - Inline code like `@page`, `$x$`, and `[^id]` remains readable when it is written inside backticks.
 
-# Final Checklist
+# Final Publishing Checklist
 
-Before publishing an important PDF:
+Before publishing an important PDF, check the following items:
 
-- [x] Check the cover metadata.
-- [x] Check the TOC language and direction.
-- [x] Check a page containing math.
-- [x] Check a page containing code.
-- [x] Check local images.
-- [x] Check footer numbering after the cover.
-- [ ] Review the final PDF visually.
+- [x] Cover title, subtitle, author, date, and metadata.
+- [x] Language and document direction.
+- [x] Table of contents depth and labels.
+- [x] Pages containing formulas.
+- [x] Pages containing code blocks and inline code.
+- [x] Pages containing local images.
+- [x] Tables that span wide content.
+- [x] Footnotes and links.
+- [x] Footer numbering after the cover.
+- [ ] Final visual review in a PDF viewer.

@@ -1,24 +1,24 @@
 ---
 title: "راهنمای Mardas MD2PDF"
-subtitle: "آموزش کامل و نمونه جامع امکانات"
+subtitle: "راهنمای کامل استفاده و مرجع امکانات"
 authors:
   - name: "تیم Mardas MD2PDF"
     role: "مستندسازی"
   - name: "Meraj Rastegar"
-    email: "mragetsars@yahoo.com"
+    email: "mragetsars@gmail.com"
 date: "۱۴۰۵-۰۲-۳۰"
 summary: |
-  این راهنما نصب، پیکربندی و تولید PDF حرفه‌ای از Markdown را توضیح می‌دهد.
-  خروجی PDF آن جلد، فهرست مطالب، فرمول، کد، جدول، تصویر، HTML امن، شکست صفحه و پانویس را نمایش می‌دهد.
-institution: "آزمایشگاه Mardas"
+  این فایل راهنمای کامل نصب، پیکربندی و استفاده از Mardas MD2PDF است.
+  همین سند به عنوان نمونه زنده رندر نیز استفاده می‌شود و جلد، فهرست مطالب، متن ترکیبی فارسی/English، فرمول، کد، تصویر، جدول، پانویس، شکست صفحه و HTML امن را نمایش می‌دهد.
+institution: "Mardas Lab"
 course: "انتشار حرفه‌ای Markdown"
 version: "1.3.1"
-status: "پایدار"
+status: "Stable"
 keywords:
   - Markdown
   - PDF
   - فارسی
-  - انگلیسی
+  - English
   - RTL/LTR
   - MathJax
   - Playwright
@@ -27,22 +27,50 @@ lang: fa
 dir: rtl
 ---
 
-# شروع سریع
+# معرفی
 
-Mardas MD2PDF فایل‌های Markdown را با یک مسیر رندر مرورگرمحور به PDF تمیز و حرفه‌ای تبدیل می‌کند:
+Mardas MD2PDF ابزاری برای تبدیل Markdown به PDF است که مخصوص سندهای فارسی، انگلیسی و ترکیبی طراحی شده است. هدف پروژه این است که نویسنده بتواند متن را در قالب ساده Markdown بنویسد، اما خروجی نهایی شبیه یک سند PDF مرتب، حرفه‌ای و قابل انتشار باشد.
+
+این پروژه برای گزارش‌های دانشگاهی، مستندات فنی، جزوه‌های آموزشی، راهنماهای نرم‌افزاری، پیش‌نویس‌های پژوهشی، گزارش پروژه و هر سند Markdown که نیاز به خروجی PDF تمیز دارد مناسب است.
 
 ```text
-Markdown -> HTML تایپوگرافیک -> PDF با Chromium
+Markdown -> HTML ساختاریافته -> PDF با Chromium
 ```
 
-این روش باعث می‌شود نوشتن سند ساده بماند، اما خروجی PDF همچنان کنترل دقیق روی تایپوگرافی، جدول، فرمول، تصویر، جلد، فهرست مطالب، شکست صفحه و متن‌های ترکیبی فارسی/English داشته باشد.
+در این پروژه متن‌ها مستقیماً روی canvas فایل PDF رسم نمی‌شوند. ابتدا Markdown به HTML ساختاریافته تبدیل می‌شود، سپس CSS چاپی و تنظیمات theme اعمال می‌شود، فرمول‌ها با MathJax رندر می‌شوند و در مرحله آخر Chromium خروجی PDF را تولید می‌کند. این روش باعث پشتیبانی بهتر از layout چاپی، متن‌های ترکیبی RTL/LTR، فرمول‌های SVG، کدهای هایلایت‌شده، تصویرهای محلی و جدول‌های پیچیده می‌شود.
 
 > [!NOTE]
-> این فایل هم راهنمای استفاده است و هم یک test case بصری. اگر آن را به PDF تبدیل کنید، بیشتر قابلیت‌های پروژه را در یک خروجی واحد می‌بینید.
+> این راهنما هم مستند استفاده است و هم نمونه رندر. نسخه PDF همین فایل در پوشه `examples/` قرار دارد.
 
-## نصب
+## قابلیت‌های اصلی
 
-ابتدا پروژه را clone کنید، محیط مجازی بسازید، پکیج را نصب کنید و Chromium مربوط به Playwright را دریافت کنید:
+| قابلیت | توضیح |
+| :--- | :--- |
+| سندهای فارسی و انگلیسی | پشتیبانی از `lang: fa`، `lang: en`، جهت RTL/LTR و متن ترکیبی. |
+| جلد حرفه‌ای | عنوان، زیرعنوان، نویسنده‌ها، خلاصه، لوگو، تاریخ، نسخه، وضعیت، کلیدواژه و metadata آموزشی. |
+| فهرست مطالب | ساخت فهرست چندسطحی از headingهای Markdown. |
+| MathJax | رندر فرمول‌های درون‌خطی و نمایشی. |
+| بلوک کد | هایلایت کدهای fenced و indented با Pygments. |
+| تصویر محلی | جاسازی تصویرهای Markdown و HTML امن به صورت data URI. |
+| HTML امن | پاک‌سازی HTML خام به صورت پیش‌فرض. |
+| پانویس | پشتیبانی از پانویس‌های چندخطی با محتوای Markdown. |
+| Themeها | قالب‌های `modern`، `textbook-light`، `textbook-dark` و `academic`. |
+| اتوماسیون | رابط CLI مناسب برای اسکریپت‌ها و CI. |
+| GUI | رابط گرافیکی محلی برای ویرایش، preview تقریبی، تنظیم گزینه‌ها و export. |
+
+# نصب
+
+## پیش‌نیازها
+
+برای استفاده از پروژه بهتر است این موارد آماده باشند:
+
+- Python نسخه 3.10 یا جدیدتر؛
+- محیط مجازی Python؛
+- Chromium مربوط به Playwright؛
+- فونت مناسب فارسی، ترجیحاً Vazirmatn؛
+- Git برای clone کردن پروژه.
+
+## نصب از سورس
 
 ```bash
 git clone https://github.com/mragetsars/Mardas-MD2PDF.git
@@ -62,6 +90,8 @@ pip install -e .
 python -m playwright install chromium
 ```
 
+## نصب برای توسعه
+
 برای توسعه و اجرای تست‌ها:
 
 ```bash
@@ -69,7 +99,14 @@ pip install -e .[dev]
 pytest
 ```
 
-## اولین خروجی PDF
+بعد از نصب، دو دستور اصلی در دسترس است:
+
+| دستور | کاربرد |
+| :--- | :--- |
+| `mrs-md2pdf` | تبدیل Markdown به PDF از خط فرمان. |
+| `mrs-md2pdf-gui` | اجرای رابط گرافیکی محلی. |
+
+# اولین خروجی PDF
 
 تبدیل ساده:
 
@@ -77,13 +114,13 @@ pytest
 mrs-md2pdf input.md -o output.pdf
 ```
 
-تبدیل همراه با فهرست مطالب:
+تبدیل همراه با فهرست مطالب و theme مدرن:
 
 ```bash
-mrs-md2pdf input.md -o output.pdf --toc --toc-depth 4 --theme modern
+mrs-md2pdf input.md -o output.pdf --toc --theme modern
 ```
 
-خروجی شبیه کتاب، با فهرست مطالب جدا و شروع هر heading سطح اول از صفحه جدید:
+تولید خروجی طولانی با رفتار شبیه کتاب:
 
 ```bash
 mrs-md2pdf input.md -o output.pdf \
@@ -94,36 +131,51 @@ mrs-md2pdf input.md -o output.pdf \
   --theme textbook-light
 ```
 
-## چه زمانی از GUI استفاده کنیم؟
-
-رابط گرافیکی محلی را اجرا کنید:
+ذخیره HTML میانی برای بررسی و رفع اشکال:
 
 ```bash
-mrs-md2pdf-gui
+mrs-md2pdf input.md -o output.pdf --debug-html output.html
 ```
 
-GUI برای کاربرانی مناسب است که می‌خواهند Markdown را ویرایش کنند، preview ببینند، theme انتخاب کنند، گزینه‌های خروجی را تنظیم کنند، فایل‌ها یا پوشه تصاویر محلی را attach کنند و بدون حفظ کردن flagهای خط فرمان PDF بگیرند.
+# روند پیشنهادی کار
 
-# Front Matter و طراحی جلد
+برای رسیدن به خروجی تمیز، این روند پیشنهاد می‌شود:
 
-Front matter یک بخش YAML اختیاری در ابتدای فایل Markdown است. این بخش اطلاعات جلد، metadata فایل PDF، زبان، جهت سند و جزئیات دیگر را کنترل می‌کند.
+1. محتوای سند را در Markdown بنویسید.
+2. در ابتدای فایل، front matter شامل عنوان، نویسنده، زبان، جهت و metadata جلد را اضافه کنید.
+3. یک خروجی اولیه با `--toc` و theme مناسب بگیرید.
+4. جلد، فهرست مطالب، صفحه‌های دارای فرمول، صفحه‌های دارای کد، تصویرها و شماره صفحه را بررسی کنید.
+5. اگر layout نیاز به بررسی داشت، خروجی `--debug-html` بگیرید و HTML تولیدشده را در مرورگر ببینید.
+6. اصلاحات نهایی را در Markdown انجام دهید و PDF را دوباره بسازید.
+
+برای سندهای مهم، بررسی انسانی خروجی نهایی ضروری است. تست خودکار بسیاری از خطاها را می‌گیرد، اما تایپوگرافی، شکست صفحه و فاصله‌ها باید دیده شوند.
+
+# Front Matter
+
+Front matter یک بخش YAML اختیاری در ابتدای فایل Markdown است. این بخش جلد، metadata فایل PDF، زبان سند، جهت سند و چند فیلد مخصوص گزارش‌های رسمی یا آموزشی را کنترل می‌کند.
 
 ```yaml
 ---
-title: "راهنمای کامل Mardas MD2PDF"
-subtitle: "آموزش استفاده و معرفی امکانات"
+title: "گزارش فنی من"
+subtitle: "یک سند PDF ساخته‌شده با Markdown"
 authors:
-  - name: "تیم Mardas MD2PDF"
-    role: "مستندسازی"
-  - name: "Meraj Rastegar"
-    email: "mragetsars@yahoo.com"
+  - name: "Mardas"
+    email: "mragetsars@gmail.com"
+    affiliation: "Mardas Lab"
+    role: "Author"
 summary: |
-  متن چندخطی summary روی جلد حفظ می‌شود.
-  خط خالی، پاراگراف جدا ایجاد می‌کند.
-institution: "آزمایشگاه Mardas"
+  این متن روی جلد نمایش داده می‌شود.
+  متن چندخطی پشتیبانی می‌شود.
+institution: "نام دانشگاه یا سازمان"
+department: "نام دانشکده یا دپارتمان"
+course: "نام درس یا پروژه"
+supervisor: "نام استاد یا راهنما"
+date: "۱۴۰۵-۰۲-۳۰"
 version: "1.3.1"
-keywords: [Markdown, PDF, RTL/LTR, MathJax]
-cover_label: "راهنمای کامل"
+status: "Draft"
+keywords: [Markdown, PDF, RTL, MathJax]
+cover_label: "گزارش فنی"
+cover_logo: "src/assets/Mardas.png"
 lang: fa
 dir: rtl
 ---
@@ -133,26 +185,29 @@ dir: rtl
 
 | فیلد | کاربرد |
 | :--- | :--- |
-| `title` | عنوان جلد و عنوان metadata فایل PDF. |
+| `title` | عنوان جلد و title در metadata فایل PDF. |
 | `subtitle` | متن اختیاری زیر عنوان اصلی. |
-| `author` / `authors` | یک نویسنده یا چند نویسنده. هر author object می‌تواند `name`، `email`، `affiliation` و `role` داشته باشد. |
-| `summary` / `description` | خلاصه روی جلد و subject metadata. متن چندخطی YAML پشتیبانی می‌شود. |
-| `date`، `version`، `status` | کارت‌های اختیاری روی جلد. |
-| `institution`، `course`، `department`، `supervisor`، `group`، `student_id` | کارت‌های اختیاری برای گزارش‌ها و اسناد آموزشی. |
-| `keywords` / `tags` | کارت کلیدواژه‌ها و metadata فایل PDF. |
-| `cover_label` | نوشته کوچک بالای عنوان جلد. |
+| `author` | نویسنده ساده و تک‌مقداری. |
+| `authors` | فهرست نویسنده‌ها با `name`، `email`، `affiliation` و `role`. |
+| `summary` / `description` | خلاصه روی جلد و subject در metadata. |
+| `institution`, `department`, `course` | اطلاعات دانشگاهی یا سازمانی. |
+| `supervisor`, `group`, `student_id` | فیلدهای اختیاری برای گزارش‌های آموزشی. |
+| `date`, `version`, `status` | کارت‌های وضعیت سند روی جلد. |
+| `keywords` / `tags` | کلیدواژه‌های جلد و metadata فایل PDF. |
+| `cover_label` | برچسب کوچک بالای عنوان جلد. |
 | `cover_logo` / `logo` | مسیر لوگوی سفارشی نسبت به فایل Markdown. |
-| `lang` | زبان UI داخلی مثل `fa` یا `en`. |
-| `dir` | جهت پوسته سند: `auto`، `rtl` یا `ltr`. |
+| `lang` | زبان داخلی رابط سند، معمولاً `fa` یا `en`. |
+| `dir` | جهت پوسته سند: `auto`، `ltr` یا `rtl`. |
 
 ## رفتار جلد
 
-جلد جدا از محتوای اصلی رندر می‌شود. بنابراین:
+جلد جدا از محتوای اصلی رندر می‌شود. نتیجه این تصمیم چنین است:
 
-- جلد در شماره‌گذاری صفحات محتوا حساب نمی‌شود؛
-- footer از صفحه بعد از جلد شروع می‌شود؛
-- watermark روی جلد اعمال نمی‌شود؛
-- پس‌زمینه جلد می‌تواند تمام صفحه را بپوشاند.
+- جلد جزو شماره صفحات محتوایی حساب نمی‌شود؛
+- شماره‌گذاری footer از صفحه بعد از جلد شروع می‌شود؛
+- watermark فقط روی صفحات محتوایی اعمال می‌شود؛
+- theme می‌تواند برای جلد پس‌زمینه تمام‌صفحه داشته باشد؛
+- در صورت نیاز، جلد کاملاً قابل حذف است.
 
 حذف جلد:
 
@@ -163,38 +218,39 @@ mrs-md2pdf input.md -o output.pdf --no-cover
 استفاده از لوگوی سفارشی:
 
 ```bash
-mrs-md2pdf input.md -o output.pdf --cover-logo ./assets/logo.png
+mrs-md2pdf input.md -o output.pdf --cover-logo ./src/assets/Mardas.png
 ```
 
-مخفی کردن لوگو اما حفظ ساختار جلد:
+حفظ جلد بدون نمایش لوگو:
 
 ```bash
 mrs-md2pdf input.md -o output.pdf --no-cover-logo
 ```
 
-# زبان، جهت و تایپوگرافی
+# زبان و جهت سند
 
-`lang: fa` باعث می‌شود پوسته سند RTL شود، لیبل‌های جلد فارسی شوند، عنوان فهرست مطالب `فهرست مطالب` باشد و calloutها عنوان فارسی بگیرند. `lang: en` سند را LTR می‌کند و لیبل‌های انگلیسی مثل `Table of Contents` و `Note` را به کار می‌برد.
+کنترل جهت یکی از مهم‌ترین بخش‌های تولید PDF فارسی/انگلیسی است. در Mardas MD2PDF زبان سند و جهت سند از هم جدا در نظر گرفته شده‌اند.
 
-ترتیب تصمیم‌گیری برای جهت سند:
+`lang: fa` باعث ایجاد پوسته فارسی/RTL، لیبل‌های فارسی جلد، عنوان فارسی calloutها و عنوان `فهرست مطالب` می‌شود.
+
+`lang: en` باعث ایجاد پوسته انگلیسی/LTR، لیبل‌های انگلیسی جلد، عنوان انگلیسی calloutها و عنوان `Table of Contents` می‌شود.
+
+## اولویت تعیین جهت
+
+جهت سند با این ترتیب مشخص می‌شود:
 
 1. گزینه خط فرمان `--dir rtl|ltr|auto`
 2. فیلدهای front matter مثل `dir`، `direction`، `text_direction` یا `document_direction`
-3. پیش‌فرضی که از `lang` به دست می‌آید
+3. پیش‌فرض به‌دست‌آمده از `lang`
 4. تشخیص خودکار از متن Markdown
 
 ## نمونه متن ترکیبی
 
-در یک پاراگراف فارسی می‌توان از عبارت‌های English مثل `Playwright`، `MathJax`، `PDF`، `GitHub Actions` و `RTL/LTR` استفاده کرد بدون اینکه ترتیب متن به هم بریزد. همین‌طور در یک متن انگلیسی می‌توان واژه‌های فارسی مثل راست‌چین، فونت فارسی و گزارش فنی را آورد.
+در متن انگلیسی می‌توان واژه‌های فارسی مثل راست به چپ، فونت فارسی و گزارش فنی را آورد بدون اینکه جمله انگلیسی به هم بریزد.
 
-Inline code هم خوانا باقی می‌ماند: `mrs-md2pdf input.md -o output.pdf --toc`.
+در متن فارسی نیز می‌توان شناسه‌های English مثل `Playwright`، `MathJax`، `GitHub Actions`، `PDF` و `RTL/LTR` را داخل همان پاراگراف استفاده کرد.
 
-## نکته‌های کنترل جهت
-
-- برای اسناد فارسی از `lang: fa` استفاده کنید.
-- برای اسناد انگلیسی از `lang: en` استفاده کنید.
-- وقتی می‌خواهید برنامه خودش تصمیم بگیرد، `dir: auto` مناسب است.
-- در pipelineهای خودکار می‌توانید با `--dir ltr` یا `--dir rtl` جهت را صریح کنید.
+Inline code هم پایدار می‌ماند: `mrs-md2pdf input.md -o output.pdf --toc`.
 
 # فهرست مطالب
 
@@ -204,7 +260,7 @@ Inline code هم خوانا باقی می‌ماند: `mrs-md2pdf input.md -o ou
 mrs-md2pdf input.md -o output.pdf --toc
 ```
 
-تعیین عمق headingها:
+تعیین عمق فهرست:
 
 ```bash
 mrs-md2pdf input.md -o output.pdf --toc --toc-depth 3
@@ -216,45 +272,73 @@ mrs-md2pdf input.md -o output.pdf --toc --toc-depth 3
 mrs-md2pdf input.md -o output.pdf --toc --toc-page-break
 ```
 
-فهرست مطالب از headingهای Markdown ساخته می‌شود و اگر عنوان‌ها فرمول درون‌خطی مثل $E = mc^2$ یا $\epsilon$ داشته باشند، MathJax آن‌ها را به‌صورت قابل خواندن رندر می‌کند.
+شروع هر heading سطح اول از صفحه جدید:
 
-# امکانات Markdown
+```bash
+mrs-md2pdf input.md -o output.pdf --h1-page-break
+```
+
+فهرست مطالب از headingهای Markdown ساخته می‌شود و فرمول‌های درون‌خطی داخل headingها مثل $E = mc^2$ و $\epsilon$ را خوانا نگه می‌دارد.
+
+# مرجع امکانات Markdown
+
+## پاراگراف و تاکید
+
+پاراگراف‌های Markdown، **متن bold**، *متن italic*، `inline code`، لینک، لیست مرتب، لیست نامرتب، task list و نقل‌قول پشتیبانی می‌شوند.
+
+## لیست‌ها
+
+- نوشتن محتوای اصلی با Markdown.
+- افزودن front matter برای metadata.
+- انتخاب theme مناسب.
+- بررسی خروجی نهایی PDF.
+
+1. نصب پکیج.
+2. نصب Chromium.
+3. اجرای CLI.
+4. بررسی خروجی.
+
+## Task list
+
+- [x] ورودی Markdown
+- [x] تایپوگرافی فارسی/English
+- [x] رندر MathJax
+- [x] هایلایت کد
+- [ ] بازبینی انسانی نهایی
 
 ## جدول
 
 | قابلیت | وضعیت | توضیح |
 | :--- | :---: | :--- |
-| متن ترکیبی RTL/LTR | ✅ | پاراگراف، عنوان، آیتم لیست و سلول جدول direction-aware می‌شوند. |
-| تصویر محلی | ✅ | تصویرهای Markdown و HTML امن به data URI تبدیل می‌شوند. |
-| MathJax | ✅ | فرمول درون‌خطی و نمایشی اندازه‌گذاری جدا دارند. |
-| هایلایت کد | ✅ | fenced code block و indented code block با Pygments رندر می‌شوند. |
-| پانویس | ✅ | پانویس چندخطی با Markdown داخلی پشتیبانی می‌شود. |
-| HTML امن | ✅ | tagها و attributeهای خطرناک به‌صورت پیش‌فرض حذف می‌شوند. |
-
-## Task list
-
-- [x] نوشتن Markdown.
-- [x] تنظیم front matter.
-- [x] تولید PDF.
-- [ ] بررسی نهایی خروجی در PDF viewerهای مختلف برای اسناد مهم.
+| متن ترکیبی RTL/LTR | بله | پاراگراف، heading، لیست و سلول جدول با direction-aware styling رندر می‌شوند. |
+| تصویر محلی | بله | تصویرهای Markdown و HTML امن در صورت امکان embed می‌شوند. |
+| MathJax | بله | فرمول درون‌خطی و نمایشی اندازه‌گذاری جدا دارند. |
+| هایلایت کد | بله | برای fenced و indented code block از Pygments استفاده می‌شود. |
+| پانویس | بله | پانویس چندخطی با Markdown داخلی پشتیبانی می‌شود. |
+| HTML خام امن | بله | tagها و event handlerهای خطرناک حذف می‌شوند. |
 
 ## نقل‌قول
 
-> کیفیت خروجی PDF فقط تبدیل متن نیست؛ تایپوگرافی، فاصله‌ها، کنتراست، رفتار صفحه‌بندی و پایداری تصویرها هم اهمیت دارند.
+> کیفیت خروجی PDF فقط تبدیل متن نیست. تایپوگرافی، line height، کنتراست، صفحه‌بندی، تصویرها، فرمول‌ها و قابل پیش‌بینی بودن رندر اهمیت دارند.
 
 ## Calloutها
 
+Calloutها از markerهای مشابه GitHub استفاده می‌کنند و عنوان آن‌ها با توجه به زبان سند ترجمه می‌شود.
+
+> [!NOTE]
+> برای نکته‌های توضیحی که باید از متن اصلی جدا دیده شوند، از callout استفاده کنید.
+
 > [!TIP]
-> وقتی لازم است HTML نهایی را بررسی کنید، از `--debug-html output.html` استفاده کنید.
+> وقتی لازم است HTML دقیق ارسال‌شده به Chromium را ببینید، از `--debug-html output.html` استفاده کنید.
 
 > [!WARNING]
-> گزینه `--unsafe-html` فقط برای فایل‌های کاملاً قابل اعتماد مناسب است، چون sanitizer داخلی را غیرفعال می‌کند.
+> گزینه `--unsafe-html` فقط برای فایل‌های محلی قابل اعتماد مناسب است، چون sanitizer داخلی را غیرفعال می‌کند.
 
 # فرمول‌های MathJax
 
-فرمول‌های درون‌خطی باید هم‌اندازه متن اطراف باشند: $E = mc^2$، $\Sigma = I \cdot \epsilon$ و $T = 500$ باید طبیعی وسط جمله قرار بگیرند.
+فرمول‌های درون‌خطی باید با ارتفاع خط اطراف هماهنگ باشند: $E = mc^2$، $T = 500$ و $\Sigma = I \cdot \epsilon$ باید طبیعی وسط جمله قرار بگیرند.
 
-فرمول نمایشی فضای بیشتری می‌گیرد و بزرگ‌تر و خواناتر نمایش داده می‌شود:
+فرمول نمایشی فضای بیشتری می‌گیرد:
 
 $$
 \int_{-\infty}^{\infty} e^{-x^2}\,dx = \sqrt{\pi}
@@ -278,9 +362,18 @@ $$
 \end{aligned}
 $$
 
-# هایلایت کد
+## رفع اشکال فرمول‌ها
 
-fenced code blockها label زبان و هایلایت syntax دارند.
+اگر فرمول‌ها به شکل TeX خام دیده شدند:
+
+- مطمئن شوید `--no-mathjax` استفاده نشده باشد؛
+- warningهای ترمینال را بررسی کنید؛
+- برای سندهای خیلی بزرگ timeout مرورگر را افزایش دهید؛
+- یک فایل کوچک‌تر بسازید تا فرمول مشکل‌دار را جدا کنید.
+
+# بلوک‌های کد
+
+fenced code blockها از syntax highlighting و label زبان پشتیبانی می‌کنند.
 
 ```python
 from dataclasses import dataclass
@@ -292,7 +385,7 @@ class Document:
 
 
 def render_message(doc: Document) -> str:
-    return f"Rendering {doc.title} as a polished PDF"
+    return f"Rendering {doc.title} as PDF"
 
 print(render_message(Document("راهنمای Mardas")))
 ```
@@ -303,44 +396,91 @@ const message = items.map((item, index) => `${index + 1}. ${item}`).join("\n");
 console.log(message);
 ```
 
-```c
-int setSeed(void);
-int getRandomNumber(int n, int *buf);
-int process_information(int pid);
-int sort_numbers(const char *src_file);
+fenced code بدون زبان هم معتبر است:
+
+```
+این بلوک زبان مشخصی ندارد.
+با این حال باید بدون خطا رندر شود.
 ```
 
-Indented code block هم پشتیبانی می‌شود:
+indented code block نیز پشتیبانی می‌شود:
 
     SELECT title, lang, version
     FROM documents
     WHERE renderer = 'mardas-md2pdf';
 
+inline code در برابر پردازش math و footnote محافظت می‌شود. یعنی `$x$` و `[^note]` وقتی داخل backtick باشند، به شکل literal باقی می‌مانند.
+
 # تصویر و HTML امن
 
-تصویرهای Markdown نسبت به مسیر فایل Markdown resolve می‌شوند و داخل HTML/PDF نهایی جاسازی می‌شوند.
+مسیر تصویرها نسبت به فایل Markdown resolve می‌شود. تصویرهای محلی اگر حجم مناسبی داشته باشند داخل HTML/PDF نهایی embed می‌شوند.
 
-![نمودار محلی از پوشه examples](examples/images/md2pdf-sample-chart.png)
+![تصویر معرفی پروژه](README.png)
 
 وقتی اندازه‌دهی دقیق‌تر لازم است، می‌توان از HTML امن استفاده کرد:
 
-<img src="examples/images/md2pdf-sample-chart.png" width="70%" alt="نمودار محلی با HTML امن">
+<img src="README.png" width="70%" alt="تصویر معرفی پروژه با اندازه مشخص">
 
-HTML خام به‌صورت پیش‌فرض sanitize می‌شود. sanitizer عناصر مناسب سند مثل `<div>`، `<span>`، `<table>`، `<figure>` و `<img>` را نگه می‌دارد و محتوای فعال مثل script، event handler، iframe، form، stylesheet خارجی و URL scheme ناامن را حذف می‌کند.
+## قواعد استفاده از تصویر
+
+- برای خروجی پایدار PDF، تصویرهای محلی بهتر از تصویرهای remote هستند.
+- قبل از embed کردن، حجم تصویرها را منطقی نگه دارید.
+- مسیر تصویر را نسبت به محل فایل Markdown بنویسید.
+- در GUI، فایل‌ها یا پوشه تصویر را قبل از export attach کنید.
+- تصویرهای خیلی بزرگ embed نمی‌شوند و renderer برای جلوگیری از مصرف زیاد حافظه warning می‌دهد.
+
+## HTML امن
+
+HTML خام به صورت پیش‌فرض sanitize می‌شود. sanitizer عناصر مناسب سند مثل `<div>`، `<span>`، `<table>`، `<figure>` و `<img>` را نگه می‌دارد، اما محتوای فعال یا خطرناک مثل script، event handler، iframe، form، stylesheet خارجی و URL scheme ناامن را حذف می‌کند.
+
+غیرفعال کردن sanitizer فقط برای فایل‌های قابل اعتماد:
+
+```bash
+mrs-md2pdf input.md -o output.pdf --unsafe-html
+```
 
 <div class="md2pdf-page-break"></div>
 
-# صفحه‌بندی، Watermark و Themeها
+# صفحه‌بندی و Layout
 
 ## شکست صفحه دستی
 
-برای شکست صفحه دستی می‌توانید HTML امن زیر را بنویسید:
+برای شکست صفحه دستی می‌توانید HTML امن زیر را قرار دهید:
 
 ```html
 <div class="md2pdf-page-break"></div>
 ```
 
-## Watermark
+## اندازه صفحه
+
+استفاده از اندازه نام‌دار:
+
+```bash
+mrs-md2pdf input.md -o output.pdf --page-size A4
+```
+
+استفاده از حالت landscape:
+
+```bash
+mrs-md2pdf input.md -o output.pdf --page-size "A4 landscape"
+```
+
+استفاده از ابعاد دقیق:
+
+```bash
+mrs-md2pdf input.md -o output.pdf --page-size "210mm 297mm"
+```
+
+## Marginها
+
+```bash
+mrs-md2pdf input.md -o output.pdf \
+  --margin-top 18mm \
+  --margin-bottom 18mm \
+  --margin-x 16mm
+```
+
+# Watermark
 
 Watermark متنی:
 
@@ -352,21 +492,48 @@ Watermark تصویری:
 
 ```bash
 mrs-md2pdf input.md -o output.pdf \
-  --watermark-image ./Mardas.png \
+  --watermark-image ./src/assets/Mardas.png \
   --watermark-opacity 0.05 \
   --watermark-width 95mm
 ```
 
-Watermark فقط روی صفحات محتوا اعمال می‌شود و روی جلد نمی‌آید.
+Watermark فقط روی صفحات محتوایی اعمال می‌شود و روی جلد قرار نمی‌گیرد.
 
-## Themeها
+# Themeها
+
+Mardas MD2PDF چهار theme داخلی دارد.
 
 | Theme | کاربرد پیشنهادی |
 | :--- | :--- |
-| `modern` | مستندات عمومی، proposal، گزارش نرم‌افزاری. |
-| `textbook-light` | جزوه آموزشی و سندهای طولانی فارسی/انگلیسی. |
-| `textbook-dark` | مطالعه روی صفحه و بررسی در محیط کم‌نور. |
-| `academic` | گزارش رسمی، سند دانشگاهی و پیش‌نویس پایان‌نامه‌مانند. |
+| `modern` | مستندات عمومی، proposal، گزارش نرم‌افزاری و راهنمای محصول. |
+| `textbook-light` | جزوه‌های آموزشی طولانی و محتوای آموزشی فارسی/English. |
+| `textbook-dark` | مطالعه روی صفحه، بررسی در محیط کم‌نور و یادداشت‌های فنی شبیه ارائه. |
+| `academic` | گزارش رسمی، سند دانشگاهی، پیش‌نویس پایان‌نامه و مقاله ساختاریافته. |
+
+انتخاب theme:
+
+```bash
+mrs-md2pdf input.md -o output.pdf --theme academic
+```
+
+# روند کار با GUI
+
+اجرای GUI:
+
+```bash
+mrs-md2pdf-gui
+```
+
+GUI برای کاربرانی مناسب است که روند بصری را ترجیح می‌دهند:
+
+1. نوشتن یا paste کردن Markdown.
+2. انتخاب theme، زبان، جهت، اندازه صفحه و گزینه‌های خروجی.
+3. attach کردن فایل‌ها یا پوشه‌های تصویر محلی.
+4. دیدن preview تقریبی.
+5. export گرفتن از PDF نهایی.
+
+> [!IMPORTANT]
+> preview داخل GUI تقریبی است. PDF نهایی توسط backend renderer ساخته می‌شود و پردازش کامل Markdown، CSS theme، MathJax، جلد و layout چاپی Chromium روی آن اعمال می‌شود.
 
 # مرجع CLI
 
@@ -381,21 +548,53 @@ Watermark فقط روی صفحات محتوا اعمال می‌شود و روی
 | `--page-size` | اندازه صفحه مثل `A4`، `Letter`، `Legal`، `A4 landscape` یا ابعادی مثل `210mm 297mm`. |
 | `--dir` | اجبار جهت به `auto`، `ltr` یا `rtl`. |
 | `--margin-top`, `--margin-bottom`, `--margin-x` | کنترل margin صفحه. |
-| `--font-dir` | مسیر فونت‌های محلی Vazirmatn؛ اگر مسیر یا فایل‌های شناخته‌شده پیدا نشود، renderer هشدار می‌دهد و از فونت‌های سیستم استفاده می‌کند. |
-| `--chromium-path` | مسیر سفارشی Chromium/Chrome. |
+| `--font-dir` | مسیر فونت‌های محلی Vazirmatn. |
+| `--chromium-path` | مسیر سفارشی Chromium یا Chrome. |
 | `--debug-html` | ذخیره HTML میانی. |
 | `--no-cover`, `--cover-logo`, `--no-cover-logo` | تنظیم جلد. |
-| `--watermark`, `--watermark-image` | افزودن Watermark. |
-| `--no-header-footer` | حذف footer شماره صفحه. |
+| `--watermark`, `--watermark-image` | افزودن watermark متنی یا تصویری. |
+| `--no-header-footer` | حذف footer چاپی. |
 | `--no-mathjax` | غیرفعال کردن MathJax. |
 | `--unsafe-html` | غیرفعال کردن sanitization برای فایل‌های قابل اعتماد. |
 | `--timeout-ms` | timeout مرورگر بر حسب میلی‌ثانیه. |
 
+برای دیدن همه گزینه‌ها:
+
+```bash
+mrs-md2pdf --help
+```
+
+# اتوماسیون و CI
+
+یک دستور ساده برای ساخت PDF در اسکریپت:
+
+```bash
+mrs-md2pdf docs/report.md -o build/report.pdf --toc --theme modern
+```
+
+برای CI بهتر است گزینه‌ها صریح باشند:
+
+```bash
+mrs-md2pdf docs/report.md -o build/report.pdf \
+  --toc \
+  --toc-depth 4 \
+  --theme modern \
+  --page-size A4 \
+  --dir auto \
+  --timeout-ms 60000
+```
+
+برای اشکال‌زدایی در CI، HTML میانی را به عنوان artifact نگه دارید:
+
+```bash
+mrs-md2pdf docs/report.md -o build/report.pdf --debug-html build/report.html
+```
+
 # رفع اشکال
 
-## مرورگر پیدا نمی‌شود
+## Chromium پیدا نمی‌شود
 
-دستور زیر را اجرا کنید:
+این دستور را اجرا کنید:
 
 ```bash
 python -m playwright install chromium
@@ -407,15 +606,29 @@ python -m playwright install chromium
 mrs-md2pdf input.md -o output.pdf --chromium-path /path/to/chrome
 ```
 
-## تصویرها در PDF دیده نمی‌شوند
+## متن فارسی ظاهر مناسبی ندارد
 
-مطمئن شوید مسیر تصویرها نسبت به فایل Markdown درست است. در GUI، پوشه یا فایل‌های تصویر را attach کنید تا backend بتواند آن‌ها را قبل از رندر embed کند. تصویرهای محلی خیلی بزرگ embed نمی‌شوند؛ renderer لینک اصلی را نگه می‌دارد و برای جلوگیری از مصرف زیاد حافظه هشدار می‌دهد.
+یک فونت فارسی مناسب مثل Vazirmatn نصب کنید یا مسیر فونت را بدهید:
+
+```bash
+mrs-md2pdf input.md -o output.pdf --font-dir ./fonts
+```
+
+اگر مسیر فونت وجود نداشته باشد یا فایل شناخته‌شده‌ای داخل آن پیدا نشود، renderer warning می‌دهد و از فونت‌های سیستم استفاده می‌کند.
+
+## تصویرها دیده نمی‌شوند
+
+مطمئن شوید مسیر تصویرها نسبت به فایل Markdown درست است. اگر از GUI استفاده می‌کنید، فایل‌ها یا پوشه‌های تصویر را قبل از export attach کنید. تصویرهای خیلی بزرگ embed نمی‌شوند و warning تولید می‌کنند.
 
 ## فرمول‌ها به شکل TeX خام دیده می‌شوند
 
-مطمئن شوید MathJax فعال است. از `--no-mathjax` فقط وقتی استفاده کنید که عمداً نمی‌خواهید فرمول‌ها پردازش شوند. اگر MathJax هنگام رندر Chromium شکست بخورد، converter هشدار می‌دهد تا fallback در اجرای خودکار پنهان نماند.
+مطمئن شوید MathJax فعال است و warningهای renderer را بررسی کنید. برای سندهای بزرگ timeout را افزایش دهید:
 
-## نیاز به بررسی layout دارید
+```bash
+mrs-md2pdf input.md -o output.pdf --timeout-ms 90000
+```
+
+## Layout نیاز به بررسی دارد
 
 HTML میانی را ذخیره کنید:
 
@@ -423,25 +636,30 @@ HTML میانی را ذخیره کنید:
 mrs-md2pdf input.md -o output.pdf --debug-html output.html
 ```
 
+سپس `output.html` را در مرورگر باز کنید و ساختار و CSS تولیدشده را بررسی کنید.
+
 # پانویس
 
-پانویس برای توضیحات فنی و یادداشت‌های تکمیلی مفید است.[^pipeline]
+پانویس برای ارجاع، یادداشت فنی و توضیح تکمیلی مناسب است.[^pipeline]
 
 [^pipeline]: Mardas MD2PDF به‌جای رسم مستقیم هر پاراگراف روی canvas فایل PDF، از Chromium برای layout استفاده می‌کند.
     این انتخاب باعث پشتیبانی بهتر از CSS print، متن ترکیبی، خروجی SVG MathJax، جدول‌ها، تصویرهای محلی و کدهای هایلایت‌شده می‌شود.
 
     - پانویس چندخطی پشتیبانی می‌شود.
     - Markdown داخل پانویس حفظ می‌شود.
-    - inline code مثل `@page` خوانا باقی می‌ماند.
+    - inline code مثل `@page`، `$x$` و `[^id]` وقتی داخل backtick نوشته شود خوانا و literal باقی می‌ماند.
 
-# چک‌لیست نهایی
+# چک‌لیست نهایی انتشار
 
-قبل از انتشار PDF مهم:
+قبل از انتشار PDF مهم، این موارد را بررسی کنید:
 
-- [x] metadata جلد را بررسی کنید.
-- [x] زبان و جهت فهرست مطالب را بررسی کنید.
-- [x] صفحه‌ای که فرمول دارد را ببینید.
-- [x] صفحه‌ای که کد دارد را ببینید.
-- [x] تصویرهای محلی را بررسی کنید.
-- [x] شماره‌گذاری footer بعد از جلد را بررسی کنید.
-- [ ] خروجی نهایی را به‌صورت تصویری مرور کنید.
+- [x] عنوان جلد، زیرعنوان، نویسنده، تاریخ و metadata.
+- [x] زبان و جهت سند.
+- [x] عمق و لیبل‌های فهرست مطالب.
+- [x] صفحه‌های دارای فرمول.
+- [x] صفحه‌های دارای code block و inline code.
+- [x] صفحه‌های دارای تصویر محلی.
+- [x] جدول‌هایی که محتوای پهن دارند.
+- [x] پانویس‌ها و لینک‌ها.
+- [x] شماره‌گذاری footer بعد از جلد.
+- [ ] بازبینی بصری نهایی در PDF viewer.
