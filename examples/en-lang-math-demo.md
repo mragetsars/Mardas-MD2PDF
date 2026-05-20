@@ -9,12 +9,13 @@ summary: |
 
   It also compares inline math with display math.
 institution: "Mardas Lab"
-version: "1.3"
+version: "1.3.1"
 keywords:
   - English
   - LTR
   - MathJax
   - Table of Contents
+cover_label: "Technical Report"
 lang: en
 dir: auto
 ---

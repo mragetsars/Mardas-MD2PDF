@@ -453,6 +453,22 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
       body.md2pdf-dir-rtl .md2pdf-article {{ direction: rtl; }}
       body.md2pdf-dir-ltr .md2pdf-document,
       body.md2pdf-dir-ltr .md2pdf-article {{ direction: ltr; }}
+      body.md2pdf-dir-ltr .md2pdf-cover {{ direction: ltr; }}
+      body.md2pdf-dir-rtl .md2pdf-cover {{ direction: rtl; }}
+      body .md2pdf-cover__top {{
+        direction: ltr;
+        justify-content: flex-start;
+      }}
+      body.md2pdf-dir-ltr .md2pdf-cover__content {{
+        margin-left: 0;
+        margin-right: auto;
+        text-align: left;
+      }}
+      body.md2pdf-dir-rtl .md2pdf-cover__content {{
+        margin-left: auto;
+        margin-right: 0;
+        text-align: right;
+      }}
       body.md2pdf-dir-ltr .md2pdf-cover h1,
       body.md2pdf-dir-ltr .md2pdf-cover__subtitle,
       body.md2pdf-dir-ltr .md2pdf-cover__summary,
@@ -461,8 +477,25 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
       body.md2pdf-dir-rtl .md2pdf-cover__subtitle,
       body.md2pdf-dir-rtl .md2pdf-cover__summary,
       body.md2pdf-dir-rtl .md2pdf-cover__detail {{ text-align: right; }}
+      body.md2pdf-dir-ltr .md2pdf-cover__subtitle {{ margin: -4mm auto 4mm 0; }}
+      body.md2pdf-dir-rtl .md2pdf-cover__subtitle {{ margin: -4mm 0 4mm auto; }}
+      body.md2pdf-dir-ltr .md2pdf-cover__summary {{ margin: 5mm auto 0 0; }}
+      body.md2pdf-dir-rtl .md2pdf-cover__summary {{ margin: 5mm 0 0 auto; }}
       body.md2pdf-dir-ltr .md2pdf-cover__details {{ direction: ltr; }}
       body.md2pdf-dir-rtl .md2pdf-cover__details {{ direction: rtl; }}
+      body.md2pdf-dir-ltr .md2pdf-cover__detail {{ direction: ltr; }}
+      body.md2pdf-dir-rtl .md2pdf-cover__detail {{ direction: rtl; }}
+      body.md2pdf-dir-ltr .md2pdf-cover__detail > span {{
+        font-family: var(--font-en), var(--font-fa);
+      }}
+      body.md2pdf-dir-rtl .md2pdf-cover__detail > span {{
+        font-family: var(--font-fa), var(--font-en);
+        font-weight: 800;
+        letter-spacing: 0;
+        text-transform: none;
+      }}
+      body.md2pdf-dir-ltr .md2pdf-cover__detail > strong {{ font-family: var(--font-en), var(--font-fa); }}
+      body.md2pdf-dir-rtl .md2pdf-cover__detail > strong {{ font-family: var(--font-fa), var(--font-en); }}
       .math,
       .md2pdf-article mjx-container {{
         direction: ltr;
@@ -554,7 +587,6 @@ def _cover_html(
     summary_html = _paragraph_block_html(description, "md2pdf-cover__summary")
     details_html = ''.join(detail_cards)
     brand_html = ""
-    release_html = ""
     cover_classes = "md2pdf-cover"
     if options.cover_brand_enabled:
         brand_html = f"""
@@ -566,7 +598,6 @@ def _cover_html(
             </span>
           </div>
         """
-        release_html = f'<span class="md2pdf-cover__release" dir="auto">{html.escape(labels["pdf_report"])}</span>'
     else:
         cover_classes += " md2pdf-cover--unbranded"
 
@@ -574,9 +605,8 @@ def _cover_html(
       <header class="{cover_classes}" lang="{html.escape(str(lang))}" dir="{html.escape(document_direction)}">
         <div class="md2pdf-cover__decor md2pdf-cover__decor--one" aria-hidden="true"></div>
         <div class="md2pdf-cover__decor md2pdf-cover__decor--two" aria-hidden="true"></div>
-        <section class="md2pdf-cover__top">
+        <section class="md2pdf-cover__top" dir="ltr">
           {brand_html}
-          {release_html}
         </section>
         <section class="md2pdf-cover__content">
           <span class="md2pdf-cover__eyebrow">{html.escape(_stringify_metadata_value(eyebrow) or labels["generated_document"])}</span>
@@ -637,7 +667,18 @@ def build_html(
     labels = _localized_labels(lang)
     date = _first_metadata_value(metadata, "date")
     subtitle = _first_metadata_value(metadata, "subtitle", "subject")
-    eyebrow = _first_metadata_value(metadata, "eyebrow", "document_type", "type") or labels["generated_document"]
+    eyebrow = (
+        _first_metadata_value(
+            metadata,
+            "cover_label",
+            "cover_eyebrow",
+            "document_label",
+            "eyebrow",
+            "document_type",
+            "type",
+        )
+        or labels["generated_document"]
+    )
     base_href = options.input_path.resolve().parent.as_uri() + "/"
     css_variables, body_classes = _layout_css(
         options,

@@ -116,6 +116,7 @@ summary: |
   خط دوم خلاصه باید در همان پاراگراف با شکست خط بماند.
 
   این پاراگراف دوم خلاصه است.
+cover_label: "گزارش آزمایشی"
 institution: "Tehran University"
 course: "Data Science"
 keywords:
@@ -141,6 +142,9 @@ lang: fa
     assert "Data Science" in html
     assert "RTL" in html
     assert "PDF" in html
+    assert "گزارش آزمایشی" in html
+    assert "گزارش PDF" not in html
+    assert '<section class="md2pdf-cover__top" dir="ltr">' in html
 
 
 def test_inline_math_keeps_mathjax_delimiters_after_markdown_parsing():
@@ -230,6 +234,8 @@ lang: en
     assert '<html lang="en" dir="ltr">' in html
     assert 'class="md2pdf-cover" lang="en" dir="ltr"' in html
     assert "Generated Document" in html
+    assert "PDF Report" not in html
+    assert '<section class="md2pdf-cover__top" dir="ltr">' in html
 
 
 def test_lang_en_drives_ltr_shell_even_when_body_contains_persian(tmp_path):
@@ -267,3 +273,31 @@ def test_math_scaling_rules_distinguish_inline_and_display_math(tmp_path):
     assert "--md2pdf-display-math-scale: 130%;" in html
     assert "mjx-container:not([display=\"true\"])" in html
     assert "mjx-container[display=\"true\"]" in html
+
+
+def test_cover_label_aliases_and_ltr_cover_alignment(tmp_path):
+    from mardas_md2pdf.renderer import PdfOptions, build_html
+
+    md = """---
+title: English report
+subtitle: Left aligned subtitle
+summary: |
+  The summary should start on the left side of the English cover.
+cover_label: Custom Cover Label
+lang: en
+---
+
+# Body
+"""
+    result = render_markdown(md)
+    input_path = tmp_path / "english.md"
+    input_path.write_text(md, encoding="utf-8")
+    html = build_html(result, PdfOptions(input_path=input_path, output_path=tmp_path / "english.pdf"))
+
+    assert "Custom Cover Label" in html
+    assert "Generated Document" not in html
+    assert "body.md2pdf-dir-ltr .md2pdf-cover__content" in html
+    assert "margin-left: 0;" in html
+    assert "body.md2pdf-dir-ltr .md2pdf-cover__summary { margin: 5mm auto 0 0; }" in html
+    assert "body.md2pdf-dir-rtl .md2pdf-cover__detail > span" in html
+    assert "font-family: var(--font-fa), var(--font-en);" in html

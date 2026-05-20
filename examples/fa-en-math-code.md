@@ -12,7 +12,7 @@ summary: |
   این پاراگراف دوم summary است و جدا از پاراگراف اول روی جلد چاپ می‌شود.
 institution: "Mardas Lab"
 course: "Markdown Publishing"
-version: "1.3"
+version: "1.3.1"
 keywords:
   - RTL/LTR
   - MathJax
@@ -21,6 +21,7 @@ keywords:
   - PDF Metadata
   - Language-Aware UI
   - Math Scaling
+cover_label: "سند نمونه"
 lang: fa
 dir: auto
 ---

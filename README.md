@@ -117,7 +117,7 @@ MathJax is vendored inside the project, so formulas can be rendered without rely
 
 ### 🖼️ Professional Cover Page
 
-By default, Mardas MD2PDF generates a designed cover page using the bundled Mardas logo, document title, subtitle, author/authors, date, and summary/description. Cover direction and labels follow the document language: `lang: fa` uses an RTL Persian cover shell, and `lang: en` uses an LTR English cover shell.
+By default, Mardas MD2PDF generates a designed cover page using the bundled Mardas logo, document title, subtitle, author/authors, date, and summary/description. The brand block is intentionally stable across languages and is always anchored on the physical left side of the cover. The optional cover label above the title follows the document language by default, and can be changed with `cover_label` in YAML. Cover direction and labels follow the document language: `lang: fa` uses an RTL Persian cover shell, and `lang: en` uses an LTR English cover shell.
 
 The cover page is rendered separately from the main document. Therefore:
 
@@ -142,6 +142,12 @@ Hide only the logo while keeping the cover layout:
 
 ```bash
 mrs-md2pdf input.md -o output.pdf --no-cover-logo
+```
+
+Change the small label above the cover title from YAML:
+
+```yaml
+cover_label: "Technical Report"
 ```
 
 ### 💧 Watermark Support
@@ -508,11 +514,12 @@ summary: |
   پاراگراف دوم summary هم جدا و خوانا روی جلد چاپ می‌شود.
 institution: "Mardas Lab"
 course: "Markdown Publishing"
-version: "1.3"
+version: "1.3.1"
 keywords:
   - RTL
   - MathJax
   - PDF
+cover_label: "سند نمونه"
 lang: fa
 dir: auto
 ---
@@ -533,7 +540,7 @@ Common fields:
 | `cover_logo` / `logo` | path | Optional cover logo path relative to the Markdown file. CLI `--cover-logo` has priority. |
 | `lang` | string | HTML document language and built-in UI language, e.g. `fa` or `en`. It controls default shell direction, TOC title, callout captions, and cover labels unless `dir` or CLI `--dir` explicitly overrides direction. |
 | `dir` / `direction` / `text_direction` / `document_direction` | `auto`, `rtl`, or `ltr` | Document shell direction. CLI `--dir` has priority. |
-| `eyebrow` / `document_type` | string | Small label above the cover title. Defaults to the localized equivalent of `Generated Document`. |
+| `cover_label` / `cover_eyebrow` / `document_label` / `eyebrow` / `document_type` | string | Small label above the cover title. Defaults to the localized equivalent of `Generated Document`. |
 
 These fields are used for title detection, cover page metadata, document language, document direction, and PDF metadata (`Title`, `Author`, `Subject`, and `Keywords`). CLI options such as `--title`, `--author`, `--description`, `--dir`, and `--cover-logo` override the matching front-matter values.
 
