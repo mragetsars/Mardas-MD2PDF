@@ -7,6 +7,7 @@ import re
 import shutil
 import tempfile
 import unicodedata
+import warnings
 from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from importlib import resources
@@ -17,6 +18,9 @@ from playwright.sync_api import Page, sync_playwright
 from pypdf import PdfReader, PdfWriter
 
 from .markdown import MarkdownRenderResult, render_markdown_file
+
+
+MAX_EMBED_ASSET_BYTES = 20 * 1024 * 1024
 
 
 @dataclass(slots=True)
@@ -65,6 +69,13 @@ def _font_faces(font_dir: Path | None) -> str:
     if not font_dir:
         return ""
     font_dir = font_dir.resolve()
+    if not font_dir.exists() or not font_dir.is_dir():
+        warnings.warn(
+            f"Font directory not found; falling back to system fonts: {font_dir}",
+            RuntimeWarning,
+            stacklevel=2,
+        )
+        return ""
     candidates = {
         "Vazirmatn": [
             "Vazirmatn-Regular.woff2",
@@ -93,6 +104,12 @@ def _font_faces(font_dir: Path | None) -> str:
                     "}"
                 )
                 break
+    if not chunks:
+        warnings.warn(
+            f"No Vazirmatn font files found in {font_dir}; falling back to system fonts.",
+            RuntimeWarning,
+            stacklevel=2,
+        )
     return "\n".join(chunks)
 
 
@@ -157,6 +174,14 @@ def _image_data_uri(path: Path | None) -> str | None:
         return None
     path = path.resolve()
     if not path.exists():
+        return None
+    size = path.stat().st_size
+    if size > MAX_EMBED_ASSET_BYTES:
+        warnings.warn(
+            f"Skipping asset larger than {MAX_EMBED_ASSET_BYTES} bytes: {path}",
+            RuntimeWarning,
+            stacklevel=2,
+        )
         return None
     mime_type = mimetypes.guess_type(str(path))[0] or "image/png"
     encoded = base64.b64encode(path.read_bytes()).decode("ascii")
@@ -684,6 +709,11 @@ def _mathjax_block(options: PdfOptions) -> str:
     mathjax_js = _mathjax_script()
     if mathjax_js:
         return f"{mathjax_config}<script>{mathjax_js}</script>"
+    warnings.warn(
+        "Bundled MathJax asset missing; equations will remain in TeX form.",
+        RuntimeWarning,
+        stacklevel=2,
+    )
     return "<!-- MathJax asset missing: equations will remain in TeX form. -->"
 
 
@@ -848,8 +878,12 @@ def _render_pdf(page: Page, html_text: str, options: PdfOptions, path: Path, *, 
                   }
                 }"""
             )
-        except Exception:
-            pass
+        except Exception as exc:
+            warnings.warn(
+                f"MathJax rendering failed; equations may remain in TeX form: {exc}",
+                RuntimeWarning,
+                stacklevel=2,
+            )
     page.emulate_media(media="print")
     pdf_kwargs: dict[str, Any] = {
         "path": str(path),

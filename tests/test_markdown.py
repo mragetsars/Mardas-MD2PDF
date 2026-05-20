@@ -324,3 +324,22 @@ def test_footnote_refs_are_not_expanded_inside_fenced_code():
     result = render_markdown("```text\n[^note]\n```\n\n[^note]: fn")
     assert '[^note]' in result.body_html
     assert '<sup class="footnote-ref" id="fnref-note">' not in result.body_html.split("</figure>", 1)[0]
+
+
+def test_large_local_images_are_left_as_links_with_warning(tmp_path, monkeypatch):
+    import pytest
+
+    from mardas_md2pdf import markdown as markdown_module
+
+    image = tmp_path / "large.png"
+    image.write_bytes(b"not really a png, but enough for this test")
+    monkeypatch.setattr(markdown_module, "MAX_EMBED_IMAGE_BYTES", 1)
+
+    md = tmp_path / "report.md"
+    md.write_text("![large](large.png)\n", encoding="utf-8")
+
+    with pytest.warns(RuntimeWarning, match="Skipping image larger than"):
+        result = markdown_module.render_markdown_file(md)
+
+    assert 'src="large.png"' in result.body_html
+    assert 'data:image/png;base64' not in result.body_html

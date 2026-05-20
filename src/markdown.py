@@ -5,6 +5,7 @@ import html
 import mimetypes
 import re
 import unicodedata
+import warnings
 from urllib.parse import unquote, urlparse
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -97,6 +98,7 @@ TAG_SAFE_ATTRS = {
     "code": {"class"},
 }
 SAFE_URL_SCHEMES = {"", "http", "https", "mailto", "file", "data"}
+MAX_EMBED_IMAGE_BYTES = 20 * 1024 * 1024
 RTL_LANG_PREFIXES = ("ar", "fa", "he", "iw", "ku", "ps", "sd", "ug", "ur", "yi")
 
 
@@ -706,6 +708,14 @@ def _image_file_to_data_uri(path: Path) -> str | None:
         return None
     mime_type = mimetypes.guess_type(str(path))[0] or "image/png"
     if not mime_type.startswith("image/"):
+        return None
+    size = path.stat().st_size
+    if size > MAX_EMBED_IMAGE_BYTES:
+        warnings.warn(
+            f"Skipping image larger than {MAX_EMBED_IMAGE_BYTES} bytes: {path}",
+            RuntimeWarning,
+            stacklevel=2,
+        )
         return None
     encoded = base64.b64encode(path.read_bytes()).decode("ascii")
     return f"data:{mime_type};base64,{encoded}"
