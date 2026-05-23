@@ -12,7 +12,7 @@ summary: |
   همین سند به عنوان نمونه زنده رندر نیز استفاده می‌شود و جلد، فهرست مطالب، متن ترکیبی فارسی/English، فرمول، کد، نمودار Mermaid، تصویر، جدول، پانویس، شکست صفحه و HTML امن را نمایش می‌دهد.
 institution: "Mardas Lab"
 course: "انتشار حرفه‌ای Markdown"
-version: "1.3.1"
+version: "1.4.0"
 status: "Stable"
 keywords:
   - Markdown
@@ -22,6 +22,7 @@ keywords:
   - RTL/LTR
   - MathJax
   - Playwright
+  - Markdown شبیه GitHub
 cover_label: "راهنمای کامل"
 lang: fa
 dir: rtl
@@ -53,7 +54,7 @@ Markdown -> HTML ساختاریافته -> PDF با Chromium
 | متن ترکیبی | متن فارسی/English، inline code و شناسه‌ها در یک پاراگراف خوانا بمانند. |
 | MathJax | فرمول درون‌خطی با متن هماهنگ باشد و فرمول نمایشی وسط‌چین و خوش‌اندازه دیده شود. |
 | بلوک کد | fenced، indented و code block بدون زبان بدون خراب شدن محتوا رندر شوند. |
-| Mermaid | code fence از نوع `flowchart` به جای نمایش کد خام، به نمودار SVG تبدیل شود. |
+| Mermaid | بلوک کد از نوع `flowchart` به جای نمایش کد خام، به نمودار SVG تبدیل شود. |
 | تصویر و HTML | تصویر Markdown و تگ امن HTML در PDF دیده شوند. |
 | پانویس و صفحه‌بندی | پانویس چندخطی، شکست صفحه دستی، marginها و شماره صفحه پایدار باشند. |
 
@@ -70,9 +71,9 @@ Markdown -> HTML ساختاریافته -> PDF با Chromium
 | تصویر محلی | جاسازی تصویرهای Markdown و HTML امن به صورت data URI. |
 | HTML امن | پاک‌سازی HTML خام به صورت پیش‌فرض. |
 | پانویس | پشتیبانی از پانویس‌های چندخطی با محتوای Markdown. |
-| Themeها | قالب‌های `modern`، `textbook-light`، `textbook-dark` و `academic`. |
+| Theme و profile | قالب‌های `github`، `modern`، `textbook-light`، `textbook-dark` و `academic` همراه با profileهای آماده. |
 | اتوماسیون | رابط CLI مناسب برای اسکریپت‌ها و CI. |
-| GUI | رابط گرافیکی محلی برای ویرایش، preview تقریبی، تنظیم گزینه‌ها و export. |
+| GUI | رابط گرافیکی محلی برای ویرایش، پیش‌نمایش تقریبی، تنظیم گزینه‌ها و خروجی گرفتن. |
 
 # نصب
 
@@ -133,7 +134,7 @@ mrs-md2pdf input.md -o output.pdf
 تبدیل همراه با فهرست مطالب و theme مدرن:
 
 ```bash
-mrs-md2pdf input.md -o output.pdf --toc --theme modern
+mrs-md2pdf input.md -o output.pdf --toc --profile github
 ```
 
 تولید خروجی طولانی با رفتار شبیه کتاب:
@@ -144,7 +145,7 @@ mrs-md2pdf input.md -o output.pdf \
   --toc-depth 4 \
   --toc-page-break \
   --h1-page-break \
-  --theme textbook-light
+  --profile minimal
 ```
 
 ذخیره HTML میانی برای بررسی و رفع اشکال:
@@ -187,7 +188,7 @@ department: "نام دانشکده یا دپارتمان"
 course: "نام درس یا پروژه"
 supervisor: "نام استاد یا راهنما"
 date: "۱۴۰۵-۰۲-۳۰"
-version: "1.3.1"
+version: "1.4.0"
 status: "Draft"
 keywords: [Markdown, PDF, RTL, MathJax]
 cover_label: "گزارش فنی"
@@ -314,7 +315,7 @@ mrs-md2pdf input.md -o output.pdf --h1-page-break
 3. اجرای CLI.
 4. بررسی خروجی.
 
-## Task list
+## فهرست وظایف
 
 - [x] ورودی Markdown
 - [x] تایپوگرافی فارسی/English
@@ -384,13 +385,13 @@ $$
 اگر فرمول‌ها به شکل TeX خام دیده شدند:
 
 - مطمئن شوید `--no-mathjax` استفاده نشده باشد؛
-- warningهای ترمینال را بررسی کنید؛
-- برای سندهای خیلی بزرگ timeout مرورگر را افزایش دهید؛
+- هشدارهای ترمینال را بررسی کنید؛
+- برای سندهای خیلی بزرگ مقدار timeout مرورگر را افزایش دهید؛
 - یک فایل کوچک‌تر بسازید تا فرمول مشکل‌دار را جدا کنید.
 
 # بلوک‌های کد
 
-fenced code blockها از syntax highlighting و label زبان پشتیبانی می‌کنند.
+بلوک‌های کد fenced از برجسته‌سازی نحوی و برچسب زبان پشتیبانی می‌کنند.
 
 ```python
 from dataclasses import dataclass
@@ -413,7 +414,7 @@ const message = items.map((item, index) => `${index + 1}. ${item}`).join("\n");
 console.log(message);
 ```
 
-fenced code بدون زبان هم معتبر است:
+بلوک کد fenced بدون زبان هم معتبر است:
 
 ```
 این بلوک زبان مشخصی ندارد.
@@ -426,11 +427,33 @@ indented code block نیز پشتیبانی می‌شود:
     FROM documents
     WHERE renderer = 'mardas-md2pdf';
 
-inline code در برابر پردازش math و footnote محافظت می‌شود. یعنی `$x$` و `[^note]` وقتی داخل backtick باشند، به شکل literal باقی می‌مانند.
+inline code در برابر پردازش فرمول و پانویس محافظت می‌شود. یعنی `$x$` و `[^note]` وقتی داخل backtick باشند، به شکل literal باقی می‌مانند.
+
+## بلوک‌های کد پیشرفته
+
+برای آموزش، بازبینی کد یا مستندات فنی، بلوک‌های کد می‌توانند عنوان فایل، شماره خط و خطوط برجسته‌شده داشته باشند.
+
+````md
+```python title="renderer.py" {2,5-6} linenos
+def convert(markdown: str) -> bytes:
+    html = render_markdown(markdown)
+    pdf = render_pdf(html)
+    return pdf
+```
+````
+
+نمونه بالا در PDF به شکل یک بلوک کد با caption سفارشی، شماره خط و highlight رندر می‌شود:
+
+```python title="renderer.py" {2,5-6} linenos
+def convert(markdown: str) -> bytes:
+    html = render_markdown(markdown)
+    pdf = render_pdf(html)
+    return pdf
+```
 
 # نمودارهای Mermaid
 
-code fenceهای Mermaid برای flowchart به صورت SVG در HTML میانی رندر می‌شوند و بعد داخل PDF قرار می‌گیرند. تمرکز renderer فعلاً روی زیرمجموعه رایج در مستندات پروژه است: `flowchart` / `graph`، جهت‌های `TD`، `TB`، `BT`، `LR`، `RL`، nodeهای مستطیلی، گرد، دایره‌ای و لوزی، edgeهای ساده، dotted، ضخیم و edgeهای دارای label.
+بلوک‌های Mermaid برای flowchart به صورت SVG در HTML میانی رندر می‌شوند و بعد داخل PDF قرار می‌گیرند. تمرکز renderer فعلاً روی زیرمجموعه رایج در مستندات پروژه است: `flowchart` / `graph`، جهت‌های `TD`، `TB`، `BT`، `LR`، `RL`، nodeهای مستطیلی، گرد، دایره‌ای و لوزی، edgeهای ساده، dotted، ضخیم و edgeهای دارای label.
 
 نکته مهم در خروجی PDF این است که بلوک زیر باید به شکل نمودار دیده شود، نه کد خام:
 
@@ -480,7 +503,7 @@ flowchart LR
 - قبل از embed کردن، حجم تصویرها را منطقی نگه دارید.
 - مسیر تصویر را نسبت به محل فایل Markdown بنویسید.
 - در GUI، فایل‌ها یا پوشه تصویر را قبل از export attach کنید.
-- تصویرهای خیلی بزرگ embed نمی‌شوند و renderer برای جلوگیری از مصرف زیاد حافظه warning می‌دهد.
+- تصویرهای خیلی بزرگ embed نمی‌شوند و renderer برای جلوگیری از مصرف زیاد حافظه هشدار می‌دهد.
 
 ## HTML امن
 
@@ -563,9 +586,10 @@ Mardas MD2PDF چهار theme داخلی دارد.
 | `textbook-dark` | مطالعه روی صفحه، بررسی در محیط کم‌نور و یادداشت‌های فنی شبیه ارائه. |
 | `academic` | گزارش رسمی، سند دانشگاهی، پیش‌نویس پایان‌نامه و مقاله ساختاریافته. |
 
-انتخاب theme:
+انتخاب profile یا theme:
 
 ```bash
+mrs-md2pdf input.md -o output.pdf --profile github
 mrs-md2pdf input.md -o output.pdf --theme academic
 ```
 
@@ -582,11 +606,11 @@ GUI برای کاربرانی مناسب است که روند بصری را تر
 1. نوشتن یا paste کردن Markdown.
 2. انتخاب theme، زبان، جهت، اندازه صفحه و گزینه‌های خروجی.
 3. attach کردن فایل‌ها یا پوشه‌های تصویر محلی.
-4. دیدن preview تقریبی.
+4. دیدن پیش‌نمایش تقریبی.
 5. export گرفتن از PDF نهایی.
 
 > [!IMPORTANT]
-> preview داخل GUI تقریبی است. PDF نهایی توسط backend renderer ساخته می‌شود و پردازش کامل Markdown، CSS theme، MathJax، جلد و layout چاپی Chromium روی آن اعمال می‌شود.
+> پیش‌نمایش داخل GUI تقریبی است. PDF نهایی توسط backend renderer ساخته می‌شود و پردازش کامل Markdown، CSS theme، MathJax، جلد و layout چاپی Chromium روی آن اعمال می‌شود.
 
 # مرجع CLI
 
@@ -597,7 +621,8 @@ GUI برای کاربرانی مناسب است که روند بصری را تر
 | `--title`, `--author`, `--description` | override کردن metadata موجود در front matter. |
 | `--toc`, `--toc-depth` | فعال‌سازی و تنظیم فهرست مطالب. |
 | `--toc-page-break`, `--h1-page-break` | کنترل صفحه‌بندی چاپی. |
-| `--theme` | انتخاب `modern`، `textbook-light`، `textbook-dark` یا `academic`. |
+| `--profile` | انتخاب `default`، `github`، `academic`، `persian-report` یا `minimal`. |
+| `--theme` | انتخاب `modern`، `github`، `textbook-light`، `textbook-dark` یا `academic`. اگر داده شود، theme انتخاب‌شده توسط profile را override می‌کند. |
 | `--page-size` | اندازه صفحه مثل `A4`، `Letter`، `Legal`، `A4 landscape` یا ابعادی مثل `210mm 297mm`. |
 | `--dir` | اجبار جهت به `auto`، `ltr` یا `rtl`. |
 | `--margin-top`, `--margin-bottom`, `--margin-x` | کنترل margin صفحه. |
@@ -667,15 +692,15 @@ mrs-md2pdf input.md -o output.pdf --chromium-path /path/to/chrome
 mrs-md2pdf input.md -o output.pdf --font-dir ./fonts
 ```
 
-اگر مسیر فونت وجود نداشته باشد یا فایل شناخته‌شده‌ای داخل آن پیدا نشود، renderer warning می‌دهد و از فونت‌های سیستم استفاده می‌کند.
+اگر مسیر فونت وجود نداشته باشد یا فایل شناخته‌شده‌ای داخل آن پیدا نشود، renderer هشدار می‌دهد و از فونت‌های سیستم استفاده می‌کند.
 
 ## تصویرها دیده نمی‌شوند
 
-مطمئن شوید مسیر تصویرها نسبت به فایل Markdown درست است. اگر از GUI استفاده می‌کنید، فایل‌ها یا پوشه‌های تصویر را قبل از export attach کنید. تصویرهای خیلی بزرگ embed نمی‌شوند و warning تولید می‌کنند.
+مطمئن شوید مسیر تصویرها نسبت به فایل Markdown درست است. اگر از GUI استفاده می‌کنید، فایل‌ها یا پوشه‌های تصویر را قبل از خروجی گرفتن attach کنید. تصویرهای خیلی بزرگ embed نمی‌شوند و هشدار تولید می‌کنند.
 
 ## فرمول‌ها به شکل TeX خام دیده می‌شوند
 
-مطمئن شوید MathJax فعال است و warningهای renderer را بررسی کنید. برای سندهای بزرگ timeout را افزایش دهید:
+مطمئن شوید MathJax فعال است و هشدارهای renderer را بررسی کنید. برای سندهای بزرگ مقدار timeout را افزایش دهید:
 
 ```bash
 mrs-md2pdf input.md -o output.pdf --timeout-ms 90000

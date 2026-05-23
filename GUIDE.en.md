@@ -12,7 +12,7 @@ summary: |
   This document also acts as a live rendering sample for cover pages, tables of contents, mixed RTL/LTR text, formulas, code, Mermaid flowcharts, images, tables, footnotes, page breaks, and safe HTML.
 institution: "Mardas Lab"
 course: "Markdown Publishing"
-version: "1.3.1"
+version: "1.4.0"
 status: "Stable"
 keywords:
   - Markdown
@@ -22,6 +22,7 @@ keywords:
   - RTL/LTR
   - MathJax
   - Playwright
+  - GitHub-style Markdown
 cover_label: "Complete Guide"
 lang: en
 dir: ltr
@@ -72,7 +73,7 @@ Mardas MD2PDF focuses on the features that matter most for polished technical PD
 | Local images | Markdown and safe HTML images can be embedded as data URIs. |
 | Safe HTML | Raw HTML is sanitized by default. |
 | Footnotes | Multiline Markdown footnotes are supported. |
-| Themes | Modern, textbook-light, textbook-dark, and academic layouts. |
+| Themes and profiles | GitHub, modern, textbook-light, textbook-dark, and academic layouts. |
 | Automation | CLI workflow suitable for local scripts and CI jobs. |
 | GUI | Local browser-based editor, preview, option selector, and exporter. |
 
@@ -135,7 +136,7 @@ mrs-md2pdf input.md -o output.pdf
 Create a PDF with a table of contents and the modern theme:
 
 ```bash
-mrs-md2pdf input.md -o output.pdf --toc --theme modern
+mrs-md2pdf input.md -o output.pdf --toc --profile github
 ```
 
 Create a long report with book-like page flow:
@@ -146,7 +147,7 @@ mrs-md2pdf input.md -o output.pdf \
   --toc-depth 4 \
   --toc-page-break \
   --h1-page-break \
-  --theme textbook-light
+  --profile minimal
 ```
 
 Save the intermediate HTML for debugging:
@@ -189,7 +190,7 @@ department: "Department name"
 course: "Course or project title"
 supervisor: "Supervisor name"
 date: "2026-05-20"
-version: "1.3.1"
+version: "1.4.0"
 status: "Draft"
 keywords: [Markdown, PDF, RTL, MathJax]
 cover_label: "Technical Report"
@@ -353,6 +354,77 @@ Callouts use GitHub-style markers and are translated according to the document l
 > [!WARNING]
 > Use `--unsafe-html` only for trusted local Markdown because it disables the built-in sanitizer.
 
+# GitHub-style Markdown Compatibility
+
+Version 1.4.0 expands the renderer toward a GitHub-like Markdown experience while keeping PDF-specific behavior. The goal is not only to parse Markdown, but to make common README and project-documentation syntax render cleanly in a printable PDF.
+
+## Rendering profiles
+
+Use the GitHub profile when the source document is similar to a README, project guide, API note, or engineering document:
+
+```bash
+mrs-md2pdf README.md -o README.pdf --profile github --toc
+```
+
+The profile selects the `github` visual theme unless you explicitly pass `--theme`. You can still override the theme manually:
+
+```bash
+mrs-md2pdf input.md -o output.pdf --profile github --theme modern
+```
+
+## Alerts
+
+GitHub-style alerts are written as blockquotes and become highlighted PDF callouts:
+
+> [!NOTE]
+> Notes are useful for neutral explanations.
+
+> [!IMPORTANT]
+> Important blocks should contain information the reader should not miss.
+
+> [!CAUTION]
+> Caution blocks are intended for destructive or risky actions.
+
+## Autolinks
+
+Bare URLs and email addresses are linked automatically outside code spans:
+
+- Project page: www.example.com/mardas-md2pdf
+- Maintainer contact: docs@example.com
+- Literal code remains unchanged: `www.example.com`
+
+## Details and summary
+
+HTML disclosure blocks are opened and styled for PDF output because a printed document cannot be interactive:
+
+<details>
+<summary>Advanced conversion notes</summary>
+<p>This content is visible in the PDF and receives a printable disclosure-block style.</p>
+</details>
+
+## Heading anchors
+
+Every heading receives a stable ID and a small permalink anchor. This improves internal links in the generated HTML and makes the PDF more navigable when links are preserved by the viewer.
+
+## Manual page breaks
+
+For reports that need controlled pagination, use any of these forms:
+
+```md
+<!-- pagebreak -->
+```
+
+```md
+:::pagebreak
+::: 
+```
+
+```md
+---page---
+```
+
+The renderer normalizes them into the same PDF page-break element.
+
 # MathJax
 
 Inline math should match the surrounding line height: $E = mc^2$, $T = 500$, and $\Sigma = I \cdot \epsilon$ should sit naturally inside a paragraph.
@@ -430,6 +502,28 @@ Indented code blocks are supported:
 
 Inline code is protected from math and footnote processing. For example, `$x$` and `[^note]` remain literal when they are inside backticks.
 
+## Enhanced code fences
+
+Code fences can carry a filename/title, line numbers, and highlighted lines. This is useful when the PDF should act as a teaching or review artifact.
+
+````md
+```python title="renderer.py" {2,5-6} linenos
+def convert(markdown: str) -> bytes:
+    html = render_markdown(markdown)
+    pdf = render_pdf(html)
+    return pdf
+```
+````
+
+The example above renders as a code block with a custom caption, line-number table, and highlighted lines:
+
+```python title="renderer.py" {2,5-6} linenos
+def convert(markdown: str) -> bytes:
+    html = render_markdown(markdown)
+    pdf = render_pdf(html)
+    return pdf
+```
+
 # Mermaid Flowcharts
 
 Mermaid-style flowchart fences are rendered as SVG diagrams during HTML post-processing. The renderer currently focuses on the common project-documentation subset: `flowchart` / `graph`, `TD`, `TB`, `BT`, `LR`, `RL`, rectangle nodes, rounded nodes, circles, diamonds, solid edges, dotted edges, thick edges, and labelled arrows.
@@ -467,6 +561,21 @@ flowchart LR
 If a Mermaid block uses advanced syntax outside the supported subset, keep a small fallback screenshot or image in the Markdown until that syntax is added to the renderer. For ordinary architecture and data-flow diagrams, the built-in renderer is enough and does not need internet access.
 
 # Images and Safe HTML
+
+Markdown images are embedded when they point to local files. A common caption pattern is also promoted to a real PDF figure:
+
+```md
+![Architecture diagram](images/architecture.png)
+
+*Figure 1. Architecture overview.*
+```
+
+When the caption starts with `Figure`, `Fig.`, `شکل`, or `تصویر`, the renderer wraps the image and caption in a semantic figure block. Safe HTML image attributes such as `width` and `height` are preserved:
+
+```html
+<img src="images/logo.png" width="240" alt="Project logo">
+```
+
 
 Images are resolved relative to the Markdown file. Local images are embedded into the generated HTML/PDF when they are small enough to embed safely.
 
@@ -556,18 +665,20 @@ Watermarks are applied to content pages only, not to the cover page.
 
 # Themes
 
-Mardas MD2PDF includes four built-in themes.
+Mardas MD2PDF includes built-in themes and profile presets. Profiles choose sensible defaults for a document type; themes control the visual CSS.
 
 | Theme | Best for |
 | :--- | :--- |
+| `github` | README-like project documentation and GitHub-style Markdown output. |
 | `modern` | General documentation, proposals, software reports, and product-style guides. |
 | `textbook-light` | Long educational documents, course notes, Persian/English learning material. |
 | `textbook-dark` | Screen reading, low-light review, and presentation-like technical notes. |
 | `academic` | Formal reports, university documents, thesis-like drafts, and structured papers. |
 
-Choose a theme with:
+Choose a profile or theme with:
 
 ```bash
+mrs-md2pdf input.md -o output.pdf --profile github
 mrs-md2pdf input.md -o output.pdf --theme academic
 ```
 
@@ -599,7 +710,8 @@ The GUI is useful for users who prefer a visual workflow:
 | `--title`, `--author`, `--description` | Override metadata from front matter. |
 | `--toc`, `--toc-depth` | Enable and configure the table of contents. |
 | `--toc-page-break`, `--h1-page-break` | Control printed page flow. |
-| `--theme` | Choose `modern`, `textbook-light`, `textbook-dark`, or `academic`. |
+| `--profile` | Choose `default`, `github`, `academic`, `persian-report`, or `minimal`. |
+| `--theme` | Choose `modern`, `github`, `textbook-light`, `textbook-dark`, or `academic`. Overrides the profile theme. |
 | `--page-size` | Use `A4`, `Letter`, `Legal`, `A4 landscape`, or dimensions such as `210mm 297mm`. |
 | `--dir` | Force `auto`, `ltr`, or `rtl`. |
 | `--margin-top`, `--margin-bottom`, `--margin-x` | Control page margins. |
