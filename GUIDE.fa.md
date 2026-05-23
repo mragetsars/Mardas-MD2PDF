@@ -9,7 +9,7 @@ authors:
 date: "۱۴۰۵-۰۲-۳۰"
 summary: |
   این فایل راهنمای کامل نصب، پیکربندی و استفاده از Mardas MD2PDF است.
-  همین سند به عنوان نمونه زنده رندر نیز استفاده می‌شود و جلد، فهرست مطالب، متن ترکیبی فارسی/English، فرمول، کد، تصویر، جدول، پانویس، شکست صفحه و HTML امن را نمایش می‌دهد.
+  همین سند به عنوان نمونه زنده رندر نیز استفاده می‌شود و جلد، فهرست مطالب، متن ترکیبی فارسی/English، فرمول، کد، نمودار Mermaid، تصویر، جدول، پانویس، شکست صفحه و HTML امن را نمایش می‌دهد.
 institution: "Mardas Lab"
 course: "انتشار حرفه‌ای Markdown"
 version: "1.3.1"
@@ -40,7 +40,22 @@ Markdown -> HTML ساختاریافته -> PDF با Chromium
 در این پروژه متن‌ها مستقیماً روی canvas فایل PDF رسم نمی‌شوند. ابتدا Markdown به HTML ساختاریافته تبدیل می‌شود، سپس CSS چاپی و تنظیمات theme اعمال می‌شود، فرمول‌ها با MathJax رندر می‌شوند و در مرحله آخر Chromium خروجی PDF را تولید می‌کند. این روش باعث پشتیبانی بهتر از layout چاپی، متن‌های ترکیبی RTL/LTR، فرمول‌های SVG، کدهای هایلایت‌شده، تصویرهای محلی و جدول‌های پیچیده می‌شود.
 
 > [!NOTE]
-> این راهنما هم مستند استفاده است و هم نمونه رندر. نسخه PDF همین فایل در پوشه `examples/` قرار دارد.
+> این راهنما هم مستند استفاده است و هم نمونه رندر. نسخه PDF همین فایل در پوشه `examples/` قرار دارد تا کاربر بتواند خروجی واقعی هر قابلیت مهم را بررسی کند.
+
+## چک‌لیست نمونه‌های رندر
+
+این راهنما عمداً چند نمونه کوچک اما مهم دارد تا کنار راهنمای برنامه، مثل test case تصویری هم عمل کند. وقتی PDF خروجی را بررسی می‌کنید، این موارد را ببینید:
+
+| بخش نمونه | چیزی که باید در PDF بررسی شود |
+| :--- | :--- |
+| جلد و metadata | عنوان، زیرعنوان، نویسنده‌ها، خلاصه، نسخه، وضعیت، کلیدواژه و labelهای وابسته به زبان. |
+| فهرست مطالب | شماره‌گذاری تودرتو و لینک‌های ساخته‌شده از headingهای Markdown. |
+| متن ترکیبی | متن فارسی/English، inline code و شناسه‌ها در یک پاراگراف خوانا بمانند. |
+| MathJax | فرمول درون‌خطی با متن هماهنگ باشد و فرمول نمایشی وسط‌چین و خوش‌اندازه دیده شود. |
+| بلوک کد | fenced، indented و code block بدون زبان بدون خراب شدن محتوا رندر شوند. |
+| Mermaid | code fence از نوع `flowchart` به جای نمایش کد خام، به نمودار SVG تبدیل شود. |
+| تصویر و HTML | تصویر Markdown و تگ امن HTML در PDF دیده شوند. |
+| پانویس و صفحه‌بندی | پانویس چندخطی، شکست صفحه دستی، marginها و شماره صفحه پایدار باشند. |
 
 ## قابلیت‌های اصلی
 
@@ -51,6 +66,7 @@ Markdown -> HTML ساختاریافته -> PDF با Chromium
 | فهرست مطالب | ساخت فهرست چندسطحی از headingهای Markdown. |
 | MathJax | رندر فرمول‌های درون‌خطی و نمایشی. |
 | بلوک کد | هایلایت کدهای fenced و indented با Pygments. |
+| نمودار Mermaid | رندر آفلاین نمودارهای کاربردی `flowchart` / `graph` به صورت SVG. |
 | تصویر محلی | جاسازی تصویرهای Markdown و HTML امن به صورت data URI. |
 | HTML امن | پاک‌سازی HTML خام به صورت پیش‌فرض. |
 | پانویس | پشتیبانی از پانویس‌های چندخطی با محتوای Markdown. |
@@ -314,6 +330,7 @@ mrs-md2pdf input.md -o output.pdf --h1-page-break
 | تصویر محلی | بله | تصویرهای Markdown و HTML امن در صورت امکان embed می‌شوند. |
 | MathJax | بله | فرمول درون‌خطی و نمایشی اندازه‌گذاری جدا دارند. |
 | هایلایت کد | بله | برای fenced و indented code block از Pygments استفاده می‌شود. |
+| نمودار Mermaid | بله | fenceهای کاربردی `flowchart` و `graph` به نمودار SVG تبدیل می‌شوند. |
 | پانویس | بله | پانویس چندخطی با Markdown داخلی پشتیبانی می‌شود. |
 | HTML خام امن | بله | tagها و event handlerهای خطرناک حذف می‌شوند. |
 
@@ -410,6 +427,42 @@ indented code block نیز پشتیبانی می‌شود:
     WHERE renderer = 'mardas-md2pdf';
 
 inline code در برابر پردازش math و footnote محافظت می‌شود. یعنی `$x$` و `[^note]` وقتی داخل backtick باشند، به شکل literal باقی می‌مانند.
+
+# نمودارهای Mermaid
+
+code fenceهای Mermaid برای flowchart به صورت SVG در HTML میانی رندر می‌شوند و بعد داخل PDF قرار می‌گیرند. تمرکز renderer فعلاً روی زیرمجموعه رایج در مستندات پروژه است: `flowchart` / `graph`، جهت‌های `TD`، `TB`، `BT`، `LR`، `RL`، nodeهای مستطیلی، گرد، دایره‌ای و لوزی، edgeهای ساده، dotted، ضخیم و edgeهای دارای label.
+
+نکته مهم در خروجی PDF این است که بلوک زیر باید به شکل نمودار دیده شود، نه کد خام:
+
+```mermaid
+flowchart TD
+    CSV[CSV datasets] --> App[UTMSApplication]
+    State[Optional state file] --> App
+    App --> Core[Instruction_Handler]
+    Core --> Domain[Domain Models]
+    Domain --> User[User / Student / Professor]
+    Domain --> Course[Course Definition]
+    Domain --> Offering[Class Offering]
+    Domain --> Social[Post / Notification / Connection]
+    CLI[Terminal CLI Adapter] --> App
+    Browser[Browser] --> Server[APHTTP-style Server]
+    Server --> Web[HTML Web Handlers]
+    Server --> API[JSON API Handlers]
+    Web --> Core
+    API --> Core
+    Core --> State
+```
+
+این نمونه کوچک‌تر برای بررسی label روی edgeها و شکل nodeها مفید است:
+
+```mermaid
+flowchart LR
+    Start((Start)) -->|valid input| Check{Ready?}
+    Check -- yes --> Done[PDF exported]
+    Check -. no .-> Fix(Retry options)
+```
+
+اگر یک بلوک Mermaid از syntaxهای پیشرفته خارج از این زیرمجموعه استفاده کند، بهتر است تا زمان اضافه‌شدن آن قابلیت، یک تصویر fallback کوچک از همان نمودار کنار Markdown نگه داشته شود. برای معماری‌های معمول، data flow و نمودارهای آموزشی، renderer داخلی کافی است و به اینترنت نیاز ندارد.
 
 # تصویر و HTML امن
 

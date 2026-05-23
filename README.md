@@ -8,7 +8,7 @@
 
 This repository contains **Mardas MD2PDF**, a Markdown-to-PDF publishing tool designed for clean Persian, English, and mixed-language documents.
 
-The project converts Markdown into print-ready PDF files with support for RTL/LTR direction handling, Persian-friendly typography, cover pages, tables of contents, MathJax formulas, syntax-highlighted code, local images, footnotes, callouts, safe HTML, watermarks, and multiple visual themes.
+The project converts Markdown into print-ready PDF files with support for RTL/LTR direction handling, Persian-friendly typography, cover pages, tables of contents, MathJax formulas, syntax-highlighted code, Mermaid flowcharts, local images, footnotes, callouts, safe HTML, watermarks, and multiple visual themes.
 
 The main goal of the project is to make technical Markdown documents publishable as polished PDF outputs without forcing the author to leave the Markdown workflow.
 
@@ -24,7 +24,7 @@ The system is organized around a browser-based rendering pipeline. Markdown is f
 
 ### Markdown Processing
 
-The Markdown layer handles front matter, heading collection, table of contents generation, code highlighting, footnotes, callouts, safe HTML, local image embedding, math protection, and direction-aware document metadata.
+The Markdown layer handles front matter, heading collection, table of contents generation, code highlighting, Mermaid diagrams, footnotes, callouts, safe HTML, local image embedding, math protection, and direction-aware document metadata.
 
 ### PDF Rendering
 
@@ -76,7 +76,8 @@ The project is organized as follows:
 ```text
 Mardas-MD2PDF/
 ├── src/                    # Python package source
-│   ├── markdown.py         # Markdown parsing, front matter, TOC, math, footnotes, safe HTML
+│   ├── markdown.py         # Markdown parsing, front matter, TOC, math, Mermaid, footnotes, safe HTML
+│   ├── mermaid.py          # Offline Mermaid flowchart-to-SVG renderer
 │   ├── renderer.py         # HTML assembly, themes, MathJax, Chromium PDF rendering
 │   ├── cli.py              # Command-line interface
 │   ├── gui.py              # Local browser-based GUI backend
@@ -110,7 +111,7 @@ pip install -e .[dev]
 pytest
 ```
 
-The test suite covers Markdown transformation, direction handling, table of contents generation, code highlighting, MathJax preservation, safe HTML, footnotes, local images, renderer options, GUI availability, page-size handling, and fallback warnings.
+The test suite covers Markdown transformation, direction handling, table of contents generation, code highlighting, Mermaid SVG rendering, MathJax preservation, safe HTML, footnotes, local images, renderer options, GUI availability, page-size handling, and fallback warnings.
 
 ## Contributors
 

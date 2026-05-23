@@ -9,7 +9,7 @@ authors:
 date: "2026-05-20"
 summary: |
   A complete guide for installing, configuring, and using Mardas MD2PDF.
-  This document also acts as a live rendering sample for cover pages, tables of contents, mixed RTL/LTR text, formulas, code, images, tables, footnotes, page breaks, and safe HTML.
+  This document also acts as a live rendering sample for cover pages, tables of contents, mixed RTL/LTR text, formulas, code, Mermaid flowcharts, images, tables, footnotes, page breaks, and safe HTML.
 institution: "Mardas Lab"
 course: "Markdown Publishing"
 version: "1.3.1"
@@ -40,7 +40,22 @@ Markdown -> Structured HTML -> Chromium PDF
 The renderer does not draw paragraphs manually on a PDF canvas. Instead, it converts Markdown into a structured HTML document, applies print-oriented CSS, renders formulas with MathJax, and asks Chromium to produce the final PDF. This gives the project better support for CSS print layout, mixed text direction, SVG formulas, syntax-highlighted code, local images, and complex tables.
 
 > [!NOTE]
-> This guide is both documentation and a rendering sample. The PDF version of this file is available in the `examples/` directory.
+> This guide is both documentation and a rendering sample. The PDF version of this file is available in the `examples/` directory, so users can inspect the actual output of every major feature.
+
+## Rendering sample checklist
+
+The guide intentionally contains compact test cases for the renderer. When you review the generated PDF, check that these samples appear correctly:
+
+| Sample area | What to verify in the PDF |
+| :--- | :--- |
+| Cover and metadata | Title, subtitle, authors, summary, version, status, keywords, and language-specific labels. |
+| TOC | Nested heading numbers and links generated from Markdown headings. |
+| Mixed direction text | Persian/English text, inline code, and identifiers remain readable in the same paragraph. |
+| MathJax | Inline math aligns with text and display equations are centered and scaled. |
+| Code blocks | Fenced, indented, and language-less code blocks render without corrupting content. |
+| Mermaid | A `flowchart` code fence becomes an SVG diagram instead of a plain code block. |
+| Images and HTML | Local Markdown images and safe HTML image tags appear in the PDF. |
+| Footnotes and page flow | Multiline footnotes, manual page breaks, margins, and footer numbering remain stable. |
 
 ## Main capabilities
 
@@ -53,6 +68,7 @@ Mardas MD2PDF focuses on the features that matter most for polished technical PD
 | Table of contents | Hierarchical TOC generated from Markdown headings. |
 | MathJax | Inline and display formulas with browser-rendered output. |
 | Code blocks | Pygments syntax highlighting for fenced and indented code blocks. |
+| Mermaid flowcharts | Offline SVG rendering for practical `flowchart` / `graph` diagrams. |
 | Local images | Markdown and safe HTML images can be embedded as data URIs. |
 | Safe HTML | Raw HTML is sanitized by default. |
 | Footnotes | Multiline Markdown footnotes are supported. |
@@ -316,6 +332,7 @@ Markdown paragraphs, **bold text**, *italic text*, `inline code`, links, ordered
 | Local images | Yes | Markdown and safe HTML images are embedded when possible. |
 | MathJax | Yes | Inline and display math use separate sizing rules. |
 | Code highlighting | Yes | Pygments is used for fenced and indented code blocks. |
+| Mermaid diagrams | Yes | Practical `flowchart` and `graph` fences are rendered as inline SVG diagrams. |
 | Footnotes | Yes | Multiline Markdown footnotes are supported. |
 | Raw HTML sanitizer | Yes | Unsafe tags and event handlers are removed by default. |
 
@@ -412,6 +429,42 @@ Indented code blocks are supported:
     WHERE renderer = 'mardas-md2pdf';
 
 Inline code is protected from math and footnote processing. For example, `$x$` and `[^note]` remain literal when they are inside backticks.
+
+# Mermaid Flowcharts
+
+Mermaid-style flowchart fences are rendered as SVG diagrams during HTML post-processing. The renderer currently focuses on the common project-documentation subset: `flowchart` / `graph`, `TD`, `TB`, `BT`, `LR`, `RL`, rectangle nodes, rounded nodes, circles, diamonds, solid edges, dotted edges, thick edges, and labelled arrows.
+
+The important point for the final PDF is that the following block should appear as a diagram, not as source code:
+
+```mermaid
+flowchart TD
+    CSV[CSV datasets] --> App[UTMSApplication]
+    State[Optional state file] --> App
+    App --> Core[Instruction_Handler]
+    Core --> Domain[Domain Models]
+    Domain --> User[User / Student / Professor]
+    Domain --> Course[Course Definition]
+    Domain --> Offering[Class Offering]
+    Domain --> Social[Post / Notification / Connection]
+    CLI[Terminal CLI Adapter] --> App
+    Browser[Browser] --> Server[APHTTP-style Server]
+    Server --> Web[HTML Web Handlers]
+    Server --> API[JSON API Handlers]
+    Web --> Core
+    API --> Core
+    Core --> State
+```
+
+A smaller labelled-edge sample is useful when checking edge labels and node shapes:
+
+```mermaid
+flowchart LR
+    Start((Start)) -->|valid input| Check{Ready?}
+    Check -- yes --> Done[PDF exported]
+    Check -. no .-> Fix(Retry options)
+```
+
+If a Mermaid block uses advanced syntax outside the supported subset, keep a small fallback screenshot or image in the Markdown until that syntax is added to the renderer. For ordinary architecture and data-flow diagrams, the built-in renderer is enough and does not need internet access.
 
 # Images and Safe HTML
 
