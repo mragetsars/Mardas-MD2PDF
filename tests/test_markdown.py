@@ -361,6 +361,29 @@ def test_mermaid_flowchart_fence_renders_to_inline_svg():
     assert "code-block" not in result.body_html
 
 
+def test_mermaid_svg_rendering_does_not_require_xml_parser(monkeypatch):
+    from mardas_md2pdf import markdown as markdown_module
+
+    real_beautiful_soup = markdown_module.BeautifulSoup
+
+    def beautiful_soup_without_xml(markup, features=None, *args, **kwargs):
+        if features == "xml":
+            raise AssertionError("Mermaid SVG rendering must not require the optional lxml/XML parser")
+        return real_beautiful_soup(markup, features, *args, **kwargs)
+
+    monkeypatch.setattr(markdown_module, "BeautifulSoup", beautiful_soup_without_xml)
+
+    result = markdown_module.render_markdown(
+        "```mermaid\n"
+        "flowchart TD\n"
+        "    A[Input] --> B[Output]\n"
+        "```\n"
+    )
+
+    assert "mermaid-diagram--rendered" in result.body_html
+    assert "md2pdf-mermaid-svg" in result.body_html
+
+
 def test_mermaid_supports_labelled_edges_and_shapes():
     result = render_markdown(
         "```mermaid\n"
