@@ -84,3 +84,49 @@ def test_footer_template_isolates_mixed_title_in_ltr_footer_slot():
     assert "unicode-bidi:isolate" in footer
     assert "راهنمای Mardas MD2PDF" in footer
     assert "text-align:left" in footer
+
+
+def test_print_css_hides_heading_permalink_markers(tmp_path):
+    from mardas_md2pdf.markdown import render_markdown
+    from mardas_md2pdf.renderer import PdfOptions, build_html
+
+    md = "# Heading\n"
+    input_path = tmp_path / "heading.md"
+    input_path.write_text(md, encoding="utf-8")
+    html = build_html(render_markdown(md), PdfOptions(input_path=input_path, output_path=tmp_path / "out.pdf"))
+
+    assert 'class="heading-anchor"' in html
+    assert "@media print" in html
+    assert ".heading-anchor { display: none !important; }" in html
+
+
+def test_callout_direction_follows_resolved_document_direction(tmp_path):
+    from mardas_md2pdf.markdown import render_markdown
+    from mardas_md2pdf.renderer import PdfOptions, build_html
+
+    md = "---\nlang: en\ndir: ltr\n---\n\n> [!NOTE]\n> English callout text.\n"
+    input_path = tmp_path / "callout.md"
+    input_path.write_text(md, encoding="utf-8")
+    html = build_html(
+        render_markdown(md),
+        PdfOptions(input_path=input_path, output_path=tmp_path / "out.pdf", theme="textbook-light"),
+    )
+
+    assert "md2pdf-dir-ltr" in html
+    assert "body.md2pdf-dir-ltr .callout { direction: ltr; text-align: left; }" in html
+    assert "body.md2pdf-dir-ltr .callout-title," in html
+    assert "body.md2pdf-dir-ltr .callout p { text-align: left; }" in html
+
+
+def test_mermaid_css_uses_theme_aware_color_variables(tmp_path):
+    from mardas_md2pdf.markdown import render_markdown
+    from mardas_md2pdf.renderer import PdfOptions, build_html
+
+    md = "```mermaid\nflowchart LR\nA[A] --> B[B]\n```\n"
+    input_path = tmp_path / "diagram.md"
+    input_path.write_text(md, encoding="utf-8")
+    html = build_html(render_markdown(md), PdfOptions(input_path=input_path, output_path=tmp_path / "out.pdf"))
+
+    assert "--md2pdf-mermaid-stroke" in html
+    assert "var(--accent, var(--blue" in html
+    assert "var(--md2pdf-mermaid-label-halo" in html

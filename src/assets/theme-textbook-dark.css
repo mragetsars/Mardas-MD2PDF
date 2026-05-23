@@ -1030,3 +1030,22 @@ body.md2pdf-dir-rtl .footnote-body ol {
 }
 .footnote-body li::marker { content: "• "; }
 
+
+/* v1.4.3: PDF-only GitHub-style feature polish for dark output. */
+:root {
+  --md2pdf-details-bg: #101010;
+  --md2pdf-details-border: #333333;
+  --md2pdf-details-ink: #e5e5e5;
+  --md2pdf-details-title: #ffffff;
+  --md2pdf-mermaid-figure-bg: #101010;
+  --md2pdf-mermaid-figure-border: #333333;
+  --md2pdf-mermaid-figure-ink: #e5e5e5;
+  --md2pdf-mermaid-caption-ink: #a3a3a3;
+  --md2pdf-mermaid-bg: #0f0f0f;
+  --md2pdf-mermaid-border: #333333;
+  --md2pdf-mermaid-node-bg: #151515;
+  --md2pdf-mermaid-node-ink: #f5f5f5;
+  --md2pdf-mermaid-stroke: #d4d4d4;
+  --md2pdf-mermaid-edge-ink: #f5f5f5;
+  --md2pdf-mermaid-label-halo: #0b0b0b;
+}

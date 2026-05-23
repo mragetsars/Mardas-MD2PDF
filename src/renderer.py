@@ -567,6 +567,14 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
       }}
       body.md2pdf-dir-ltr .md2pdf-cover__detail > strong {{ font-family: var(--font-en), var(--font-fa); }}
       body.md2pdf-dir-rtl .md2pdf-cover__detail > strong {{ font-family: var(--font-fa), var(--font-en); }}
+      body.md2pdf-dir-ltr .callout {{ direction: ltr; text-align: left; }}
+      body.md2pdf-dir-rtl .callout {{ direction: rtl; text-align: right; }}
+      body.md2pdf-dir-ltr .callout-title,
+      body.md2pdf-dir-ltr .callout p {{ text-align: left; }}
+      body.md2pdf-dir-rtl .callout-title,
+      body.md2pdf-dir-rtl .callout p {{ text-align: right; }}
+      body.md2pdf-dir-ltr .md2pdf-details {{ direction: ltr; text-align: left; }}
+      body.md2pdf-dir-rtl .md2pdf-details {{ direction: rtl; text-align: right; }}
       .math,
       .md2pdf-article mjx-container {{
         direction: ltr;
@@ -610,16 +618,17 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
       .mermaid-diagram {{
         margin: 1.35em auto;
         padding: 4mm;
-        border: 1px solid var(--line, #dbe3ef);
+        border: 1px solid var(--md2pdf-mermaid-figure-border, var(--line, #dbe3ef));
         border-radius: var(--radius, 12px);
-        background: color-mix(in srgb, var(--softer, #f8fafc) 86%, #ffffff);
+        background: var(--md2pdf-mermaid-figure-bg, color-mix(in srgb, var(--softer, #f8fafc) 86%, #ffffff));
+        color: var(--md2pdf-mermaid-figure-ink, inherit);
         page-break-inside: avoid;
         break-inside: avoid;
         overflow: hidden;
       }}
       .mermaid-diagram figcaption {{
         margin: 0 0 3mm;
-        color: var(--muted, #64748b);
+        color: var(--md2pdf-mermaid-caption-ink, var(--muted, #64748b));
         font: 700 8pt/1.4 var(--font-en), var(--font-fa);
         letter-spacing: 0.08em;
         text-transform: uppercase;
@@ -633,17 +642,17 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
         font-family: var(--font-en), var(--font-fa), sans-serif;
       }}
       .md2pdf-mermaid-bg {{
-        fill: color-mix(in srgb, var(--soft, #f4f7fb) 74%, #ffffff);
-        stroke: var(--line, #dbe3ef);
+        fill: var(--md2pdf-mermaid-bg, color-mix(in srgb, var(--soft, #f4f7fb) 74%, #ffffff));
+        stroke: var(--md2pdf-mermaid-border, var(--line, #dbe3ef));
         stroke-width: 1;
       }}
       .md2pdf-mermaid-node-shape {{
-        fill: #ffffff;
-        stroke: var(--accent, #2563eb);
+        fill: var(--md2pdf-mermaid-node-bg, #ffffff);
+        stroke: var(--md2pdf-mermaid-stroke, var(--accent, var(--blue, #2563eb)));
         stroke-width: 1.5;
       }}
       .md2pdf-mermaid-node-label {{
-        fill: var(--ink, #172033);
+        fill: var(--md2pdf-mermaid-node-ink, var(--ink, #172033));
         font-size: 12px;
         font-weight: 700;
         dominant-baseline: middle;
@@ -651,7 +660,7 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
       }}
       .md2pdf-mermaid-edge path {{
         fill: none;
-        stroke: var(--line-strong, #c6d2e1);
+        stroke: var(--md2pdf-mermaid-stroke, var(--accent, var(--blue, var(--line-strong, #2563eb))));
         stroke-width: 1.8;
       }}
       .md2pdf-mermaid-edge-dotted path {{
@@ -661,14 +670,14 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
         stroke-width: 2.8;
       }}
       .md2pdf-mermaid-arrow-head {{
-        fill: var(--line-strong, #c6d2e1);
+        fill: var(--md2pdf-mermaid-stroke, var(--accent, var(--blue, var(--line-strong, #2563eb))));
       }}
       .md2pdf-mermaid-edge-label {{
-        fill: var(--muted, #64748b);
+        fill: var(--md2pdf-mermaid-edge-ink, var(--muted, #64748b));
         font-size: 11px;
         font-weight: 700;
         paint-order: stroke;
-        stroke: #ffffff;
+        stroke: var(--md2pdf-mermaid-label-halo, #ffffff);
         stroke-width: 4px;
         stroke-linejoin: round;
         unicode-bidi: plaintext;
@@ -695,6 +704,9 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
         text-decoration: none;
       }}
       .heading-anchor:hover {{ opacity: 0.72; }}
+      @media print {{
+        .heading-anchor {{ display: none !important; }}
+      }}
       .md2pdf-figure {{
         margin: 1.35em auto;
         text-align: center;
@@ -717,16 +729,17 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
       .md2pdf-details {{
         margin: 1.2em 0;
         padding: 4mm 4.5mm;
-        border: 1px solid var(--line, #dbe3ef);
+        border: 1px solid var(--md2pdf-details-border, var(--line, #dbe3ef));
         border-radius: var(--radius, 12px);
-        background: var(--softer, #f8fafc);
+        background: var(--md2pdf-details-bg, var(--softer, #f8fafc));
+        color: var(--md2pdf-details-ink, inherit);
         page-break-inside: avoid;
         break-inside: avoid;
       }}
       .md2pdf-summary {{
         margin-bottom: 2mm;
         font-weight: 850;
-        color: var(--accent, #2563eb);
+        color: var(--md2pdf-details-title, var(--accent, var(--blue, #2563eb)));
       }}
       .code-block--numbered .codehilitetable {{
         width: 100%;

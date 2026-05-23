@@ -886,3 +886,13 @@ body.md2pdf-dir-rtl .footnote-body ol {
 }
 .footnote-body li::marker { content: "• "; }
 
+
+/* v1.4.3: keep Mermaid colors aligned with the warm academic palette. */
+:root {
+  --md2pdf-mermaid-figure-bg: #fffaf5;
+  --md2pdf-mermaid-figure-border: #fed7aa;
+  --md2pdf-mermaid-caption-ink: #7c2d12;
+  --md2pdf-mermaid-stroke: #7c2d12;
+  --md2pdf-mermaid-edge-ink: #7c2d12;
+  --md2pdf-mermaid-label-halo: #fffdf9;
+}
