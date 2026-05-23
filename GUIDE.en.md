@@ -12,17 +12,14 @@ summary: |
   This document also acts as a live rendering sample for cover pages, tables of contents, mixed RTL/LTR text, formulas, code, Mermaid flowcharts, images, tables, footnotes, page breaks, and safe HTML.
 institution: "Mardas Lab"
 course: "Markdown Publishing"
-version: "1.4.3"
+version: "1.5.0"
 status: "Stable"
 keywords:
   - Markdown
   - PDF
-  - Persian
-  - English
+  - Persian/English
   - RTL/LTR
   - MathJax
-  - Playwright
-  - GitHub-style Markdown
 cover_label: "Complete Guide"
 lang: en
 dir: ltr
@@ -156,6 +153,14 @@ Save the intermediate HTML for debugging:
 mrs-md2pdf input.md -o output.pdf --debug-html output.html
 ```
 
+Show the progress bar explicitly in terminal sessions:
+
+```bash
+mrs-md2pdf input.md -o output.pdf --progress on
+```
+
+By default, `--progress auto` shows the progress bar only when the command is running in an interactive terminal. Use `--progress off` for quiet scripts.
+
 # Recommended Workflow
 
 A clean PDF workflow usually looks like this:
@@ -190,7 +195,7 @@ department: "Department name"
 course: "Course or project title"
 supervisor: "Supervisor name"
 date: "2026-05-20"
-version: "1.4.3"
+version: "1.5.0"
 status: "Draft"
 keywords: [Markdown, PDF, RTL, MathJax]
 cover_label: "Technical Report"
@@ -356,7 +361,7 @@ Callouts use GitHub-style markers and are translated according to the document l
 
 # GitHub-style Markdown Compatibility
 
-Version 1.4.3 expands the renderer toward a GitHub-like Markdown experience while keeping PDF-specific behavior. The goal is not only to parse Markdown, but to make common README and project-documentation syntax render cleanly in a printable PDF.
+Version 1.5.0 expands the renderer toward a GitHub-like Markdown experience and adds export progress feedback while keeping PDF-specific behavior. The goal is not only to parse Markdown, but to make common README and project-documentation syntax render cleanly in a printable PDF.
 
 ## Rendering profiles
 
@@ -696,7 +701,7 @@ The GUI is useful for users who prefer a visual workflow:
 2. Select theme, language, direction, page size, and export options.
 3. Attach local image files or image folders.
 4. Preview the document approximately.
-5. Export the final PDF.
+5. Export the final PDF and watch the export progress indicator in the footer.
 
 > [!IMPORTANT]
 > The GUI preview is approximate. The final PDF is produced by the backend renderer, which applies the full Markdown processing, theme CSS, MathJax rendering, cover logic, and Chromium print layout.
@@ -724,6 +729,7 @@ The GUI is useful for users who prefer a visual workflow:
 | `--no-mathjax` | Do not load MathJax. |
 | `--unsafe-html` | Disable raw HTML sanitization for trusted files. |
 | `--timeout-ms` | Browser timeout in milliseconds. |
+| `--progress` | Terminal progress bar mode: `auto`, `on`, or `off`. Default: `auto`. |
 
 Run the full help command when needed:
 
@@ -748,7 +754,8 @@ mrs-md2pdf docs/report.md -o build/report.pdf \
   --theme modern \
   --page-size A4 \
   --dir auto \
-  --timeout-ms 60000
+  --timeout-ms 60000 \
+  --progress off
 ```
 
 For debugging CI failures, save the intermediate HTML as an artifact:

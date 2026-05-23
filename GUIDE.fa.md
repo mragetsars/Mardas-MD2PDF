@@ -12,17 +12,14 @@ summary: |
   همین سند به عنوان نمونه زنده رندر نیز استفاده می‌شود و جلد، فهرست مطالب، متن ترکیبی فارسی/English، فرمول، کد، نمودار Mermaid، تصویر، جدول، پانویس، شکست صفحه و HTML امن را نمایش می‌دهد.
 institution: "Mardas Lab"
 course: "انتشار حرفه‌ای Markdown"
-version: "1.4.3"
+version: "1.5.0"
 status: "Stable"
 keywords:
   - Markdown
   - PDF
-  - فارسی
-  - English
+  - فارسی/English
   - RTL/LTR
   - MathJax
-  - Playwright
-  - Markdown شبیه GitHub
 cover_label: "راهنمای کامل"
 lang: fa
 dir: rtl
@@ -30,7 +27,7 @@ dir: rtl
 
 # معرفی
 
-Mardas MD2PDF ابزاری برای تبدیل Markdown به PDF است که مخصوص سندهای فارسی، انگلیسی و ترکیبی طراحی شده است. هدف پروژه این است که نویسنده بتواند متن را در قالب ساده Markdown بنویسد، اما خروجی نهایی شبیه یک سند PDF مرتب، حرفه‌ای و قابل انتشار باشد.
+برنامه Mardas MD2PDF ابزاری برای تبدیل Markdown به PDF است که مخصوص سندهای فارسی، انگلیسی و ترکیبی طراحی شده است. هدف پروژه این است که نویسنده بتواند متن را در قالب ساده Markdown بنویسد، اما خروجی نهایی شبیه یک سند PDF مرتب، حرفه‌ای و قابل انتشار باشد.
 
 این پروژه برای گزارش‌های دانشگاهی، مستندات فنی، جزوه‌های آموزشی، راهنماهای نرم‌افزاری، پیش‌نویس‌های پژوهشی، گزارش پروژه و هر سند Markdown که نیاز به خروجی PDF تمیز دارد مناسب است.
 
@@ -52,9 +49,9 @@ Markdown -> HTML ساختاریافته -> PDF با Chromium
 | جلد و metadata | عنوان، زیرعنوان، نویسنده‌ها، خلاصه، نسخه، وضعیت، کلیدواژه و labelهای وابسته به زبان. |
 | فهرست مطالب | شماره‌گذاری تودرتو و لینک‌های ساخته‌شده از headingهای Markdown. |
 | متن ترکیبی | متن فارسی/English، inline code و شناسه‌ها در یک پاراگراف خوانا بمانند. |
-| MathJax | فرمول درون‌خطی با متن هماهنگ باشد و فرمول نمایشی وسط‌چین و خوش‌اندازه دیده شود. |
+| فرمول MathJax | فرمول درون‌خطی با متن هماهنگ باشد و فرمول نمایشی وسط‌چین و خوش‌اندازه دیده شود. |
 | بلوک کد | fenced، indented و code block بدون زبان بدون خراب شدن محتوا رندر شوند. |
-| Mermaid | بلوک کد از نوع `flowchart` به جای نمایش کد خام، به نمودار SVG تبدیل شود. |
+| نمودار Mermaid | بلوک کد از نوع `flowchart` به جای نمایش کد خام، به نمودار SVG تبدیل شود. |
 | تصویر و HTML | تصویر Markdown و تگ امن HTML در PDF دیده شوند. |
 | پانویس و صفحه‌بندی | پانویس چندخطی، شکست صفحه دستی، marginها و شماره صفحه پایدار باشند. |
 
@@ -65,15 +62,15 @@ Markdown -> HTML ساختاریافته -> PDF با Chromium
 | سندهای فارسی و انگلیسی | پشتیبانی از `lang: fa`، `lang: en`، جهت RTL/LTR و متن ترکیبی. |
 | جلد حرفه‌ای | عنوان، زیرعنوان، نویسنده‌ها، خلاصه، لوگو، تاریخ، نسخه، وضعیت، کلیدواژه و metadata آموزشی. |
 | فهرست مطالب | ساخت فهرست چندسطحی از headingهای Markdown. |
-| MathJax | رندر فرمول‌های درون‌خطی و نمایشی. |
+| فرمول MathJax | رندر فرمول‌های درون‌خطی و نمایشی. |
 | بلوک کد | هایلایت کدهای fenced و indented با Pygments. |
 | نمودار Mermaid | رندر آفلاین نمودارهای کاربردی `flowchart` / `graph` به صورت SVG. |
 | تصویر محلی | جاسازی تصویرهای Markdown و HTML امن به صورت data URI. |
-| HTML امن | پاک‌سازی HTML خام به صورت پیش‌فرض. |
+| کد HTML امن | پاک‌سازی HTML خام به صورت پیش‌فرض. |
 | پانویس | پشتیبانی از پانویس‌های چندخطی با محتوای Markdown. |
-| Theme و profile | قالب‌های `github`، `modern`، `textbook-light`، `textbook-dark` و `academic` همراه با profileهای آماده. |
+| انواع Theme و profile | قالب‌های `github`، `modern`، `textbook-light`، `textbook-dark` و `academic` همراه با profileهای آماده. |
 | اتوماسیون | رابط CLI مناسب برای اسکریپت‌ها و CI. |
-| GUI | رابط گرافیکی محلی برای ویرایش، پیش‌نمایش تقریبی، تنظیم گزینه‌ها و خروجی گرفتن. |
+| رابط گرافیکی GUI | رابط گرافیکی محلی برای ویرایش، پیش‌نمایش تقریبی، تنظیم گزینه‌ها و خروجی گرفتن. |
 
 # نصب
 
@@ -81,11 +78,11 @@ Markdown -> HTML ساختاریافته -> PDF با Chromium
 
 برای استفاده از پروژه بهتر است این موارد آماده باشند:
 
-- Python نسخه 3.10 یا جدیدتر؛
+- نصب بودن Python نسخه 3.10 یا جدیدتر؛
 - محیط مجازی Python؛
-- Chromium مربوط به Playwright؛
+- نصب بودن Chromium مربوط به Playwright؛
 - فونت مناسب فارسی، ترجیحاً Vazirmatn؛
-- Git برای clone کردن پروژه.
+- نصب بودن Git برای clone کردن پروژه.
 
 ## نصب از سورس
 
@@ -154,6 +151,14 @@ mrs-md2pdf input.md -o output.pdf \
 mrs-md2pdf input.md -o output.pdf --debug-html output.html
 ```
 
+نمایش صریح progress bar در ترمینال:
+
+```bash
+mrs-md2pdf input.md -o output.pdf --progress on
+```
+
+حالت پیش‌فرض `--progress auto` فقط وقتی progress bar را نشان می‌دهد که دستور در ترمینال تعاملی اجرا شود. برای اسکریپت‌های ساکت‌تر می‌توانید از `--progress off` استفاده کنید.
+
 # روند پیشنهادی کار
 
 برای رسیدن به خروجی تمیز، این روند پیشنهاد می‌شود:
@@ -167,9 +172,9 @@ mrs-md2pdf input.md -o output.pdf --debug-html output.html
 
 برای سندهای مهم، بررسی انسانی خروجی نهایی ضروری است. تست خودکار بسیاری از خطاها را می‌گیرد، اما تایپوگرافی، شکست صفحه و فاصله‌ها باید دیده شوند.
 
-# Front Matter
+# درباره Front Matter
 
-Front matter یک بخش YAML اختیاری در ابتدای فایل Markdown است. این بخش جلد، metadata فایل PDF، زبان سند، جهت سند و چند فیلد مخصوص گزارش‌های رسمی یا آموزشی را کنترل می‌کند.
+بخش Front matter یک بخش YAML اختیاری در ابتدای فایل Markdown است. این بخش جلد، metadata فایل PDF، زبان سند، جهت سند و چند فیلد مخصوص گزارش‌های رسمی یا آموزشی را کنترل می‌کند.
 
 ```yaml
 ---
@@ -188,7 +193,7 @@ department: "نام دانشکده یا دپارتمان"
 course: "نام درس یا پروژه"
 supervisor: "نام استاد یا راهنما"
 date: "۱۴۰۵-۰۲-۳۰"
-version: "1.4.3"
+version: "1.5.0"
 status: "Draft"
 keywords: [Markdown, PDF, RTL, MathJax]
 cover_label: "گزارش فنی"
@@ -222,8 +227,8 @@ dir: rtl
 
 - جلد جزو شماره صفحات محتوایی حساب نمی‌شود؛
 - شماره‌گذاری footer از صفحه بعد از جلد شروع می‌شود؛
-- watermark فقط روی صفحات محتوایی اعمال می‌شود؛
-- theme می‌تواند برای جلد پس‌زمینه تمام‌صفحه داشته باشد؛
+- طرح watermark فقط روی صفحات محتوایی اعمال می‌شود؛
+- قالب theme می‌تواند برای جلد پس‌زمینه تمام‌صفحه داشته باشد؛
 - در صورت نیاز، جلد کاملاً قابل حذف است.
 
 حذف جلد:
@@ -267,7 +272,7 @@ mrs-md2pdf input.md -o output.pdf --no-cover-logo
 
 در متن فارسی نیز می‌توان شناسه‌های English مثل `Playwright`، `MathJax`، `GitHub Actions`، `PDF` و `RTL/LTR` را داخل همان پاراگراف استفاده کرد.
 
-Inline code هم پایدار می‌ماند: `mrs-md2pdf input.md -o output.pdf --toc`.
+همچنین Inline code هم پایدار می‌ماند: `mrs-md2pdf input.md -o output.pdf --toc`.
 
 # فهرست مطالب
 
@@ -329,19 +334,19 @@ mrs-md2pdf input.md -o output.pdf --h1-page-break
 | :--- | :---: | :--- |
 | متن ترکیبی RTL/LTR | بله | پاراگراف، heading، لیست و سلول جدول با direction-aware styling رندر می‌شوند. |
 | تصویر محلی | بله | تصویرهای Markdown و HTML امن در صورت امکان embed می‌شوند. |
-| MathJax | بله | فرمول درون‌خطی و نمایشی اندازه‌گذاری جدا دارند. |
+| فرمول MathJax | بله | فرمول درون‌خطی و نمایشی اندازه‌گذاری جدا دارند. |
 | هایلایت کد | بله | برای fenced و indented code block از Pygments استفاده می‌شود. |
 | نمودار Mermaid | بله | fenceهای کاربردی `flowchart` و `graph` به نمودار SVG تبدیل می‌شوند. |
 | پانویس | بله | پانویس چندخطی با Markdown داخلی پشتیبانی می‌شود. |
-| HTML خام امن | بله | tagها و event handlerهای خطرناک حذف می‌شوند. |
+| کد HTML خام امن | بله | tagها و event handlerهای خطرناک حذف می‌شوند. |
 
 ## نقل‌قول
 
 > کیفیت خروجی PDF فقط تبدیل متن نیست. تایپوگرافی، line height، کنتراست، صفحه‌بندی، تصویرها، فرمول‌ها و قابل پیش‌بینی بودن رندر اهمیت دارند.
 
-## Calloutها
+## انواع Callout
 
-Calloutها از markerهای مشابه GitHub استفاده می‌کنند و عنوان آن‌ها با توجه به زبان سند ترجمه می‌شود.
+انواع Calloutها از markerهای مشابه GitHub استفاده می‌کنند و عنوان آن‌ها با توجه به زبان سند ترجمه می‌شود.
 
 > [!NOTE]
 > برای نکته‌های توضیحی که باید از متن اصلی جدا دیده شوند، از callout استفاده کنید.
@@ -421,13 +426,13 @@ console.log(message);
 با این حال باید بدون خطا رندر شود.
 ```
 
-indented code block نیز پشتیبانی می‌شود:
+همچنین indented code block نیز پشتیبانی می‌شود:
 
     SELECT title, lang, version
     FROM documents
     WHERE renderer = 'mardas-md2pdf';
 
-inline code در برابر پردازش فرمول و پانویس محافظت می‌شود. یعنی `$x$` و `[^note]` وقتی داخل backtick باشند، به شکل literal باقی می‌مانند.
+توجه کنید که inline code در برابر پردازش فرمول و پانویس محافظت می‌شود. یعنی `$x$` و `[^note]` وقتی داخل backtick باشند، به شکل literal باقی می‌مانند.
 
 ## بلوک‌های کد پیشرفته
 
@@ -505,9 +510,9 @@ flowchart LR
 - در GUI، فایل‌ها یا پوشه تصویر را قبل از export attach کنید.
 - تصویرهای خیلی بزرگ embed نمی‌شوند و renderer برای جلوگیری از مصرف زیاد حافظه هشدار می‌دهد.
 
-## HTML امن
+## کد HTML امن
 
-HTML خام به صورت پیش‌فرض sanitize می‌شود. sanitizer عناصر مناسب سند مثل `<div>`، `<span>`، `<table>`، `<figure>` و `<img>` را نگه می‌دارد، اما محتوای فعال یا خطرناک مثل script، event handler، iframe، form، stylesheet خارجی و URL scheme ناامن را حذف می‌کند.
+کد HTML خام به صورت پیش‌فرض sanitize می‌شود. sanitizer عناصر مناسب سند مثل `<div>`، `<span>`، `<table>`، `<figure>` و `<img>` را نگه می‌دارد، اما محتوای فعال یا خطرناک مثل script، event handler، iframe، form، stylesheet خارجی و URL scheme ناامن را حذف می‌کند.
 
 غیرفعال کردن sanitizer فقط برای فایل‌های قابل اعتماد:
 
@@ -547,7 +552,7 @@ mrs-md2pdf input.md -o output.pdf --page-size "A4 landscape"
 mrs-md2pdf input.md -o output.pdf --page-size "210mm 297mm"
 ```
 
-## Marginها
+## انواع Margin
 
 ```bash
 mrs-md2pdf input.md -o output.pdf \
@@ -556,15 +561,15 @@ mrs-md2pdf input.md -o output.pdf \
   --margin-x 16mm
 ```
 
-# Watermark
+# اعمال Watermark
 
-Watermark متنی:
+اعمال Watermark متنی:
 
 ```bash
 mrs-md2pdf input.md -o output.pdf --watermark "DRAFT"
 ```
 
-Watermark تصویری:
+اعمال Watermark تصویری:
 
 ```bash
 mrs-md2pdf input.md -o output.pdf \
@@ -573,14 +578,15 @@ mrs-md2pdf input.md -o output.pdf \
   --watermark-width 95mm
 ```
 
-Watermark فقط روی صفحات محتوایی اعمال می‌شود و روی جلد قرار نمی‌گیرد.
+طرح Watermark فقط روی صفحات محتوایی اعمال می‌شود و روی جلد قرار نمی‌گیرد.
 
-# Themeها
+# انواع Theme
 
-Mardas MD2PDF چهار theme داخلی دارد.
+برنامه Mardas MD2PDF چند theme داخلی و profile آماده دارد. Profileها پیش‌فرض‌های مناسب برای نوع سند را انتخاب می‌کنند و themeها ظاهر CSS را کنترل می‌کنند.
 
 | Theme | کاربرد پیشنهادی |
 | :--- | :--- |
+| `github` | مستندات پروژه‌ای شبیه README و خروجی نزدیک به GitHub-style Markdown. |
 | `modern` | مستندات عمومی، proposal، گزارش نرم‌افزاری و راهنمای محصول. |
 | `textbook-light` | جزوه‌های آموزشی طولانی و محتوای آموزشی فارسی/English. |
 | `textbook-dark` | مطالعه روی صفحه، بررسی در محیط کم‌نور و یادداشت‌های فنی شبیه ارائه. |
@@ -601,13 +607,13 @@ mrs-md2pdf input.md -o output.pdf --theme academic
 mrs-md2pdf-gui
 ```
 
-GUI برای کاربرانی مناسب است که روند بصری را ترجیح می‌دهند:
+رابط کاربری GUI برای کاربرانی مناسب است که روند بصری را ترجیح می‌دهند:
 
 1. نوشتن یا paste کردن Markdown.
 2. انتخاب theme، زبان، جهت، اندازه صفحه و گزینه‌های خروجی.
-3. attach کردن فایل‌ها یا پوشه‌های تصویر محلی.
+3. امکان attach کردن فایل‌ها یا پوشه‌های تصویر محلی.
 4. دیدن پیش‌نمایش تقریبی.
-5. export گرفتن از PDF نهایی.
+5. در آخر export گرفتن از PDF نهایی.
 
 > [!IMPORTANT]
 > پیش‌نمایش داخل GUI تقریبی است. PDF نهایی توسط backend renderer ساخته می‌شود و پردازش کامل Markdown، CSS theme، MathJax، جلد و layout چاپی Chromium روی آن اعمال می‌شود.
@@ -635,6 +641,7 @@ GUI برای کاربرانی مناسب است که روند بصری را تر
 | `--no-mathjax` | غیرفعال کردن MathJax. |
 | `--unsafe-html` | غیرفعال کردن sanitization برای فایل‌های قابل اعتماد. |
 | `--timeout-ms` | timeout مرورگر بر حسب میلی‌ثانیه. |
+| `--progress` | حالت progress bar ترمینال: `auto`، `on` یا `off`. مقدار پیش‌فرض: `auto`. |
 
 برای دیدن همه گزینه‌ها:
 
@@ -659,7 +666,8 @@ mrs-md2pdf docs/report.md -o build/report.pdf \
   --theme modern \
   --page-size A4 \
   --dir auto \
-  --timeout-ms 60000
+  --timeout-ms 60000 \
+  --progress off
 ```
 
 برای اشکال‌زدایی در CI، HTML میانی را به عنوان artifact نگه دارید:
@@ -670,7 +678,7 @@ mrs-md2pdf docs/report.md -o build/report.pdf --debug-html build/report.html
 
 # رفع اشکال
 
-## Chromium پیدا نمی‌شود
+## پیدا نشدن Chromium
 
 این دستور را اجرا کنید:
 
@@ -706,9 +714,9 @@ mrs-md2pdf input.md -o output.pdf --font-dir ./fonts
 mrs-md2pdf input.md -o output.pdf --timeout-ms 90000
 ```
 
-## Layout نیاز به بررسی دارد
+## نیاز به بررسی Layout
 
-HTML میانی را ذخیره کنید:
+فایل HTML میانی را ذخیره کنید:
 
 ```bash
 mrs-md2pdf input.md -o output.pdf --debug-html output.html
@@ -720,12 +728,12 @@ mrs-md2pdf input.md -o output.pdf --debug-html output.html
 
 پانویس برای ارجاع، یادداشت فنی و توضیح تکمیلی مناسب است.[^pipeline]
 
-[^pipeline]: Mardas MD2PDF به‌جای رسم مستقیم هر پاراگراف روی canvas فایل PDF، از Chromium برای layout استفاده می‌کند.
+[^pipeline]: برنامه Mardas MD2PDF به‌جای رسم مستقیم هر پاراگراف روی canvas فایل PDF، از Chromium برای layout استفاده می‌کند.
     این انتخاب باعث پشتیبانی بهتر از CSS print، متن ترکیبی، خروجی SVG MathJax، جدول‌ها، تصویرهای محلی و کدهای هایلایت‌شده می‌شود.
 
     - پانویس چندخطی پشتیبانی می‌شود.
-    - Markdown داخل پانویس حفظ می‌شود.
-    - inline code مثل `@page`، `$x$` و `[^id]` وقتی داخل backtick نوشته شود خوانا و literal باقی می‌ماند.
+    - متن Markdown داخل پانویس حفظ می‌شود.
+    - توجه کنید که inline code مثل `@page`، `$x$` و `[^id]` وقتی داخل backtick نوشته شود خوانا و literal باقی می‌ماند.
 
 # چک‌لیست نهایی انتشار
 
