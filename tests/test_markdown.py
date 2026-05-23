@@ -422,3 +422,19 @@ def test_details_summary_are_pdf_friendly_and_open():
     result = render_markdown("<details>\n<summary>Advanced</summary>\n<p>Body</p>\n</details>")
     assert '<details class="md2pdf-details" open="open">' in result.body_html or '<details open="open" class="md2pdf-details">' in result.body_html
     assert 'md2pdf-summary' in result.body_html
+
+
+def test_pagebreak_directives_inside_fenced_code_remain_literal():
+    result = render_markdown("```md\n<!-- pagebreak -->\n\n:::pagebreak\n:::\n\n---page---\n```\n")
+    first_figure = result.body_html.split("</figure>", 1)[0]
+    assert "&lt;!-- pagebreak --&gt;" in first_figure
+    assert ":::pagebreak" in first_figure
+    assert "---page---" in first_figure
+    assert "md2pdf-page-break" not in first_figure
+
+
+def test_display_math_uses_mathjax_display_delimiters_without_double_escaping():
+    result = render_markdown("$$\nx^2 + y^2 = z^2\n$$\n")
+    assert '<div class="math display">$$x^2 + y^2 = z^2$$</div>' in result.body_html
+    assert "\\[" not in result.body_html
+

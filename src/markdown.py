@@ -507,7 +507,7 @@ def protect_and_transform_math(markdown: str) -> str:
         if DISPLAY_MATH_FENCE_RE.match(line):
             if in_display_math:
                 expr = "".join(display_buffer).strip()
-                output.append(f'<div class="math display">\\\\[{html.escape(expr)}\\\\]</div>\n')
+                output.append(f'<div class="math display">$${html.escape(expr)}$$</div>\n')
                 display_buffer.clear()
                 in_display_math = False
             else:
@@ -1093,15 +1093,74 @@ def postprocess_html(body_html: str, *, code_style: str = "github-dark", lang: s
 
 
 PAGEBREAK_COMMENT_RE = re.compile(r"<!--\s*(?:pagebreak|page-break|newpage)\s*-->", re.I)
-PAGEBREAK_CONTAINER_RE = re.compile(r"^:::\s*(?:pagebreak|page-break|newpage)\s*\n:::\s*$", re.I | re.M)
+PAGEBREAK_CONTAINER_LINE_RE = re.compile(r"^:::\s*(?:pagebreak|page-break|newpage)\s*$", re.I)
+PAGEBREAK_CONTAINER_CLOSE_RE = re.compile(r"^:::\s*$")
+PAGEBREAK_MARKER_LINE_RE = re.compile(r"^---page---$", re.I)
+
+
+def _line_ending(line: str) -> str:
+    return "\n" if line.endswith("\n") else ""
 
 
 def preprocess_pdf_directives(markdown: str) -> str:
-    """Normalize lightweight PDF layout directives before Markdown parsing."""
-    markdown = PAGEBREAK_COMMENT_RE.sub('<div class="md2pdf-page-break"></div>', markdown)
-    markdown = PAGEBREAK_CONTAINER_RE.sub('<div class="md2pdf-page-break"></div>', markdown)
-    markdown = markdown.replace("\n---page---\n", '\n<div class="md2pdf-page-break"></div>\n')
-    return markdown
+    """Normalize lightweight PDF layout directives outside Markdown code fences.
+
+    Documentation often needs to show the directive syntax inside fenced code
+    blocks. A line-aware pass keeps those examples literal while still allowing
+    authors to place page breaks in the real document body.
+    """
+    output: list[str] = []
+    in_fence = False
+    fence_char = ""
+    fence_len = 0
+    lines = markdown.splitlines(keepends=True)
+    i = 0
+
+    while i < len(lines):
+        line = lines[i]
+        next_in_fence, next_fence_char, next_fence_len = _fence_transition(
+            line, in_fence, fence_char, fence_len
+        )
+        fence_changed = (next_in_fence, next_fence_char, next_fence_len) != (
+            in_fence,
+            fence_char,
+            fence_len,
+        )
+
+        if fence_changed:
+            in_fence, fence_char, fence_len = next_in_fence, next_fence_char, next_fence_len
+            output.append(line)
+            i += 1
+            continue
+
+        if in_fence:
+            output.append(line)
+            i += 1
+            continue
+
+        stripped = line.strip()
+        ending = _line_ending(line)
+
+        if PAGEBREAK_MARKER_LINE_RE.match(stripped):
+            output.append(f'<div class="md2pdf-page-break"></div>{ending}')
+            i += 1
+            continue
+
+        if PAGEBREAK_COMMENT_RE.fullmatch(stripped):
+            output.append(f'<div class="md2pdf-page-break"></div>{ending}')
+            i += 1
+            continue
+
+        if PAGEBREAK_CONTAINER_LINE_RE.match(stripped):
+            if i + 1 < len(lines) and PAGEBREAK_CONTAINER_CLOSE_RE.match(lines[i + 1].strip()):
+                output.append(f'<div class="md2pdf-page-break"></div>{ending}')
+                i += 2
+                continue
+
+        output.append(PAGEBREAK_COMMENT_RE.sub('<div class="md2pdf-page-break"></div>', line))
+        i += 1
+
+    return "".join(output)
 
 
 def render_markdown(
