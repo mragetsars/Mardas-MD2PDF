@@ -606,6 +606,72 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
         text-align: center !important;
       }}
       .md2pdf-article mjx-container svg {{ max-width: 100%; }}
+      .mermaid-diagram {{
+        margin: 1.35em auto;
+        padding: 4mm;
+        border: 1px solid var(--line, #dbe3ef);
+        border-radius: var(--radius, 12px);
+        background: color-mix(in srgb, var(--softer, #f8fafc) 86%, #ffffff);
+        page-break-inside: avoid;
+        break-inside: avoid;
+        overflow: hidden;
+      }}
+      .mermaid-diagram figcaption {{
+        margin: 0 0 3mm;
+        color: var(--muted, #64748b);
+        font: 700 8pt/1.4 var(--font-en), var(--font-fa);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        text-align: left;
+      }}
+      .md2pdf-mermaid-svg {{
+        display: block;
+        width: 100%;
+        max-width: 100%;
+        height: auto;
+        font-family: var(--font-en), var(--font-fa), sans-serif;
+      }}
+      .md2pdf-mermaid-bg {{
+        fill: color-mix(in srgb, var(--soft, #f4f7fb) 74%, #ffffff);
+        stroke: var(--line, #dbe3ef);
+        stroke-width: 1;
+      }}
+      .md2pdf-mermaid-node-shape {{
+        fill: #ffffff;
+        stroke: var(--accent, #2563eb);
+        stroke-width: 1.5;
+      }}
+      .md2pdf-mermaid-node-label {{
+        fill: var(--ink, #172033);
+        font-size: 12px;
+        font-weight: 700;
+        dominant-baseline: middle;
+        unicode-bidi: plaintext;
+      }}
+      .md2pdf-mermaid-edge path {{
+        fill: none;
+        stroke: var(--line-strong, #c6d2e1);
+        stroke-width: 1.8;
+      }}
+      .md2pdf-mermaid-edge-dotted path {{
+        stroke-dasharray: 5 4;
+      }}
+      .md2pdf-mermaid-edge-thick path {{
+        stroke-width: 2.8;
+      }}
+      .md2pdf-mermaid-arrow-head {{
+        fill: var(--line-strong, #c6d2e1);
+      }}
+      .md2pdf-mermaid-edge-label {{
+        fill: var(--muted, #64748b);
+        font-size: 11px;
+        font-weight: 700;
+        paint-order: stroke;
+        stroke: #ffffff;
+        stroke-width: 4px;
+        stroke-linejoin: round;
+        unicode-bidi: plaintext;
+      }}
     """
     ]
     if cover_full_bleed:

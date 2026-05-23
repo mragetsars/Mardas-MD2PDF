@@ -12,7 +12,7 @@ def build_parser() -> argparse.ArgumentParser:
         prog="mrs-md2pdf",
         description=(
             "Convert Markdown to polished PDF with Persian RTL/LTR typography, "
-            "professional covers, hierarchical TOC, code highlighting, tables, watermarking, and MathJax."
+            "professional covers, hierarchical TOC, code highlighting, Mermaid flowcharts, tables, watermarking, and MathJax."
         ),
     )
     parser.add_argument("input", type=Path, help="Input Markdown file")

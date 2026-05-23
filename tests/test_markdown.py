@@ -343,3 +343,42 @@ def test_large_local_images_are_left_as_links_with_warning(tmp_path, monkeypatch
 
     assert 'src="large.png"' in result.body_html
     assert 'data:image/png;base64' not in result.body_html
+
+
+def test_mermaid_flowchart_fence_renders_to_inline_svg():
+    result = render_markdown(
+        "```mermaid\n"
+        "flowchart TD\n"
+        "    CSV[CSV datasets] --> App[UTMSApplication]\n"
+        "    App --> Core[Instruction_Handler]\n"
+        "    Core --> Domain[Domain Models]\n"
+        "```\n"
+    )
+    assert "mermaid-diagram--rendered" in result.body_html
+    assert "md2pdf-mermaid-svg" in result.body_html
+    assert "CSV datasets" in result.body_html
+    assert "UTMSApplication" in result.body_html
+    assert "code-block" not in result.body_html
+
+
+def test_mermaid_supports_labelled_edges_and_shapes():
+    result = render_markdown(
+        "```mermaid\n"
+        "flowchart LR\n"
+        "    Start((Start)) -->|valid| Decision{Ready?}\n"
+        "    Decision -- yes --> Done[Done]\n"
+        "    Decision -. no .-> Retry(Retry)\n"
+        "```\n"
+    )
+    assert "md2pdf-mermaid-node-circle" in result.body_html
+    assert "md2pdf-mermaid-node-diamond" in result.body_html
+    assert "md2pdf-mermaid-edge-label" in result.body_html
+    assert "valid" in result.body_html
+    assert "yes" in result.body_html
+    assert "md2pdf-mermaid-edge-dotted" in result.body_html
+
+
+def test_non_mermaid_code_fences_still_highlight_normally():
+    result = render_markdown("```python\nprint('hi')\n```\n")
+    assert "code-block" in result.body_html
+    assert "mermaid-diagram" not in result.body_html

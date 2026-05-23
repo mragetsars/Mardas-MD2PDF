@@ -23,6 +23,8 @@ from pygments.formatters import HtmlFormatter
 from pygments.lexers import TextLexer, get_lexer_by_name
 from pygments.util import ClassNotFound
 
+from .mermaid import render_mermaid_to_svg
+
 ARABIC_RANGES = re.compile(r"[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]")
 LATIN_RANGES = re.compile(r"[A-Za-z]")
 FRONTMATTER_RE = re.compile(r"\A---\s*\n(.*?)\n---\s*(?:\n|$)", re.DOTALL)
@@ -268,6 +270,52 @@ def highlight_code(
         f"</figure>"
     )
 
+
+
+
+def mermaid_placeholder(code: str) -> str:
+    """Keep Mermaid source safe until post-processing renders it as SVG."""
+    escaped = html.escape(code.rstrip("\n"))
+    return (
+        '<figure class="mermaid-diagram mermaid-diagram--pending" dir="ltr">'
+        '<figcaption>MERMAID</figcaption>'
+        '<pre><code class="language-mermaid">'
+        f"{escaped}"
+        '</code></pre>'
+        '</figure>'
+    )
+
+
+def is_mermaid_language(value: str | None) -> bool:
+    parts = (value or "").strip().split(maxsplit=1)
+    language = parts[0].lower() if parts else ""
+    return language in {"mermaid", "mmd"}
+
+
+def render_mermaid_placeholders(soup: BeautifulSoup) -> None:
+    """Replace Mermaid placeholder code blocks with generated SVG diagrams."""
+    for figure in soup.find_all("figure", class_=lambda c: c and "mermaid-diagram" in c):
+        code_tag = figure.find("code", class_=lambda c: c and "language-mermaid" in c)
+        if code_tag is None:
+            continue
+        source = code_tag.get_text()
+        svg = render_mermaid_to_svg(source)
+        if not svg:
+            figure["class"] = list(set(figure.get("class", []) + ["mermaid-diagram--fallback"]))
+            continue
+        fragment = BeautifulSoup(svg, "xml")
+        svg_tag = fragment.find("svg")
+        if svg_tag is None:
+            continue
+        pre = figure.find("pre")
+        if pre is not None:
+            pre.replace_with(svg_tag)
+        else:
+            figure.append(svg_tag)
+        classes = set(figure.get("class", []))
+        classes.discard("mermaid-diagram--pending")
+        classes.add("mermaid-diagram--rendered")
+        figure["class"] = sorted(classes)
 
 def guess_code_language(code: str) -> tuple[str, str]:
     """Best-effort language guess for indented Markdown code blocks.
@@ -799,6 +847,7 @@ def embed_local_images(body_html: str, base_dir: str | Path) -> str:
 def postprocess_html(body_html: str, *, code_style: str = "github-dark", lang: str | None = None) -> str:
     soup = BeautifulSoup(body_html, "html.parser")
 
+    render_mermaid_placeholders(soup)
     normalize_raw_code_blocks(soup, code_style=code_style)
 
     # Direction-aware blocks and inline content.
@@ -927,6 +976,8 @@ def render_markdown(
         parts = info.split(maxsplit=1)
         lang = parts[0] if parts else ""
         attrs = parts[1] if len(parts) > 1 else None
+        if is_mermaid_language(lang):
+            return mermaid_placeholder(token.content) + "\n"
         return highlight_code(token.content, lang, attrs, code_style=code_style) + "\n"
 
     md.renderer.rules["fence"] = render_fence
