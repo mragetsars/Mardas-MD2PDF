@@ -53,3 +53,34 @@ def test_render_pdf_warns_when_mathjax_evaluation_fails(tmp_path):
     with pytest.warns(RuntimeWarning, match="MathJax rendering failed"):
         _render_pdf(page, "<html></html>", options, tmp_path / "out.pdf", display_footer=False, title="T")
     assert page.pdf_kwargs["format"] == "A4"
+
+
+def test_manual_pagebreak_css_breaks_after_marker_not_before(tmp_path):
+    from mardas_md2pdf.markdown import render_markdown
+    from mardas_md2pdf.renderer import PdfOptions, build_html
+
+    md = "A\n\n<div class=\"md2pdf-page-break\"></div>\n\n# B\n"
+    result = render_markdown(md)
+    input_path = tmp_path / "pagebreak.md"
+    input_path.write_text(md, encoding="utf-8")
+    html = build_html(result, PdfOptions(input_path=input_path, output_path=tmp_path / "out.pdf"))
+
+    marker_css = html.split(".md2pdf-page-break {", 1)[1].split("}", 1)[0]
+    assert "break-after: page;" in marker_css
+    assert "page-break-after: always;" in marker_css
+    assert "break-before: auto;" in marker_css
+    assert "page-break-before: auto;" in marker_css
+    assert "break-before: page;" not in marker_css
+    assert "page-break-before: always;" not in marker_css
+
+
+def test_footer_template_isolates_mixed_title_in_ltr_footer_slot():
+    from mardas_md2pdf.renderer import _footer_template
+
+    footer = _footer_template("راهنمای Mardas MD2PDF", "modern")
+
+    assert 'dir="ltr"' in footer
+    assert "direction:ltr" in footer
+    assert "unicode-bidi:isolate" in footer
+    assert "راهنمای Mardas MD2PDF" in footer
+    assert "text-align:left" in footer

@@ -674,10 +674,17 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
         unicode-bidi: plaintext;
       }}
       .md2pdf-page-break {{
-        break-before: page;
-        page-break-before: always;
+        display: block;
         height: 0;
+        margin: 0;
+        padding: 0;
+        border: 0;
         overflow: hidden;
+        clear: both;
+        break-before: auto;
+        page-break-before: auto;
+        break-after: page;
+        page-break-after: always;
       }}
       .heading-anchor {{
         opacity: 0.34;
@@ -972,6 +979,7 @@ def build_html(
 </html>"""
 
 
+
 def _footer_template(title: str, theme_name: str = "modern") -> str:
     theme = normalize_theme_name(theme_name)
     if theme == "textbook-light":
@@ -993,11 +1001,15 @@ def _footer_template(title: str, theme_name: str = "modern") -> str:
     </div>
     """
     safe_title = html.escape(title)
+    # Header/footer templates do not inherit the article bidi helpers. Keep the
+    # footer slot LTR for stable left/right layout, but isolate the title so a
+    # mixed Persian/English title keeps its glyph order and does not leak into
+    # the page counter.
     return f"""
     <div style="width:100%; font-size:8px; color:#64748b; padding:0 16mm; font-family:Arial, sans-serif;">
-      <div style="border-top:1px solid #dbe3ef; padding-top:5px; display:flex; justify-content:space-between; direction:ltr;">
-        <span>{safe_title}</span>
-        <span><span class="pageNumber"></span>/<span class="totalPages"></span></span>
+      <div style="border-top:1px solid #dbe3ef; padding-top:5px; display:flex; justify-content:space-between; align-items:center; gap:8mm; direction:ltr;">
+        <span dir="ltr" style="direction:ltr; unicode-bidi:isolate; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-family:Vazirmatn, 'Noto Sans Arabic', Tahoma, Arial, sans-serif;">{safe_title}</span>
+        <span dir="ltr" style="direction:ltr; unicode-bidi:isolate; white-space:nowrap; font-family:Arial, sans-serif;"><span class="pageNumber"></span>/<span class="totalPages"></span></span>
       </div>
     </div>
     """
