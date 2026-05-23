@@ -132,6 +132,11 @@
     .footer-group{display:flex;align-items:center;gap:16px}
     .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);display:inline-block;margin-right:6px}
     .spinner{display:none}.busy .spinner{display:inline-block}.busy .btn-primary{opacity:.78;pointer-events:none}
+    .export-progress{display:none;align-items:center;gap:9px;min-width:280px}
+    .busy .export-progress,.export-progress.active{display:flex}
+    .progress-track{width:180px;height:8px;border-radius:999px;background:var(--panel-3);border:1px solid var(--border);overflow:hidden}
+    .progress-bar{width:0%;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--accent),var(--accent-2));box-shadow:0 0 18px color-mix(in srgb, var(--accent) 30%, transparent);transition:width .22s ease}
+    .progress-label{min-width:42px;text-align:right;font-variant-numeric:tabular-nums;color:var(--muted);font-weight:900}
     body.editor-focus .workspace{grid-template-columns:var(--sidebar-width) 1fr 0 0}
     body.editor-focus .gutter,body.editor-focus .preview-pane{display:none}
     body.editor-focus .editor-pane{border-radius:0 22px 22px 0;border-right:1px solid var(--border)}
@@ -169,7 +174,7 @@
           <button id="layoutZen" onclick="setLayout('zen')">Zen</button>
         </div>
         <button class="btn btn-ghost" onclick="toggleTheme()" id="themeBtn">☀️ Light</button>
-        <button class="btn btn-primary" onclick="renderPDF()"><span class="spinner">⏳</span>📄 Export PDF</button>
+        <button id="exportPdfBtn" class="btn btn-primary" onclick="renderPDF()"><span class="spinner">⏳</span>📄 Export PDF</button>
       </div>
     </header>
     <main class="workspace" id="workspace">
@@ -218,7 +223,7 @@
     </main>
     <footer class="footer">
       <div class="footer-group"><span id="statusWords">Words: 0</span><span id="statusChars">Chars: 0</span></div>
-      <div class="footer-group"><span><i class="dot"></i><span id="serverStatus">Ready</span></span></div>
+      <div class="footer-group"><div id="exportProgress" class="export-progress" aria-hidden="true"><div class="progress-track"><div id="exportProgressBar" class="progress-bar"></div></div><span id="exportProgressLabel" class="progress-label">0%</span></div><span><i class="dot"></i><span id="serverStatus">Ready</span></span></div>
     </footer>
   </div>
 <script>
@@ -228,8 +233,13 @@ const preview = $('preview');
 const statusWords = $('statusWords');
 const statusChars = $('statusChars');
 const serverStatus = $('serverStatus');
+const exportProgress = $('exportProgress');
+const exportProgressBar = $('exportProgressBar');
+const exportProgressLabel = $('exportProgressLabel');
 const themeBtn = $('themeBtn');
 let renderTimer = null;
+let exportProgressTimer = null;
+let exportProgressValue = 0;
 let currentLayout = 'split';
 
 function getOptions(){
@@ -465,9 +475,52 @@ function downloadMarkdown(){
   URL.revokeObjectURL(a.href);
 }
 
+function setExportProgress(value, message){
+  exportProgressValue = Math.max(0, Math.min(1, value));
+  const percent = Math.round(exportProgressValue * 100);
+  exportProgressBar.style.width = percent + '%';
+  exportProgressLabel.textContent = percent + '%';
+  exportProgress.setAttribute('aria-valuenow', String(percent));
+  if (message) serverStatus.textContent = message;
+}
+
+function startExportProgress(){
+  clearInterval(exportProgressTimer);
+  exportProgress.classList.add('active');
+  exportProgress.setAttribute('aria-hidden', 'false');
+  exportProgress.setAttribute('role', 'progressbar');
+  exportProgress.setAttribute('aria-valuemin', '0');
+  exportProgress.setAttribute('aria-valuemax', '100');
+  setExportProgress(0.04, 'Preparing Markdown...');
+  const stages = [
+    [0.18, 'Parsing Markdown...'],
+    [0.34, 'Building HTML...'],
+    [0.52, 'Starting Chromium...'],
+    [0.72, 'Rendering PDF...'],
+    [0.88, 'Finalizing PDF...']
+  ];
+  exportProgressTimer = setInterval(() => {
+    const nextTarget = stages.find(stage => exportProgressValue < stage[0]);
+    const target = nextTarget ? nextTarget[0] : 0.92;
+    const message = nextTarget ? nextTarget[1] : 'Finalizing PDF...';
+    const delta = Math.max(0.006, (target - exportProgressValue) * 0.12);
+    setExportProgress(Math.min(target, exportProgressValue + delta), message);
+  }, 220);
+}
+
+function finishExportProgress(message, success=true){
+  clearInterval(exportProgressTimer);
+  setExportProgress(success ? 1 : exportProgressValue, message);
+  setTimeout(() => {
+    exportProgress.classList.remove('active');
+    exportProgress.setAttribute('aria-hidden', 'true');
+    if (success) setExportProgress(0, 'Ready');
+  }, success ? 1100 : 3200);
+}
+
 async function renderPDF(){
   document.body.classList.add('busy');
-  serverStatus.textContent = 'Rendering PDF...';
+  startExportProgress();
   try {
     const response = await fetch('/api/render', {
       method: 'POST',
@@ -484,9 +537,9 @@ async function renderPDF(){
     a.download = $('filenameInput').value || 'mardas-document.pdf';
     a.click();
     URL.revokeObjectURL(a.href);
-    serverStatus.textContent = 'PDF downloaded';
+    finishExportProgress('PDF downloaded');
   } catch (error) {
-    serverStatus.textContent = 'Error: ' + error.message;
+    finishExportProgress('Error: ' + error.message, false);
     alert(error.message);
   } finally {
     document.body.classList.remove('busy');

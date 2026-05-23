@@ -1,10 +1,38 @@
 from __future__ import annotations
 
 import argparse
+import sys
 from pathlib import Path
 
 from . import __version__
 from .renderer import PdfOptions, convert
+
+
+class _CliProgressBar:
+    def __init__(self, *, stream=None, width: int = 28) -> None:
+        self.stream = stream or sys.stderr
+        self.width = width
+        self._last_line = ""
+
+    def __call__(self, message: str, fraction: float) -> None:
+        fraction = max(0.0, min(1.0, float(fraction)))
+        filled = round(self.width * fraction)
+        bar = "█" * filled + "░" * (self.width - filled)
+        line = f"\r[{bar}] {fraction:>6.0%}  {message}"
+        padding = " " * max(0, len(self._last_line) - len(line))
+        self.stream.write(line + padding)
+        if fraction >= 1.0:
+            self.stream.write("\n")
+        self.stream.flush()
+        self._last_line = line
+
+
+def _progress_callback(mode: str):
+    if mode == "off":
+        return None
+    if mode == "auto" and not sys.stderr.isatty():
+        return None
+    return _CliProgressBar()
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -75,6 +103,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Allow raw HTML without sanitizing it first. Use only for trusted local Markdown.",
     )
     parser.add_argument("--timeout-ms", type=int, default=120_000, help="Browser timeout in milliseconds")
+    parser.add_argument(
+        "--progress",
+        choices=["auto", "on", "off"],
+        default="auto",
+        help="Show a terminal progress bar during PDF generation. Default: auto, only on interactive terminals.",
+    )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     return parser
 
@@ -133,6 +167,7 @@ def main(argv: list[str] | None = None) -> int:
         watermark_opacity=args.watermark_opacity,
         watermark_width=args.watermark_width,
         unsafe_html=args.unsafe_html,
+        progress=_progress_callback(args.progress),
     )
     pdf_path = convert(options)
     print(f"PDF created: {pdf_path}")

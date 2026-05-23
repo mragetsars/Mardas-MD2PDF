@@ -12,7 +12,7 @@ from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from importlib import resources
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from playwright.sync_api import Page, sync_playwright
 from pypdf import PdfReader, PdfWriter
@@ -21,6 +21,19 @@ from .markdown import MarkdownRenderResult, render_markdown_file
 
 
 MAX_EMBED_ASSET_BYTES = 20 * 1024 * 1024
+ProgressCallback = Callable[[str, float], None]
+
+
+def _report_progress(callback: ProgressCallback | None, message: str, fraction: float) -> None:
+    """Report best-effort progress without letting UI code break conversion."""
+    if callback is None:
+        return
+    try:
+        callback(message, max(0.0, min(1.0, float(fraction))))
+    except Exception:
+        # Progress hooks are optional UX helpers; PDF generation must not fail
+        # because a terminal or GUI progress callback raised unexpectedly.
+        return
 
 
 @dataclass(slots=True)
@@ -55,6 +68,7 @@ class PdfOptions:
     watermark_opacity: float = 0.065
     watermark_width: str = "105mm"
     unsafe_html: bool = False
+    progress: ProgressCallback | None = None
 
 
 def _asset_text(relative_path: str) -> str:
@@ -1138,6 +1152,9 @@ def _merge_pdfs(parts: list[Path], output_path: Path, metadata: dict[str, str] |
 
 
 def convert(options: PdfOptions) -> Path:
+    progress = options.progress
+    _report_progress(progress, "Reading Markdown", 0.03)
+
     options.input_path = Path(options.input_path)
     options.output_path = Path(options.output_path)
     result = render_markdown_file(
@@ -1147,6 +1164,8 @@ def convert(options: PdfOptions) -> Path:
         code_style=_code_style(options.theme),
         unsafe_html=options.unsafe_html,
     )
+    _report_progress(progress, "Markdown parsed", 0.16)
+
     title = options.title or _stringify_metadata_value(result.metadata.get("title")) or result.title
     pdf_metadata = _pdf_metadata(result, options, str(title))
 
@@ -1156,12 +1175,14 @@ def convert(options: PdfOptions) -> Path:
     if options.debug_html:
         options.debug_html.parent.mkdir(parents=True, exist_ok=True)
         options.debug_html.write_text(full_debug_html, encoding="utf-8")
+    _report_progress(progress, "HTML prepared", 0.28)
 
     executable = options.chromium_path or shutil.which("chromium") or shutil.which("google-chrome")
 
     with tempfile.TemporaryDirectory(prefix="mardas-md2pdf-") as tmpdir:
         tmp = Path(tmpdir)
         with sync_playwright() as p:
+            _report_progress(progress, "Starting Chromium", 0.36)
             launch_kwargs: dict[str, Any] = {
                 "headless": True,
                 "args": [
@@ -1176,21 +1197,29 @@ def convert(options: PdfOptions) -> Path:
             page = browser.new_page(device_scale_factor=1)
             page.set_default_timeout(options.timeout_ms)
 
-            if options.cover:
-                cover_pdf = tmp / "cover.pdf"
-                cover_html = build_html(result, options, include_cover=True, include_content=False, include_watermark=False, cover_full_bleed=True)
-                _render_pdf(page, cover_html, options, cover_pdf, display_footer=False, title=str(title))
+            try:
+                if options.cover:
+                    cover_pdf = tmp / "cover.pdf"
+                    cover_html = build_html(result, options, include_cover=True, include_content=False, include_watermark=False, cover_full_bleed=True)
+                    _report_progress(progress, "Rendering cover", 0.48)
+                    _render_pdf(page, cover_html, options, cover_pdf, display_footer=False, title=str(title))
 
-                content_pdf = tmp / "content.pdf"
-                content_html = build_html(result, options, include_cover=False, include_content=True, include_watermark=True)
-                _render_pdf(page, content_html, options, content_pdf, display_footer=True, title=str(title))
+                    content_pdf = tmp / "content.pdf"
+                    content_html = build_html(result, options, include_cover=False, include_content=True, include_watermark=True)
+                    _report_progress(progress, "Rendering content", 0.72)
+                    _render_pdf(page, content_html, options, content_pdf, display_footer=True, title=str(title))
 
+                    _report_progress(progress, "Merging PDF parts", 0.91)
+                    _merge_pdfs([cover_pdf, content_pdf], options.output_path, pdf_metadata)
+                else:
+                    content_pdf = tmp / "content.pdf"
+                    html_text = build_html(result, options, include_cover=False, include_content=True, include_watermark=True)
+                    _report_progress(progress, "Rendering PDF", 0.72)
+                    _render_pdf(page, html_text, options, content_pdf, display_footer=True, title=str(title))
+
+                    _report_progress(progress, "Writing metadata", 0.91)
+                    _copy_pdf_with_metadata(content_pdf, options.output_path, pdf_metadata)
+            finally:
                 browser.close()
-                _merge_pdfs([cover_pdf, content_pdf], options.output_path, pdf_metadata)
-            else:
-                content_pdf = tmp / "content.pdf"
-                html_text = build_html(result, options, include_cover=False, include_content=True, include_watermark=True)
-                _render_pdf(page, html_text, options, content_pdf, display_footer=True, title=str(title))
-                browser.close()
-                _copy_pdf_with_metadata(content_pdf, options.output_path, pdf_metadata)
+    _report_progress(progress, "PDF created", 1.0)
     return options.output_path
