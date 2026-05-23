@@ -122,6 +122,7 @@ def _mathjax_script() -> str:
 
 THEME_FILES = {
     "modern": "theme-modern.css",
+    "github": "theme-github.css",
     "textbook-light": "theme-textbook-light.css",
     "textbook-dark": "theme-textbook-dark.css",
     "academic": "theme-academic.css",
@@ -141,7 +142,7 @@ def _code_style(theme_name: str) -> str:
     theme = normalize_theme_name(theme_name)
     if theme == "textbook-dark":
         return "bw"
-    if theme in {"textbook-light", "academic"}:
+    if theme in {"github", "textbook-light", "academic"}:
         return "friendly"
     return "github-dark"
 
@@ -671,6 +672,79 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
         stroke-width: 4px;
         stroke-linejoin: round;
         unicode-bidi: plaintext;
+      }}
+      .md2pdf-page-break {{
+        break-before: page;
+        page-break-before: always;
+        height: 0;
+        overflow: hidden;
+      }}
+      .heading-anchor {{
+        opacity: 0.34;
+        margin-inline-start: 0.35em;
+        border: 0;
+        color: var(--muted, #64748b);
+        font-size: 0.78em;
+        text-decoration: none;
+      }}
+      .heading-anchor:hover {{ opacity: 0.72; }}
+      .md2pdf-figure {{
+        margin: 1.35em auto;
+        text-align: center;
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }}
+      .md2pdf-figure > img {{
+        display: block;
+        margin: 0 auto;
+        max-width: 100%;
+        height: auto;
+      }}
+      .md2pdf-figure > figcaption {{
+        margin-top: 2mm;
+        color: var(--muted, #64748b);
+        font-size: 8.8pt;
+        line-height: 1.55;
+        text-align: center;
+      }}
+      .md2pdf-details {{
+        margin: 1.2em 0;
+        padding: 4mm 4.5mm;
+        border: 1px solid var(--line, #dbe3ef);
+        border-radius: var(--radius, 12px);
+        background: var(--softer, #f8fafc);
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }}
+      .md2pdf-summary {{
+        margin-bottom: 2mm;
+        font-weight: 850;
+        color: var(--accent, #2563eb);
+      }}
+      .code-block--numbered .codehilitetable {{
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0;
+        background: var(--code-bg, #0f172a) !important;
+      }}
+      .code-block--numbered .codehilitetable td {{
+        border: 0;
+        padding: 0;
+        background: transparent !important;
+      }}
+      .code-block--numbered .linenos {{
+        width: 1%;
+        padding: 4.2mm 2.2mm 4.2mm 4mm !important;
+        color: rgba(226, 232, 240, 0.55) !important;
+        text-align: right;
+        user-select: none;
+      }}
+      .code-block--numbered .code {{
+        padding: 0 !important;
+      }}
+      .codehilite .hll {{
+        display: block;
+        background-color: rgba(250, 204, 21, 0.18) !important;
       }}
     """
     ]

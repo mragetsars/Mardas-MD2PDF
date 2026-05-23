@@ -43,12 +43,20 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--font-dir", type=Path, help="Directory containing Vazirmatn font files")
     parser.add_argument("--chromium-path", help="Path to Chromium/Chrome executable")
     parser.add_argument(
-        "--theme",
-        choices=["modern", "textbook-light", "textbook-dark", "academic"],
-        default="modern",
+        "--profile",
+        choices=["default", "github", "academic", "persian-report", "minimal"],
+        default="default",
         help=(
-            "Visual theme. modern is polished and colorful; textbook-light is a light course-note theme; "
-            "textbook-dark is a dark reading theme; academic is a formal serif report theme."
+            "Rendering profile. github targets GitHub-style Markdown; academic and persian-report "
+            "choose report-oriented defaults while keeping CLI compatibility."
+        ),
+    )
+    parser.add_argument(
+        "--theme",
+        choices=["modern", "github", "textbook-light", "textbook-dark", "academic"],
+        default=None,
+        help=(
+            "Visual theme. If omitted, the selected profile chooses a sensible default."
         ),
     )
     parser.add_argument("--no-cover", action="store_true", help="Do not generate the automatic cover page")
@@ -84,6 +92,15 @@ def main(argv: list[str] | None = None) -> int:
     if not 0 <= args.watermark_opacity <= 1:
         parser.error("--watermark-opacity must be between 0 and 1")
 
+    profile_theme_defaults = {
+        "default": "modern",
+        "github": "github",
+        "academic": "academic",
+        "persian-report": "modern",
+        "minimal": "textbook-light",
+    }
+    resolved_theme = args.theme or profile_theme_defaults[args.profile]
+
     output_path = args.output or input_path.with_suffix(".pdf")
     options = PdfOptions(
         input_path=input_path,
@@ -106,7 +123,7 @@ def main(argv: list[str] | None = None) -> int:
         no_header_footer=args.no_header_footer,
         no_mathjax=args.no_mathjax,
         timeout_ms=args.timeout_ms,
-        theme=args.theme,
+        theme=resolved_theme,
         cover=not args.no_cover,
         cover_logo=args.cover_logo,
         cover_logo_enabled=not args.no_cover_logo,

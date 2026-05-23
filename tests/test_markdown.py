@@ -382,3 +382,43 @@ def test_non_mermaid_code_fences_still_highlight_normally():
     result = render_markdown("```python\nprint('hi')\n```\n")
     assert "code-block" in result.body_html
     assert "mermaid-diagram" not in result.body_html
+
+
+def test_literal_autolinks_are_created_outside_code_only():
+    result = render_markdown("Visit www.example.com and dev@example.com, but keep `www.code.test` literal.")
+    assert '<a href="https://www.example.com">www.example.com</a>' in result.body_html
+    assert '<a href="mailto:dev@example.com">dev@example.com</a>' in result.body_html
+    assert '<code dir="ltr">www.code.test</code>' in result.body_html
+
+
+def test_code_fence_titles_line_numbers_and_highlight_lines():
+    result = render_markdown('```python title="main.py" {2} linenos\nprint(1)\nprint(2)\n```\n')
+    assert 'code-block--numbered' in result.body_html
+    assert 'code-block--highlighted' in result.body_html
+    assert '<figcaption dir="auto">main.py</figcaption>' in result.body_html
+    assert 'codehilitetable' in result.body_html
+    assert 'class="hll"' in result.body_html
+
+
+def test_pagebreak_directives_normalize_to_pdf_break_class():
+    result = render_markdown("A\n\n<!-- pagebreak -->\n\nB\n\n:::pagebreak\n:::\n\nC")
+    assert result.body_html.count('md2pdf-page-break') >= 2
+
+
+def test_image_caption_pair_becomes_semantic_figure():
+    result = render_markdown("![Arch](arch.png)\n\n*Figure 1. Architecture overview.*\n")
+    assert 'class="md2pdf-figure"' in result.body_html
+    assert '<figcaption' in result.body_html
+    assert 'Architecture overview' in result.body_html
+
+
+def test_headings_receive_permalink_anchor():
+    result = render_markdown("## Installation\n")
+    assert 'class="heading-anchor"' in result.body_html
+    assert 'href="#installation"' in result.body_html
+
+
+def test_details_summary_are_pdf_friendly_and_open():
+    result = render_markdown("<details>\n<summary>Advanced</summary>\n<p>Body</p>\n</details>")
+    assert '<details class="md2pdf-details" open="open">' in result.body_html or '<details open="open" class="md2pdf-details">' in result.body_html
+    assert 'md2pdf-summary' in result.body_html

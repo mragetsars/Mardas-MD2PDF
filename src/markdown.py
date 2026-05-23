@@ -185,12 +185,19 @@ class TocItem:
 class CodeHtmlFormatter(HtmlFormatter):
     """Pygments formatter. The style is selected by the renderer theme."""
 
-    def __init__(self, style: str = "github-dark") -> None:
+    def __init__(
+        self,
+        style: str = "github-dark",
+        *,
+        linenos: bool = False,
+        hl_lines: list[int] | None = None,
+    ) -> None:
         super().__init__(
             style=style,
             cssclass="codehilite",
             nowrap=False,
-            linenos=False,
+            linenos="table" if linenos else False,
+            hl_lines=hl_lines or [],
         )
 
 
@@ -240,6 +247,53 @@ def dominant_direction(text: str) -> str:
     return "auto"
 
 
+
+CODE_FENCE_TITLE_RE = re.compile(r"(?:^|\s)(?:title|filename|file)=(?P<quote>[\"\'])(?P<value>.*?)(?P=quote)")
+CODE_FENCE_BRACE_RE = re.compile(r"\{(?P<spec>[0-9,\-\s]+)\}")
+
+
+def _parse_line_highlights(spec: str | None) -> list[int]:
+    if not spec:
+        return []
+    values: set[int] = set()
+    for part in spec.split(','):
+        part = part.strip()
+        if not part:
+            continue
+        if '-' in part:
+            start_text, end_text = [chunk.strip() for chunk in part.split('-', 1)]
+            if start_text.isdigit() and end_text.isdigit():
+                start, end = int(start_text), int(end_text)
+                if start > 0 and end >= start:
+                    values.update(range(start, end + 1))
+            continue
+        if part.isdigit() and int(part) > 0:
+            values.add(int(part))
+    return sorted(values)
+
+
+def parse_code_fence_info(info: str | None) -> dict[str, Any]:
+    """Parse GitHub/documentation-style fenced code metadata."""
+    text = (info or "").strip()
+    parts = text.split(maxsplit=1)
+    language = parts[0] if parts else ""
+    attrs = parts[1] if len(parts) > 1 else ""
+
+    title_match = CODE_FENCE_TITLE_RE.search(attrs)
+    title = title_match.group('value').strip() if title_match else ""
+
+    brace_match = CODE_FENCE_BRACE_RE.search(attrs)
+    highlight_lines = _parse_line_highlights(brace_match.group('spec') if brace_match else None)
+    linenos = bool(re.search(r"(?:^|\s)(?:linenos|line-numbers|numbered)(?:\s|$)", attrs, re.I))
+    return {
+        "language": language,
+        "title": title,
+        "linenos": linenos,
+        "highlight_lines": highlight_lines,
+        "attrs": attrs,
+    }
+
+
 def highlight_code(
     code: str,
     lang: str | None,
@@ -248,6 +302,8 @@ def highlight_code(
     code_style: str = "github-dark",
     caption: str | None = None,
     extra_classes: str = "",
+    linenos: bool = False,
+    highlight_lines: list[int] | None = None,
 ) -> str:
     parts = (lang or "").strip().split()
     language = parts[0] if parts else ""
@@ -257,19 +313,26 @@ def highlight_code(
     except ClassNotFound:
         lexer = TextLexer(stripall=False)
         label = language or "text"
-    formatter = CodeHtmlFormatter(code_style)
+    formatter = CodeHtmlFormatter(code_style, linenos=linenos, hl_lines=highlight_lines)
     highlighted = highlight(code, lexer, formatter)
-    caption_value = label.upper() if caption is None else caption
-    caption_html = f"<figcaption>{html.escape(caption_value)}</figcaption>" if caption_value else ""
+    caption_value = caption if caption not in (None, "") else label.upper()
+    caption_html = (
+        f'<figcaption dir="auto">{html.escape(caption_value)}</figcaption>'
+        if caption_value
+        else ""
+    )
     extra_attrs = f" data-lang=\"{html.escape(language)}\"" if language else ""
     classes = "code-block" + (f" {html.escape(extra_classes)}" if extra_classes else "")
+    if linenos:
+        classes += " code-block--numbered"
+    if highlight_lines:
+        classes += " code-block--highlighted"
     return (
         f'<figure class="{classes}" dir="ltr"{extra_attrs}>'
         f"{caption_html}"
         f"{highlighted}"
         f"</figure>"
     )
-
 
 
 
@@ -598,7 +661,11 @@ def add_heading_ids(html_text: str, *, toc_depth: int = 6) -> tuple[str, list[tu
         plain = BeautifulSoup(content, "html.parser").get_text(" ", strip=True)
         if level <= max_depth and plain:
             toc.append((level, plain, heading_id, content))
-        return f"<h{level}{attrs}>{content}</h{level}>"
+        anchor = (
+            f'<a class="heading-anchor" href="#{html.escape(heading_id)}" '
+            f'aria-label="Permalink to {html.escape(plain)}">#</a>'
+        )
+        return f"<h{level}{attrs}>{content}{anchor}</h{level}>"
 
     return HEADING_RE.sub(repl, html_text), toc
 
@@ -844,10 +911,92 @@ def embed_local_images(body_html: str, base_dir: str | Path) -> str:
     return str(soup)
 
 
+AUTOLINK_RE = re.compile(
+    r"(?P<url>https?://[^\s<]+|www\.[^\s<]+)|(?P<email>[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,})"
+)
+AUTOLINK_SKIP_PARENTS = {"a", "code", "pre", "script", "style", "kbd"}
+
+
+def apply_literal_autolinks(soup: BeautifulSoup) -> None:
+    """Link bare URLs, www-prefixed domains, and email addresses outside code."""
+    for node in list(soup.find_all(string=True)):
+        text = str(node)
+        if not text or not AUTOLINK_RE.search(text):
+            continue
+        if any(parent.name in AUTOLINK_SKIP_PARENTS for parent in node.parents if isinstance(parent, Tag)):
+            continue
+        fragment = soup.new_tag("span")
+        pos = 0
+        for match in AUTOLINK_RE.finditer(text):
+            if match.start() > pos:
+                fragment.append(NavigableString(text[pos : match.start()]))
+            label = match.group(0).rstrip('.,);:!?')
+            trailing = match.group(0)[len(label):]
+            href = label
+            if match.group("email"):
+                href = f"mailto:{label}"
+            elif label.startswith("www."):
+                href = f"https://{label}"
+            link = soup.new_tag("a", href=href)
+            link.string = label
+            fragment.append(link)
+            if trailing:
+                fragment.append(NavigableString(trailing))
+            pos = match.end()
+        if pos < len(text):
+            fragment.append(NavigableString(text[pos:]))
+        node.replace_with(fragment)
+        fragment.unwrap()
+
+
+def promote_image_caption_pairs(soup: BeautifulSoup) -> None:
+    """Turn common Markdown image-caption pairs into semantic figures.
+
+    Markdown has no official caption syntax, but documentation often uses::
+
+        ![Architecture](arch.png)
+        *Figure 1. Architecture overview.*
+
+    This pass preserves normal paragraphs while giving the PDF renderer a proper
+    ``<figure>`` / ``<figcaption>`` structure when the pattern is unambiguous.
+    """
+    for paragraph in list(soup.find_all("p")):
+        images = paragraph.find_all("img", recursive=False)
+        if len(images) != 1:
+            continue
+        meaningful_text = paragraph.get_text("", strip=True)
+        if meaningful_text:
+            continue
+        next_sibling = paragraph.find_next_sibling()
+        caption_html = ""
+        if (
+            isinstance(next_sibling, Tag)
+            and next_sibling.name == "p"
+            and len(next_sibling.contents) == 1
+            and isinstance(next_sibling.contents[0], Tag)
+            and next_sibling.contents[0].name in {"em", "strong"}
+        ):
+            caption_text = next_sibling.get_text(" ", strip=True)
+            if re.match(r"^(figure|fig\.|شکل|تصویر)\b", caption_text, re.I):
+                caption_html = str(next_sibling.contents[0])
+                next_sibling.decompose()
+        figure = soup.new_tag("figure")
+        figure["class"] = "md2pdf-figure"
+        figure["dir"] = "auto"
+        paragraph.replace_with(figure)
+        figure.append(images[0].extract())
+        if caption_html:
+            caption = soup.new_tag("figcaption")
+            caption.append(BeautifulSoup(caption_html, "html.parser"))
+            figure.append(caption)
+
+
 def postprocess_html(body_html: str, *, code_style: str = "github-dark", lang: str | None = None) -> str:
     soup = BeautifulSoup(body_html, "html.parser")
 
+    promote_image_caption_pairs(soup)
     render_mermaid_placeholders(soup)
+    apply_literal_autolinks(soup)
     normalize_raw_code_blocks(soup, code_style=code_style)
 
     # Direction-aware blocks and inline content.
@@ -932,7 +1081,27 @@ def postprocess_html(body_html: str, *, code_style: str = "github-dark", lang: s
     for div in soup.find_all("div", class_=lambda c: c and "page-break" in c):
         div["class"] = list(set(div.get("class", []) + ["md2pdf-page-break"]))
 
+    # Render HTML details/summary as expanded PDF-friendly disclosure blocks.
+    for details in soup.find_all("details"):
+        details["open"] = "open"
+        details["class"] = list(set(details.get("class", []) + ["md2pdf-details"]))
+        summary = details.find("summary")
+        if summary is not None:
+            summary["class"] = list(set(summary.get("class", []) + ["md2pdf-summary"]))
+
     return str(soup)
+
+
+PAGEBREAK_COMMENT_RE = re.compile(r"<!--\s*(?:pagebreak|page-break|newpage)\s*-->", re.I)
+PAGEBREAK_CONTAINER_RE = re.compile(r"^:::\s*(?:pagebreak|page-break|newpage)\s*\n:::\s*$", re.I | re.M)
+
+
+def preprocess_pdf_directives(markdown: str) -> str:
+    """Normalize lightweight PDF layout directives before Markdown parsing."""
+    markdown = PAGEBREAK_COMMENT_RE.sub('<div class="md2pdf-page-break"></div>', markdown)
+    markdown = PAGEBREAK_CONTAINER_RE.sub('<div class="md2pdf-page-break"></div>', markdown)
+    markdown = markdown.replace("\n---page---\n", '\n<div class="md2pdf-page-break"></div>\n')
+    return markdown
 
 
 def render_markdown(
@@ -947,10 +1116,10 @@ def render_markdown(
     title = guess_title(markdown_body, metadata)
     lang = normalize_language(metadata.get("lang"), "auto")
 
+    markdown_body = preprocess_pdf_directives(markdown_body)
     markdown_body, footnotes = extract_footnotes(markdown_body)
     markdown_body = replace_footnote_refs(markdown_body, lang=lang, text_hint=markdown_body)
     markdown_body = protect_and_transform_math(markdown_body)
-    markdown_body = markdown_body.replace("\n---page---\n", '\n<div class="md2pdf-page-break"></div>\n')
 
     md = MarkdownIt(
         "gfm-like",
@@ -972,13 +1141,19 @@ def render_markdown(
         a literal leading "C" inside the code content.
         """
         token = tokens[idx]
-        info = (token.info or "").strip()
-        parts = info.split(maxsplit=1)
-        lang = parts[0] if parts else ""
-        attrs = parts[1] if len(parts) > 1 else None
+        fence_info = parse_code_fence_info(token.info)
+        lang = fence_info["language"]
         if is_mermaid_language(lang):
             return mermaid_placeholder(token.content) + "\n"
-        return highlight_code(token.content, lang, attrs, code_style=code_style) + "\n"
+        return highlight_code(
+            token.content,
+            lang,
+            fence_info["attrs"],
+            code_style=code_style,
+            caption=fence_info["title"] or None,
+            linenos=bool(fence_info["linenos"]),
+            highlight_lines=fence_info["highlight_lines"],
+        ) + "\n"
 
     md.renderer.rules["fence"] = render_fence
 
