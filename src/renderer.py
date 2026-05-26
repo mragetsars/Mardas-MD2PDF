@@ -652,8 +652,20 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
         display: block;
         width: 100%;
         max-width: 100%;
+        max-height: var(--md2pdf-mermaid-max-height, 185mm);
         height: auto;
+        margin-inline: auto;
+        object-fit: contain;
         font-family: var(--font-en), var(--font-fa), sans-serif;
+      }}
+      .mermaid-diagram--tall .md2pdf-mermaid-svg {{
+        width: auto;
+        max-width: 100%;
+        max-height: var(--md2pdf-mermaid-tall-max-height, 185mm);
+      }}
+      .mermaid-diagram--wide .md2pdf-mermaid-svg {{
+        width: 100%;
+        max-height: var(--md2pdf-mermaid-wide-max-height, 120mm);
       }}
       .md2pdf-mermaid-bg {{
         fill: var(--md2pdf-mermaid-bg, color-mix(in srgb, var(--soft, #f4f7fb) 74%, #ffffff));

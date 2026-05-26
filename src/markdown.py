@@ -355,6 +355,37 @@ def is_mermaid_language(value: str | None) -> bool:
     return language in {"mermaid", "mmd"}
 
 
+def _svg_viewbox_size(svg_tag) -> tuple[float, float] | None:
+    """Return SVG viewBox dimensions when they are available."""
+    viewbox = svg_tag.get("viewBox") or svg_tag.get("viewbox") or ""
+    parts = str(viewbox).replace(",", " ").split()
+    if len(parts) != 4:
+        return None
+    try:
+        width = float(parts[2])
+        height = float(parts[3])
+    except ValueError:
+        return None
+    if width <= 0 or height <= 0:
+        return None
+    return width, height
+
+
+def _classify_mermaid_svg(svg_tag) -> list[str]:
+    """Classify generated Mermaid diagrams for print-friendly scaling."""
+    size = _svg_viewbox_size(svg_tag)
+    if size is None:
+        return []
+    width, height = size
+    aspect = width / height
+    classes: list[str] = []
+    if aspect < 0.72 or height >= 900:
+        classes.append("mermaid-diagram--tall")
+    if aspect > 2.4 or width >= 1200:
+        classes.append("mermaid-diagram--wide")
+    return classes
+
+
 def render_mermaid_placeholders(soup: BeautifulSoup) -> None:
     """Replace Mermaid placeholder code blocks with generated SVG diagrams."""
     for figure in soup.find_all("figure", class_=lambda c: c and "mermaid-diagram" in c):
@@ -376,6 +407,11 @@ def render_mermaid_placeholders(soup: BeautifulSoup) -> None:
         svg_tag = fragment.find("svg")
         if svg_tag is None:
             continue
+        for layout_class in _classify_mermaid_svg(svg_tag):
+            existing = set(figure.get("class", []))
+            existing.add(layout_class)
+            figure["class"] = sorted(existing)
+        svg_tag["preserveAspectRatio"] = "xMidYMid meet"
         pre = figure.find("pre")
         if pre is not None:
             pre.replace_with(svg_tag)

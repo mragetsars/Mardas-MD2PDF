@@ -130,3 +130,18 @@ def test_mermaid_css_uses_theme_aware_color_variables(tmp_path):
     assert "--md2pdf-mermaid-stroke" in html
     assert "var(--accent, var(--blue" in html
     assert "var(--md2pdf-mermaid-label-halo" in html
+
+
+def test_mermaid_css_caps_diagram_height_for_print_layout(tmp_path):
+    from mardas_md2pdf.markdown import render_markdown
+    from mardas_md2pdf.renderer import PdfOptions, build_html
+
+    md = "```mermaid\nflowchart TD\nA[A] --> B[B]\nB --> C[C]\nC --> D[D]\n```\n"
+    input_path = tmp_path / "diagram.md"
+    input_path.write_text(md, encoding="utf-8")
+    html = build_html(render_markdown(md), PdfOptions(input_path=input_path, output_path=tmp_path / "out.pdf"))
+
+    assert "--md2pdf-mermaid-max-height" in html
+    assert "--md2pdf-mermaid-tall-max-height" in html
+    assert ".mermaid-diagram--tall .md2pdf-mermaid-svg" in html
+    assert ".mermaid-diagram--wide .md2pdf-mermaid-svg" in html

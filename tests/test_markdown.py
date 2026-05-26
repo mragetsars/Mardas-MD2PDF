@@ -461,3 +461,38 @@ def test_display_math_uses_mathjax_display_delimiters_without_double_escaping():
     assert '<div class="math display">$$x^2 + y^2 = z^2$$</div>' in result.body_html
     assert "\\[" not in result.body_html
 
+
+
+def test_tall_mermaid_flowchart_gets_print_scaling_class():
+    md = (
+        "```mermaid\n"
+        "flowchart TD\n"
+        "A[Start] --> B[Middle]\n"
+        "B --> C[Next]\n"
+        "C --> D[Next]\n"
+        "D --> E[Next]\n"
+        "E --> F[Next]\n"
+        "F --> G[Next]\n"
+        "G --> H[Next]\n"
+        "H --> I[Next]\n"
+        "I --> J[End]\n"
+        "```\n"
+    )
+    result = render_markdown(md)
+
+    assert "mermaid-diagram--rendered" in result.body_html
+    assert "mermaid-diagram--tall" in result.body_html
+    assert "preserveaspectratio" in result.body_html.lower()
+
+
+def test_wide_mermaid_flowchart_gets_print_scaling_class():
+    md = (
+        "```mermaid\n"
+        "flowchart LR\n"
+        "A[Alpha] --> B[Beta] --> C[Gamma] --> D[Delta] --> E[Epsilon] --> F[Zeta]\n"
+        "```\n"
+    )
+    result = render_markdown(md)
+
+    assert "mermaid-diagram--rendered" in result.body_html
+    assert "mermaid-diagram--wide" in result.body_html
