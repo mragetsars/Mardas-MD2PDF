@@ -2,6 +2,17 @@
 
 All notable changes to Mardas MD2PDF are tracked here.
 
+## 1.5.5 - 2026-06-10
+
+### Added
+
+- Added PDF viewer outline bookmarks generated from Markdown headings.
+- Added an optional Chromium PDF smoke test that verifies rendered PDF metadata and outline entries.
+
+### Documentation
+
+- Documented PDF outline navigation in the README and user guides.
+
 ## 1.5.4 - 2026-06-10
 
 ### Added
