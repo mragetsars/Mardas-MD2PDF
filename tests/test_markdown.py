@@ -118,9 +118,25 @@ def test_local_image_lookup_stays_inside_markdown_directory(tmp_path):
 
     result = render_markdown_file(md)
 
-    assert 'src="../outside.png"' in result.body_html
+    assert 'data-md2pdf-blocked-src="../outside.png"' in result.body_html
+    assert "md2pdf-image--blocked" in result.body_html
     assert "data:image/png;base64" not in result.body_html
 
+
+
+
+def test_missing_local_image_is_blocked_before_chromium_can_resolve_it(tmp_path):
+    from mardas_md2pdf.markdown import render_markdown_file
+
+    md = tmp_path / "report.md"
+    md.write_text('<img src="images/missing.png" alt="missing">\n', encoding="utf-8")
+
+    result = render_markdown_file(md)
+
+    assert 'data-md2pdf-blocked-src="images/missing.png"' in result.body_html
+    assert "md2pdf-image--blocked" in result.body_html
+    assert ' src="images/missing.png"' not in result.body_html
+    assert 'src="data:image/gif;base64,' in result.body_html
 
 def test_file_url_markdown_images_are_not_embedded(tmp_path):
     from mardas_md2pdf.markdown import render_markdown_file

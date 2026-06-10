@@ -101,6 +101,7 @@ TAG_SAFE_ATTRS = {
 }
 SAFE_URL_SCHEMES = {"", "http", "https", "mailto", "data"}
 MAX_EMBED_IMAGE_BYTES = 20 * 1024 * 1024
+TRANSPARENT_IMAGE_DATA_URI = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="
 RTL_LANG_PREFIXES = ("ar", "fa", "he", "iw", "ku", "ps", "sd", "ug", "ur", "yi")
 
 
@@ -934,16 +935,35 @@ def sanitize_html(body_html: str) -> str:
     return str(soup)
 
 
+def _is_local_image_reference(src: str) -> bool:
+    """Return whether an image source would ask Chromium to read local files."""
+    parsed = urlparse(src.strip())
+    if parsed.scheme.lower() in {"http", "https", "data", "mailto"}:
+        return False
+    return True
+
+
+def _block_unembedded_local_image(img: Tag, src: str) -> None:
+    """Prevent Chromium from resolving a local image that was not embedded."""
+    img["src"] = TRANSPARENT_IMAGE_DATA_URI
+    img["data-md2pdf-blocked-src"] = src
+    img["class"] = list(set(img.get("class", []) + ["md2pdf-image", "md2pdf-image--blocked"]))
+
+
 def embed_local_images(body_html: str, base_dir: str | Path) -> str:
-    """Inline local images as data URIs for reliable Chromium PDF rendering.
+    """Inline document-local images and block unresolved local file reads.
 
     Chromium can render relative image paths when every asset is present beside
     the Markdown file. In practice, reports are often copied without their
     ``images/`` directory, or generated from a temporary working directory. This
     pass resolves local ``<img src=...>`` values against the Markdown location and
     embeds the image bytes directly into the HTML, so the PDF no longer depends
-    on external files during the print step. Remote URLs and existing data URIs
-    are left unchanged.
+    on external files during the print step.
+
+    If a local image source cannot be embedded safely, it is replaced with a
+    transparent placeholder. This keeps the renderer from falling back to the
+    document ``<base>`` URL and reading parent-directory or absolute paths during
+    Chromium's print step. Remote URLs and existing data URIs are left unchanged.
     """
     soup = BeautifulSoup(body_html, "html.parser")
     root = Path(base_dir)
@@ -951,6 +971,7 @@ def embed_local_images(body_html: str, base_dir: str | Path) -> str:
         src = str(img.get("src") or "").strip()
         if not src:
             continue
+        embedded = False
         for candidate in _local_image_candidates(src, root):
             data_uri = _image_file_to_data_uri(candidate)
             if not data_uri:
@@ -958,7 +979,10 @@ def embed_local_images(body_html: str, base_dir: str | Path) -> str:
             img["src"] = data_uri
             img["data-md2pdf-source"] = src
             img["class"] = list(set(img.get("class", []) + ["md2pdf-image"]))
+            embedded = True
             break
+        if not embedded and _is_local_image_reference(src):
+            _block_unembedded_local_image(img, src)
     return str(soup)
 
 
