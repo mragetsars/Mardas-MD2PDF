@@ -10,7 +10,7 @@ Run the default quality gate before creating a patch or tag:
 ./scripts/check.sh
 ```
 
-The script runs Ruff and pytest from the repository root. To include a real Chromium render smoke test, enable the optional environment flag:
+The script runs Ruff and pytest from the repository root. To include real Chromium render smoke tests, including PDF metadata and outline inspection, enable the optional environment flag:
 
 ```bash
 MARDAS_RENDER_SMOKE=1 ./scripts/check.sh
