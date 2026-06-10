@@ -361,7 +361,7 @@ Callouts use GitHub-style markers and are translated according to the document l
 
 # GitHub-style Markdown Compatibility
 
-Version 1.5.6 improves the Studio workflow with clearer render errors, a non-local bind warning, local workspace persistence, and keyboard shortcuts for saving Markdown and exporting PDFs.
+Version 1.5.7 tightens the audit findings from the post-1.5.6 review: CLI and Studio page-size options are validated, Studio numeric options return client-facing errors, remote images are blocked by default, blocked images render visible placeholders, wide tables are fit for print, guide PDFs use deterministic metadata dates, and watermark layering is more theme-aware.
 
 ## Rendering profiles
 
@@ -596,7 +596,8 @@ Safe raw HTML images can also be used when explicit sizing is needed:
 - Keep images reasonably sized before embedding them.
 - Use paths relative to the Markdown file.
 - Keep image paths inside the Markdown document directory. Absolute paths, `file:` URLs, parent-directory escapes such as `../secret.png`, and current-working-directory fallbacks are blocked by default.
-- If a local image cannot be embedded safely, it is replaced with a transparent blocked placeholder so Chromium does not load it through the document `<base>` URL.
+- If an image cannot be embedded safely, it is replaced with a visible blocked placeholder so Chromium does not load it through the document `<base>` URL.
+- Remote `http(s)` images are blocked by default for privacy and reproducibility. Use `--allow-remote-assets` only for trusted documents that intentionally fetch network images.
 - In the GUI, attach local image files or image folders before exporting.
 - Very large images are blocked and a warning is printed to avoid excessive memory usage.
 
@@ -619,7 +620,7 @@ mrs-md2pdf input.md -o output.pdf --unsafe-html
 
 Mardas MD2PDF is a local publishing tool. Treat Markdown, GUI attachments, cover logos, watermarks, and raw HTML as trusted author content unless you run the converter inside an isolated environment.
 
-Default rendering keeps a conservative file boundary: local images are resolved relative to the Markdown file, embedded as `data:` URLs when safe, and blocked when they point outside the document directory or cannot be embedded. Raw HTML is sanitized unless `--unsafe-html` is used.
+Default rendering keeps a conservative file boundary: local images are resolved relative to the Markdown file, embedded as `data:` URLs when safe, and blocked with a visible placeholder when they point outside the document directory or cannot be embedded. Remote `http(s)` images are also blocked by default and require `--allow-remote-assets`. Raw HTML is sanitized unless `--unsafe-html` is used.
 
 Chromium sandboxing is controlled by `--chromium-sandbox`:
 
@@ -666,6 +667,8 @@ Use explicit dimensions:
 ```bash
 mrs-md2pdf input.md -o output.pdf --page-size "210mm 297mm"
 ```
+
+Unknown page-size names now fail early instead of silently falling back to A4. Studio uses the same validation and reports invalid values with a structured `invalid_page_size` error.
 
 ## Margins
 
@@ -733,7 +736,7 @@ The GUI is useful for users who prefer a visual workflow:
 
 Studio stores the current draft, layout, theme mode, direction toggle, editor width, and export settings in browser local storage. This makes accidental refreshes less disruptive during long editing sessions. Use **Reset State** when you want to clear the saved local draft and return to a clean workspace.
 
-If an export fails, Studio shows the HTTP status and stable backend error code, such as `invalid_json`, `markdown_too_large`, or `render_failed`. If you bind Studio to a non-local host, the backend prints a warning because other users on the reachable network can submit Markdown and attached assets.
+If an export fails, Studio shows the HTTP status and stable backend error code, such as `invalid_json`, `invalid_page_size`, `invalid_toc_depth`, `invalid_watermark_opacity`, `markdown_too_large`, or `render_failed`. If you bind Studio to a non-local host, the backend prints a warning because other users on the reachable network can submit Markdown and attached assets.
 
 > [!IMPORTANT]
 > The GUI preview is approximate. The final PDF is produced by the backend renderer, which applies the full Markdown processing, theme CSS, MathJax rendering, cover logic, and Chromium print layout.
@@ -757,7 +760,8 @@ If an export fails, Studio shows the HTTP status and stable backend error code, 
 | `--chromium-sandbox` | Chromium sandbox mode: `auto`, `on`, or `off`. Default: `auto`. |
 | `--debug-html` | Save the intermediate HTML. |
 | `--no-cover`, `--cover-logo`, `--no-cover-logo` | Configure the cover. |
-| `--watermark`, `--watermark-image` | Add text or image watermarks. |
+| `--watermark`, `--watermark-image` | Add theme-aware text or image watermarks over content pages. |
+| `--allow-remote-assets` | Allow trusted Markdown to fetch remote `http(s)` images. Disabled by default. |
 | `--no-header-footer` | Disable printed footer. |
 | `--no-mathjax` | Do not load MathJax. |
 | `--unsafe-html` | Disable raw HTML sanitization for trusted files. |
@@ -825,7 +829,7 @@ If the directory is missing or does not contain recognized font files, the rende
 
 ## Images do not appear
 
-Check that image paths are relative to the Markdown file and stay inside the Markdown document directory. Absolute paths, `file:` URLs, parent-directory escapes, missing files, and very large files are replaced with a blocked placeholder instead of being loaded by Chromium. If you use the GUI, attach the local images or folders before export and check renderer warnings.
+Check that image paths are relative to the Markdown file and stay inside the Markdown document directory. Absolute paths, `file:` URLs, parent-directory escapes, missing files, remote images, and very large files are replaced with a visible blocked placeholder instead of being loaded by Chromium. If you use the GUI, attach the local images or folders before export and check renderer warnings.
 
 ## Math appears as raw TeX
 

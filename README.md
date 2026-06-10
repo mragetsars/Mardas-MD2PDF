@@ -24,11 +24,11 @@ The system is organized around a browser-based rendering pipeline. Markdown is f
 
 ### Markdown Processing
 
-The Markdown layer handles front matter, heading collection, table of contents and PDF outline generation, GitHub-style task lists, alerts, autolinks, heading anchors, image captions, enhanced code blocks, Mermaid diagrams, footnotes, safe HTML, local image embedding, math protection, and direction-aware document metadata.
+The Markdown layer handles front matter, heading collection, table of contents and PDF outline generation, GitHub-style task lists, alerts, autolinks, heading anchors, image captions, enhanced code blocks, Mermaid diagrams, footnotes, safe HTML, local image embedding with blocked placeholders, print-fit wide tables, math protection, and direction-aware document metadata.
 
 ### PDF Rendering
 
-The renderer builds the final printable HTML, applies the selected theme, configures page size and margins, renders MathJax when enabled, separates the cover from numbered content pages, applies optional watermarks, writes PDF metadata and bookmarks, and exports the result through Chromium.
+The renderer builds the final printable HTML, validates page size and margin options, applies the selected theme, renders MathJax when enabled, separates the cover from numbered content pages, applies theme-aware watermark overlays, writes PDF metadata and bookmarks, and exports the result through Chromium.
 
 ### Interfaces
 
@@ -116,7 +116,7 @@ These files are intended to show the real PDF output produced by the current doc
 
 ## Security Model
 
-Mardas MD2PDF is intended for local publishing workflows. By default, local images are resolved relative to the Markdown file, embedded before Chromium renders the PDF, and unresolved local image paths are replaced with a transparent blocked placeholder instead of being loaded through the document `<base>` URL. Raw HTML is sanitized unless `--unsafe-html` is used, and safe `data:` image URLs are limited to common raster formats.
+Mardas MD2PDF is intended for local publishing workflows. By default, local images are resolved relative to the Markdown file, embedded before Chromium renders the PDF, and unresolved or out-of-bound image paths are replaced with a visible blocked placeholder instead of being loaded through the document `<base>` URL. Remote `http(s)` images are blocked by default for privacy; use `--allow-remote-assets` only for trusted documents that intentionally fetch network images. Raw HTML is sanitized unless `--unsafe-html` is used, and safe `data:` image URLs are limited to common raster formats.
 
 Chromium sandboxing is configurable with `--chromium-sandbox auto|on|off`; the default `auto` keeps sandboxing enabled for normal users and disables it only when running as root in container-style environments. See [SECURITY.md](./SECURITY.md) for the full trust boundary.
 
@@ -127,7 +127,7 @@ pip install -e .[dev]
 ./scripts/check.sh
 ```
 
-The test suite covers Markdown transformation, GitHub-style features, direction handling, table of contents and outline generation, enhanced code highlighting, Mermaid SVG rendering, MathJax preservation, safe HTML, footnotes, local images, renderer options, GUI availability, Studio request errors, page-size handling, workspace persistence, and fallback warnings.
+The test suite covers Markdown transformation, GitHub-style features, direction handling, table of contents and outline generation, enhanced code highlighting, Mermaid SVG rendering, MathJax preservation, safe HTML, footnotes, local and remote image boundaries, renderer options, GUI availability, Studio option validation, page-size handling, wide-table print fitting, workspace persistence, deterministic example metadata, and fallback warnings.
 
 ## Contributors
 

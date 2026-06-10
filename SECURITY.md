@@ -10,9 +10,13 @@ The default renderer keeps a conservative boundary around local files:
 
 - Markdown and safe-HTML images are resolved relative to the Markdown file.
 - Absolute paths, `file:` URLs, parent-directory escapes, and unresolved local
-  image paths are not passed through to Chromium as live file reads.
+  image paths are not passed through to Chromium as live file reads. They render
+  as visible blocked placeholders instead.
 - Local images that can be embedded safely are converted to `data:` URLs before
   the print step.
+- Remote `http(s)` image assets are blocked by default for privacy and
+  reproducibility. Use `--allow-remote-assets` only for trusted documents that
+  intentionally fetch network images.
 - Raw HTML is sanitized by default, removing active content, event handlers,
   unsafe URL schemes, and non-raster `data:` image URLs.
 - `--unsafe-html` disables the raw HTML sanitizer and should be used only for

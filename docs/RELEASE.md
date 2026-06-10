@@ -26,7 +26,7 @@ MARDAS_RENDER_SMOKE=1 ./scripts/check.sh
 ./scripts/build_dist.sh
 ```
 
-Open the generated PDFs and visually check the cover, table of contents, page numbers, code blocks, formulas, Mermaid diagrams, local images, and footnotes.
+Open the generated PDFs and visually check the cover, table of contents, page numbers, code blocks, formulas, Mermaid diagrams, local images, wide tables, blocked-image placeholders, watermarks, and footnotes. The example build helper sets `SOURCE_DATE_EPOCH` by default so repeated guide builds do not churn metadata dates.
 
 ## Commit style
 

@@ -2,6 +2,21 @@
 
 All notable changes to Mardas MD2PDF are tracked here.
 
+## 1.5.7 - 2026-06-10
+
+### Fixed
+
+- Validated CLI and Studio page-size values so typos fail early instead of silently falling back to A4.
+- Added structured Studio validation for TOC depth, watermark opacity, direction, and boolean render options.
+- Blocked remote `http(s)` image assets by default, with an explicit `--allow-remote-assets` opt-in for trusted documents.
+- Replaced blocked or missing images with visible placeholders in the generated PDF.
+- Added print-fit handling for wide tables and improved theme-aware watermark layering.
+- Honored `SOURCE_DATE_EPOCH` for deterministic PDF metadata and example guide builds.
+
+### Documentation
+
+- Documented the post-audit hardening fixes, remote asset boundary, deterministic guide builds, and Studio validation errors.
+
 ## 1.5.6 - 2026-06-10
 
 ### Fixed

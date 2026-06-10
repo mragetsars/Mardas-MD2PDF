@@ -18,13 +18,13 @@ MARDAS_RENDER_SMOKE=1 ./scripts/check.sh
 
 ## Generated examples
 
-The guide PDFs in `examples/` are generated artifacts that should match the current Markdown guides. Regenerate them with:
+The guide PDFs in `examples/` are generated artifacts that should match the current Markdown guides. The helper sets a default `SOURCE_DATE_EPOCH` so PDF metadata dates stay deterministic across repeat builds. Regenerate them with:
 
 ```bash
 ./scripts/build_examples.sh
 ```
 
-Use `MARDAS_TIMEOUT_MS` when CI or a slow local machine needs a longer browser timeout:
+Override `SOURCE_DATE_EPOCH` only when a release intentionally needs a different deterministic metadata date. Use `MARDAS_TIMEOUT_MS` when CI or a slow local machine needs a longer browser timeout:
 
 ```bash
 MARDAS_TIMEOUT_MS=240000 ./scripts/build_examples.sh

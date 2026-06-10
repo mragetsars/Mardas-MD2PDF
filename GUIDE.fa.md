@@ -645,7 +645,7 @@ mrs-md2pdf-gui
 
 Studio پیش‌نویس فعلی، layout، حالت روشن/تاریک، جهت preview، عرض editor و گزینه‌های export را در local storage مرورگر نگه می‌دارد. این کار باعث می‌شود refresh ناخواسته صفحه در جلسه‌های ویرایش طولانی کمتر آزاردهنده باشد. برای پاک کردن پیش‌نویس محلی و برگشتن به حالت تمیز از **Reset State** استفاده کنید.
 
-اگر export با خطا روبه‌رو شود، Studio وضعیت HTTP و کد پایدار backend مثل `invalid_json`، `markdown_too_large` یا `render_failed` را نشان می‌دهد. اگر GUI را روی host غیرلوکال bind کنید، backend هشدار می‌دهد؛ چون کاربران قابل دسترس در شبکه می‌توانند Markdown و asset بفرستند.
+اگر export با خطا روبه‌رو شود، Studio وضعیت HTTP و کد پایدار backend مثل `invalid_json`، `invalid_page_size`، `invalid_toc_depth`، `invalid_watermark_opacity`، `markdown_too_large` یا `render_failed` را نشان می‌دهد. اگر GUI را روی host غیرلوکال bind کنید، backend هشدار می‌دهد؛ چون کاربران قابل دسترس در شبکه می‌توانند Markdown و asset بفرستند.
 
 > [!IMPORTANT]
 > پیش‌نمایش داخل GUI تقریبی است. PDF نهایی توسط backend renderer ساخته می‌شود و پردازش کامل Markdown، CSS theme، MathJax، جلد و layout چاپی Chromium روی آن اعمال می‌شود.
@@ -669,7 +669,8 @@ Studio پیش‌نویس فعلی، layout، حالت روشن/تاریک، جه
 | `--chromium-sandbox` | حالت sandbox مرورگر: `auto`، `on` یا `off`. مقدار پیش‌فرض: `auto`. |
 | `--debug-html` | ذخیره HTML میانی. |
 | `--no-cover`, `--cover-logo`, `--no-cover-logo` | تنظیم جلد. |
-| `--watermark`, `--watermark-image` | افزودن watermark متنی یا تصویری. |
+| `--watermark`, `--watermark-image` | افزودن watermark متنی یا تصویری با لایه‌بندی هماهنگ با theme. |
+| `--allow-remote-assets` | اجازه به سندهای قابل اعتماد برای بارگذاری تصویرهای remote `http(s)`. پیش‌فرض غیرفعال است. |
 | `--no-header-footer` | حذف footer چاپی. |
 | `--no-mathjax` | غیرفعال کردن MathJax. |
 | `--unsafe-html` | غیرفعال کردن sanitization برای فایل‌های قابل اعتماد. |
