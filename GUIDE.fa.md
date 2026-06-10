@@ -507,13 +507,16 @@ flowchart LR
 - برای خروجی پایدار PDF، تصویرهای محلی بهتر از تصویرهای remote هستند.
 - قبل از embed کردن، حجم تصویرها را منطقی نگه دارید.
 - مسیر تصویر را نسبت به محل فایل Markdown بنویسید.
-- مسیر تصویر را داخل پوشه همان سند نگه دارید. مسیرهای absolute، URLهای `file:`، خروج از پوشه با الگوهایی مثل `../secret.png` و fallback به current working directory به صورت پیش‌فرض embed نمی‌شوند.
+- مسیر تصویر را داخل پوشه همان سند نگه دارید. مسیرهای absolute، URLهای `file:`، خروج از پوشه با الگوهایی مثل `../secret.png` و fallback به current working directory به صورت پیش‌فرض block می‌شوند.
+- اگر یک تصویر محلی به شکل امن embed نشود، با یک placeholder شفاف جایگزین می‌شود تا Chromium آن را از طریق `<base>` سند load نکند.
 - در GUI، فایل‌ها یا پوشه تصویر را قبل از export attach کنید.
-- تصویرهای خیلی بزرگ embed نمی‌شوند و renderer برای جلوگیری از مصرف زیاد حافظه هشدار می‌دهد.
+- تصویرهای خیلی بزرگ block می‌شوند و renderer برای جلوگیری از مصرف زیاد حافظه هشدار می‌دهد.
 
 ## کد HTML امن
 
-کد HTML خام به صورت پیش‌فرض sanitize می‌شود. sanitizer عناصر مناسب سند مثل `<div>`، `<span>`، `<table>`، `<figure>` و `<img>` را نگه می‌دارد، اما محتوای فعال یا خطرناک مثل script، event handler، iframe، form، stylesheet خارجی، URLهای `file:` و URL scheme ناامن را حذف می‌کند.
+کد HTML خام به صورت پیش‌فرض sanitize می‌شود. sanitizer عناصر مناسب سند مثل `<div>`، `<span>`، `<table>`، `<figure>` و `<img>` را نگه می‌دارد، اما محتوای فعال یا خطرناک مثل script، event handler، iframe، form، stylesheet خارجی، URLهای `file:`، URL scheme ناامن و `data:` imageهای غیر-raster را حذف می‌کند.
+
+`data:` image امن فقط برای formatهای raster رایج مثل PNG، JPEG، GIF، WebP، BMP و AVIF مجاز است. data URL از نوع SVG در HTML امن block می‌شود؛ برای نمودارها بهتر است از فایل محلی قابل اعتماد یا بلوک Mermaid استفاده کنید.
 
 غیرفعال کردن sanitizer فقط برای فایل‌های قابل اعتماد:
 
@@ -522,6 +525,23 @@ mrs-md2pdf input.md -o output.pdf --unsafe-html
 ```
 
 <div class="md2pdf-page-break"></div>
+
+
+# امنیت و ورودی‌های قابل اعتماد
+
+Mardas MD2PDF یک ابزار انتشار محلی است. فایل Markdown، assetهای attach شده در GUI، لوگوی جلد، watermark و HTML خام را محتوای نویسنده و قابل اعتماد در نظر بگیرید؛ مگر اینکه renderer را داخل محیط جداشده اجرا کنید.
+
+رندر پیش‌فرض یک مرز محافظه‌کارانه برای فایل‌ها نگه می‌دارد: تصویرهای محلی نسبت به محل فایل Markdown resolve می‌شوند، اگر امن باشند به `data:` URL تبدیل می‌شوند و اگر به بیرون از پوشه سند اشاره کنند یا قابل embed نباشند block می‌شوند. HTML خام هم به صورت پیش‌فرض sanitize می‌شود، مگر اینکه `--unsafe-html` را فعال کنید.
+
+حالت sandbox کرومیوم با `--chromium-sandbox` کنترل می‌شود:
+
+| حالت | رفتار |
+| :--- | :--- |
+| `auto` | برای کاربر عادی sandbox را روشن نگه می‌دارد و فقط هنگام اجرای root آن را خاموش می‌کند. |
+| `on` | همیشه sandbox کرومیوم را درخواست می‌کند. |
+| `off` | گزینه `--no-sandbox` را به Chromium می‌دهد؛ فقط در containerهای قابل اعتماد یا CI جداشده استفاده شود. |
+
+برای سندهای نامطمئن، خروجی را داخل container یا محیط disposable بسازید و `--unsafe-html` را خاموش نگه دارید. جزئیات کامل در `SECURITY.md` آمده است.
 
 # صفحه‌بندی و Layout
 
@@ -635,6 +655,7 @@ mrs-md2pdf-gui
 | `--margin-top`, `--margin-bottom`, `--margin-x` | کنترل margin صفحه. |
 | `--font-dir` | مسیر فونت‌های محلی Vazirmatn. |
 | `--chromium-path` | مسیر سفارشی Chromium یا Chrome. |
+| `--chromium-sandbox` | حالت sandbox مرورگر: `auto`، `on` یا `off`. مقدار پیش‌فرض: `auto`. |
 | `--debug-html` | ذخیره HTML میانی. |
 | `--no-cover`, `--cover-logo`, `--no-cover-logo` | تنظیم جلد. |
 | `--watermark`, `--watermark-image` | افزودن watermark متنی یا تصویری. |
@@ -705,7 +726,7 @@ mrs-md2pdf input.md -o output.pdf --font-dir ./fonts
 
 ## تصویرها دیده نمی‌شوند
 
-مطمئن شوید مسیر تصویرها نسبت به فایل Markdown درست است و داخل پوشه همان سند باقی می‌ماند. مسیرهای absolute، URLهای `file:` و خروج از پوشه با `..` به جای embed شدن، به شکل لینک باقی می‌مانند. اگر از GUI استفاده می‌کنید، فایل‌ها یا پوشه‌های تصویر را قبل از خروجی گرفتن attach کنید. تصویرهای خیلی بزرگ embed نمی‌شوند و هشدار تولید می‌کنند.
+مطمئن شوید مسیر تصویرها نسبت به فایل Markdown درست است و داخل پوشه همان سند باقی می‌ماند. مسیرهای absolute، URLهای `file:`، خروج از پوشه با `..`، فایل‌های گم‌شده و تصویرهای خیلی بزرگ با placeholder امن جایگزین می‌شوند تا Chromium آن‌ها را از فایل‌سیستم load نکند. اگر از GUI استفاده می‌کنید، فایل‌ها یا پوشه‌های تصویر را قبل از خروجی گرفتن attach کنید و هشدارهای renderer را بررسی کنید.
 
 ## فرمول‌ها به شکل TeX خام دیده می‌شوند
 

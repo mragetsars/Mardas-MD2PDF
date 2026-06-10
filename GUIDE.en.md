@@ -595,13 +595,16 @@ Safe raw HTML images can also be used when explicit sizing is needed:
 - Prefer local images for stable PDF output.
 - Keep images reasonably sized before embedding them.
 - Use paths relative to the Markdown file.
-- Keep image paths inside the Markdown document directory. Absolute paths, `file:` URLs, parent-directory escapes such as `../secret.png`, and current-working-directory fallbacks are ignored by default.
+- Keep image paths inside the Markdown document directory. Absolute paths, `file:` URLs, parent-directory escapes such as `../secret.png`, and current-working-directory fallbacks are blocked by default.
+- If a local image cannot be embedded safely, it is replaced with a transparent blocked placeholder so Chromium does not load it through the document `<base>` URL.
 - In the GUI, attach local image files or image folders before exporting.
-- Very large images are left as links and a warning is printed to avoid excessive memory usage.
+- Very large images are blocked and a warning is printed to avoid excessive memory usage.
 
 ## Safe HTML
 
-Raw HTML is sanitized by default. The sanitizer keeps document-oriented elements such as `<div>`, `<span>`, `<table>`, `<figure>`, and `<img>`, while removing active or unsafe content such as scripts, event handlers, iframes, forms, remote stylesheets, `file:` URLs, and unsafe URL schemes.
+Raw HTML is sanitized by default. The sanitizer keeps document-oriented elements such as `<div>`, `<span>`, `<table>`, `<figure>`, and `<img>`, while removing active or unsafe content such as scripts, event handlers, iframes, forms, remote stylesheets, `file:` URLs, unsafe URL schemes, and non-raster `data:` image URLs.
+
+Safe `data:` images are limited to common raster formats such as PNG, JPEG, GIF, WebP, BMP, and AVIF. Inline SVG data URLs are blocked in safe HTML; use a local SVG/PNG file you trust or a Mermaid block for diagrams.
 
 Use unsafe HTML only for trusted local files:
 
@@ -610,6 +613,23 @@ mrs-md2pdf input.md -o output.pdf --unsafe-html
 ```
 
 <div class="md2pdf-page-break"></div>
+
+
+# Security and Trusted Inputs
+
+Mardas MD2PDF is a local publishing tool. Treat Markdown, GUI attachments, cover logos, watermarks, and raw HTML as trusted author content unless you run the converter inside an isolated environment.
+
+Default rendering keeps a conservative file boundary: local images are resolved relative to the Markdown file, embedded as `data:` URLs when safe, and blocked when they point outside the document directory or cannot be embedded. Raw HTML is sanitized unless `--unsafe-html` is used.
+
+Chromium sandboxing is controlled by `--chromium-sandbox`:
+
+| Mode | Behavior |
+| :--- | :--- |
+| `auto` | Keep sandboxing on for normal users; disable only when running as root. |
+| `on` | Always request Chromium sandboxing. |
+| `off` | Pass `--no-sandbox`; use only in trusted containers or isolated CI jobs. |
+
+For untrusted documents, render in a container or disposable environment and keep `--unsafe-html` off. See `SECURITY.md` for the full policy.
 
 # Page Flow and Layout
 
@@ -723,6 +743,7 @@ The GUI is useful for users who prefer a visual workflow:
 | `--margin-top`, `--margin-bottom`, `--margin-x` | Control page margins. |
 | `--font-dir` | Directory containing local Vazirmatn font files. |
 | `--chromium-path` | Custom Chromium or Chrome executable path. |
+| `--chromium-sandbox` | Chromium sandbox mode: `auto`, `on`, or `off`. Default: `auto`. |
 | `--debug-html` | Save the intermediate HTML. |
 | `--no-cover`, `--cover-logo`, `--no-cover-logo` | Configure the cover. |
 | `--watermark`, `--watermark-image` | Add text or image watermarks. |
@@ -793,7 +814,7 @@ If the directory is missing or does not contain recognized font files, the rende
 
 ## Images do not appear
 
-Check that image paths are relative to the Markdown file and stay inside the Markdown document directory. Absolute paths, `file:` URLs, and parent-directory escapes are left as links instead of being embedded. If you use the GUI, attach the local images or folders before export. Very large images are not embedded and produce a warning.
+Check that image paths are relative to the Markdown file and stay inside the Markdown document directory. Absolute paths, `file:` URLs, parent-directory escapes, missing files, and very large files are replaced with a blocked placeholder instead of being loaded by Chromium. If you use the GUI, attach the local images or folders before export and check renderer warnings.
 
 ## Math appears as raw TeX
 

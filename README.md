@@ -45,6 +45,7 @@ The README is intentionally short and is meant to introduce the project. Complet
 - [راهنمای فارسی](./GUIDE.fa.md)
 - [Changelog](./CHANGELOG.md)
 - [Release checklist](./docs/RELEASE.md)
+- [Security policy](./SECURITY.md)
 
 Generated PDF versions of the guides are available in the [`examples/`](./examples/) directory.
 
@@ -107,6 +108,13 @@ examples/
 ```
 
 These files are intended to show the real PDF output produced by the current documentation.
+
+
+## Security Model
+
+Mardas MD2PDF is intended for local publishing workflows. By default, local images are resolved relative to the Markdown file, embedded before Chromium renders the PDF, and unresolved local image paths are replaced with a transparent blocked placeholder instead of being loaded through the document `<base>` URL. Raw HTML is sanitized unless `--unsafe-html` is used, and safe `data:` image URLs are limited to common raster formats.
+
+Chromium sandboxing is configurable with `--chromium-sandbox auto|on|off`; the default `auto` keeps sandboxing enabled for normal users and disables it only when running as root in container-style environments. See [SECURITY.md](./SECURITY.md) for the full trust boundary.
 
 ## Testing
 
