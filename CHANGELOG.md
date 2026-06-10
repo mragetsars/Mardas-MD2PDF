@@ -2,6 +2,18 @@
 
 All notable changes to Mardas MD2PDF are tracked here.
 
+## 1.5.4 - 2026-06-10
+
+### Added
+
+- Added reusable maintenance scripts for local checks, guide PDF generation, and Python distribution builds.
+- Added a release artifact workflow for tagged builds that uploads Python distributions and regenerated guide PDFs.
+- Added release metadata tests to keep version strings, guide metadata, changelog entries, and maintenance scripts in sync.
+
+### Documentation
+
+- Documented the maintenance workflow and updated the release checklist to use the shared scripts.
+
 ## 1.5.3 - 2026-06-10
 
 ### Fixed
