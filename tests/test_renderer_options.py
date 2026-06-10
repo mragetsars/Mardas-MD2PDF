@@ -384,3 +384,38 @@ def test_cli_lists_appearance_choices_without_input(capsys):
     assert "Modes" in modes_output
     assert "light" in modes_output
     assert "dark" in modes_output
+
+
+def test_dark_appearance_css_uses_style_specific_surfaces():
+    from mardas_md2pdf.appearance import palette_css
+
+    modern = palette_css("blue", "dark", "modern")
+    github = palette_css("blue", "dark", "github")
+    textbook = palette_css("blue", "dark", "textbook")
+    academic = palette_css("blue", "dark", "academic")
+
+    assert "background: #0b1020 !important" in modern
+    assert "background: #0d1117 !important" in github
+    assert "background: #050505 !important" in textbook
+    assert "background: #1c1917 !important" in academic
+    assert modern != github != textbook != academic
+
+
+def test_dark_appearance_css_overrides_full_bleed_cover_background():
+    from mardas_md2pdf.appearance import palette_css
+
+    css = palette_css("emerald", "dark", "textbook")
+
+    assert "body.md2pdf-mode-dark.md2pdf-cover-full-bleed .md2pdf-cover" in css
+    assert "linear-gradient(180deg, #050505 0%, #101010 100%) !important" in css
+    assert "var(--accent)" in css
+
+
+def test_light_appearance_css_tints_cover_with_palette():
+    from mardas_md2pdf.appearance import palette_css
+
+    css = palette_css("rose", "light", "modern")
+
+    assert "body.md2pdf-palette-rose:not(.md2pdf-mode-dark) .md2pdf-cover" in css
+    assert "color-mix(in srgb, var(--accent) 14%" in css
+    assert "--accent: #e11d48" in css

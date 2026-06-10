@@ -1004,7 +1004,7 @@ def build_html(
     appearance = _resolved_appearance(result.metadata, options)
     options = replace(options, style=appearance.style, palette=appearance.palette, mode=appearance.mode)
     style_css = _style_css(appearance)
-    appearance_css = palette_css(appearance.palette, appearance.mode)
+    appearance_css = palette_css(appearance.palette, appearance.mode, appearance.style)
     font_faces = _font_faces(options.font_dir)
     metadata = result.metadata
     title = options.title or _stringify_metadata_value(metadata.get("title")) or result.title

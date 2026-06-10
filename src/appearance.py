@@ -209,36 +209,93 @@ def appearance_body_classes(appearance: Appearance) -> str:
     )
 
 
-def palette_css(palette_name: str, mode_name: str) -> str:
-    appearance = resolve_appearance(palette=palette_name, mode=mode_name)
-    colors = PALETTES[appearance.palette]
-    dark_css = ""
-    if appearance.mode == "dark":
-        dark_css = """
-@page { background: #0b1020; }
-html {
-  background: #0b1020 !important;
-  color: #e5e7eb !important;
+DARK_STYLE_SURFACES: dict[str, dict[str, str]] = {
+    "modern": {
+        "page": "#0b1020",
+        "surface": "#0b1020",
+        "panel": "#111827",
+        "panel_alt": "#0f172a",
+        "panel_soft": "#182235",
+        "code": "#020617",
+        "line": "#334155",
+        "line_strong": "#475569",
+        "ink": "#e5e7eb",
+        "heading": "#f8fafc",
+        "muted": "#a1a1aa",
+        "cover_end": "#111827",
+    },
+    "github": {
+        "page": "#0d1117",
+        "surface": "#0d1117",
+        "panel": "#161b22",
+        "panel_alt": "#111827",
+        "panel_soft": "#1f2937",
+        "code": "#0d1117",
+        "line": "#30363d",
+        "line_strong": "#484f58",
+        "ink": "#c9d1d9",
+        "heading": "#f0f6fc",
+        "muted": "#8b949e",
+        "cover_end": "#161b22",
+    },
+    "textbook": {
+        "page": "#050505",
+        "surface": "#050505",
+        "panel": "#101010",
+        "panel_alt": "#0a0a0a",
+        "panel_soft": "#171717",
+        "code": "#0a0a0a",
+        "line": "#343434",
+        "line_strong": "#5a5a5a",
+        "ink": "#e5e5e5",
+        "heading": "#ffffff",
+        "muted": "#a3a3a3",
+        "cover_end": "#101010",
+    },
+    "academic": {
+        "page": "#1c1917",
+        "surface": "#1c1917",
+        "panel": "#292524",
+        "panel_alt": "#211d1b",
+        "panel_soft": "#332c29",
+        "code": "#151210",
+        "line": "#57534e",
+        "line_strong": "#78716c",
+        "ink": "#e7e5e4",
+        "heading": "#fafaf9",
+        "muted": "#a8a29e",
+        "cover_end": "#292524",
+    },
 }
-body.md2pdf-mode-dark {
-  --ink: #e5e7eb;
-  --muted: #a1a1aa;
-  --soft: #111827;
-  --softer: #0f172a;
-  --line: #334155;
-  --line-strong: #475569;
-  --accent-soft: color-mix(in srgb, var(--accent) 18%, #020617);
-  --quote: #111827;
-  --code-bg: #020617;
-  --code-ink: #e5e7eb;
-  background: #0b1020 !important;
+
+
+def _dark_mode_css(appearance: Appearance) -> str:
+    surface = DARK_STYLE_SURFACES.get(appearance.style, DARK_STYLE_SURFACES[DEFAULT_STYLE])
+    return f"""
+@page {{ background: {surface['page']}; }}
+html {{
+  background: {surface['page']} !important;
+  color: {surface['ink']} !important;
+}}
+body.md2pdf-mode-dark {{
+  --ink: {surface['ink']};
+  --muted: {surface['muted']};
+  --soft: {surface['panel']};
+  --softer: {surface['panel_alt']};
+  --line: {surface['line']};
+  --line-strong: {surface['line_strong']};
+  --accent-soft: color-mix(in srgb, var(--accent) 18%, {surface['code']});
+  --quote: {surface['panel']};
+  --code-bg: {surface['code']};
+  --code-ink: {surface['ink']};
+  background: {surface['page']} !important;
   color: var(--ink) !important;
-}
+}}
 body.md2pdf-mode-dark .md2pdf-document,
-body.md2pdf-mode-dark .md2pdf-article {
-  background: transparent !important;
+body.md2pdf-mode-dark .md2pdf-article {{
+  background: {surface['surface']} !important;
   color: var(--ink) !important;
-}
+}}
 body.md2pdf-mode-dark h1,
 body.md2pdf-mode-dark h2,
 body.md2pdf-mode-dark h3,
@@ -246,63 +303,112 @@ body.md2pdf-mode-dark h4,
 body.md2pdf-mode-dark h5,
 body.md2pdf-mode-dark h6,
 body.md2pdf-mode-dark .md2pdf-cover h1,
-body.md2pdf-mode-dark strong { color: #f8fafc !important; }
+body.md2pdf-mode-dark strong {{ color: {surface['heading']} !important; }}
 body.md2pdf-mode-dark p,
 body.md2pdf-mode-dark li,
-body.md2pdf-mode-dark td { color: var(--ink) !important; }
-body.md2pdf-mode-dark table { background: #0f172a !important; color: var(--ink) !important; }
-body.md2pdf-mode-dark th { background: #111827 !important; color: #f8fafc !important; }
+body.md2pdf-mode-dark td {{ color: var(--ink) !important; }}
+body.md2pdf-mode-dark table {{ background: {surface['panel_alt']} !important; color: var(--ink) !important; }}
+body.md2pdf-mode-dark th {{ background: {surface['panel']} !important; color: {surface['heading']} !important; }}
 body.md2pdf-mode-dark td,
-body.md2pdf-mode-dark th { border-bottom-color: var(--line) !important; }
-body.md2pdf-mode-dark tbody tr:nth-child(even) td { background: #111827 !important; }
+body.md2pdf-mode-dark th {{ border-bottom-color: var(--line) !important; }}
+body.md2pdf-mode-dark tbody tr:nth-child(even) td {{ background: {surface['panel']} !important; }}
 body.md2pdf-mode-dark blockquote,
 body.md2pdf-mode-dark .callout,
 body.md2pdf-mode-dark .md2pdf-details,
-body.md2pdf-mode-dark .mermaid-diagram {
-  background: #111827 !important;
+body.md2pdf-mode-dark .mermaid-diagram {{
+  background: {surface['panel']} !important;
   border-color: var(--line) !important;
   color: var(--ink) !important;
-}
+}}
 body.md2pdf-mode-dark .md2pdf-cover__summary,
+body.md2pdf-mode-dark .md2pdf-cover__subtitle,
+body.md2pdf-mode-dark .md2pdf-cover__detail span,
 body.md2pdf-mode-dark em,
 body.md2pdf-mode-dark small,
 body.md2pdf-mode-dark .footnotes,
-body.md2pdf-mode-dark .footnote-backref { color: var(--muted) !important; }
-body.md2pdf-mode-dark :not(pre) > code {
-  background: #111827 !important;
+body.md2pdf-mode-dark .footnote-backref {{ color: var(--muted) !important; }}
+body.md2pdf-mode-dark :not(pre) > code {{
+  background: {surface['panel']} !important;
   border-color: var(--line) !important;
-  color: #f8fafc !important;
-}
+  color: {surface['heading']} !important;
+}}
 body.md2pdf-mode-dark .code-block,
 body.md2pdf-mode-dark .codehilite,
 body.md2pdf-mode-dark .highlight,
-body.md2pdf-mode-dark pre {
-  background: #020617 !important;
-  color: #f8fafc !important;
+body.md2pdf-mode-dark pre {{
+  background: {surface['code']} !important;
+  color: {surface['heading']} !important;
   border-color: var(--line) !important;
-}
-body.md2pdf-mode-dark .code-block figcaption {
-  background: #111827 !important;
-  color: #e5e7eb !important;
+}}
+body.md2pdf-mode-dark .code-block figcaption {{
+  background: {surface['panel']} !important;
+  color: {surface['heading']} !important;
   border-bottom-color: var(--line) !important;
-}
+}}
 body.md2pdf-mode-dark .md2pdf-toc,
-body.md2pdf-mode-dark .md2pdf-toc h2 { color: #f8fafc !important; }
-body.md2pdf-mode-dark .md2pdf-toc a {
+body.md2pdf-mode-dark .md2pdf-toc h2 {{ color: {surface['heading']} !important; }}
+body.md2pdf-mode-dark .md2pdf-toc a {{
   background: transparent !important;
   color: var(--accent) !important;
-}
-body.md2pdf-mode-dark .md2pdf-toc li > ol { border-inline-start-color: var(--line) !important; }
-body.md2pdf-mode-dark .md2pdf-toc .toc-number { color: #e5e7eb !important; }
-body.md2pdf-mode-dark .md2pdf-watermark { mix-blend-mode: screen; }
-body.md2pdf-mode-dark .md2pdf-watermark--text { color: #f8fafc; }
-body.md2pdf-mode-dark .md2pdf-watermark--image img { filter: invert(1) grayscale(1); }
+}}
+body.md2pdf-mode-dark .md2pdf-toc li > ol {{ border-inline-start-color: var(--line) !important; }}
+body.md2pdf-mode-dark .md2pdf-toc .toc-number {{ color: {surface['ink']} !important; }}
+body.md2pdf-mode-dark .table-wrap,
+body.md2pdf-mode-dark .code-block {{ box-shadow: none !important; }}
+body.md2pdf-mode-dark .md2pdf-cover-full-bleed .md2pdf-document,
+body.md2pdf-mode-dark .md2pdf-cover-full-bleed .md2pdf-article {{ background: {surface['page']} !important; }}
+body.md2pdf-mode-dark .md2pdf-cover,
+body.md2pdf-mode-dark.md2pdf-cover-full-bleed .md2pdf-cover {{
+  background:
+    radial-gradient(circle at 5% 5%, color-mix(in srgb, var(--accent) 24%, transparent), transparent 28%),
+    radial-gradient(circle at 92% 88%, color-mix(in srgb, var(--accent-2) 18%, transparent), transparent 31%),
+    radial-gradient(circle at 72% 20%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 30%),
+    linear-gradient(180deg, {surface['page']} 0%, {surface['cover_end']} 100%) !important;
+  color: var(--ink) !important;
+  border-bottom-color: var(--line) !important;
+}}
+body.md2pdf-mode-dark .md2pdf-cover__decor--one {{ border-color: color-mix(in srgb, var(--accent) 35%, transparent) !important; }}
+body.md2pdf-mode-dark .md2pdf-cover__decor--two {{ background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 18%, transparent), color-mix(in srgb, var(--accent-2) 15%, transparent)) !important; }}
+body.md2pdf-mode-dark .md2pdf-cover__brand {{
+  background: color-mix(in srgb, {surface['panel']} 82%, transparent) !important;
+  border-color: var(--line) !important;
+  color: var(--ink) !important;
+}}
+body.md2pdf-mode-dark .md2pdf-cover__mark {{ background: linear-gradient(135deg, var(--accent), var(--accent-2)) !important; }}
+body.md2pdf-mode-dark .md2pdf-cover__brand-copy strong {{ color: {surface['heading']} !important; }}
+body.md2pdf-mode-dark .md2pdf-cover__brand-copy em {{ color: var(--muted) !important; }}
+body.md2pdf-mode-dark .md2pdf-cover__release {{
+  background: color-mix(in srgb, var(--accent) 18%, {surface['panel']}) !important;
+  border-color: color-mix(in srgb, var(--accent) 35%, {surface['line']}) !important;
+  color: {surface['heading']} !important;
+}}
+body.md2pdf-mode-dark .md2pdf-cover__eyebrow {{
+  color: var(--accent) !important;
+  background: color-mix(in srgb, var(--accent) 14%, {surface['panel']}) !important;
+  border-color: color-mix(in srgb, var(--accent) 30%, {surface['line']}) !important;
+}}
+body.md2pdf-mode-dark .md2pdf-cover__summary {{ border-top-color: var(--line) !important; }}
+body.md2pdf-mode-dark .md2pdf-cover__detail {{
+  background: color-mix(in srgb, {surface['panel']} 82%, transparent) !important;
+  border-color: var(--line) !important;
+}}
+body.md2pdf-mode-dark .md2pdf-cover__detail strong {{ color: {surface['heading']} !important; }}
+body.md2pdf-mode-dark .md2pdf-watermark {{ mix-blend-mode: screen; }}
+body.md2pdf-mode-dark .md2pdf-watermark--text {{ color: {surface['heading']}; }}
+body.md2pdf-mode-dark .md2pdf-watermark--image img {{ filter: invert(1) grayscale(1); }}
 """
+
+
+def palette_css(palette_name: str, mode_name: str, style_name: str | None = None) -> str:
+    appearance = resolve_appearance(palette=palette_name, mode=mode_name, style=style_name)
+    colors = PALETTES[appearance.palette]
+    dark_css = _dark_mode_css(appearance) if appearance.mode == "dark" else ""
     return f"""
 :root {{
   --accent: {colors['accent']};
   --accent-2: {colors['accent_2']};
   --accent-soft: {colors['accent_soft']};
+  --accent-line: {colors['accent_line']};
   --quote: {colors['quote']};
   --blue: {colors['accent']};
   --blue-soft: {colors['accent_soft']};
@@ -315,5 +421,16 @@ body.md2pdf-palette-{appearance.palette} li::marker {{ color: var(--accent); }}
 body.md2pdf-palette-{appearance.palette} .md2pdf-cover__eyebrow,
 body.md2pdf-palette-{appearance.palette} .md2pdf-summary,
 body.md2pdf-palette-{appearance.palette} .footnote-marker {{ color: var(--accent); }}
+body.md2pdf-palette-{appearance.palette}:not(.md2pdf-mode-dark) .md2pdf-cover-full-bleed .md2pdf-cover,
+body.md2pdf-palette-{appearance.palette}:not(.md2pdf-mode-dark) .md2pdf-cover {{
+  background:
+    radial-gradient(circle at 4% 5%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 28%),
+    radial-gradient(circle at 94% 88%, color-mix(in srgb, var(--accent-2) 10%, transparent), transparent 31%),
+    radial-gradient(circle at 72% 20%, color-mix(in srgb, var(--accent) 7%, transparent), transparent 30%),
+    linear-gradient(180deg, #ffffff 0%, color-mix(in srgb, var(--accent-soft) 34%, #f8fafc) 100%);
+}}
+body.md2pdf-palette-{appearance.palette}:not(.md2pdf-mode-dark) .md2pdf-cover__decor--one {{ border-color: color-mix(in srgb, var(--accent) 26%, transparent); }}
+body.md2pdf-palette-{appearance.palette}:not(.md2pdf-mode-dark) .md2pdf-cover__decor--two {{ background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 13%, transparent), color-mix(in srgb, var(--accent-2) 10%, transparent)); }}
+body.md2pdf-palette-{appearance.palette}:not(.md2pdf-mode-dark) .md2pdf-cover__mark {{ background: linear-gradient(135deg, #0f172a, var(--accent)); }}
 {dark_css}
 """
