@@ -961,15 +961,20 @@ def _is_local_image_reference(src: str) -> bool:
     return True
 
 
-def _block_unembedded_local_image(img: Tag, src: str) -> None:
-    """Prevent Chromium from resolving a local image that was not embedded."""
+def _is_remote_image_reference(src: str) -> bool:
+    return urlparse(src.strip()).scheme.lower() in {"http", "https"}
+
+
+def _block_image_reference(img: Tag, src: str, *, reason: str) -> None:
+    """Prevent Chromium from resolving an image source outside the asset boundary."""
     img["src"] = TRANSPARENT_IMAGE_DATA_URI
     img["data-md2pdf-blocked-src"] = src
+    img["data-md2pdf-blocked-reason"] = reason
     img["class"] = list(set(img.get("class", []) + ["md2pdf-image", "md2pdf-image--blocked"]))
 
 
-def embed_local_images(body_html: str, base_dir: str | Path) -> str:
-    """Inline document-local images and block unresolved local file reads.
+def embed_local_images(body_html: str, base_dir: str | Path, *, allow_remote_images: bool = False) -> str:
+    """Inline document-local images and block unsafe unresolved image reads.
 
     Chromium can render relative image paths when every asset is present beside
     the Markdown file. In practice, reports are often copied without their
@@ -981,7 +986,8 @@ def embed_local_images(body_html: str, base_dir: str | Path) -> str:
     If a local image source cannot be embedded safely, it is replaced with a
     transparent placeholder. This keeps the renderer from falling back to the
     document ``<base>`` URL and reading parent-directory or absolute paths during
-    Chromium's print step. Remote URLs and existing data URIs are left unchanged.
+    Chromium's print step. Remote URLs are blocked by default for privacy and can
+    be allowed explicitly by trusted callers. Existing data URIs are left unchanged.
     """
     soup = BeautifulSoup(body_html, "html.parser")
     root = Path(base_dir)
@@ -1000,7 +1006,9 @@ def embed_local_images(body_html: str, base_dir: str | Path) -> str:
             embedded = True
             break
         if not embedded and _is_local_image_reference(src):
-            _block_unembedded_local_image(img, src)
+            _block_image_reference(img, src, reason="local")
+        elif not allow_remote_images and _is_remote_image_reference(src):
+            _block_image_reference(img, src, reason="remote")
     return str(soup)
 
 
@@ -1263,6 +1271,7 @@ def render_markdown(
     toc_depth: int = 6,
     code_style: str = "github-dark",
     unsafe_html: bool = False,
+    allow_remote_images: bool = False,
 ) -> MarkdownRenderResult:
     metadata, markdown_body = extract_frontmatter(markdown)
     title = guess_title(markdown_body, metadata)
@@ -1337,6 +1346,7 @@ def render_markdown_file(
     toc_depth: int = 6,
     code_style: str = "github-dark",
     unsafe_html: bool = False,
+    allow_remote_images: bool = False,
 ) -> MarkdownRenderResult:
     input_path = Path(path)
     text = input_path.read_text(encoding="utf-8")
@@ -1347,5 +1357,9 @@ def render_markdown_file(
         code_style=code_style,
         unsafe_html=unsafe_html,
     )
-    result.body_html = embed_local_images(result.body_html, input_path.resolve().parent)
+    result.body_html = embed_local_images(
+        result.body_html,
+        input_path.resolve().parent,
+        allow_remote_images=allow_remote_images,
+    )
     return result

@@ -578,3 +578,29 @@ def test_wide_mermaid_flowchart_gets_print_scaling_class():
 
     assert "mermaid-diagram--rendered" in result.body_html
     assert "mermaid-diagram--wide" in result.body_html
+
+
+
+def test_render_markdown_file_blocks_remote_images_by_default(tmp_path):
+    from mardas_md2pdf.markdown import render_markdown_file
+
+    input_path = tmp_path / "remote.md"
+    input_path.write_text("![Remote](https://example.com/image.png)\n", encoding="utf-8")
+
+    result = render_markdown_file(input_path)
+
+    assert "https://example.com/image.png" in result.body_html
+    assert "data-md2pdf-blocked-reason=\"remote\"" in result.body_html
+    assert "data:image/gif;base64" in result.body_html
+
+
+def test_render_markdown_file_can_allow_remote_images(tmp_path):
+    from mardas_md2pdf.markdown import render_markdown_file
+
+    input_path = tmp_path / "remote.md"
+    input_path.write_text("![Remote](https://example.com/image.png)\n", encoding="utf-8")
+
+    result = render_markdown_file(input_path, allow_remote_images=True)
+
+    assert 'src="https://example.com/image.png"' in result.body_html
+    assert "data-md2pdf-blocked-reason" not in result.body_html

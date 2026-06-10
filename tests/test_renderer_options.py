@@ -253,3 +253,13 @@ def test_cli_rejects_invalid_page_size(tmp_path):
     input_path.write_text("# Title\n", encoding="utf-8")
     with pytest.raises(SystemExit):
         main([str(input_path), "--page-size", "not-a-size"])
+
+
+
+def test_cli_exposes_remote_asset_opt_in():
+    from mardas_md2pdf.cli import build_parser
+
+    parser = build_parser()
+    action = next(action for action in parser._actions if "--allow-remote-assets" in action.option_strings)
+
+    assert action.default is False

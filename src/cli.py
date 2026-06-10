@@ -111,6 +111,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Allow raw HTML without sanitizing it first. Use only for trusted local Markdown.",
     )
+    parser.add_argument(
+        "--allow-remote-assets",
+        action="store_true",
+        help="Allow remote http(s) images to be loaded by Chromium. Disabled by default for privacy.",
+    )
     parser.add_argument("--timeout-ms", type=int, default=120_000, help="Browser timeout in milliseconds")
     parser.add_argument(
         "--progress",
@@ -181,6 +186,7 @@ def main(argv: list[str] | None = None) -> int:
         watermark_opacity=args.watermark_opacity,
         watermark_width=args.watermark_width,
         unsafe_html=args.unsafe_html,
+        allow_remote_assets=args.allow_remote_assets,
         progress=_progress_callback(args.progress),
     )
     pdf_path = convert(options)

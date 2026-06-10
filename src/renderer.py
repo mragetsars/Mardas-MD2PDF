@@ -70,6 +70,7 @@ class PdfOptions:
     watermark_opacity: float = 0.065
     watermark_width: str = "105mm"
     unsafe_html: bool = False
+    allow_remote_assets: bool = False
     progress: ProgressCallback | None = None
 
 
@@ -1356,6 +1357,7 @@ def convert(options: PdfOptions) -> Path:
         toc_depth=options.toc_depth,
         code_style=_code_style(options.theme),
         unsafe_html=options.unsafe_html,
+        allow_remote_images=options.allow_remote_assets,
     )
     _report_progress(progress, "Markdown parsed", 0.16)
 
