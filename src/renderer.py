@@ -695,6 +695,27 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
       .md2pdf-image-placeholder span {{
         display: block;
       }}
+      .table-wrap--wide table {{
+        table-layout: fixed;
+        width: 100%;
+        font-size: min(8.2pt, 0.82em);
+        line-height: 1.42;
+      }}
+      .table-wrap--wide th,
+      .table-wrap--wide td {{
+        padding: 1.4mm 1.6mm;
+        overflow-wrap: anywhere;
+        word-break: normal;
+        hyphens: auto;
+      }}
+      .table-wrap--very-wide table {{
+        font-size: min(6.8pt, 0.68em);
+        line-height: 1.32;
+      }}
+      .table-wrap--very-wide th,
+      .table-wrap--very-wide td {{
+        padding: 1mm 1.1mm;
+      }}
       .mermaid-diagram {{
         margin: 1.35em auto;
         padding: 4mm;

@@ -620,3 +620,16 @@ def test_missing_local_images_render_visible_placeholders(tmp_path):
     assert "md2pdf-image-placeholder" in result.body_html
     assert "Image blocked or missing" in result.body_html
     assert "images/missing.png" in result.body_html
+
+
+
+def test_wide_tables_get_print_fit_classes():
+    columns = "|" + "|".join(f"C{i}" for i in range(1, 13)) + "|"
+    divider = "|" + "|".join("---" for _ in range(12)) + "|"
+    values = "|" + "|".join(f"Value {i}" for i in range(1, 13)) + "|"
+
+    result = render_markdown("\n".join([columns, divider, values]))
+
+    assert "table-wrap--wide" in result.body_html
+    assert "table-wrap--very-wide" in result.body_html
+    assert 'data-md2pdf-columns="12"' in result.body_html

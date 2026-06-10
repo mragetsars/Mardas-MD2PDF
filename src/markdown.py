@@ -1113,6 +1113,22 @@ def promote_image_caption_pairs(soup: BeautifulSoup) -> None:
             figure.append(caption)
 
 
+
+
+def _table_column_count(table: Tag) -> int:
+    """Return the widest row width, honoring simple colspan values."""
+    max_columns = 0
+    for row in table.find_all("tr"):
+        columns = 0
+        for cell in row.find_all(["th", "td"], recursive=False):
+            try:
+                colspan = int(str(cell.get("colspan") or "1"))
+            except ValueError:
+                colspan = 1
+            columns += max(1, colspan)
+        max_columns = max(max_columns, columns)
+    return max_columns
+
 def postprocess_html(body_html: str, *, code_style: str = "github-dark", lang: str | None = None) -> str:
     soup = BeautifulSoup(body_html, "html.parser")
 
@@ -1142,9 +1158,17 @@ def postprocess_html(body_html: str, *, code_style: str = "github-dark", lang: s
     for table in soup.find_all("table"):
         if table.parent and getattr(table.parent, "name", None) == "div" and "table-wrap" in table.parent.get("class", []):
             continue
+        columns = _table_column_count(table)
+        classes = ["table-wrap"]
+        if columns >= 8:
+            classes.append("table-wrap--wide")
+        if columns >= 12:
+            classes.append("table-wrap--very-wide")
         wrapper = soup.new_tag("div")
-        wrapper["class"] = "table-wrap"
+        wrapper["class"] = classes
         wrapper["dir"] = "auto"
+        if columns:
+            wrapper["data-md2pdf-columns"] = str(columns)
         table.wrap(wrapper)
 
     # GitHub-style task lists.

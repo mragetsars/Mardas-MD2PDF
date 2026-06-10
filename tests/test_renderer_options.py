@@ -278,3 +278,22 @@ def test_blocked_image_placeholder_css_is_print_friendly(tmp_path):
     assert ".md2pdf-image-placeholder" in html
     assert "overflow-wrap: anywhere" in html
     assert "page-break-inside: avoid" in html
+
+
+
+def test_wide_table_css_fits_columns_for_print(tmp_path):
+    from mardas_md2pdf.markdown import render_markdown
+    from mardas_md2pdf.renderer import PdfOptions, build_html
+
+    columns = "|" + "|".join(f"C{i}" for i in range(1, 13)) + "|"
+    divider = "|" + "|".join("---" for _ in range(12)) + "|"
+    values = "|" + "|".join(f"Value {i}" for i in range(1, 13)) + "|"
+    md = "\n".join([columns, divider, values])
+    input_path = tmp_path / "wide.md"
+    input_path.write_text(md, encoding="utf-8")
+    html = build_html(render_markdown(md), PdfOptions(input_path=input_path, output_path=tmp_path / "out.pdf"))
+
+    assert ".table-wrap--wide table" in html
+    assert "table-layout: fixed" in html
+    assert ".table-wrap--very-wide table" in html
+    assert "overflow-wrap: anywhere" in html
