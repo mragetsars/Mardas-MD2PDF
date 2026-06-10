@@ -1,5 +1,5 @@
 /*
-  Mardas MD2PDF textbook theme
+  Mardas MD2PDF textbook style
   Flat, print-first styling inspired by Persian academic/course-note PDFs.
   Shadows are intentionally disabled for deterministic Chromium PDF rendering.
 */
@@ -700,6 +700,56 @@ body.md2pdf-toc-break.md2pdf-h1-break .md2pdf-toc + h1 {
 }
 .md2pdf-cover::after { display: none; }
 
+
+/* v0.6 academic serif report style overrides */
+:root {
+  --font-fa: "Vazirmatn", "Noto Naskh Arabic", "Noto Sans Arabic", "Segoe UI", Tahoma, sans-serif;
+  --font-en: "Times New Roman", "Noto Serif", Georgia, serif;
+  --ink: #171717;
+  --muted: #57534e;
+  --line: #d6d3d1;
+  --line-strong: #78716c;
+  --blue: #7c2d12;
+  --blue-soft: #fff7ed;
+  --blue-line: #c2410c;
+  --table-head: #fafaf9;
+  --radius: 3px;
+}
+body { line-height: 1.86; }
+h1 {
+  text-align: center;
+  border-bottom: 1.2px solid #78716c;
+  font-size: 19pt;
+}
+h2 { font-size: 15pt; color: #292524; }
+h3 { color: #44403c; }
+blockquote {
+  border: 1px solid #d6d3d1;
+  border-inline-start: 3px solid #7c2d12;
+  background: #fffaf5;
+}
+.callout {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+}
+.callout-title { border-bottom-color: #c2410c; }
+.md2pdf-toc a { font-family: var(--font-fa); }
+.md2pdf-toc .toc-number { color: #7c2d12; }
+.code-block { max-width: 96%; border-radius: 3px; }
+.code-block figcaption { color: #7c2d12; }
+.md2pdf-cover {
+  background:
+    linear-gradient(90deg, rgba(124, 45, 18, 0.06), transparent 30%),
+    linear-gradient(180deg, #fff 0%, #fafaf9 100%);
+}
+.md2pdf-cover__brand { border-radius: 3px; border-color: #d6d3d1; }
+.md2pdf-cover__mark { border-radius: 3px; background: #292524; }
+.md2pdf-cover__release { border-radius: 3px; background: #292524; }
+.md2pdf-cover__eyebrow { color: #7c2d12; }
+.md2pdf-cover__eyebrow::before { background: #7c2d12; }
+.md2pdf-cover h1 { text-align: right; font-size: 27pt; border: 0; }
+.md2pdf-cover__detail { border-radius: 3px; }
+
 /* v0.7 full-bleed cover refinements: circular optical logo frame */
 .md2pdf-cover-full-bleed .md2pdf-document,
 .md2pdf-cover-full-bleed .md2pdf-article {
@@ -755,19 +805,18 @@ body.md2pdf-toc-break.md2pdf-h1-break .md2pdf-toc + h1 {
   letter-spacing: -0.038em;
 }
 
-/* v1.0 neutral textbook cover palette */
+/* v1.0 warm academic cover palette */
 .md2pdf-cover-full-bleed .md2pdf-cover,
 .md2pdf-cover {
   background:
-    radial-gradient(circle at 5% 5%, rgba(107, 114, 128, 0.13), transparent 28%),
-    radial-gradient(circle at 92% 88%, rgba(156, 163, 175, 0.11), transparent 31%),
-    linear-gradient(180deg, #ffffff 0%, #f7f7f7 100%);
+    radial-gradient(circle at 5% 5%, rgba(124, 45, 18, 0.13), transparent 28%),
+    radial-gradient(circle at 92% 88%, rgba(127, 29, 29, 0.11), transparent 31%),
+    radial-gradient(circle at 70% 18%, rgba(161, 98, 7, 0.08), transparent 30%),
+    linear-gradient(180deg, #fffdf9 0%, #faf7f2 100%);
 }
-.md2pdf-cover__decor--one { border-color: rgba(107, 114, 128, 0.20); }
-.md2pdf-cover__decor--two { background: linear-gradient(135deg, rgba(107, 114, 128, 0.10), rgba(156, 163, 175, 0.10)); }
-.md2pdf-cover__eyebrow { color: #4b5563; }
-.md2pdf-cover__eyebrow::before { background: #6b7280; }
-.md2pdf-cover__mark { background: linear-gradient(135deg, #111827, #374151); }
+.md2pdf-cover__decor--one { border-color: rgba(124, 45, 18, 0.24); }
+.md2pdf-cover__decor--two { background: linear-gradient(135deg, rgba(124, 45, 18, 0.10), rgba(127, 29, 29, 0.09)); }
+.md2pdf-cover__mark { background: linear-gradient(135deg, #292524, #7c2d12); }
 .md2pdf-cover--unbranded .md2pdf-cover__top { min-height: 14mm; }
 
 /* Front-matter cover extensions */
@@ -837,3 +886,13 @@ body.md2pdf-dir-rtl .footnote-body ol {
 }
 .footnote-body li::marker { content: "• "; }
 
+
+/* v1.4.3: keep Mermaid colors aligned with the warm academic palette. */
+:root {
+  --md2pdf-mermaid-figure-bg: #fffaf5;
+  --md2pdf-mermaid-figure-border: #fed7aa;
+  --md2pdf-mermaid-caption-ink: #7c2d12;
+  --md2pdf-mermaid-stroke: #7c2d12;
+  --md2pdf-mermaid-edge-ink: #7c2d12;
+  --md2pdf-mermaid-label-halo: #fffdf9;
+}

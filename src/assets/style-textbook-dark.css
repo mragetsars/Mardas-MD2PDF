@@ -1,5 +1,5 @@
 /*
-  Mardas MD2PDF textbook theme
+  Mardas MD2PDF textbook style
   Flat, print-first styling inspired by Persian academic/course-note PDFs.
   Shadows are intentionally disabled for deterministic Chromium PDF rendering.
 */
@@ -702,7 +702,7 @@ body.md2pdf-toc-break.md2pdf-h1-break .md2pdf-toc + h1 {
 .md2pdf-cover::after { display: none; }
 
 
-/* v0.6 textbook dark theme overrides */
+/* v0.6 textbook dark style overrides */
 @page {
   size: A4;
   margin: var(--page-margin-top, 18mm) var(--page-margin-x, 18mm) var(--page-margin-bottom, 18mm);
