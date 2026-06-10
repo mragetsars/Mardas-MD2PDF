@@ -2,6 +2,18 @@
 
 All notable changes to Mardas MD2PDF are tracked here.
 
+## 1.6.1 - 2026-06-10
+
+### Fixed
+
+- Tuned dark appearance surfaces per style so `modern`, `github`, `textbook`, and `academic` keep distinct dark backgrounds instead of sharing one generic navy surface.
+- Aligned dark cover pages with their content surfaces, including the nearly black `textbook` dark output.
+- Tinted light cover decorations with the selected palette so palette changes are visible on the cover as well as content pages.
+
+### Added
+
+- Added an appearance matrix audit helper for rendering every `style × palette × mode` combination after visual-system changes.
+
 ## 1.6.0 - 2026-06-10
 
 ### Changed

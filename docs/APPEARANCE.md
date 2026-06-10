@@ -90,3 +90,19 @@ modern · blue · light
 
 The preview remains approximate; the backend renderer is still the source of
 truth for MathJax, Mermaid, cover layout, PDF outlines, and print CSS.
+
+## Visual audit workflow
+
+After changing style CSS, palette colors, or mode behavior, render the full
+appearance matrix and review both the cover and a content page:
+
+```bash
+python scripts/audit_appearance_matrix.py --output-dir build/appearance-audit --render-png
+```
+
+The matrix covers every built-in `style × palette × mode` combination.  Dark
+mode deliberately uses style-specific surfaces: `modern` stays deep navy,
+`github` follows a GitHub-like dark surface, `textbook` uses a near-black print
+surface, and `academic` uses a warm charcoal surface.  Palettes remain accent
+choices in both modes, so a dark document should keep the selected accent
+without making all styles look identical.
