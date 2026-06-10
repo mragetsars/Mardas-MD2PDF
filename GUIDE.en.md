@@ -47,7 +47,7 @@ The guide intentionally contains compact test cases for the renderer. When you r
 | Sample area | What to verify in the PDF |
 | :--- | :--- |
 | Cover and metadata | Title, subtitle, authors, summary, version, status, keywords, and language-specific labels. |
-| TOC | Nested heading numbers and links generated from Markdown headings. |
+| TOC and outline | Nested heading numbers, internal links, and PDF viewer bookmarks generated from Markdown headings. |
 | Mixed direction text | Persian/English text, inline code, and identifiers remain readable in the same paragraph. |
 | MathJax | Inline math aligns with text and display equations are centered and scaled. |
 | Code blocks | Fenced, indented, and language-less code blocks render without corrupting content. |
@@ -63,7 +63,7 @@ Mardas MD2PDF focuses on the features that matter most for polished technical PD
 | :--- | :--- |
 | Persian and English documents | `lang: fa`, `lang: en`, RTL/LTR shell direction, and mixed inline text. |
 | Cover pages | Title, subtitle, authors, summary, logo, date, version, status, keywords, and academic metadata. |
-| Table of contents | Hierarchical TOC generated from Markdown headings. |
+| Table of contents and outline | Hierarchical TOC plus PDF viewer bookmarks generated from Markdown headings. |
 | MathJax | Inline and display formulas with browser-rendered output. |
 | Code blocks | Pygments syntax highlighting for fenced and indented code blocks. |
 | Mermaid flowcharts | Offline SVG rendering for practical `flowchart` / `graph` diagrams. |
@@ -361,7 +361,7 @@ Callouts use GitHub-style markers and are translated according to the document l
 
 # GitHub-style Markdown Compatibility
 
-Version 1.5.4 standardizes the maintenance and release workflow with reusable helper scripts, release artifacts, and metadata checks while keeping the GitHub-like Markdown rendering behavior introduced in the 1.5 series.
+Version 1.5.5 improves PDF navigation by writing viewer outline bookmarks from Markdown headings and adds an optional smoke test that verifies rendered PDF metadata and outline entries.
 
 ## Rendering profiles
 
@@ -630,6 +630,12 @@ Chromium sandboxing is controlled by `--chromium-sandbox`:
 | `off` | Pass `--no-sandbox`; use only in trusted containers or isolated CI jobs. |
 
 For untrusted documents, render in a container or disposable environment and keep `--unsafe-html` off. See `SECURITY.md` for the full policy.
+
+## PDF navigation and metadata
+
+Rendered PDFs include standard document metadata from front matter and a viewer outline generated from Markdown headings. The printed table of contents remains visible in the document body, while the PDF outline gives readers a sidebar-friendly way to jump between sections in compatible PDF viewers.
+
+Use `--toc` when you also want a printed table of contents. The PDF outline is generated from the same heading collection so both navigation surfaces stay in sync.
 
 # Page Flow and Layout
 

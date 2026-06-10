@@ -8,7 +8,7 @@
 
 This repository contains **Mardas MD2PDF**, a Markdown-to-PDF publishing tool designed for clean Persian, English, and mixed-language documents.
 
-The project converts Markdown into print-ready PDF files with support for RTL/LTR direction handling, Persian-friendly typography, cover pages, tables of contents, GitHub-style Markdown features, MathJax formulas, enhanced syntax-highlighted code, Mermaid flowcharts, local images, footnotes, callouts, safe HTML, watermarks, and multiple visual profiles.
+The project converts Markdown into print-ready PDF files with support for RTL/LTR direction handling, Persian-friendly typography, cover pages, tables of contents, PDF outline bookmarks, GitHub-style Markdown features, MathJax formulas, enhanced syntax-highlighted code, Mermaid flowcharts, local images, footnotes, callouts, safe HTML, watermarks, and multiple visual profiles.
 
 The main goal of the project is to make technical Markdown documents publishable as polished PDF outputs without forcing the author to leave the Markdown workflow.
 
@@ -24,11 +24,11 @@ The system is organized around a browser-based rendering pipeline. Markdown is f
 
 ### Markdown Processing
 
-The Markdown layer handles front matter, heading collection, table of contents generation, GitHub-style task lists, alerts, autolinks, heading anchors, image captions, enhanced code blocks, Mermaid diagrams, footnotes, safe HTML, local image embedding, math protection, and direction-aware document metadata.
+The Markdown layer handles front matter, heading collection, table of contents and PDF outline generation, GitHub-style task lists, alerts, autolinks, heading anchors, image captions, enhanced code blocks, Mermaid diagrams, footnotes, safe HTML, local image embedding, math protection, and direction-aware document metadata.
 
 ### PDF Rendering
 
-The renderer builds the final printable HTML, applies the selected theme, configures page size and margins, renders MathJax when enabled, separates the cover from numbered content pages, applies optional watermarks, and exports the result through Chromium.
+The renderer builds the final printable HTML, applies the selected theme, configures page size and margins, renders MathJax when enabled, separates the cover from numbered content pages, applies optional watermarks, writes PDF metadata and bookmarks, and exports the result through Chromium.
 
 ### Interfaces
 
@@ -125,7 +125,7 @@ pip install -e .[dev]
 ./scripts/check.sh
 ```
 
-The test suite covers Markdown transformation, GitHub-style features, direction handling, table of contents generation, enhanced code highlighting, Mermaid SVG rendering, MathJax preservation, safe HTML, footnotes, local images, renderer options, GUI availability, page-size handling, and fallback warnings.
+The test suite covers Markdown transformation, GitHub-style features, direction handling, table of contents and outline generation, enhanced code highlighting, Mermaid SVG rendering, MathJax preservation, safe HTML, footnotes, local images, renderer options, GUI availability, page-size handling, and fallback warnings.
 
 ## Contributors
 
