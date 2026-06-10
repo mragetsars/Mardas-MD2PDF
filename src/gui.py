@@ -13,7 +13,8 @@ from pathlib import Path
 from typing import Any
 
 from . import __version__
-from .renderer import PdfOptions, convert, normalize_theme_name, validate_page_size
+from .appearance import validate_mode_name, validate_palette_name, validate_style_name
+from .renderer import PdfOptions, convert, validate_page_size
 
 
 MAX_GUI_REQUEST_BYTES = 32 * 1024 * 1024
@@ -149,8 +150,23 @@ def _validated_render_options(options: dict[str, Any]) -> dict[str, Any]:
     if direction not in {"", "auto", "rtl", "ltr"}:
         raise StudioRequestError("direction must be auto, rtl, or ltr.", code="invalid_direction")
 
+    try:
+        style = validate_style_name(options.get("style") or "modern")
+    except ValueError as exc:
+        raise StudioRequestError(str(exc), code="invalid_style") from exc
+    try:
+        palette = validate_palette_name(options.get("palette") or "blue")
+    except ValueError as exc:
+        raise StudioRequestError(str(exc), code="invalid_palette") from exc
+    try:
+        mode = validate_mode_name(options.get("mode") or "light")
+    except ValueError as exc:
+        raise StudioRequestError(str(exc), code="invalid_mode") from exc
+
     return {
-        "theme": normalize_theme_name(str(options.get("theme") or "modern")),
+        "style": style,
+        "palette": palette,
+        "mode": mode,
         "toc": _json_bool(options.get("toc"), default=True, code="invalid_toc", label="toc"),
         "toc_depth": _json_int_range(
             options.get("tocDepth"),
@@ -347,7 +363,9 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
                     h1_page_break=render_options["h1_page_break"],
                     page_size=render_options["page_size"],
                     document_direction=render_options["direction"],
-                    theme=render_options["theme"],
+                    style=render_options["style"],
+                    palette=render_options["palette"],
+                    mode=render_options["mode"],
                     cover=render_options["cover"],
                     watermark_text=(str(options.get("watermark") or "").strip() or None),
                     watermark_opacity=render_options["watermark_opacity"],

@@ -9,6 +9,6 @@ python -m pytest "$@"
 
 if [[ "${MARDAS_RENDER_SMOKE:-0}" == "1" ]]; then
   tmp_pdf="${TMPDIR:-/tmp}/mardas-md2pdf-smoke.pdf"
-  mrs-md2pdf GUIDE.en.md -o "$tmp_pdf" --toc --profile github --timeout-ms "${MARDAS_TIMEOUT_MS:-180000}"
+  mrs-md2pdf GUIDE.en.md -o "$tmp_pdf" --toc --style github --palette blue --mode light --timeout-ms "${MARDAS_TIMEOUT_MS:-180000}"
   test -s "$tmp_pdf"
 fi

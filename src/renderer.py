@@ -18,6 +18,17 @@ from typing import Any, Callable
 from playwright.sync_api import Page, sync_playwright
 from pypdf import PdfReader, PdfWriter
 
+from .appearance import (
+    Appearance,
+    appearance_body_classes,
+    appearance_from_metadata,
+    code_style_for_appearance,
+    footer_kind,
+    math_scale_vars,
+    palette_css,
+    resolve_appearance,
+    style_css_file,
+)
 from .markdown import MarkdownRenderResult, render_markdown_file
 
 
@@ -60,7 +71,9 @@ class PdfOptions:
     no_header_footer: bool = False
     no_mathjax: bool = False
     timeout_ms: int = 120_000
-    theme: str = "modern"
+    style: str | None = None
+    palette: str | None = None
+    mode: str | None = None
     cover: bool = True
     cover_logo: Path | None = None
     cover_logo_enabled: bool = True
@@ -137,47 +150,18 @@ def _mathjax_script() -> str:
     return ""
 
 
-THEME_FILES = {
-    "modern": "theme-modern.css",
-    "github": "theme-github.css",
-    "textbook-light": "theme-textbook-light.css",
-    "textbook-dark": "theme-textbook-dark.css",
-    "academic": "theme-academic.css",
-}
+
+def _resolved_appearance(metadata: dict[str, Any], options: PdfOptions) -> Appearance:
+    metadata_appearance = appearance_from_metadata(metadata)
+    return resolve_appearance(
+        style=options.style or metadata_appearance.style,
+        palette=options.palette or metadata_appearance.palette,
+        mode=options.mode or metadata_appearance.mode,
+    )
 
 
-def normalize_theme_name(theme_name: str | None) -> str:
-    value = (theme_name or "modern").strip().lower()
-    return value if value in THEME_FILES else "modern"
-
-
-def _theme_css(theme_name: str) -> str:
-    return _asset_text(THEME_FILES[normalize_theme_name(theme_name)])
-
-
-def _code_style(theme_name: str) -> str:
-    theme = normalize_theme_name(theme_name)
-    if theme == "textbook-dark":
-        return "bw"
-    if theme in {"github", "textbook-light", "academic"}:
-        return "friendly"
-    return "github-dark"
-
-
-def _math_scale_vars(theme_name: str) -> tuple[str, str]:
-    """Return CSS font-size scales for inline and display MathJax.
-
-    MathJax SVG dimensions are emitted in ``ex`` units. Chromium resolves those
-    units differently across the theme font stacks, so each bundled theme gets a
-    small optical correction: inline formulas align with the surrounding text,
-    while display formulas remain visibly larger and centered.
-    """
-    theme = normalize_theme_name(theme_name)
-    if theme == "academic":
-        return "70%", "105%"
-    if theme in {"textbook-light", "textbook-dark"}:
-        return "78%", "115%"
-    return "100%", "130%"
+def _style_css(appearance: Appearance) -> str:
+    return _asset_text(style_css_file(appearance.style, appearance.mode))
 
 
 def _path_uri(path: Path | None) -> str | None:
@@ -423,9 +407,9 @@ def _localized_labels(lang: str | None) -> dict[str, str]:
 def _css_page_size(value: str | None) -> str:
     """Return a safe CSS @page size value.
 
-    Playwright is asked to prefer CSS page size so the theme can control print
+    Playwright is asked to prefer CSS page size so the style can control print
     margins. Therefore the selected CLI/GUI page size must also be emitted as a
-    late CSS override; otherwise the theme-level ``@page { size: A4; }`` wins.
+    late CSS override; otherwise the style-level ``@page { size: A4; }`` wins.
     """
     try:
         return validate_page_size(value)
@@ -563,7 +547,8 @@ def _metadata_path(value: Any, base_dir: Path) -> Path | None:
 def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document_direction: str = "rtl") -> str:
     classes: list[str] = []
     doc_dir = normalize_document_direction(document_direction, default="rtl")
-    inline_math_scale, display_math_scale = _math_scale_vars(options.theme)
+    appearance = resolve_appearance(style=options.style, palette=options.palette, mode=options.mode)
+    inline_math_scale, display_math_scale = math_scale_vars(appearance.style)
     css_chunks = [
         f"""
       @page {{
@@ -633,13 +618,13 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
         z-index: 2 !important;
         mix-blend-mode: multiply;
       }}
-      body.md2pdf-theme-textbook-dark .md2pdf-watermark {{
+      body.md2pdf-style-textbook.md2pdf-mode-dark .md2pdf-watermark {{
         mix-blend-mode: screen;
       }}
-      body.md2pdf-theme-textbook-dark .md2pdf-watermark--text {{
+      body.md2pdf-style-textbook.md2pdf-mode-dark .md2pdf-watermark--text {{
         color: #f8fafc;
       }}
-      body.md2pdf-theme-textbook-dark .md2pdf-watermark--image img {{
+      body.md2pdf-style-textbook.md2pdf-mode-dark .md2pdf-watermark--image img {{
         filter: invert(1) grayscale(1);
       }}
       body.md2pdf-dir-ltr .callout {{ direction: ltr; text-align: left; }}
@@ -1016,7 +1001,10 @@ def build_html(
     include_watermark: bool = True,
     cover_full_bleed: bool = False,
 ) -> str:
-    theme = _theme_css(options.theme)
+    appearance = _resolved_appearance(result.metadata, options)
+    options = replace(options, style=appearance.style, palette=appearance.palette, mode=appearance.mode)
+    style_css = _style_css(appearance)
+    appearance_css = palette_css(appearance.palette, appearance.mode)
     font_faces = _font_faces(options.font_dir)
     metadata = result.metadata
     title = options.title or _stringify_metadata_value(metadata.get("title")) or result.title
@@ -1095,7 +1083,7 @@ def build_html(
         content = f"{result.toc_html}{result.body_html}"
     watermark = _watermark_html(options) if include_content and include_watermark else ""
 
-    theme_name = normalize_theme_name(options.theme)
+    appearance_classes = appearance_body_classes(appearance)
 
     return f"""<!doctype html>
 <html lang="{html.escape(str(lang))}" dir="{html.escape(document_direction)}">
@@ -1106,11 +1094,12 @@ def build_html(
   <title>{html.escape(str(title))}</title>
   <style>{font_faces}</style>
   <style>{result.pygments_css}</style>
-  <style>{theme}</style>
+  <style>{style_css}</style>
+  <style>{appearance_css}</style>
   <style>{css_variables}</style>
   {_mathjax_block(options)}
 </head>
-<body class="md2pdf-theme-{html.escape(theme_name)} {html.escape(body_classes)}" dir="{html.escape(document_direction)}">
+<body class="{html.escape(appearance_classes)} {html.escape(body_classes)}" dir="{html.escape(document_direction)}">
   {watermark}
   <main class="md2pdf-document">
     <article class="md2pdf-article">
@@ -1123,21 +1112,21 @@ def build_html(
 
 
 
-def _footer_template(title: str, theme_name: str = "modern") -> str:
-    theme = normalize_theme_name(theme_name)
-    if theme == "textbook-light":
+def _footer_template(title: str, style: str = "modern", mode: str = "light") -> str:
+    kind = footer_kind(style, mode)
+    if kind == "textbook-light":
         return """
     <div style="width:100%; font-size:9px; color:#374151; padding:0 18mm; font-family:Arial, sans-serif; direction:ltr; text-align:right;">
       <span class="pageNumber"></span>
     </div>
     """
-    if theme == "textbook-dark":
+    if kind == "textbook-dark":
         return """
     <div style="width:100%; font-size:9px; color:#cbd5e1; padding:0 18mm; font-family:Arial, sans-serif; direction:ltr; text-align:right;">
       <span class="pageNumber"></span>
     </div>
     """
-    if theme == "academic":
+    if kind == "academic":
         return """
     <div style="width:100%; font-size:8.5px; color:#4b5563; padding:0 18mm; font-family:Georgia, 'Times New Roman', serif; direction:ltr; text-align:center;">
       <span class="pageNumber"></span>
@@ -1192,7 +1181,7 @@ def _render_pdf(page: Page, html_text: str, options: PdfOptions, path: Path, *, 
             {
                 "display_header_footer": True,
                 "header_template": "<div></div>",
-                "footer_template": _footer_template(str(title), options.theme),
+                "footer_template": _footer_template(str(title), options.style, options.mode),
             }
         )
     page.pdf(**pdf_kwargs)
@@ -1438,7 +1427,7 @@ def convert(options: PdfOptions) -> Path:
         options.input_path,
         toc=options.toc,
         toc_depth=options.toc_depth,
-        code_style=_code_style(options.theme),
+        code_style=code_style_for_appearance(options.style, options.mode),
         unsafe_html=options.unsafe_html,
         allow_remote_images=options.allow_remote_assets,
     )

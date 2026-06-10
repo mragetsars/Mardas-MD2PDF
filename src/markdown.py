@@ -186,7 +186,7 @@ class TocItem:
 
 
 class CodeHtmlFormatter(HtmlFormatter):
-    """Pygments formatter. The style is selected by the renderer theme."""
+    """Pygments formatter. The Pygments style is selected by the resolved appearance."""
 
     def __init__(
         self,

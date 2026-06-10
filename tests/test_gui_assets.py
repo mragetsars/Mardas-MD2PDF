@@ -123,8 +123,16 @@ def test_studio_validates_render_options():
     assert options["toc_depth"] == 4
     assert options["watermark_opacity"] == 0.35
     assert options["page_size"] == "A4 landscape"
+    assert options["style"] == "modern"
+    assert options["palette"] == "blue"
+    assert options["mode"] == "light"
     assert options["toc"] is False
     assert options["cover"] is False
+
+    custom = gui._validated_render_options({"style": "textbook", "palette": "emerald", "mode": "dark"})
+    assert custom["style"] == "textbook"
+    assert custom["palette"] == "emerald"
+    assert custom["mode"] == "dark"
 
     for bad_options, code in [
         ({"tocDepth": "bad"}, "invalid_toc_depth"),
@@ -133,8 +141,26 @@ def test_studio_validates_render_options():
         ({"watermarkOpacity": 1.9}, "invalid_watermark_opacity"),
         ({"pageSize": "not-a-size"}, "invalid_page_size"),
         ({"direction": "sideways"}, "invalid_direction"),
+        ({"style": "textbook-dark"}, "invalid_style"),
+        ({"palette": "neon"}, "invalid_palette"),
+        ({"mode": "auto"}, "invalid_mode"),
     ]:
         with pytest.raises(gui.StudioRequestError) as exc_info:
             gui._validated_render_options(bad_options)
         assert exc_info.value.status == 400
         assert exc_info.value.code == code
+
+
+def test_gui_uses_appearance_controls_instead_of_theme_profile_controls():
+    html = GUI_HTML.read_text(encoding="utf-8")
+
+    assert "styleInput" in html
+    assert "paletteInput" in html
+    assert "modeInput" in html
+    assert "appearanceName" in html
+    assert "pdfThemeInput" not in html
+    assert "profileName" not in html
+    assert "--theme" not in html
+    assert "--style" in html
+    assert "--palette" in html
+    assert "--mode" in html

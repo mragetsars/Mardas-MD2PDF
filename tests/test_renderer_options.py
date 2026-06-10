@@ -120,7 +120,7 @@ def test_callout_direction_follows_resolved_document_direction(tmp_path):
     input_path.write_text(md, encoding="utf-8")
     html = build_html(
         render_markdown(md),
-        PdfOptions(input_path=input_path, output_path=tmp_path / "out.pdf", theme="textbook-light"),
+        PdfOptions(input_path=input_path, output_path=tmp_path / "out.pdf", style="textbook", mode="light"),
     )
 
     assert "md2pdf-dir-ltr" in html
@@ -129,7 +129,7 @@ def test_callout_direction_follows_resolved_document_direction(tmp_path):
     assert "body.md2pdf-dir-ltr .callout p { text-align: left; }" in html
 
 
-def test_mermaid_css_uses_theme_aware_color_variables(tmp_path):
+def test_mermaid_css_uses_appearance_color_variables(tmp_path):
     from mardas_md2pdf.markdown import render_markdown
     from mardas_md2pdf.renderer import PdfOptions, build_html
 
@@ -309,7 +309,7 @@ def test_pdf_date_honors_source_date_epoch(monkeypatch):
 
 
 
-def test_watermark_css_overlays_content_with_theme_aware_blending(tmp_path):
+def test_watermark_css_overlays_content_with_mode_aware_blending(tmp_path):
     from mardas_md2pdf.markdown import render_markdown
     from mardas_md2pdf.renderer import PdfOptions, build_html
 
@@ -317,11 +317,70 @@ def test_watermark_css_overlays_content_with_theme_aware_blending(tmp_path):
     input_path.write_text("# Watermark\n", encoding="utf-8")
     html = build_html(
         render_markdown("# Watermark\n"),
-        PdfOptions(input_path=input_path, output_path=tmp_path / "out.pdf", watermark_text="DRAFT", theme="textbook-dark"),
+        PdfOptions(input_path=input_path, output_path=tmp_path / "out.pdf", watermark_text="DRAFT", style="textbook", mode="dark"),
     )
 
     assert ".md2pdf-watermark" in html
     assert "z-index: 2 !important" in html
     assert "mix-blend-mode: multiply" in html
-    assert "body.md2pdf-theme-textbook-dark .md2pdf-watermark" in html
+    assert "body.md2pdf-style-textbook.md2pdf-mode-dark .md2pdf-watermark" in html
     assert "mix-blend-mode: screen" in html
+
+
+def test_build_html_uses_resolved_appearance_classes_and_palette_css(tmp_path):
+    from mardas_md2pdf.markdown import render_markdown
+    from mardas_md2pdf.renderer import PdfOptions, build_html
+
+    input_path = tmp_path / "appearance.md"
+    input_path.write_text("# Appearance\n", encoding="utf-8")
+    html = build_html(
+        render_markdown("# Appearance\n"),
+        PdfOptions(
+            input_path=input_path,
+            output_path=tmp_path / "out.pdf",
+            style="academic",
+            palette="emerald",
+            mode="dark",
+        ),
+    )
+
+    assert "md2pdf-style-academic" in html
+    assert "md2pdf-palette-emerald" in html
+    assert "md2pdf-mode-dark" in html
+    assert "--accent: #059669" in html
+
+
+def test_front_matter_appearance_is_used_when_cli_keeps_defaults(tmp_path):
+    from mardas_md2pdf.markdown import render_markdown
+    from mardas_md2pdf.renderer import PdfOptions, build_html
+
+    md = "---\nappearance:\n  style: textbook\n  palette: rose\n  mode: dark\n---\n\n# Title\n"
+    input_path = tmp_path / "frontmatter.md"
+    input_path.write_text(md, encoding="utf-8")
+    html = build_html(render_markdown(md), PdfOptions(input_path=input_path, output_path=tmp_path / "out.pdf"))
+
+    assert "md2pdf-style-textbook" in html
+    assert "md2pdf-palette-rose" in html
+    assert "md2pdf-mode-dark" in html
+
+
+def test_cli_lists_appearance_choices_without_input(capsys):
+    from mardas_md2pdf.cli import main
+
+    assert main(["--list-styles"]) == 0
+    styles_output = capsys.readouterr().out
+    assert "Styles" in styles_output
+    assert "modern" in styles_output
+    assert "textbook" in styles_output
+
+    assert main(["--list-palettes"]) == 0
+    palettes_output = capsys.readouterr().out
+    assert "Palettes" in palettes_output
+    assert "blue" in palettes_output
+    assert "emerald" in palettes_output
+
+    assert main(["--list-modes"]) == 0
+    modes_output = capsys.readouterr().out
+    assert "Modes" in modes_output
+    assert "light" in modes_output
+    assert "dark" in modes_output

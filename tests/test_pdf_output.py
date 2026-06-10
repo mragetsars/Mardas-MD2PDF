@@ -47,7 +47,9 @@ def test_rendered_pdf_contains_metadata_and_outline(tmp_path):
             output_path=output_path,
             toc=True,
             cover=True,
-            theme="github",
+            style="github",
+            palette="blue",
+            mode="light",
             timeout_ms=int(os.environ.get("MARDAS_TIMEOUT_MS", "180000")),
         )
     )

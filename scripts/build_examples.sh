@@ -11,11 +11,11 @@ mkdir -p examples
 mrs-md2pdf GUIDE.en.md \
   -o examples/GUIDE.en.pdf \
   --toc \
-  --profile github \
+  --style github --palette blue --mode light \
   --timeout-ms "$timeout_ms"
 
 mrs-md2pdf GUIDE.fa.md \
   -o examples/GUIDE.fa.pdf \
   --toc \
-  --profile persian-report \
+  --style modern --palette blue --mode light \
   --timeout-ms "$timeout_ms"

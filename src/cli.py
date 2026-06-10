@@ -5,6 +5,14 @@ import sys
 from pathlib import Path
 
 from . import __version__
+from .appearance import (
+    MODE_DESCRIPTIONS,
+    MODES,
+    PALETTE_DESCRIPTIONS,
+    PALETTES_ORDER,
+    STYLE_DESCRIPTIONS,
+    STYLES,
+)
 from .renderer import PdfOptions, convert, validate_page_size
 
 
@@ -43,7 +51,7 @@ def build_parser() -> argparse.ArgumentParser:
             "professional covers, hierarchical TOC, code highlighting, Mermaid flowcharts, tables, watermarking, and MathJax."
         ),
     )
-    parser.add_argument("input", type=Path, help="Input Markdown file")
+    parser.add_argument("input", nargs="?", type=Path, help="Input Markdown file")
     parser.add_argument("-o", "--output", type=Path, help="Output PDF path")
     parser.add_argument("--title", help="Override document title")
     parser.add_argument("--author", help="Override author metadata")
@@ -80,21 +88,22 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument(
-        "--profile",
-        choices=["default", "github", "academic", "persian-report", "minimal"],
-        default="default",
-        help=(
-            "Rendering profile. github targets GitHub-style Markdown; academic and persian-report "
-            "choose report-oriented defaults while keeping CLI compatibility."
-        ),
+        "--style",
+        choices=list(STYLES),
+        default="modern",
+        help="Document shape and layout style. Controls spacing, cover shape, table density, and code block form.",
     )
     parser.add_argument(
-        "--theme",
-        choices=["modern", "github", "textbook-light", "textbook-dark", "academic"],
-        default=None,
-        help=(
-            "Visual theme. If omitted, the selected profile chooses a sensible default."
-        ),
+        "--palette",
+        choices=list(PALETTES_ORDER),
+        default="blue",
+        help="Document accent color palette. Controls links, markers, cover accents, callouts, and diagram strokes.",
+    )
+    parser.add_argument(
+        "--mode",
+        choices=list(MODES),
+        default="light",
+        help="Document contrast mode: light or dark.",
     )
     parser.add_argument("--no-cover", action="store_true", help="Do not generate the automatic cover page")
     parser.add_argument("--cover-logo", type=Path, help="Logo image for the cover page. Defaults to the bundled Mardas logo")
@@ -123,14 +132,34 @@ def build_parser() -> argparse.ArgumentParser:
         default="auto",
         help="Show a terminal progress bar during PDF generation. Default: auto, only on interactive terminals.",
     )
+    parser.add_argument("--list-styles", action="store_true", help="List available appearance styles and exit")
+    parser.add_argument("--list-palettes", action="store_true", help="List available color palettes and exit")
+    parser.add_argument("--list-modes", action="store_true", help="List available light/dark modes and exit")
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     return parser
+
+
+def _print_named_choices(title: str, descriptions: dict[str, str], order: tuple[str, ...]) -> None:
+    print(title)
+    for name in order:
+        print(f"  {name:<12} {descriptions.get(name, '')}")
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+    if args.list_styles:
+        _print_named_choices("Styles", STYLE_DESCRIPTIONS, STYLES)
+        return 0
+    if args.list_palettes:
+        _print_named_choices("Palettes", PALETTE_DESCRIPTIONS, PALETTES_ORDER)
+        return 0
+    if args.list_modes:
+        _print_named_choices("Modes", MODE_DESCRIPTIONS, MODES)
+        return 0
     input_path = args.input
+    if input_path is None:
+        parser.error("input is required unless you use --list-styles, --list-palettes, or --list-modes")
     if not input_path.exists():
         parser.error(f"Input file not found: {input_path}")
     if args.cover_logo and not args.cover_logo.exists():
@@ -143,15 +172,6 @@ def main(argv: list[str] | None = None) -> int:
         page_size = validate_page_size(args.page_size)
     except ValueError as exc:
         parser.error(f"--page-size {exc}")
-
-    profile_theme_defaults = {
-        "default": "modern",
-        "github": "github",
-        "academic": "academic",
-        "persian-report": "modern",
-        "minimal": "textbook-light",
-    }
-    resolved_theme = args.theme or profile_theme_defaults[args.profile]
 
     output_path = args.output or input_path.with_suffix(".pdf")
     options = PdfOptions(
@@ -176,7 +196,9 @@ def main(argv: list[str] | None = None) -> int:
         no_header_footer=args.no_header_footer,
         no_mathjax=args.no_mathjax,
         timeout_ms=args.timeout_ms,
-        theme=resolved_theme,
+        style=args.style,
+        palette=args.palette,
+        mode=args.mode,
         cover=not args.no_cover,
         cover_logo=args.cover_logo,
         cover_logo_enabled=not args.no_cover_logo,

@@ -58,5 +58,5 @@ jobs:
 
       - name: Render guide sample
         run: |
-          mrs-md2pdf GUIDE.en.md -o /tmp/GUIDE.en.pdf --toc --profile github --timeout-ms 180000
+          mrs-md2pdf GUIDE.en.md -o /tmp/GUIDE.en.pdf --toc --style github --palette blue --mode light --timeout-ms 180000
           test -s /tmp/GUIDE.en.pdf
