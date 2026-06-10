@@ -16,6 +16,21 @@ from . import __version__
 from .renderer import PdfOptions, convert, normalize_theme_name
 
 
+MAX_GUI_REQUEST_BYTES = 32 * 1024 * 1024
+MAX_GUI_MARKDOWN_BYTES = 4 * 1024 * 1024
+MAX_GUI_ASSETS = 250
+MAX_GUI_ASSET_BYTES = 12 * 1024 * 1024
+MAX_GUI_TOTAL_ASSET_BYTES = 32 * 1024 * 1024
+
+
+def _format_bytes(size: int) -> str:
+    if size >= 1024 * 1024:
+        return f"{size / (1024 * 1024):.0f} MB"
+    if size >= 1024:
+        return f"{size / 1024:.0f} KB"
+    return f"{size} bytes"
+
+
 def _asset_text(name: str) -> str:
     return (resources.files("mardas_md2pdf") / "assets" / name).read_text(encoding="utf-8")
 
@@ -46,7 +61,8 @@ def _safe_asset_relative_path(value: str | None, fallback: str = "asset") -> Pat
 def _write_gui_assets(tmp: Path, assets: Any) -> None:
     if not isinstance(assets, list):
         return
-    for index, asset in enumerate(assets[:250]):
+    total_bytes = 0
+    for index, asset in enumerate(assets[:MAX_GUI_ASSETS]):
         if not isinstance(asset, dict):
             continue
         name = str(asset.get("path") or asset.get("name") or f"asset-{index}")
@@ -60,7 +76,9 @@ def _write_gui_assets(tmp: Path, assets: Any) -> None:
             data = base64.b64decode(payload, validate=True)
         except (binascii.Error, ValueError):
             continue
-        if len(data) > 12 * 1024 * 1024:
+        if len(data) > MAX_GUI_ASSET_BYTES:
+            continue
+        if total_bytes + len(data) > MAX_GUI_TOTAL_ASSET_BYTES:
             continue
         rel_path = _safe_asset_relative_path(name, fallback=f"asset-{index}")
         target = tmp / rel_path
@@ -70,6 +88,7 @@ def _write_gui_assets(tmp: Path, assets: Any) -> None:
             continue
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(data)
+        total_bytes += len(data)
 
         # Also copy a basename fallback beside document.md. This mirrors the CLI
         # image resolver and helps when a browser only provides selected files
@@ -114,14 +133,44 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
             self._send_json({"error": "Unknown endpoint"}, status=404)
             return
         try:
-            length = int(self.headers.get("Content-Length", "0"))
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+            except ValueError:
+                self._send_json({"error": "Invalid Content-Length header."}, status=400)
+                return
+            if length > MAX_GUI_REQUEST_BYTES:
+                self._send_json(
+                    {
+                        "error": (
+                            "Render request is too large. "
+                            f"Maximum request size is {_format_bytes(MAX_GUI_REQUEST_BYTES)}."
+                        )
+                    },
+                    status=413,
+                )
+                return
             raw = self.rfile.read(length)
             payload = json.loads(raw.decode("utf-8"))
+            if not isinstance(payload, dict):
+                raise ValueError("Render payload must be a JSON object.")
             markdown = str(payload.get("markdown") or "")
             options = payload.get("options") or {}
             assets = payload.get("assets") or []
+            if not isinstance(options, dict):
+                raise ValueError("Render options must be a JSON object.")
             if not markdown.strip():
                 raise ValueError("Markdown content is empty.")
+            if len(markdown.encode("utf-8")) > MAX_GUI_MARKDOWN_BYTES:
+                self._send_json(
+                    {
+                        "error": (
+                            "Markdown content is too large. "
+                            f"Maximum Markdown size is {_format_bytes(MAX_GUI_MARKDOWN_BYTES)}."
+                        )
+                    },
+                    status=413,
+                )
+                return
 
             theme = normalize_theme_name(str(options.get("theme") or "modern"))
             filename = _safe_filename(str(options.get("filename") or options.get("title") or "mardas-document"))

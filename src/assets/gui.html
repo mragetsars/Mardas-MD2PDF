@@ -206,7 +206,7 @@
           </section>
           <section class="card"><h3>🖼️ Local Assets</h3>
             <button class="btn" onclick="attachAssets()">Attach image folder/files</button>
-            <p class="hint">For Markdown image links such as <code>images/chart.png</code>, attach the image folder or files before exporting. Assets are embedded by the local Python renderer.</p>
+            <p class="hint">For Markdown image links such as <code>images/chart.png</code>, attach the image folder or files before exporting. Assets are embedded by the local Python renderer. Up to 250 assets, 12 MB per asset, and 32 MB total are accepted.</p>
             <div id="assetList" class="asset-list"></div>
           </section>
         </div>
@@ -425,6 +425,9 @@ $('pdfThemeInput').addEventListener('change', () => {
 });
 
 let attachedAssets = [];
+const MAX_GUI_ASSETS = 250;
+const MAX_GUI_ASSET_BYTES = 12 * 1024 * 1024;
+const MAX_GUI_TOTAL_ASSET_BYTES = 32 * 1024 * 1024;
 
 function attachAssets(){ $('assetInput').click(); }
 
@@ -438,7 +441,17 @@ function renderAssetList(){
 
 $('assetInput').addEventListener('change', async (event) => {
   const files = Array.from(event.target.files || []);
-  attachedAssets = await Promise.all(files.map(file => new Promise((resolve, reject) => {
+  const selected = [];
+  let totalBytes = 0;
+  let skipped = 0;
+  for (const file of files) {
+    if (selected.length >= MAX_GUI_ASSETS) { skipped++; continue; }
+    if (file.size > MAX_GUI_ASSET_BYTES) { skipped++; continue; }
+    if (totalBytes + file.size > MAX_GUI_TOTAL_ASSET_BYTES) { skipped++; continue; }
+    selected.push(file);
+    totalBytes += file.size;
+  }
+  attachedAssets = await Promise.all(selected.map(file => new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = ev => resolve({
       name: file.name,
@@ -450,7 +463,7 @@ $('assetInput').addEventListener('change', async (event) => {
     reader.readAsDataURL(file);
   })));
   renderAssetList();
-  serverStatus.textContent = 'Assets attached: ' + attachedAssets.length;
+  serverStatus.textContent = 'Assets attached: ' + attachedAssets.length + (skipped ? ' · skipped ' + skipped + ' over limit' : '');
 });
 
 function openFile(){ $('fileInput').click(); }
