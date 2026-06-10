@@ -8,7 +8,7 @@ version = "1.5.4"
 description = "GitHub-style Persian/English Markdown to PDF converter with RTL/LTR typography, diagrams, MathJax, themes, GUI workflow, and PDF-ready documentation features."
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "MIT" }
+license = "MIT"
 authors = [
   { name = "mragetsars", email = "mragetsars@gmail.com" }
 ]
@@ -34,7 +34,7 @@ mrs-md2pdf = "mardas_md2pdf.cli:main"
 mrs-md2pdf-gui = "mardas_md2pdf.gui:main"
 
 [tool.setuptools]
-packages = ["mardas_md2pdf"]
+packages = ["mardas_md2pdf", "mardas_md2pdf.assets", "mardas_md2pdf.assets.mathjax"]
 package-dir = {"mardas_md2pdf" = "src"}
 include-package-data = true
 
