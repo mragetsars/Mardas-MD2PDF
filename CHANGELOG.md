@@ -2,6 +2,18 @@
 
 All notable changes to Mardas MD2PDF are tracked here.
 
+## 1.5.6 - 2026-06-10
+
+### Fixed
+
+- Improved Studio render error responses with stable JSON error codes and clearer client-side messages.
+- Added a warning when the Studio server binds to a non-local host.
+- Persisted Studio workspace settings and local drafts in browser local storage, with a reset control and keyboard shortcuts for common actions.
+
+### Documentation
+
+- Documented the polished Studio workflow in the README and user guides.
+
 ## 1.5.5 - 2026-06-10
 
 ### Added

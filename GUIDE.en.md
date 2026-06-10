@@ -12,7 +12,7 @@ summary: |
   This document also acts as a live rendering sample for cover pages, tables of contents, mixed RTL/LTR text, formulas, code, Mermaid flowcharts, images, tables, footnotes, page breaks, and safe HTML.
 institution: "Mardas Lab"
 course: "Markdown Publishing"
-version: "1.5.5"
+version: "1.5.6"
 status: "Stable"
 keywords:
   - Markdown
@@ -195,7 +195,7 @@ department: "Department name"
 course: "Course or project title"
 supervisor: "Supervisor name"
 date: "2026-05-20"
-version: "1.5.5"
+version: "1.5.6"
 status: "Draft"
 keywords: [Markdown, PDF, RTL, MathJax]
 cover_label: "Technical Report"
@@ -361,7 +361,7 @@ Callouts use GitHub-style markers and are translated according to the document l
 
 # GitHub-style Markdown Compatibility
 
-Version 1.5.5 improves PDF navigation by writing viewer outline bookmarks from Markdown headings and adds an optional smoke test that verifies rendered PDF metadata and outline entries.
+Version 1.5.6 improves the Studio workflow with clearer render errors, a non-local bind warning, local workspace persistence, and keyboard shortcuts for saving Markdown and exporting PDFs.
 
 ## Rendering profiles
 
