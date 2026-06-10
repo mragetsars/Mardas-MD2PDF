@@ -45,6 +45,7 @@ The README is intentionally short and is meant to introduce the project. Complet
 - [راهنمای فارسی](./GUIDE.fa.md)
 - [Changelog](./CHANGELOG.md)
 - [Release checklist](./docs/RELEASE.md)
+- [Maintenance workflow](./docs/MAINTENANCE.md)
 - [Security policy](./SECURITY.md)
 
 Generated PDF versions of the guides are available in the [`examples/`](./examples/) directory.
@@ -87,13 +88,14 @@ Mardas-MD2PDF/
 │   └── assets/             # Themes, GUI shell, logo, and vendored MathJax files
 ├── tests/                  # Automated pytest test suite
 ├── scripts/                # Helper scripts
-├── docs/                   # Release and maintenance documentation
+├── docs/                   # Release, maintenance, and security documentation
 ├── examples/               # Generated PDF examples from the guide files
 ├── GUIDE.en.md             # Complete English user guide
 ├── GUIDE.fa.md             # Complete Persian user guide
 ├── README.png              # Project preview image
 ├── CHANGELOG.md            # Release notes
 ├── pyproject.toml          # Package metadata and dependencies
+├── .github/workflows/      # CI and release artifact automation
 └── README.md               # Project introduction
 ```
 
@@ -120,7 +122,7 @@ Chromium sandboxing is configurable with `--chromium-sandbox auto|on|off`; the d
 
 ```bash
 pip install -e .[dev]
-pytest
+./scripts/check.sh
 ```
 
 The test suite covers Markdown transformation, GitHub-style features, direction handling, table of contents generation, enhanced code highlighting, Mermaid SVG rendering, MathJax preservation, safe HTML, footnotes, local images, renderer options, GUI availability, page-size handling, and fallback warnings.
