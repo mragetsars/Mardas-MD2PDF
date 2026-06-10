@@ -99,7 +99,7 @@ TAG_SAFE_ATTRS = {
     "ul": {"type"},
     "code": {"class"},
 }
-SAFE_URL_SCHEMES = {"", "http", "https", "mailto", "file", "data"}
+SAFE_URL_SCHEMES = {"", "http", "https", "mailto", "data"}
 MAX_EMBED_IMAGE_BYTES = 20 * 1024 * 1024
 RTL_LANG_PREFIXES = ("ar", "fa", "he", "iw", "ku", "ps", "sd", "ug", "ur", "yi")
 
@@ -816,13 +816,26 @@ def normalize_raw_code_blocks(soup: BeautifulSoup, *, code_style: str) -> None:
             pre.replace_with(figure)
 
 
+def _is_path_inside(path: Path, root: Path) -> bool:
+    """Return whether a possibly symlinked path stays under the document root."""
+    try:
+        path.resolve(strict=False).relative_to(root.resolve(strict=False))
+    except ValueError:
+        return False
+    return True
+
+
 def _local_image_candidates(src: str, base_dir: Path) -> list[Path]:
-    """Return likely local filesystem candidates for an image src."""
-    parsed = urlparse(src)
+    """Return safe local filesystem candidates for an image src.
+
+    Markdown image paths are treated as document-local assets. Remote URLs and
+    existing data URIs are intentionally left untouched, while absolute paths,
+    ``file:`` URLs, and parent-directory escapes are ignored so a Markdown file
+    cannot silently embed arbitrary files from the host machine.
+    """
+    parsed = urlparse(src.strip())
     if parsed.scheme in {"http", "https", "data", "mailto"}:
         return []
-    if parsed.scheme == "file":
-        return [Path(unquote(parsed.path))]
     if parsed.scheme:
         return []
 
@@ -832,28 +845,24 @@ def _local_image_candidates(src: str, base_dir: Path) -> list[Path]:
 
     raw_path = Path(clean_src)
     if raw_path.is_absolute():
-        return [raw_path]
+        return []
 
-    base_dir = base_dir.resolve()
+    base_dir = base_dir.resolve(strict=False)
     candidates = [base_dir / raw_path]
 
     # A common authoring mistake is to keep the Markdown reference as
     # images/foo.png while exporting or copying foo.png beside the Markdown file.
-    # Falling back to the basename makes the converter forgiving without changing
-    # valid paths that already exist.
+    # Falling back to the basename keeps the converter forgiving while still
+    # limiting all lookups to the Markdown document directory.
     if len(raw_path.parts) > 1:
         candidates.append(base_dir / raw_path.name)
-
-    # If the current working directory contains the referenced asset, keep that
-    # as a final fallback for scripts that launch the CLI from the project root.
-    candidates.append(Path.cwd() / raw_path)
-    if len(raw_path.parts) > 1:
-        candidates.append(Path.cwd() / raw_path.name)
 
     unique: list[Path] = []
     seen: set[str] = set()
     for candidate in candidates:
-        key = str(candidate.resolve()) if candidate.exists() else str(candidate)
+        if not _is_path_inside(candidate, base_dir):
+            continue
+        key = str(candidate.resolve(strict=False))
         if key not in seen:
             unique.append(candidate)
             seen.add(key)

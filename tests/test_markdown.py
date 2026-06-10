@@ -101,6 +101,51 @@ def test_local_image_lookup_falls_back_to_markdown_directory_basename(tmp_path):
     assert 'data-md2pdf-source="./images/executive_overview.png"' in result.body_html
 
 
+
+
+def test_local_image_lookup_stays_inside_markdown_directory(tmp_path):
+    from mardas_md2pdf.markdown import render_markdown_file
+
+    outside = tmp_path / "outside.png"
+    outside.write_bytes(
+        b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
+        b"\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\rIDATx\x9cc\xf8\xff\xff?\x00\x05\xfe\x02\xfeA\xe2\x08\x9b\x00\x00\x00\x00IEND\xaeB`\x82"
+    )
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    md = docs / "report.md"
+    md.write_text("![leak](../outside.png)\n", encoding="utf-8")
+
+    result = render_markdown_file(md)
+
+    assert 'src="../outside.png"' in result.body_html
+    assert "data:image/png;base64" not in result.body_html
+
+
+def test_file_url_markdown_images_are_not_embedded(tmp_path):
+    from mardas_md2pdf.markdown import render_markdown_file
+
+    image = tmp_path / "local.png"
+    image.write_bytes(
+        b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
+        b"\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\rIDATx\x9cc\xf8\xff\xff?\x00\x05\xfe\x02\xfeA\xe2\x08\x9b\x00\x00\x00\x00IEND\xaeB`\x82"
+    )
+    md = tmp_path / "report.md"
+    md.write_text(f"![local]({image.as_uri()})\n", encoding="utf-8")
+
+    result = render_markdown_file(md)
+
+    assert image.as_uri() in result.body_html
+    assert "data:image/png;base64" not in result.body_html
+
+
+def test_raw_html_sanitizer_removes_file_urls():
+    result = render_markdown('<a href="file:///etc/passwd">secret</a><img src="file:///etc/passwd">')
+
+    assert 'href="file://' not in result.body_html
+    assert 'src="file://' not in result.body_html
+
+
 def test_cover_supports_multiline_summary_and_multiple_authors(tmp_path):
     from mardas_md2pdf.renderer import PdfOptions, build_html
 
