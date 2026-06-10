@@ -62,3 +62,16 @@ def test_studio_error_payload_includes_code_and_status():
         "status": 413,
         "code": "too_large",
     }
+
+
+def test_studio_bind_warning_only_for_non_local_hosts():
+    from mardas_md2pdf import gui
+
+    assert gui._studio_bind_warning("127.0.0.1") is None
+    assert gui._studio_bind_warning("localhost") is None
+    assert gui._studio_bind_warning("::1") is None
+
+    warning = gui._studio_bind_warning("0.0.0.0")
+    assert warning is not None
+    assert "non-local host" in warning
+    assert "trusted networks" in warning

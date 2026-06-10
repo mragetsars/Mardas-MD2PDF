@@ -62,6 +62,20 @@ def _decode_json_payload(raw: bytes) -> dict[str, Any]:
     return payload
 
 
+def _is_local_bind_host(host: str) -> bool:
+    normalized = (host or "").strip().lower().strip("[]")
+    return normalized in {"", "localhost", "127.0.0.1", "::1"} or normalized.startswith("127.")
+
+
+def _studio_bind_warning(host: str) -> str | None:
+    if _is_local_bind_host(host):
+        return None
+    return (
+        "Studio is binding to a non-local host. Only use this on trusted networks, "
+        "because anyone who can reach the server can submit Markdown and attached assets."
+    )
+
+
 def _asset_text(name: str) -> str:
     return (resources.files("mardas_md2pdf") / "assets" / name).read_text(encoding="utf-8")
 
@@ -266,6 +280,9 @@ def main(argv: list[str] | None = None) -> int:
     server = ThreadingHTTPServer((args.host, args.port), GuiRequestHandler)
     url = f"http://{args.host}:{server.server_port}/"
     print(f"Mardas MD2PDF Studio is running at {url}")
+    warning = _studio_bind_warning(args.host)
+    if warning:
+        print(f"WARNING: {warning}")
     print("Press Ctrl+C to stop.")
     if not args.no_open:
         threading.Timer(0.35, lambda: webbrowser.open(url)).start()
