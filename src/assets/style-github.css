@@ -892,5 +892,5 @@ tbody tr:nth-child(even) td { background: #ffffff; }
 .codehilite, .highlight { background: var(--code-bg) !important; color: var(--code-ink); }
 .codehilite pre, .highlight pre, pre { color: var(--code-ink); font-size: 8.6pt; }
 :not(pre) > code { background: #f6f8fa; color: #24292f; border: 0; border-radius: 6px; }
-.md2pdf-cover__eyebrow { color: #0969da; background: #ddf4ff; }
+.md2pdf-cover__eyebrow { color: var(--accent, #0969da); background: transparent; }
 .md2pdf-cover h1 { color: #1f2328; }

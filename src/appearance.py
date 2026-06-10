@@ -253,18 +253,18 @@ DARK_STYLE_SURFACES: dict[str, dict[str, str]] = {
         "cover_end": "#101010",
     },
     "academic": {
-        "page": "#1c1917",
-        "surface": "#1c1917",
-        "panel": "#292524",
-        "panel_alt": "#211d1b",
-        "panel_soft": "#332c29",
-        "code": "#151210",
-        "line": "#57534e",
-        "line_strong": "#78716c",
-        "ink": "#e7e5e4",
-        "heading": "#fafaf9",
-        "muted": "#a8a29e",
-        "cover_end": "#292524",
+        "page": "#111111",
+        "surface": "#111111",
+        "panel": "#1f1f1f",
+        "panel_alt": "#171717",
+        "panel_soft": "#262626",
+        "code": "#0a0a0a",
+        "line": "#404040",
+        "line_strong": "#666666",
+        "ink": "#e5e5e5",
+        "heading": "#fafafa",
+        "muted": "#a3a3a3",
+        "cover_end": "#1f1f1f",
     },
 }
 
@@ -418,9 +418,20 @@ def palette_css(palette_name: str, mode_name: str, style_name: str | None = None
 }}
 body.md2pdf-palette-{appearance.palette} a {{ color: var(--accent); }}
 body.md2pdf-palette-{appearance.palette} li::marker {{ color: var(--accent); }}
+body.md2pdf-palette-{appearance.palette} mark {{
+  background: color-mix(in srgb, var(--accent-soft) 74%, transparent);
+  color: inherit;
+}}
 body.md2pdf-palette-{appearance.palette} .md2pdf-cover__eyebrow,
 body.md2pdf-palette-{appearance.palette} .md2pdf-summary,
 body.md2pdf-palette-{appearance.palette} .footnote-marker {{ color: var(--accent); }}
+body.md2pdf-palette-{appearance.palette} .md2pdf-cover__eyebrow {{
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}}
+body.md2pdf-palette-{appearance.palette} .md2pdf-cover__eyebrow::before {{ background: var(--accent) !important; }}
 body.md2pdf-palette-{appearance.palette}:not(.md2pdf-mode-dark) .md2pdf-cover-full-bleed .md2pdf-cover,
 body.md2pdf-palette-{appearance.palette}:not(.md2pdf-mode-dark) .md2pdf-cover {{
   background:
@@ -432,5 +443,32 @@ body.md2pdf-palette-{appearance.palette}:not(.md2pdf-mode-dark) .md2pdf-cover {{
 body.md2pdf-palette-{appearance.palette}:not(.md2pdf-mode-dark) .md2pdf-cover__decor--one {{ border-color: color-mix(in srgb, var(--accent) 26%, transparent); }}
 body.md2pdf-palette-{appearance.palette}:not(.md2pdf-mode-dark) .md2pdf-cover__decor--two {{ background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 13%, transparent), color-mix(in srgb, var(--accent-2) 10%, transparent)); }}
 body.md2pdf-palette-{appearance.palette}:not(.md2pdf-mode-dark) .md2pdf-cover__mark {{ background: linear-gradient(135deg, #0f172a, var(--accent)); }}
+
+body.md2pdf-style-academic.md2pdf-palette-{appearance.palette} blockquote {{
+  border-inline-start-color: var(--accent) !important;
+  background: var(--quote) !important;
+}}
+body.md2pdf-style-academic.md2pdf-palette-{appearance.palette} .callout {{
+  background: var(--accent-soft) !important;
+  border-color: color-mix(in srgb, var(--accent-line) 50%, var(--line)) !important;
+}}
+body.md2pdf-style-academic.md2pdf-palette-{appearance.palette} .callout-title {{ border-bottom-color: var(--accent-line) !important; }}
+body.md2pdf-style-academic.md2pdf-palette-{appearance.palette} .md2pdf-toc .toc-number,
+body.md2pdf-style-academic.md2pdf-palette-{appearance.palette} .code-block figcaption {{ color: var(--accent) !important; }}
+body.md2pdf-style-academic.md2pdf-palette-{appearance.palette}:not(.md2pdf-mode-dark) .md2pdf-cover {{
+  background:
+    radial-gradient(circle at 5% 4%, color-mix(in srgb, var(--accent) 11%, transparent), transparent 27%),
+    radial-gradient(circle at 92% 86%, color-mix(in srgb, var(--accent-2) 9%, transparent), transparent 31%),
+    linear-gradient(180deg, #ffffff 0%, color-mix(in srgb, var(--accent-soft) 20%, #f8fafc) 100%) !important;
+}}
+body.md2pdf-style-academic.md2pdf-palette-{appearance.palette}:not(.md2pdf-mode-dark) .md2pdf-cover__mark {{
+  background: linear-gradient(135deg, #292524, var(--accent)) !important;
+}}
+body.md2pdf-style-academic.md2pdf-palette-{appearance.palette}:not(.md2pdf-mode-dark) .md2pdf-cover__decor--one {{
+  border-color: color-mix(in srgb, var(--accent) 24%, transparent) !important;
+}}
+body.md2pdf-style-academic.md2pdf-palette-{appearance.palette}:not(.md2pdf-mode-dark) .md2pdf-cover__decor--two {{
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 10%, transparent), color-mix(in srgb, var(--accent-2) 9%, transparent)) !important;
+}}
 {dark_css}
 """

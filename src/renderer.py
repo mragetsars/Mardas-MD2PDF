@@ -856,6 +856,12 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
         font-weight: 850;
         color: var(--md2pdf-details-title, var(--accent, var(--blue, #2563eb)));
       }}
+      .code-block--numbered .codehilite > .table-wrap {{
+        margin: 0;
+        border: 0;
+        border-radius: 0;
+        overflow: hidden;
+      }}
       .code-block--numbered .codehilitetable {{
         width: 100%;
         border-collapse: collapse;
@@ -864,22 +870,38 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
       }}
       .code-block--numbered .codehilitetable td {{
         border: 0;
-        padding: 0;
+        padding: 0 !important;
         background: transparent !important;
+        vertical-align: top;
       }}
       .code-block--numbered .linenos {{
         width: 1%;
-        padding: 4.2mm 2.2mm 4.2mm 4mm !important;
-        color: rgba(226, 232, 240, 0.55) !important;
+        color: color-mix(in srgb, var(--code-ink, #e2e8f0) 46%, transparent) !important;
         text-align: right;
         user-select: none;
+      }}
+      .code-block--numbered .linenos pre {{
+        margin: 0 !important;
+        padding: 4.2mm 2.2mm 4.2mm 4mm !important;
+        background: transparent !important;
+        color: inherit !important;
+        line-height: inherit;
+        text-align: right;
+      }}
+      body.md2pdf-style-textbook .code-block--numbered .linenos pre,
+      body.md2pdf-style-academic .code-block--numbered .linenos pre {{
+        padding-top: 3.5mm !important;
+        padding-bottom: 3.5mm !important;
       }}
       .code-block--numbered .code {{
         padding: 0 !important;
       }}
+      .code-block--numbered .code pre {{
+        margin: 0 !important;
+      }}
       .codehilite .hll {{
         display: block;
-        background-color: rgba(250, 204, 21, 0.18) !important;
+        background-color: color-mix(in srgb, var(--accent-soft, #fef3c7) 72%, transparent) !important;
       }}
     """
     ]
