@@ -91,6 +91,20 @@ modern · blue · light
 The preview remains approximate; the backend renderer is still the source of
 truth for MathJax, Mermaid, cover layout, PDF outlines, and print CSS.
 
+
+## Palette purity rules
+
+Styles should not force a brand color.  They may define spacing, density,
+corner radius, typography, and cover structure, but accent color should come
+from the selected palette.  This is especially important for the `academic`
+style: its formal layout stays intact across palettes, while callouts, cover
+accents, Mermaid strokes, TOC numbers, and code captions follow `--palette`.
+
+Cover labels such as `cover_label: "Complete Guide"` are rendered as plain
+label text with an accent rule, not as a filled badge.  That keeps Persian and
+English covers from looking as if a printing highlight was accidentally left on
+top of the label.
+
 ## Visual audit workflow
 
 After changing style CSS, palette colors, or mode behavior, render the full
@@ -103,6 +117,6 @@ python scripts/audit_appearance_matrix.py --output-dir build/appearance-audit --
 The matrix covers every built-in `style × palette × mode` combination.  Dark
 mode deliberately uses style-specific surfaces: `modern` stays deep navy,
 `github` follows a GitHub-like dark surface, `textbook` uses a near-black print
-surface, and `academic` uses a warm charcoal surface.  Palettes remain accent
+surface, and `academic` uses a neutral charcoal surface.  Palettes remain accent
 choices in both modes, so a dark document should keep the selected accent
 without making all styles look identical.

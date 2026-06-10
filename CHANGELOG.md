@@ -2,6 +2,18 @@
 
 All notable changes to Mardas MD2PDF are tracked here.
 
+## 1.6.2 - 2026-06-10
+
+### Fixed
+
+- Removed badge-like cover label backgrounds so `cover_label` text no longer looks like an accidental highlight in Persian or English covers.
+- Kept academic appearance accents palette-driven instead of forcing the older warm brown/orange palette across all palette choices.
+- Aligned numbered code line gutters with code rows and switched highlighted code rows to the active palette accent surface.
+
+### Added
+
+- Added regression checks for palette-pure academic output, non-badge cover labels, and numbered code alignment CSS.
+
 ## 1.6.1 - 2026-06-10
 
 ### Fixed
