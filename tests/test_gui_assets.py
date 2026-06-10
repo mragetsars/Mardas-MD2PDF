@@ -75,3 +75,22 @@ def test_studio_bind_warning_only_for_non_local_hosts():
     assert warning is not None
     assert "non-local host" in warning
     assert "trusted networks" in warning
+
+
+def test_gui_persists_studio_workspace_state():
+    html = GUI_HTML.read_text(encoding="utf-8")
+
+    assert "MARDAS_STUDIO_STATE_KEY" in html
+    assert "mardas-md2pdf-studio-state-v1" in html
+    assert "function loadStudioState" in html
+    assert "function saveStudioState" in html
+    assert "Reset State" in html
+    assert "MAX_STORED_MARKDOWN_CHARS" in html
+
+
+def test_gui_exposes_keyboard_shortcuts_for_local_workflow():
+    html = GUI_HTML.read_text(encoding="utf-8")
+
+    assert "event.ctrlKey || event.metaKey" in html
+    assert "downloadMarkdown();" in html
+    assert "renderPDF();" in html

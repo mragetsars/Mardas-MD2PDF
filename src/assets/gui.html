@@ -166,6 +166,7 @@
         <button class="btn" onclick="openFile()">📂 Open</button><input type="file" id="fileInput" accept=".md,.markdown,.txt" hidden>
         <button class="btn" onclick="attachAssets()">🖼️ Attach Assets</button><input type="file" id="assetInput" multiple webkitdirectory hidden>
         <button class="btn" onclick="downloadMarkdown()">💾 Save MD</button>
+        <button class="btn btn-ghost" onclick="clearStudioState()">↺ Reset State</button>
         <button class="btn" onclick="copyCommand()">⌘ Copy CLI</button>
         <div class="seg" aria-label="Layout">
           <button id="layoutSplit" class="active" onclick="setLayout('split')">Split</button>
@@ -241,6 +242,9 @@ let renderTimer = null;
 let exportProgressTimer = null;
 let exportProgressValue = 0;
 let currentLayout = 'split';
+const MARDAS_STUDIO_STATE_KEY = 'mardas-md2pdf-studio-state-v1';
+const MAX_STORED_MARKDOWN_CHARS = 250000;
+let saveStateTimer = null;
 
 function getOptions(){
   return {
@@ -259,6 +263,121 @@ function getOptions(){
     watermark: $('watermarkInput').value,
     watermarkOpacity: Number($('watermarkOpacityInput').value || 0.065)
   };
+}
+
+function hasOwnOption(options, name){
+  return Object.prototype.hasOwnProperty.call(options, name);
+}
+
+function setFieldValue(id, value){
+  if (value === undefined || value === null) return;
+  const field = $(id);
+  if (field) field.value = String(value);
+}
+
+function setSelectValue(id, value){
+  if (value === undefined || value === null) return;
+  const field = $(id);
+  if (!field) return;
+  const next = String(value);
+  const exists = Array.from(field.options || []).some(option => option.value === next || option.textContent === next);
+  if (exists) field.value = next;
+}
+
+function setFieldChecked(id, value){
+  if (value === undefined || value === null) return;
+  const field = $(id);
+  if (field) field.checked = Boolean(value);
+}
+
+function setOptions(options){
+  if (!options || typeof options !== 'object') return;
+  if (hasOwnOption(options, 'title')) setFieldValue('titleInput', options.title);
+  if (hasOwnOption(options, 'author')) setFieldValue('authorInput', options.author);
+  if (hasOwnOption(options, 'filename')) setFieldValue('filenameInput', options.filename);
+  if (hasOwnOption(options, 'pageSize')) setSelectValue('pageSizeInput', options.pageSize);
+  if (hasOwnOption(options, 'direction')) setSelectValue('directionInput', options.direction);
+  if (hasOwnOption(options, 'theme')) setSelectValue('pdfThemeInput', options.theme);
+  if (hasOwnOption(options, 'noCover')) setFieldChecked('noCoverInput', options.noCover);
+  if (hasOwnOption(options, 'noHeaderFooter')) setFieldChecked('noHeaderFooterInput', options.noHeaderFooter);
+  if (hasOwnOption(options, 'toc')) setFieldChecked('tocInput', options.toc);
+  if (hasOwnOption(options, 'tocDepth')) setFieldValue('tocDepthInput', options.tocDepth);
+  if (hasOwnOption(options, 'tocPageBreak')) setFieldChecked('tocPageBreakInput', options.tocPageBreak);
+  if (hasOwnOption(options, 'h1PageBreak')) setFieldChecked('h1PageBreakInput', options.h1PageBreak);
+  if (hasOwnOption(options, 'watermark')) setFieldValue('watermarkInput', options.watermark);
+  if (hasOwnOption(options, 'watermarkOpacity')) setFieldValue('watermarkOpacityInput', options.watermarkOpacity);
+  $('profileName').textContent = $('pdfThemeInput').value;
+}
+
+function getStudioState(){
+  const markdown = editor.value.length <= MAX_STORED_MARKDOWN_CHARS ? editor.value : null;
+  return {
+    options: getOptions(),
+    markdown,
+    layout: currentLayout,
+    lightMode: document.body.classList.contains('light-mode'),
+    previewDirection: preview.getAttribute('dir') || 'auto',
+    editorWidth: getComputedStyle(document.documentElement).getPropertyValue('--editor-width').trim()
+  };
+}
+
+function saveStudioState(){
+  try {
+    const state = getStudioState();
+    if (state.markdown === null) delete state.markdown;
+    localStorage.setItem(MARDAS_STUDIO_STATE_KEY, JSON.stringify(state));
+    $('savedState').textContent = state.markdown === undefined ? 'Settings saved' : 'Saved locally';
+  } catch (error) {
+    $('savedState').textContent = 'Local save unavailable';
+  }
+}
+
+function scheduleStudioStateSave(){
+  clearTimeout(saveStateTimer);
+  $('savedState').textContent = 'Unsaved changes';
+  saveStateTimer = setTimeout(saveStudioState, 500);
+}
+
+function loadStudioState(){
+  try {
+    const raw = localStorage.getItem(MARDAS_STUDIO_STATE_KEY);
+    if (!raw) return false;
+    const state = JSON.parse(raw);
+    if (!state || typeof state !== 'object') return false;
+    if (typeof state.markdown === 'string') editor.value = state.markdown;
+    setOptions(state.options || {});
+    document.body.classList.toggle('light-mode', Boolean(state.lightMode));
+    themeBtn.textContent = state.lightMode ? '🌙 Dark' : '☀️ Light';
+    if (['auto','rtl','ltr'].includes(state.previewDirection)) {
+      preview.setAttribute('dir', state.previewDirection);
+      editor.setAttribute('dir', state.previewDirection);
+      $('dirBtn').textContent = state.previewDirection === 'rtl' ? '↔️ LTR' : '↔️ RTL';
+    }
+    if (/^[0-9.]+px$/.test(state.editorWidth || '')) {
+      document.documentElement.style.setProperty('--editor-width', state.editorWidth);
+    }
+    if (['split','editor','preview','zen'].includes(state.layout)) {
+      setLayout(state.layout, { persist: false });
+    }
+    $('savedState').textContent = 'Restored local draft';
+    return true;
+  } catch (error) {
+    $('savedState').textContent = 'Could not restore state';
+    return false;
+  }
+}
+
+function clearStudioState(){
+  try { localStorage.removeItem(MARDAS_STUDIO_STATE_KEY); } catch (error) {}
+  $('savedState').textContent = 'Local state cleared';
+  serverStatus.textContent = 'Local Studio state cleared';
+}
+
+function attachOptionPersistence(){
+  document.querySelectorAll('.sidebar input, .sidebar select').forEach(control => {
+    control.addEventListener('input', scheduleStudioStateSave);
+    control.addEventListener('change', scheduleStudioStateSave);
+  });
 }
 
 function escapeHtml(value){
@@ -407,6 +526,7 @@ function renderPreview(){
 editor.addEventListener('input', () => {
   clearTimeout(renderTimer);
   renderTimer = setTimeout(renderPreview, 140);
+  scheduleStudioStateSave();
 });
 
 editor.addEventListener('keydown', (event) => {
@@ -422,6 +542,7 @@ editor.addEventListener('keydown', (event) => {
 
 $('pdfThemeInput').addEventListener('change', () => {
   $('profileName').textContent = $('pdfThemeInput').value;
+  scheduleStudioStateSave();
 });
 
 let attachedAssets = [];
@@ -475,6 +596,7 @@ $('fileInput').addEventListener('change', (event) => {
     editor.value = ev.target.result;
     $('filenameInput').value = file.name.replace(/\.(md|markdown|txt)$/i, '.pdf');
     renderPreview();
+    scheduleStudioStateSave();
   };
   reader.readAsText(file);
 });
@@ -577,9 +699,10 @@ function toggleTheme(){
   document.body.classList.toggle('light-mode');
   const light = document.body.classList.contains('light-mode');
   themeBtn.textContent = light ? '🌙 Dark' : '☀️ Light';
+  scheduleStudioStateSave();
 }
 
-function setLayout(layout){
+function setLayout(layout, options={}){
   currentLayout = layout;
   document.body.classList.toggle('editor-focus', layout === 'editor');
   document.body.classList.toggle('preview-focus', layout === 'preview');
@@ -588,6 +711,7 @@ function setLayout(layout){
     const button = $('layout' + name);
     if (button) button.classList.toggle('active', name.toLowerCase() === layout);
   });
+  if (options.persist !== false) scheduleStudioStateSave();
 }
 
 function toggleDirection(){
@@ -595,6 +719,7 @@ function toggleDirection(){
   preview.setAttribute('dir', next);
   editor.setAttribute('dir', next);
   $('dirBtn').textContent = next === 'rtl' ? '↔️ LTR' : '↔️ RTL';
+  scheduleStudioStateSave();
 }
 
 let resizing = false;
@@ -607,9 +732,29 @@ window.addEventListener('mousemove', (event) => {
   const editorWidth = Math.max(260, Math.min(available - 260, event.clientX - workspace.left - sidebar));
   document.documentElement.style.setProperty('--editor-width', editorWidth + 'px');
 });
-window.addEventListener('mouseup', () => { resizing = false; document.body.style.userSelect = ''; });
+window.addEventListener('mouseup', () => {
+  if (resizing) scheduleStudioStateSave();
+  resizing = false;
+  document.body.style.userSelect = '';
+});
+
+window.addEventListener('keydown', (event) => {
+  const modifier = event.ctrlKey || event.metaKey;
+  if (!modifier) return;
+  const key = event.key.toLowerCase();
+  if (key === 's') {
+    event.preventDefault();
+    downloadMarkdown();
+  }
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    renderPDF();
+  }
+});
 
 editor.value = `---\ntitle: "نمونه سند Mardas MD2PDF"\nauthor: "mragetsars"\ndate: "2026-05-12"\nlang: fa\n---\n\n# نمونه Markdown\n\nاین محیط برای ویرایش Markdown و گرفتن خروجی PDF با تنظیمات گرافیکی ساخته شده است.\n\n## Code\n\n\`\`\`python\nprint("Hello Mardas")\n\`\`\`\n\n| قابلیت | وضعیت |\n|---|---|\n| RTL/LTR | ✅ |\n| PDF Export | ✅ |\n`;
+attachOptionPersistence();
+loadStudioState();
 renderAssetList();
 renderPreview();
 </script>
