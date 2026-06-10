@@ -50,3 +50,11 @@ def test_release_docs_reference_maintenance_scripts() -> None:
 
     assert "docs/MAINTENANCE.md" in readme
     assert "Release Artifacts" in release_doc
+
+
+
+def test_example_builds_set_deterministic_pdf_dates() -> None:
+    script = ROOT.joinpath("scripts", "build_examples.sh").read_text(encoding="utf-8")
+
+    assert "SOURCE_DATE_EPOCH" in script
+    assert "1735689600" in script

@@ -297,3 +297,12 @@ def test_wide_table_css_fits_columns_for_print(tmp_path):
     assert "table-layout: fixed" in html
     assert ".table-wrap--very-wide table" in html
     assert "overflow-wrap: anywhere" in html
+
+
+
+def test_pdf_date_honors_source_date_epoch(monkeypatch):
+    from mardas_md2pdf.renderer import _pdf_date
+
+    monkeypatch.setenv("SOURCE_DATE_EPOCH", "1735689600")
+
+    assert _pdf_date() == "D:20250101000000+00'00'"

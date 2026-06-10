@@ -1181,8 +1181,31 @@ def _render_pdf(page: Page, html_text: str, options: PdfOptions, path: Path, *, 
     page.pdf(**pdf_kwargs)
 
 
+def _source_date_epoch() -> datetime | None:
+    raw_value = os.environ.get("SOURCE_DATE_EPOCH")
+    if raw_value in (None, ""):
+        return None
+    try:
+        timestamp = int(raw_value)
+    except ValueError:
+        warnings.warn(
+            "Ignoring invalid SOURCE_DATE_EPOCH value; expected a Unix timestamp.",
+            RuntimeWarning,
+            stacklevel=2,
+        )
+        return None
+    if timestamp < 0:
+        warnings.warn(
+            "Ignoring negative SOURCE_DATE_EPOCH value; expected a non-negative Unix timestamp.",
+            RuntimeWarning,
+            stacklevel=2,
+        )
+        return None
+    return datetime.fromtimestamp(timestamp, timezone.utc)
+
+
 def _pdf_date(value: datetime | None = None) -> str:
-    dt = value or datetime.now(timezone.utc).astimezone()
+    dt = value or _source_date_epoch() or datetime.now(timezone.utc).astimezone()
     offset = dt.strftime("%z")
     tz = "Z" if not offset else f"{offset[:3]}'{offset[3:]}'"
     return dt.strftime("D:%Y%m%d%H%M%S") + tz
