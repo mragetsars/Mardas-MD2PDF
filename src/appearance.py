@@ -384,8 +384,16 @@ body.md2pdf-mode-dark .md2pdf-cover__release {{
 }}
 body.md2pdf-mode-dark .md2pdf-cover__eyebrow {{
   color: var(--accent) !important;
-  background: color-mix(in srgb, var(--accent) 14%, {surface['panel']}) !important;
-  border-color: color-mix(in srgb, var(--accent) 30%, {surface['line']}) !important;
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  filter: none !important;
+  text-shadow: none !important;
+}}
+body.md2pdf-mode-dark .md2pdf-cover__eyebrow::before {{
+  background: var(--accent) !important;
+  box-shadow: none !important;
 }}
 body.md2pdf-mode-dark .md2pdf-cover__summary {{ border-top-color: var(--line) !important; }}
 body.md2pdf-mode-dark .md2pdf-cover__detail {{
@@ -430,6 +438,8 @@ body.md2pdf-palette-{appearance.palette} .md2pdf-cover__eyebrow {{
   border-color: transparent !important;
   box-shadow: none !important;
   padding: 0 !important;
+  filter: none !important;
+  text-shadow: none !important;
 }}
 body.md2pdf-palette-{appearance.palette} .md2pdf-cover__eyebrow::before {{ background: var(--accent) !important; }}
 body.md2pdf-palette-{appearance.palette}:not(.md2pdf-mode-dark) .md2pdf-cover-full-bleed .md2pdf-cover,

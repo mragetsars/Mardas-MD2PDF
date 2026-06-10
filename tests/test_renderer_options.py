@@ -425,20 +425,49 @@ def test_cover_eyebrow_is_not_rendered_as_badge_highlight(tmp_path):
     from mardas_md2pdf.markdown import render_markdown
     from mardas_md2pdf.renderer import PdfOptions, build_html
 
-    md = "---\ntitle: Guide\ncover_label: Complete Guide\n---\n\n# Body\n"
+    md = """---
+title: Guide
+cover_label: Complete Guide
+---
+
+# Body
+"""
     input_path = tmp_path / "cover.md"
     input_path.write_text(md, encoding="utf-8")
-    html = build_html(
+
+    light_html = build_html(
         render_markdown(md),
-        PdfOptions(input_path=input_path, output_path=tmp_path / "out.pdf", style="github", palette="amber"),
+        PdfOptions(
+            input_path=input_path,
+            output_path=tmp_path / "out-light.pdf",
+            style="github",
+            palette="amber",
+            mode="light",
+        ),
+    )
+    dark_html = build_html(
+        render_markdown(md),
+        PdfOptions(
+            input_path=input_path,
+            output_path=tmp_path / "out-dark.pdf",
+            style="github",
+            palette="amber",
+            mode="dark",
+        ),
     )
 
-    assert "Complete Guide" in html
-    assert ".md2pdf-cover__eyebrow {" in html
-    assert "background: transparent !important;" in html
-    assert "padding: 0 !important;" in html
-    assert "background: #ddf4ff;" not in html
-    assert ".md2pdf-cover__eyebrow { color: var(--accent, #0969da); background: transparent; }" in html
+    assert "Complete Guide" in light_html
+    assert ".md2pdf-cover__eyebrow {" in light_html
+    assert "background: transparent !important;" in light_html
+    assert "padding: 0 !important;" in light_html
+    assert "background: #ddf4ff;" not in light_html
+    assert ".md2pdf-cover__eyebrow { color: var(--accent, #0969da); background: transparent; }" in light_html
+
+    assert "Complete Guide" in dark_html
+    assert "body.md2pdf-mode-dark .md2pdf-cover__eyebrow {" in dark_html
+    assert "background: transparent !important;" in dark_html
+    assert "border-color: transparent !important;" in dark_html
+    assert "box-shadow: none !important;" in dark_html
 
 
 def test_numbered_code_css_aligns_line_numbers_with_code_rows(tmp_path):
