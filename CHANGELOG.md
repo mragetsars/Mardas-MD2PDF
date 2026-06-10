@@ -2,6 +2,18 @@
 
 All notable changes to Mardas MD2PDF are tracked here.
 
+## 1.5.3 - 2026-06-10
+
+### Fixed
+
+- Blocked unresolved local image sources with a transparent placeholder so Chromium cannot read parent-directory, absolute, missing, or oversized image paths through the document base URL.
+- Restricted safe raw-HTML `data:` image URLs to common raster formats and rejected obfuscated URL control characters.
+- Made Chromium sandbox mode configurable with `--chromium-sandbox auto|on|off`, keeping sandboxing on for normal users while preserving root/container compatibility.
+
+### Documentation
+
+- Added `SECURITY.md` and documented trusted input boundaries in the README and guides.
+
 ## 1.5.2 - 2026-06-10
 
 ### Fixed

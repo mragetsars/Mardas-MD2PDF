@@ -12,7 +12,7 @@ summary: |
   This document also acts as a live rendering sample for cover pages, tables of contents, mixed RTL/LTR text, formulas, code, Mermaid flowcharts, images, tables, footnotes, page breaks, and safe HTML.
 institution: "Mardas Lab"
 course: "Markdown Publishing"
-version: "1.5.2"
+version: "1.5.3"
 status: "Stable"
 keywords:
   - Markdown
@@ -195,7 +195,7 @@ department: "Department name"
 course: "Course or project title"
 supervisor: "Supervisor name"
 date: "2026-05-20"
-version: "1.5.2"
+version: "1.5.3"
 status: "Draft"
 keywords: [Markdown, PDF, RTL, MathJax]
 cover_label: "Technical Report"
@@ -361,7 +361,7 @@ Callouts use GitHub-style markers and are translated according to the document l
 
 # GitHub-style Markdown Compatibility
 
-Version 1.5.2 tightens the local asset trust boundary, adds Studio payload limits, introduces CI, and documents the release workflow while keeping the GitHub-like Markdown rendering behavior introduced in the 1.5 series.
+Version 1.5.3 extends the security boundary around local assets, safe HTML data URLs, and Chromium sandboxing while keeping the GitHub-like Markdown rendering behavior introduced in the 1.5 series.
 
 ## Rendering profiles
 
