@@ -595,12 +595,13 @@ Safe raw HTML images can also be used when explicit sizing is needed:
 - Prefer local images for stable PDF output.
 - Keep images reasonably sized before embedding them.
 - Use paths relative to the Markdown file.
+- Keep image paths inside the Markdown document directory. Absolute paths, `file:` URLs, parent-directory escapes such as `../secret.png`, and current-working-directory fallbacks are ignored by default.
 - In the GUI, attach local image files or image folders before exporting.
 - Very large images are left as links and a warning is printed to avoid excessive memory usage.
 
 ## Safe HTML
 
-Raw HTML is sanitized by default. The sanitizer keeps document-oriented elements such as `<div>`, `<span>`, `<table>`, `<figure>`, and `<img>`, while removing active or unsafe content such as scripts, event handlers, iframes, forms, remote stylesheets, and unsafe URL schemes.
+Raw HTML is sanitized by default. The sanitizer keeps document-oriented elements such as `<div>`, `<span>`, `<table>`, `<figure>`, and `<img>`, while removing active or unsafe content such as scripts, event handlers, iframes, forms, remote stylesheets, `file:` URLs, and unsafe URL schemes.
 
 Use unsafe HTML only for trusted local files:
 
@@ -745,7 +746,7 @@ A typical automation command can be as simple as:
 mrs-md2pdf docs/report.md -o build/report.pdf --toc --theme modern
 ```
 
-For CI workflows, prefer explicit options:
+The repository includes a GitHub Actions CI workflow that runs Ruff, pytest, and a Chromium render smoke test on supported Python versions. For CI workflows, prefer explicit options:
 
 ```bash
 mrs-md2pdf docs/report.md -o build/report.pdf \
@@ -792,7 +793,7 @@ If the directory is missing or does not contain recognized font files, the rende
 
 ## Images do not appear
 
-Check that image paths are relative to the Markdown file. If you use the GUI, attach the local images or folders before export. Very large images are not embedded and produce a warning.
+Check that image paths are relative to the Markdown file and stay inside the Markdown document directory. Absolute paths, `file:` URLs, and parent-directory escapes are left as links instead of being embedded. If you use the GUI, attach the local images or folders before export. Very large images are not embedded and produce a warning.
 
 ## Math appears as raw TeX
 
@@ -837,3 +838,4 @@ Before publishing an important PDF, check the following items:
 - [x] Footnotes and links.
 - [x] Footer numbering after the cover.
 - [ ] Final visual review in a PDF viewer.
+- [ ] Release checklist completed when publishing a tagged version: `docs/RELEASE.md`.

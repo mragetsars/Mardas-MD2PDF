@@ -2,7 +2,7 @@
 
 > **Professional Markdown to PDF converter for Persian, English, and mixed RTL/LTR technical documents**
 
-![Language](https://img.shields.io/badge/Language-Python-blue) ![Renderer](https://img.shields.io/badge/Renderer-Playwright%20%2B%20Chromium-green) ![Math](https://img.shields.io/badge/Math-MathJax-purple) ![Version](https://img.shields.io/badge/Version-v1.5.1-success) ![Status](https://img.shields.io/badge/Status-Stable-success)
+![Language](https://img.shields.io/badge/Language-Python-blue) ![Renderer](https://img.shields.io/badge/Renderer-Playwright%20%2B%20Chromium-green) ![Math](https://img.shields.io/badge/Math-MathJax-purple) ![Version](https://img.shields.io/badge/Version-v1.5.1-success) ![Status](https://img.shields.io/badge/Status-Stable-success) ![CI](https://github.com/mragetsars/Mardas-MD2PDF/actions/workflows/ci.yml/badge.svg)
 
 ## Overview
 
@@ -43,6 +43,8 @@ The README is intentionally short and is meant to introduce the project. Complet
 
 - [English Guide](./GUIDE.en.md)
 - [راهنمای فارسی](./GUIDE.fa.md)
+- [Changelog](./CHANGELOG.md)
+- [Release checklist](./docs/RELEASE.md)
 
 Generated PDF versions of the guides are available in the [`examples/`](./examples/) directory.
 
@@ -84,10 +86,12 @@ Mardas-MD2PDF/
 │   └── assets/             # Themes, GUI shell, logo, and vendored MathJax files
 ├── tests/                  # Automated pytest test suite
 ├── scripts/                # Helper scripts
+├── docs/                   # Release and maintenance documentation
 ├── examples/               # Generated PDF examples from the guide files
 ├── GUIDE.en.md             # Complete English user guide
 ├── GUIDE.fa.md             # Complete Persian user guide
 ├── README.png              # Project preview image
+├── CHANGELOG.md            # Release notes
 ├── pyproject.toml          # Package metadata and dependencies
 └── README.md               # Project introduction
 ```

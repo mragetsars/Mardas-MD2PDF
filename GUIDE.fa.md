@@ -507,12 +507,13 @@ flowchart LR
 - برای خروجی پایدار PDF، تصویرهای محلی بهتر از تصویرهای remote هستند.
 - قبل از embed کردن، حجم تصویرها را منطقی نگه دارید.
 - مسیر تصویر را نسبت به محل فایل Markdown بنویسید.
+- مسیر تصویر را داخل پوشه همان سند نگه دارید. مسیرهای absolute، URLهای `file:`، خروج از پوشه با الگوهایی مثل `../secret.png` و fallback به current working directory به صورت پیش‌فرض embed نمی‌شوند.
 - در GUI، فایل‌ها یا پوشه تصویر را قبل از export attach کنید.
 - تصویرهای خیلی بزرگ embed نمی‌شوند و renderer برای جلوگیری از مصرف زیاد حافظه هشدار می‌دهد.
 
 ## کد HTML امن
 
-کد HTML خام به صورت پیش‌فرض sanitize می‌شود. sanitizer عناصر مناسب سند مثل `<div>`، `<span>`، `<table>`، `<figure>` و `<img>` را نگه می‌دارد، اما محتوای فعال یا خطرناک مثل script، event handler، iframe، form، stylesheet خارجی و URL scheme ناامن را حذف می‌کند.
+کد HTML خام به صورت پیش‌فرض sanitize می‌شود. sanitizer عناصر مناسب سند مثل `<div>`، `<span>`، `<table>`، `<figure>` و `<img>` را نگه می‌دارد، اما محتوای فعال یا خطرناک مثل script، event handler، iframe، form، stylesheet خارجی، URLهای `file:` و URL scheme ناامن را حذف می‌کند.
 
 غیرفعال کردن sanitizer فقط برای فایل‌های قابل اعتماد:
 
@@ -657,7 +658,7 @@ mrs-md2pdf --help
 mrs-md2pdf docs/report.md -o build/report.pdf --toc --theme modern
 ```
 
-برای CI بهتر است گزینه‌ها صریح باشند:
+مخزن شامل workflow گیت‌هاب Actions است که Ruff، pytest و یک smoke test واقعی رندر با Chromium را روی نسخه‌های پشتیبانی‌شده Python اجرا می‌کند. برای CI بهتر است گزینه‌ها صریح باشند:
 
 ```bash
 mrs-md2pdf docs/report.md -o build/report.pdf \
@@ -704,7 +705,7 @@ mrs-md2pdf input.md -o output.pdf --font-dir ./fonts
 
 ## تصویرها دیده نمی‌شوند
 
-مطمئن شوید مسیر تصویرها نسبت به فایل Markdown درست است. اگر از GUI استفاده می‌کنید، فایل‌ها یا پوشه‌های تصویر را قبل از خروجی گرفتن attach کنید. تصویرهای خیلی بزرگ embed نمی‌شوند و هشدار تولید می‌کنند.
+مطمئن شوید مسیر تصویرها نسبت به فایل Markdown درست است و داخل پوشه همان سند باقی می‌ماند. مسیرهای absolute، URLهای `file:` و خروج از پوشه با `..` به جای embed شدن، به شکل لینک باقی می‌مانند. اگر از GUI استفاده می‌کنید، فایل‌ها یا پوشه‌های تصویر را قبل از خروجی گرفتن attach کنید. تصویرهای خیلی بزرگ embed نمی‌شوند و هشدار تولید می‌کنند.
 
 ## فرمول‌ها به شکل TeX خام دیده می‌شوند
 
@@ -749,3 +750,4 @@ mrs-md2pdf input.md -o output.pdf --debug-html output.html
 - [x] پانویس‌ها و لینک‌ها.
 - [x] شماره‌گذاری footer بعد از جلد.
 - [ ] بازبینی بصری نهایی در PDF viewer.
+- [ ] هنگام انتشار نسخه tag شده، چک‌لیست release در `docs/RELEASE.md` کامل شده باشد.
