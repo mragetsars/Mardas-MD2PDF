@@ -39,3 +39,26 @@ def test_gui_documents_asset_limits():
     assert "12 MB per asset" in html
     assert "32 MB total" in html
     assert "MAX_GUI_ASSETS" in html
+
+
+def test_studio_json_decode_errors_are_client_facing():
+    import pytest
+
+    from mardas_md2pdf import gui
+
+    with pytest.raises(gui.StudioRequestError) as exc_info:
+        gui._decode_json_payload(b'{bad json')
+
+    assert exc_info.value.status == 400
+    assert exc_info.value.code == "invalid_json"
+    assert "valid JSON" in str(exc_info.value)
+
+
+def test_studio_error_payload_includes_code_and_status():
+    from mardas_md2pdf import gui
+
+    assert gui._error_payload("Nope", status=413, code="too_large") == {
+        "error": "Nope",
+        "status": 413,
+        "code": "too_large",
+    }

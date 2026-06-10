@@ -23,12 +23,43 @@ MAX_GUI_ASSET_BYTES = 12 * 1024 * 1024
 MAX_GUI_TOTAL_ASSET_BYTES = 32 * 1024 * 1024
 
 
+class StudioRequestError(ValueError):
+    """Client-facing Studio request error with a stable JSON error code."""
+
+    def __init__(self, message: str, *, status: int = 400, code: str = "bad_request") -> None:
+        super().__init__(message)
+        self.status = status
+        self.code = code
+
+
 def _format_bytes(size: int) -> str:
     if size >= 1024 * 1024:
         return f"{size / (1024 * 1024):.0f} MB"
     if size >= 1024:
         return f"{size / 1024:.0f} KB"
     return f"{size} bytes"
+
+
+def _error_payload(message: str, *, status: int, code: str) -> dict[str, Any]:
+    return {"error": message, "status": status, "code": code}
+
+
+def _decode_json_payload(raw: bytes) -> dict[str, Any]:
+    try:
+        text = raw.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise StudioRequestError(
+            "Render request body must be UTF-8 encoded.", code="invalid_encoding"
+        ) from exc
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise StudioRequestError(
+            f"Render request body must be valid JSON: {exc.msg}.", code="invalid_json"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise StudioRequestError("Render payload must be a JSON object.", code="invalid_payload")
+    return payload
 
 
 def _asset_text(name: str) -> str:
@@ -118,6 +149,9 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def _send_error(self, message: str, *, status: int, code: str) -> None:
+        self._send_json(_error_payload(message, status=status, code=code), status=status)
+
     def do_GET(self) -> None:  # noqa: N802 - stdlib API
         if self.path in {"/", "/index.html"}:
             html = _asset_text("gui.html").replace("__MARDAS_VERSION__", __version__)
@@ -130,45 +164,39 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:  # noqa: N802 - stdlib API
         if self.path != "/api/render":
-            self._send_json({"error": "Unknown endpoint"}, status=404)
+            self._send_error("Unknown endpoint", status=404, code="not_found")
             return
         try:
             try:
                 length = int(self.headers.get("Content-Length", "0"))
             except ValueError:
-                self._send_json({"error": "Invalid Content-Length header."}, status=400)
+                self._send_error(
+                    "Invalid Content-Length header.", status=400, code="invalid_content_length"
+                )
                 return
             if length > MAX_GUI_REQUEST_BYTES:
-                self._send_json(
-                    {
-                        "error": (
-                            "Render request is too large. "
-                            f"Maximum request size is {_format_bytes(MAX_GUI_REQUEST_BYTES)}."
-                        )
-                    },
+                self._send_error(
+                    "Render request is too large. "
+                    f"Maximum request size is {_format_bytes(MAX_GUI_REQUEST_BYTES)}.",
                     status=413,
+                    code="request_too_large",
                 )
                 return
             raw = self.rfile.read(length)
-            payload = json.loads(raw.decode("utf-8"))
-            if not isinstance(payload, dict):
-                raise ValueError("Render payload must be a JSON object.")
+            payload = _decode_json_payload(raw)
             markdown = str(payload.get("markdown") or "")
             options = payload.get("options") or {}
             assets = payload.get("assets") or []
             if not isinstance(options, dict):
-                raise ValueError("Render options must be a JSON object.")
+                raise StudioRequestError("Render options must be a JSON object.", code="invalid_options")
             if not markdown.strip():
-                raise ValueError("Markdown content is empty.")
+                raise StudioRequestError("Markdown content is empty.", code="empty_markdown")
             if len(markdown.encode("utf-8")) > MAX_GUI_MARKDOWN_BYTES:
-                self._send_json(
-                    {
-                        "error": (
-                            "Markdown content is too large. "
-                            f"Maximum Markdown size is {_format_bytes(MAX_GUI_MARKDOWN_BYTES)}."
-                        )
-                    },
+                self._send_error(
+                    "Markdown content is too large. "
+                    f"Maximum Markdown size is {_format_bytes(MAX_GUI_MARKDOWN_BYTES)}.",
                     status=413,
+                    code="markdown_too_large",
                 )
                 return
 
@@ -212,8 +240,10 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
             self.send_header("Content-Length", str(len(data)))
             self.end_headers()
             self.wfile.write(data)
+        except StudioRequestError as exc:
+            self._send_error(str(exc), status=exc.status, code=exc.code)
         except Exception as exc:  # pragma: no cover - exercised manually with browser
-            self._send_json({"error": str(exc)}, status=500)
+            self._send_error(f"PDF rendering failed: {exc}", status=500, code="render_failed")
 
     def log_message(self, fmt: str, *args: Any) -> None:
         print(f"[Mardas GUI] {self.address_string()} - {fmt % args}")
