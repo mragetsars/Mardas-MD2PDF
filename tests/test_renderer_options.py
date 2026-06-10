@@ -263,3 +263,18 @@ def test_cli_exposes_remote_asset_opt_in():
     action = next(action for action in parser._actions if "--allow-remote-assets" in action.option_strings)
 
     assert action.default is False
+
+
+
+def test_blocked_image_placeholder_css_is_print_friendly(tmp_path):
+    from mardas_md2pdf.markdown import render_markdown_file
+    from mardas_md2pdf.renderer import PdfOptions, build_html
+
+    input_path = tmp_path / "missing.md"
+    input_path.write_text("![Missing](missing.png)\n", encoding="utf-8")
+    result = render_markdown_file(input_path)
+    html = build_html(result, PdfOptions(input_path=input_path, output_path=tmp_path / "out.pdf"))
+
+    assert ".md2pdf-image-placeholder" in html
+    assert "overflow-wrap: anywhere" in html
+    assert "page-break-inside: avoid" in html

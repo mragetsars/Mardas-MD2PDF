@@ -136,7 +136,8 @@ def test_missing_local_image_is_blocked_before_chromium_can_resolve_it(tmp_path)
     assert 'data-md2pdf-blocked-src="images/missing.png"' in result.body_html
     assert "md2pdf-image--blocked" in result.body_html
     assert ' src="images/missing.png"' not in result.body_html
-    assert 'src="data:image/gif;base64,' in result.body_html
+    assert "md2pdf-image-placeholder" in result.body_html
+    assert "Image blocked or missing" in result.body_html
 
 def test_file_url_markdown_images_are_not_embedded(tmp_path):
     from mardas_md2pdf.markdown import render_markdown_file
@@ -591,7 +592,8 @@ def test_render_markdown_file_blocks_remote_images_by_default(tmp_path):
 
     assert "https://example.com/image.png" in result.body_html
     assert "data-md2pdf-blocked-reason=\"remote\"" in result.body_html
-    assert "data:image/gif;base64" in result.body_html
+    assert "md2pdf-image-placeholder" in result.body_html
+    assert "Remote image blocked" in result.body_html
 
 
 def test_render_markdown_file_can_allow_remote_images(tmp_path):
@@ -604,3 +606,17 @@ def test_render_markdown_file_can_allow_remote_images(tmp_path):
 
     assert 'src="https://example.com/image.png"' in result.body_html
     assert "data-md2pdf-blocked-reason" not in result.body_html
+
+
+
+def test_missing_local_images_render_visible_placeholders(tmp_path):
+    from mardas_md2pdf.markdown import render_markdown_file
+
+    input_path = tmp_path / "missing.md"
+    input_path.write_text("![Missing](images/missing.png)\n", encoding="utf-8")
+
+    result = render_markdown_file(input_path)
+
+    assert "md2pdf-image-placeholder" in result.body_html
+    assert "Image blocked or missing" in result.body_html
+    assert "images/missing.png" in result.body_html

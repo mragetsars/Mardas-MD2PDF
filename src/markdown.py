@@ -965,12 +965,33 @@ def _is_remote_image_reference(src: str) -> bool:
     return urlparse(src.strip()).scheme.lower() in {"http", "https"}
 
 
-def _block_image_reference(img: Tag, src: str, *, reason: str) -> None:
+def _short_blocked_image_source(src: str, *, limit: int = 120) -> str:
+    text = re.sub(r"\s+", " ", str(src or "").strip())
+    if len(text) <= limit:
+        return text
+    return text[: max(0, limit - 1)].rstrip() + "…"
+
+
+def _block_image_reference(soup: BeautifulSoup, img: Tag, src: str, *, reason: str) -> None:
     """Prevent Chromium from resolving an image source outside the asset boundary."""
-    img["src"] = TRANSPARENT_IMAGE_DATA_URI
-    img["data-md2pdf-blocked-src"] = src
-    img["data-md2pdf-blocked-reason"] = reason
-    img["class"] = list(set(img.get("class", []) + ["md2pdf-image", "md2pdf-image--blocked"]))
+    label = "Remote image blocked" if reason == "remote" else "Image blocked or missing"
+    detail = _short_blocked_image_source(src)
+
+    placeholder = soup.new_tag("span")
+    placeholder["class"] = "md2pdf-image-placeholder md2pdf-image--blocked"
+    placeholder["role"] = "note"
+    placeholder["data-md2pdf-blocked-src"] = src
+    placeholder["data-md2pdf-blocked-reason"] = reason
+
+    title = soup.new_tag("strong")
+    title.string = label
+    placeholder.append(title)
+    if detail:
+        body = soup.new_tag("span")
+        body.string = detail
+        placeholder.append(body)
+
+    img.replace_with(placeholder)
 
 
 def embed_local_images(body_html: str, base_dir: str | Path, *, allow_remote_images: bool = False) -> str:
@@ -1006,9 +1027,9 @@ def embed_local_images(body_html: str, base_dir: str | Path, *, allow_remote_ima
             embedded = True
             break
         if not embedded and _is_local_image_reference(src):
-            _block_image_reference(img, src, reason="local")
+            _block_image_reference(soup, img, src, reason="local")
         elif not allow_remote_images and _is_remote_image_reference(src):
-            _block_image_reference(img, src, reason="remote")
+            _block_image_reference(soup, img, src, reason="remote")
     return str(soup)
 
 

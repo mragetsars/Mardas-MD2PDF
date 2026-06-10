@@ -673,6 +673,28 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
         text-align: center !important;
       }}
       .md2pdf-article mjx-container svg {{ max-width: 100%; }}
+      .md2pdf-image-placeholder {{
+        display: block;
+        margin: 1em 0;
+        padding: 3mm 4mm;
+        border: 1px dashed var(--line-strong, var(--line, #cbd5e1));
+        border-radius: var(--radius, 10px);
+        background: color-mix(in srgb, var(--soft, #f8fafc) 82%, transparent);
+        color: var(--muted, #64748b);
+        font: 600 8.5pt/1.55 var(--font-fa), var(--font-en), sans-serif;
+        overflow-wrap: anywhere;
+        page-break-inside: avoid;
+        break-inside: avoid;
+      }}
+      .md2pdf-image-placeholder strong {{
+        display: block;
+        margin-bottom: 1mm;
+        color: var(--ink, #172033);
+        font-weight: 850;
+      }}
+      .md2pdf-image-placeholder span {{
+        display: block;
+      }}
       .mermaid-diagram {{
         margin: 1.35em auto;
         padding: 4mm;
