@@ -162,6 +162,27 @@ def test_raw_html_sanitizer_removes_file_urls():
     assert 'src="file://' not in result.body_html
 
 
+
+
+def test_raw_html_sanitizer_restricts_data_image_urls():
+    result = render_markdown(
+        '<img src="data:image/png;base64,AA==">'
+        '<img src="data:image/svg+xml;base64,PHN2Zy8+">'
+        '<img src="data:text/html;base64,PGgxPkJvbzwvaDE+">'
+    )
+
+    assert 'src="data:image/png;base64,AA=="' in result.body_html
+    assert "data:image/svg+xml" not in result.body_html
+    assert "data:text/html" not in result.body_html
+
+
+def test_raw_html_sanitizer_rejects_obfuscated_url_controls():
+    result = render_markdown('<a href="java&#10;script:alert(1)">bad</a>')
+
+    assert "href=" not in result.body_html
+    assert "bad" in result.body_html
+
+
 def test_cover_supports_multiline_summary_and_multiple_authors(tmp_path):
     from mardas_md2pdf.renderer import PdfOptions, build_html
 

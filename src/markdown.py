@@ -100,6 +100,7 @@ TAG_SAFE_ATTRS = {
     "code": {"class"},
 }
 SAFE_URL_SCHEMES = {"", "http", "https", "mailto", "data"}
+SAFE_DATA_IMAGE_MIME_TYPES = {"image/png", "image/jpeg", "image/gif", "image/webp", "image/bmp", "image/avif"}
 MAX_EMBED_IMAGE_BYTES = 20 * 1024 * 1024
 TRANSPARENT_IMAGE_DATA_URI = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="
 RTL_LANG_PREFIXES = ("ar", "fa", "he", "iw", "ku", "ps", "sd", "ug", "ur", "yi")
@@ -888,12 +889,28 @@ def _image_file_to_data_uri(path: Path) -> str | None:
     return f"data:{mime_type};base64,{encoded}"
 
 
-def _is_safe_url(value: str) -> bool:
-    parsed = urlparse((value or "").strip())
-    if parsed.scheme.lower() not in SAFE_URL_SCHEMES:
+def _has_url_control_chars(value: str) -> bool:
+    return any(ord(ch) < 32 or ord(ch) == 127 for ch in value)
+
+
+def _is_safe_data_image_url(value: str) -> bool:
+    if not value.lower().startswith("data:") or "," not in value:
         return False
-    if parsed.scheme.lower() == "data":
-        return value.lower().startswith("data:image/")
+    header = value[5:].split(",", 1)[0].strip().lower()
+    media_type = header.split(";", 1)[0].strip()
+    return media_type in SAFE_DATA_IMAGE_MIME_TYPES
+
+
+def _is_safe_url(value: str) -> bool:
+    raw_value = str(value or "").strip()
+    if _has_url_control_chars(raw_value):
+        return False
+    parsed = urlparse(raw_value)
+    scheme = parsed.scheme.lower()
+    if scheme not in SAFE_URL_SCHEMES:
+        return False
+    if scheme == "data":
+        return _is_safe_data_image_url(raw_value)
     return True
 
 
