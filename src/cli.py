@@ -5,7 +5,7 @@ import sys
 from pathlib import Path
 
 from . import __version__
-from .renderer import PdfOptions, convert
+from .renderer import PdfOptions, convert, validate_page_size
 
 
 class _CliProgressBar:
@@ -134,6 +134,10 @@ def main(argv: list[str] | None = None) -> int:
         parser.error(f"Watermark image not found: {args.watermark_image}")
     if not 0 <= args.watermark_opacity <= 1:
         parser.error("--watermark-opacity must be between 0 and 1")
+    try:
+        page_size = validate_page_size(args.page_size)
+    except ValueError as exc:
+        parser.error(f"--page-size {exc}")
 
     profile_theme_defaults = {
         "default": "modern",
@@ -156,7 +160,7 @@ def main(argv: list[str] | None = None) -> int:
         toc_page_break=args.toc_page_break,
         h1_page_break=args.h1_page_break,
         debug_html=args.debug_html,
-        page_size=args.page_size,
+        page_size=page_size,
         document_direction=args.document_direction,
         margin_top=args.margin_top,
         margin_bottom=args.margin_bottom,

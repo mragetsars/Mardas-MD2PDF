@@ -1,10 +1,21 @@
-from mardas_md2pdf.renderer import _css_page_size, _playwright_page_size_kwargs
+from mardas_md2pdf.renderer import _css_page_size, _playwright_page_size_kwargs, validate_page_size
 
 
 def test_css_page_size_accepts_named_orientation_and_dimensions():
     assert _css_page_size("A4 landscape") == "A4 landscape"
     assert _css_page_size("210mm 297mm") == "210mm 297mm"
     assert _css_page_size("bad; value") == "A4"
+    assert _css_page_size("not-a-size") == "A4"
+
+
+def test_page_size_validation_rejects_unknown_named_sizes():
+    import pytest
+
+    assert validate_page_size("Letter") == "Letter"
+    assert validate_page_size("A4 landscape") == "A4 landscape"
+    assert validate_page_size("148mm 210mm") == "148mm 210mm"
+    with pytest.raises(ValueError, match="page size"):
+        validate_page_size("not-a-size")
 
 
 def test_playwright_page_size_uses_format_only_for_named_formats():
@@ -231,3 +242,14 @@ def test_add_pdf_outline_writes_nested_bookmarks(tmp_path):
 
     assert outline[0].title == "Intro"
     assert outline[1][0].title == "Details"
+
+
+def test_cli_rejects_invalid_page_size(tmp_path):
+    import pytest
+
+    from mardas_md2pdf.cli import main
+
+    input_path = tmp_path / "doc.md"
+    input_path.write_text("# Title\n", encoding="utf-8")
+    with pytest.raises(SystemExit):
+        main([str(input_path), "--page-size", "not-a-size"])

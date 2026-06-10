@@ -293,12 +293,54 @@ PLAYWRIGHT_NAMED_PAGE_FORMATS = {
     "a5",
     "a6",
 }
+SUPPORTED_CSS_PAGE_NAMES = PLAYWRIGHT_NAMED_PAGE_FORMATS | {
+    "b0",
+    "b1",
+    "b2",
+    "b3",
+    "b4",
+    "b5",
+    "b6",
+}
+PAGE_SIZE_NAME_RE = re.compile(
+    r"^(?P<name>[A-Za-z][A-Za-z0-9-]*)(?:\s+(?P<orientation>portrait|landscape))?$",
+    re.IGNORECASE,
+)
 
 CUSTOM_PAGE_DIMENSIONS_RE = re.compile(
     r"^(?P<width>\d+(?:\.\d+)?(?:mm|cm|in|px|pt))\s+"
     r"(?P<height>\d+(?:\.\d+)?(?:mm|cm|in|px|pt))$",
     re.IGNORECASE,
 )
+
+
+def validate_page_size(value: str | None) -> str:
+    """Return a safe PDF page-size expression or raise ``ValueError``.
+
+    Chromium accepts a broad CSS ``@page size`` grammar, but treating arbitrary
+    words as valid page sizes makes typos such as ``not-a-size`` silently fall
+    back to A4. Keep explicit dimensions flexible, while named sizes are limited
+    to the documented built-in families.
+    """
+    text = (value or "A4").strip()
+    if not text:
+        return "A4"
+
+    dimension_match = CUSTOM_PAGE_DIMENSIONS_RE.fullmatch(text)
+    if dimension_match:
+        return text
+
+    name_match = PAGE_SIZE_NAME_RE.fullmatch(text)
+    if name_match:
+        name = name_match.group("name")
+        orientation = name_match.group("orientation")
+        if name.lower() in SUPPORTED_CSS_PAGE_NAMES:
+            return f"{name} {orientation.lower()}" if orientation else name
+
+    raise ValueError(
+        "page size must be a supported named size such as A4 or Letter, "
+        'an optional orientation such as "A4 landscape", or explicit dimensions such as "210mm 297mm"'
+    )
 
 
 def _playwright_page_size_kwargs(value: str | None) -> dict[str, str]:
@@ -318,10 +360,7 @@ def _playwright_page_size_kwargs(value: str | None) -> dict[str, str]:
             "width": dimension_match.group("width"),
             "height": dimension_match.group("height"),
         }
-    if (
-        re.fullmatch(r"[A-Za-z][A-Za-z0-9-]*", text)
-        and text.lower() in PLAYWRIGHT_NAMED_PAGE_FORMATS
-    ):
+    if PAGE_SIZE_NAME_RE.fullmatch(text) and " " not in text and text.lower() in PLAYWRIGHT_NAMED_PAGE_FORMATS:
         return {"format": text}
     return {}
 
@@ -387,8 +426,10 @@ def _css_page_size(value: str | None) -> str:
     margins. Therefore the selected CLI/GUI page size must also be emitted as a
     late CSS override; otherwise the theme-level ``@page { size: A4; }`` wins.
     """
-    text = (value or "A4").strip()
-    return text if CSS_PAGE_SIZE_RE.match(text) else "A4"
+    try:
+        return validate_page_size(value)
+    except ValueError:
+        return "A4"
 
 
 def normalize_document_direction(value: Any, *, default: str = "auto") -> str:
