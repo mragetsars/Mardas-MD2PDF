@@ -94,3 +94,11 @@ def test_gui_exposes_keyboard_shortcuts_for_local_workflow():
     assert "event.ctrlKey || event.metaKey" in html
     assert "downloadMarkdown();" in html
     assert "renderPDF();" in html
+
+
+def test_gui_displays_structured_render_error_codes():
+    html = GUI_HTML.read_text(encoding="utf-8")
+
+    assert "async function readRenderError" in html
+    assert "payload.code" in html
+    assert "Export failed (" in html

@@ -653,6 +653,13 @@ function finishExportProgress(message, success=true){
   }, success ? 1100 : 3200);
 }
 
+async function readRenderError(response){
+  const payload = await response.json().catch(() => ({}));
+  const message = payload.error || response.statusText || 'Render failed';
+  const code = payload.code ? ' · ' + payload.code : '';
+  return 'Export failed (' + response.status + code + '): ' + message;
+}
+
 async function renderPDF(){
   document.body.classList.add('busy');
   startExportProgress();
@@ -663,8 +670,7 @@ async function renderPDF(){
       body: JSON.stringify({ markdown: editor.value, options: getOptions(), assets: attachedAssets })
     });
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: 'Render failed' }));
-      throw new Error(error.error || 'Render failed');
+      throw new Error(await readRenderError(response));
     }
     const blob = await response.blob();
     const a = document.createElement('a');
