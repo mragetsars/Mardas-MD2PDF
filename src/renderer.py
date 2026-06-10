@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import html
 import mimetypes
+import os
 import re
 import shutil
 import tempfile
@@ -55,6 +56,7 @@ class PdfOptions:
     margin_x: str = "16mm"
     font_dir: Path | None = None
     chromium_path: str | None = None
+    chromium_sandbox: str = "auto"
     no_header_footer: bool = False
     no_mathjax: bool = False
     timeout_ms: int = 120_000
@@ -1135,6 +1137,30 @@ def _pdf_metadata(result: MarkdownRenderResult, options: PdfOptions, title: str)
     return data
 
 
+
+
+def _should_disable_chromium_sandbox(mode: str) -> bool:
+    normalized = (mode or "auto").strip().lower()
+    if normalized == "off":
+        return True
+    if normalized == "on":
+        return False
+    if normalized != "auto":
+        raise ValueError("chromium_sandbox must be one of: auto, on, off")
+    geteuid = getattr(os, "geteuid", None)
+    return bool(geteuid and geteuid() == 0)
+
+
+def _chromium_launch_args(options: PdfOptions) -> list[str]:
+    args = [
+        "--font-render-hinting=medium",
+        "--disable-dev-shm-usage",
+    ]
+    if _should_disable_chromium_sandbox(options.chromium_sandbox):
+        args.append("--no-sandbox")
+    return args
+
+
 def _copy_pdf_with_metadata(input_path: Path, output_path: Path, metadata: dict[str, str]) -> None:
     reader = PdfReader(str(input_path))
     writer = PdfWriter()
@@ -1197,11 +1223,7 @@ def convert(options: PdfOptions) -> Path:
             _report_progress(progress, "Starting Chromium", 0.36)
             launch_kwargs: dict[str, Any] = {
                 "headless": True,
-                "args": [
-                    "--font-render-hinting=medium",
-                    "--disable-dev-shm-usage",
-                    "--no-sandbox",
-                ],
+                "args": _chromium_launch_args(options),
             }
             if executable:
                 launch_kwargs["executable_path"] = executable

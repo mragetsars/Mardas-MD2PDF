@@ -145,3 +145,36 @@ def test_mermaid_css_caps_diagram_height_for_print_layout(tmp_path):
     assert "--md2pdf-mermaid-tall-max-height" in html
     assert ".mermaid-diagram--tall .md2pdf-mermaid-svg" in html
     assert ".mermaid-diagram--wide .md2pdf-mermaid-svg" in html
+
+
+def test_chromium_sandbox_off_adds_no_sandbox(tmp_path):
+    from mardas_md2pdf.renderer import PdfOptions, _chromium_launch_args
+
+    options = PdfOptions(
+        input_path=tmp_path / "input.md",
+        output_path=tmp_path / "output.pdf",
+        chromium_sandbox="off",
+    )
+
+    assert "--no-sandbox" in _chromium_launch_args(options)
+
+
+def test_chromium_sandbox_on_omits_no_sandbox(tmp_path):
+    from mardas_md2pdf.renderer import PdfOptions, _chromium_launch_args
+
+    options = PdfOptions(
+        input_path=tmp_path / "input.md",
+        output_path=tmp_path / "output.pdf",
+        chromium_sandbox="on",
+    )
+
+    assert "--no-sandbox" not in _chromium_launch_args(options)
+
+
+def test_cli_exposes_chromium_sandbox_modes():
+    from mardas_md2pdf.cli import build_parser
+
+    parser = build_parser()
+    sandbox_action = next(action for action in parser._actions if "--chromium-sandbox" in action.option_strings)
+
+    assert sandbox_action.choices == ["auto", "on", "off"]

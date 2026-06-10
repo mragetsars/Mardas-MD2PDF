@@ -71,6 +71,15 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--font-dir", type=Path, help="Directory containing Vazirmatn font files")
     parser.add_argument("--chromium-path", help="Path to Chromium/Chrome executable")
     parser.add_argument(
+        "--chromium-sandbox",
+        choices=["auto", "on", "off"],
+        default="auto",
+        help=(
+            "Chromium sandbox mode. auto keeps sandboxing on for normal users and disables it only "
+            "when running as root; off is intended for trusted containers only."
+        ),
+    )
+    parser.add_argument(
         "--profile",
         choices=["default", "github", "academic", "persian-report", "minimal"],
         default="default",
@@ -154,6 +163,7 @@ def main(argv: list[str] | None = None) -> int:
         margin_x=args.margin_x,
         font_dir=args.font_dir,
         chromium_path=args.chromium_path,
+        chromium_sandbox=args.chromium_sandbox,
         no_header_footer=args.no_header_footer,
         no_mathjax=args.no_mathjax,
         timeout_ms=args.timeout_ms,
