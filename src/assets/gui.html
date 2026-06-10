@@ -174,13 +174,13 @@
           <button id="layoutPreview" onclick="setLayout('preview')">Preview</button>
           <button id="layoutZen" onclick="setLayout('zen')">Zen</button>
         </div>
-        <button class="btn btn-ghost" onclick="toggleTheme()" id="themeBtn">☀️ Light</button>
+        <button class="btn btn-ghost" onclick="toggleInterfaceMode()" id="interfaceBtn">☀️ Light</button>
         <button id="exportPdfBtn" class="btn btn-primary" onclick="renderPDF()"><span class="spinner">⏳</span>📄 Export PDF</button>
       </div>
     </header>
     <main class="workspace" id="workspace">
       <aside class="sidebar">
-        <div class="sidebar-head"><strong>Export Settings</strong><span id="profileName">textbook-light</span></div>
+        <div class="sidebar-head"><strong>Export Settings</strong><span id="appearanceName">modern · blue · light</span></div>
         <div class="sidebar-body">
           <section class="card"><h3>📌 Document</h3>
             <div class="field"><label for="titleInput">Title</label><input id="titleInput" type="text" placeholder="Document title"></div>
@@ -189,11 +189,13 @@
             <div class="field"><label for="pageSizeInput">Page size</label><select id="pageSizeInput"><option>A4</option><option>A4 landscape</option><option>Letter</option><option>Legal</option><option>210mm 297mm</option></select></div>
             <div class="field"><label for="directionInput">Document direction</label><select id="directionInput"><option value="auto" selected>auto</option><option value="rtl">rtl</option><option value="ltr">ltr</option></select></div>
           </section>
-          <section class="card"><h3>🎨 PDF Theme</h3>
-            <div class="field"><label for="pdfThemeInput">Theme</label><select id="pdfThemeInput"><option value="modern">modern</option><option value="github">github</option><option value="textbook-light" selected>textbook-light</option><option value="textbook-dark">textbook-dark</option><option value="academic">academic</option></select></div>
+          <section class="card"><h3>🎨 Appearance</h3>
+            <div class="field"><label for="styleInput">Style</label><select id="styleInput"><option value="modern" selected>modern</option><option value="github">github</option><option value="textbook">textbook</option><option value="academic">academic</option></select></div>
+            <div class="field"><label for="paletteInput">Palette</label><select id="paletteInput"><option value="blue" selected>blue</option><option value="emerald">emerald</option><option value="violet">violet</option><option value="amber">amber</option><option value="rose">rose</option><option value="slate">slate</option><option value="neutral">neutral</option></select></div>
+            <div class="field"><label for="modeInput">Mode</label><select id="modeInput"><option value="light" selected>light</option><option value="dark">dark</option></select></div>
             <label class="check"><input id="noCoverInput" type="checkbox"><span>No cover page</span></label>
             <label class="check"><input id="noHeaderFooterInput" type="checkbox"><span>Hide footer/page number</span></label>
-            <p class="hint">The hidden unbranded cover flag remains CLI-only and is not exposed in Studio.</p>
+            <p class="hint">Style controls layout shape; palette controls accent colors; mode controls light or dark output.</p>
           </section>
           <section class="card"><h3>🧭 Structure</h3>
             <label class="check"><input id="tocInput" type="checkbox" checked><span>Generate table of contents</span></label>
@@ -218,7 +220,7 @@
       </section>
       <div class="gutter" id="gutter" title="Drag to resize editor and preview"></div>
       <section class="pane preview-pane">
-        <div class="pane-head"><strong>Preview</strong><span class="preview-tools"><span class="preview-note" title="The exported PDF uses the Python renderer, MathJax, theme CSS, TOC, page breaks, and Chromium print layout.">Approximate preview</span><button class="btn" onclick="toggleDirection()" id="dirBtn">↔️ RTL</button></span></div>
+        <div class="pane-head"><strong>Preview</strong><span class="preview-tools"><span class="preview-note" title="The exported PDF uses the Python renderer, MathJax, appearance CSS, TOC, page breaks, and Chromium print layout.">Approximate preview</span><button class="btn" onclick="toggleDirection()" id="dirBtn">↔️ RTL</button></span></div>
         <div id="preview" class="preview" dir="auto"></div>
       </section>
     </main>
@@ -237,7 +239,7 @@ const serverStatus = $('serverStatus');
 const exportProgress = $('exportProgress');
 const exportProgressBar = $('exportProgressBar');
 const exportProgressLabel = $('exportProgressLabel');
-const themeBtn = $('themeBtn');
+const interfaceBtn = $('interfaceBtn');
 let renderTimer = null;
 let exportProgressTimer = null;
 let exportProgressValue = 0;
@@ -253,7 +255,9 @@ function getOptions(){
     filename: $('filenameInput').value,
     pageSize: $('pageSizeInput').value,
     direction: $('directionInput').value,
-    theme: $('pdfThemeInput').value,
+    style: $('styleInput').value,
+    palette: $('paletteInput').value,
+    mode: $('modeInput').value,
     noCover: $('noCoverInput').checked,
     noHeaderFooter: $('noHeaderFooterInput').checked,
     toc: $('tocInput').checked,
@@ -297,7 +301,9 @@ function setOptions(options){
   if (hasOwnOption(options, 'filename')) setFieldValue('filenameInput', options.filename);
   if (hasOwnOption(options, 'pageSize')) setSelectValue('pageSizeInput', options.pageSize);
   if (hasOwnOption(options, 'direction')) setSelectValue('directionInput', options.direction);
-  if (hasOwnOption(options, 'theme')) setSelectValue('pdfThemeInput', options.theme);
+  if (hasOwnOption(options, 'style')) setSelectValue('styleInput', options.style);
+  if (hasOwnOption(options, 'palette')) setSelectValue('paletteInput', options.palette);
+  if (hasOwnOption(options, 'mode')) setSelectValue('modeInput', options.mode);
   if (hasOwnOption(options, 'noCover')) setFieldChecked('noCoverInput', options.noCover);
   if (hasOwnOption(options, 'noHeaderFooter')) setFieldChecked('noHeaderFooterInput', options.noHeaderFooter);
   if (hasOwnOption(options, 'toc')) setFieldChecked('tocInput', options.toc);
@@ -306,7 +312,11 @@ function setOptions(options){
   if (hasOwnOption(options, 'h1PageBreak')) setFieldChecked('h1PageBreakInput', options.h1PageBreak);
   if (hasOwnOption(options, 'watermark')) setFieldValue('watermarkInput', options.watermark);
   if (hasOwnOption(options, 'watermarkOpacity')) setFieldValue('watermarkOpacityInput', options.watermarkOpacity);
-  $('profileName').textContent = $('pdfThemeInput').value;
+  updateAppearanceName();
+}
+
+function updateAppearanceName(){
+  $('appearanceName').textContent = $('styleInput').value + ' · ' + $('paletteInput').value + ' · ' + $('modeInput').value;
 }
 
 function getStudioState(){
@@ -347,7 +357,7 @@ function loadStudioState(){
     if (typeof state.markdown === 'string') editor.value = state.markdown;
     setOptions(state.options || {});
     document.body.classList.toggle('light-mode', Boolean(state.lightMode));
-    themeBtn.textContent = state.lightMode ? '🌙 Dark' : '☀️ Light';
+    interfaceBtn.textContent = state.lightMode ? '🌙 Dark' : '☀️ Light';
     if (['auto','rtl','ltr'].includes(state.previewDirection)) {
       preview.setAttribute('dir', state.previewDirection);
       editor.setAttribute('dir', state.previewDirection);
@@ -540,9 +550,11 @@ editor.addEventListener('keydown', (event) => {
   }
 });
 
-$('pdfThemeInput').addEventListener('change', () => {
-  $('profileName').textContent = $('pdfThemeInput').value;
-  scheduleStudioStateSave();
+['styleInput', 'paletteInput', 'modeInput'].forEach(id => {
+  $(id).addEventListener('change', () => {
+    updateAppearanceName();
+    scheduleStudioStateSave();
+  });
 });
 
 let attachedAssets = [];
@@ -689,7 +701,13 @@ async function renderPDF(){
 
 function copyCommand(){
   const options = getOptions();
-  const cmd = ['mrs-md2pdf input.md', '-o ' + (options.filename || 'output.pdf'), '--theme ' + options.theme];
+  const cmd = [
+    'mrs-md2pdf input.md',
+    '-o ' + (options.filename || 'output.pdf'),
+    '--style ' + options.style,
+    '--palette ' + options.palette,
+    '--mode ' + options.mode
+  ];
   if (options.toc) cmd.push('--toc', '--toc-depth ' + options.tocDepth);
   if (options.tocPageBreak) cmd.push('--toc-page-break');
   if (options.h1PageBreak) cmd.push('--h1-page-break');
@@ -701,10 +719,10 @@ function copyCommand(){
   serverStatus.textContent = 'CLI command copied';
 }
 
-function toggleTheme(){
+function toggleInterfaceMode(){
   document.body.classList.toggle('light-mode');
   const light = document.body.classList.contains('light-mode');
-  themeBtn.textContent = light ? '🌙 Dark' : '☀️ Light';
+  interfaceBtn.textContent = light ? '🌙 Dark' : '☀️ Light';
   scheduleStudioStateSave();
 }
 
@@ -758,9 +776,10 @@ window.addEventListener('keydown', (event) => {
   }
 });
 
-editor.value = `---\ntitle: "نمونه سند Mardas MD2PDF"\nauthor: "mragetsars"\ndate: "2026-05-12"\nlang: fa\n---\n\n# نمونه Markdown\n\nاین محیط برای ویرایش Markdown و گرفتن خروجی PDF با تنظیمات گرافیکی ساخته شده است.\n\n## Code\n\n\`\`\`python\nprint("Hello Mardas")\n\`\`\`\n\n| قابلیت | وضعیت |\n|---|---|\n| RTL/LTR | ✅ |\n| PDF Export | ✅ |\n`;
+editor.value = `---\ntitle: "نمونه سند Mardas MD2PDF"\nauthor: "mragetsars"\ndate: "2026-05-12"\nlang: fa\nappearance:\n  style: modern\n  palette: blue\n  mode: light\n---\n\n# نمونه Markdown\n\nاین محیط برای ویرایش Markdown و گرفتن خروجی PDF با تنظیمات گرافیکی ساخته شده است.\n\n## Code\n\n\`\`\`python\nprint("Hello Mardas")\n\`\`\`\n\n| قابلیت | وضعیت |\n|---|---|\n| RTL/LTR | ✅ |\n| PDF Export | ✅ |\n`;
 attachOptionPersistence();
 loadStudioState();
+updateAppearanceName();
 renderAssetList();
 renderPreview();
 </script>
