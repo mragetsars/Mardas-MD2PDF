@@ -397,7 +397,7 @@ def test_dark_appearance_css_uses_style_specific_surfaces():
     assert "background: #0b1020 !important" in modern
     assert "background: #0d1117 !important" in github
     assert "background: #050505 !important" in textbook
-    assert "background: #1c1917 !important" in academic
+    assert "background: #111111 !important" in academic
     assert modern != github != textbook != academic
 
 
@@ -419,3 +419,41 @@ def test_light_appearance_css_tints_cover_with_palette():
     assert "body.md2pdf-palette-rose:not(.md2pdf-mode-dark) .md2pdf-cover" in css
     assert "color-mix(in srgb, var(--accent) 14%" in css
     assert "--accent: #e11d48" in css
+
+
+def test_cover_eyebrow_is_not_rendered_as_badge_highlight(tmp_path):
+    from mardas_md2pdf.markdown import render_markdown
+    from mardas_md2pdf.renderer import PdfOptions, build_html
+
+    md = "---\ntitle: Guide\ncover_label: Complete Guide\n---\n\n# Body\n"
+    input_path = tmp_path / "cover.md"
+    input_path.write_text(md, encoding="utf-8")
+    html = build_html(
+        render_markdown(md),
+        PdfOptions(input_path=input_path, output_path=tmp_path / "out.pdf", style="github", palette="amber"),
+    )
+
+    assert "Complete Guide" in html
+    assert ".md2pdf-cover__eyebrow {" in html
+    assert "background: transparent !important;" in html
+    assert "padding: 0 !important;" in html
+    assert "background: #ddf4ff;" not in html
+    assert ".md2pdf-cover__eyebrow { color: var(--accent, #0969da); background: transparent; }" in html
+
+
+def test_numbered_code_css_aligns_line_numbers_with_code_rows(tmp_path):
+    from mardas_md2pdf.markdown import render_markdown
+    from mardas_md2pdf.renderer import PdfOptions, build_html
+
+    md = '```python title="main.py" linenos\nprint(1)\nprint(2)\n```\n'
+    input_path = tmp_path / "code.md"
+    input_path.write_text(md, encoding="utf-8")
+    html = build_html(render_markdown(md), PdfOptions(input_path=input_path, output_path=tmp_path / "out.pdf"))
+
+    assert "code-block--numbered" in html
+    assert ".code-block--numbered .codehilitetable td" in html
+    assert "padding: 0 !important;" in html
+    assert ".code-block--numbered .linenos pre" in html
+    assert "padding: 4.2mm 2.2mm 4.2mm 4mm !important;" in html
+    assert "body.md2pdf-style-textbook .code-block--numbered .linenos pre" in html
+    assert "background-color: color-mix(in srgb, var(--accent-soft" in html
