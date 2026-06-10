@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from . import __version__
-from .renderer import PdfOptions, convert, normalize_theme_name
+from .renderer import PdfOptions, convert, normalize_theme_name, validate_page_size
 
 
 MAX_GUI_REQUEST_BYTES = 32 * 1024 * 1024
@@ -75,6 +75,115 @@ def _studio_bind_warning(host: str) -> str | None:
         "because anyone who can reach the server can submit Markdown and attached assets."
     )
 
+
+
+
+def _json_bool(value: Any, *, default: bool, code: str, label: str) -> bool:
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in {"true", "1", "yes", "on"}:
+            return True
+        if normalized in {"false", "0", "no", "off", ""}:
+            return False
+    if isinstance(value, int) and value in {0, 1}:
+        return bool(value)
+    raise StudioRequestError(f"{label} must be true or false.", code=code)
+
+
+def _json_int_range(
+    value: Any,
+    *,
+    default: int,
+    minimum: int,
+    maximum: int,
+    code: str,
+    label: str,
+) -> int:
+    if value is None or value == "":
+        return default
+    if isinstance(value, bool):
+        raise StudioRequestError(f"{label} must be an integer from {minimum} to {maximum}.", code=code)
+    try:
+        number = int(value)
+    except (TypeError, ValueError) as exc:
+        raise StudioRequestError(f"{label} must be an integer from {minimum} to {maximum}.", code=code) from exc
+    if not minimum <= number <= maximum:
+        raise StudioRequestError(f"{label} must be between {minimum} and {maximum}.", code=code)
+    return number
+
+
+def _json_float_range(
+    value: Any,
+    *,
+    default: float,
+    minimum: float,
+    maximum: float,
+    code: str,
+    label: str,
+) -> float:
+    if value is None or value == "":
+        return default
+    if isinstance(value, bool):
+        raise StudioRequestError(f"{label} must be a number from {minimum:g} to {maximum:g}.", code=code)
+    try:
+        number = float(value)
+    except (TypeError, ValueError) as exc:
+        raise StudioRequestError(f"{label} must be a number from {minimum:g} to {maximum:g}.", code=code) from exc
+    if not minimum <= number <= maximum:
+        raise StudioRequestError(f"{label} must be between {minimum:g} and {maximum:g}.", code=code)
+    return number
+
+
+def _validated_render_options(options: dict[str, Any]) -> dict[str, Any]:
+    """Normalize Studio render options and turn bad input into 400 errors."""
+    try:
+        page_size = validate_page_size(str(options.get("pageSize") or "A4"))
+    except ValueError as exc:
+        raise StudioRequestError(f"pageSize {exc}", code="invalid_page_size") from exc
+
+    direction = str(options.get("direction") or "").strip().lower()
+    if direction not in {"", "auto", "rtl", "ltr"}:
+        raise StudioRequestError("direction must be auto, rtl, or ltr.", code="invalid_direction")
+
+    return {
+        "theme": normalize_theme_name(str(options.get("theme") or "modern")),
+        "toc": _json_bool(options.get("toc"), default=True, code="invalid_toc", label="toc"),
+        "toc_depth": _json_int_range(
+            options.get("tocDepth"),
+            default=6,
+            minimum=1,
+            maximum=6,
+            code="invalid_toc_depth",
+            label="tocDepth",
+        ),
+        "toc_page_break": _json_bool(
+            options.get("tocPageBreak"), default=True, code="invalid_toc_page_break", label="tocPageBreak"
+        ),
+        "h1_page_break": _json_bool(
+            options.get("h1PageBreak"), default=True, code="invalid_h1_page_break", label="h1PageBreak"
+        ),
+        "page_size": page_size,
+        "direction": direction or None,
+        "cover": not _json_bool(options.get("noCover"), default=False, code="invalid_no_cover", label="noCover"),
+        "watermark_opacity": _json_float_range(
+            options.get("watermarkOpacity"),
+            default=0.065,
+            minimum=0,
+            maximum=1,
+            code="invalid_watermark_opacity",
+            label="watermarkOpacity",
+        ),
+        "no_header_footer": _json_bool(
+            options.get("noHeaderFooter"), default=False, code="invalid_no_header_footer", label="noHeaderFooter"
+        ),
+        "no_mathjax": _json_bool(
+            options.get("noMathjax"), default=False, code="invalid_no_mathjax", label="noMathjax"
+        ),
+    }
 
 def _asset_text(name: str) -> str:
     return (resources.files("mardas_md2pdf") / "assets" / name).read_text(encoding="utf-8")
@@ -214,7 +323,7 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
                 )
                 return
 
-            theme = normalize_theme_name(str(options.get("theme") or "modern"))
+            render_options = _validated_render_options(options)
             filename = _safe_filename(str(options.get("filename") or options.get("title") or "mardas-document"))
             if not filename.lower().endswith(".pdf"):
                 filename += ".pdf"
@@ -232,18 +341,18 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
                     title=(str(options.get("title") or "").strip() or None),
                     author=(str(options.get("author") or "").strip() or None),
                     description=(str(options.get("description") or "").strip() or None),
-                    toc=bool(options.get("toc", True)),
-                    toc_depth=int(options.get("tocDepth") or 6),
-                    toc_page_break=bool(options.get("tocPageBreak", True)),
-                    h1_page_break=bool(options.get("h1PageBreak", True)),
-                    page_size=str(options.get("pageSize") or "A4"),
-                    document_direction=(str(options.get("direction") or "").strip() or None),
-                    theme=theme,
-                    cover=not bool(options.get("noCover", False)),
+                    toc=render_options["toc"],
+                    toc_depth=render_options["toc_depth"],
+                    toc_page_break=render_options["toc_page_break"],
+                    h1_page_break=render_options["h1_page_break"],
+                    page_size=render_options["page_size"],
+                    document_direction=render_options["direction"],
+                    theme=render_options["theme"],
+                    cover=render_options["cover"],
                     watermark_text=(str(options.get("watermark") or "").strip() or None),
-                    watermark_opacity=float(options.get("watermarkOpacity") or 0.065),
-                    no_header_footer=bool(options.get("noHeaderFooter", False)),
-                    no_mathjax=bool(options.get("noMathjax", False)),
+                    watermark_opacity=render_options["watermark_opacity"],
+                    no_header_footer=render_options["no_header_footer"],
+                    no_mathjax=render_options["no_mathjax"],
                 )
                 convert(pdf_options)
                 data = pdf_path.read_bytes()

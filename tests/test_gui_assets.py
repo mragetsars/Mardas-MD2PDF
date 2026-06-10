@@ -102,3 +102,39 @@ def test_gui_displays_structured_render_error_codes():
     assert "async function readRenderError" in html
     assert "payload.code" in html
     assert "Export failed (" in html
+
+
+
+def test_studio_validates_render_options():
+    import pytest
+
+    from mardas_md2pdf import gui
+
+    options = gui._validated_render_options(
+        {
+            "tocDepth": "4",
+            "watermarkOpacity": "0.35",
+            "pageSize": "A4 landscape",
+            "toc": "false",
+            "noCover": "true",
+        }
+    )
+
+    assert options["toc_depth"] == 4
+    assert options["watermark_opacity"] == 0.35
+    assert options["page_size"] == "A4 landscape"
+    assert options["toc"] is False
+    assert options["cover"] is False
+
+    for bad_options, code in [
+        ({"tocDepth": "bad"}, "invalid_toc_depth"),
+        ({"tocDepth": 9}, "invalid_toc_depth"),
+        ({"watermarkOpacity": "bad"}, "invalid_watermark_opacity"),
+        ({"watermarkOpacity": 1.9}, "invalid_watermark_opacity"),
+        ({"pageSize": "not-a-size"}, "invalid_page_size"),
+        ({"direction": "sideways"}, "invalid_direction"),
+    ]:
+        with pytest.raises(gui.StudioRequestError) as exc_info:
+            gui._validated_render_options(bad_options)
+        assert exc_info.value.status == 400
+        assert exc_info.value.code == code
