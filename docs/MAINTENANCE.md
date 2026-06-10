@@ -30,6 +30,21 @@ Override `SOURCE_DATE_EPOCH` only when a release intentionally needs a different
 MARDAS_TIMEOUT_MS=240000 ./scripts/build_examples.sh
 ```
 
+
+## Appearance matrix audit
+
+When changing `src/appearance.py` or any `src/assets/style-*.css` file, render
+every built-in style, palette, and mode combination before shipping the patch:
+
+```bash
+python scripts/audit_appearance_matrix.py --output-dir build/appearance-audit --render-png
+```
+
+Review the cover and content PNGs for contrast, palette accents, code blocks,
+callouts, tables, formulas, and dark-mode background consistency.  This audit is
+intentionally not part of the default CI path because it launches Chromium for
+every combination.
+
 ## Python distributions
 
 Build wheel and source distribution artifacts with:

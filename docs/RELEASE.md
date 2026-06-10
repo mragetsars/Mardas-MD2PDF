@@ -26,7 +26,7 @@ MARDAS_RENDER_SMOKE=1 ./scripts/check.sh
 ./scripts/build_dist.sh
 ```
 
-Open the generated PDFs and visually check the cover, table of contents, page numbers, code blocks, formulas, Mermaid diagrams, local images, wide tables, blocked-image placeholders, watermarks, and footnotes. The example build helper sets `SOURCE_DATE_EPOCH` by default so repeated guide builds do not churn metadata dates.
+Open the generated PDFs and visually check the cover, table of contents, page numbers, code blocks, formulas, Mermaid diagrams, local images, wide tables, blocked-image placeholders, watermarks, and footnotes. When changing appearance CSS or palette behavior, also run `python scripts/audit_appearance_matrix.py --output-dir build/appearance-audit --render-png` and review the full style/palette/mode matrix. The example build helper sets `SOURCE_DATE_EPOCH` by default so repeated guide builds do not churn metadata dates.
 
 ## Commit style
 
