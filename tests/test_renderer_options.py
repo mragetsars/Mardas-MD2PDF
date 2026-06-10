@@ -306,3 +306,22 @@ def test_pdf_date_honors_source_date_epoch(monkeypatch):
     monkeypatch.setenv("SOURCE_DATE_EPOCH", "1735689600")
 
     assert _pdf_date() == "D:20250101000000+00'00'"
+
+
+
+def test_watermark_css_overlays_content_with_theme_aware_blending(tmp_path):
+    from mardas_md2pdf.markdown import render_markdown
+    from mardas_md2pdf.renderer import PdfOptions, build_html
+
+    input_path = tmp_path / "watermark.md"
+    input_path.write_text("# Watermark\n", encoding="utf-8")
+    html = build_html(
+        render_markdown("# Watermark\n"),
+        PdfOptions(input_path=input_path, output_path=tmp_path / "out.pdf", watermark_text="DRAFT", theme="textbook-dark"),
+    )
+
+    assert ".md2pdf-watermark" in html
+    assert "z-index: 2 !important" in html
+    assert "mix-blend-mode: multiply" in html
+    assert "body.md2pdf-theme-textbook-dark .md2pdf-watermark" in html
+    assert "mix-blend-mode: screen" in html

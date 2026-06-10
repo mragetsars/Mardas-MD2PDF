@@ -625,6 +625,23 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
       }}
       body.md2pdf-dir-ltr .md2pdf-cover__detail > strong {{ font-family: var(--font-en), var(--font-fa); }}
       body.md2pdf-dir-rtl .md2pdf-cover__detail > strong {{ font-family: var(--font-fa), var(--font-en); }}
+      .md2pdf-document {{
+        position: relative;
+        z-index: 1;
+      }}
+      .md2pdf-watermark {{
+        z-index: 2 !important;
+        mix-blend-mode: multiply;
+      }}
+      body.md2pdf-theme-textbook-dark .md2pdf-watermark {{
+        mix-blend-mode: screen;
+      }}
+      body.md2pdf-theme-textbook-dark .md2pdf-watermark--text {{
+        color: #f8fafc;
+      }}
+      body.md2pdf-theme-textbook-dark .md2pdf-watermark--image img {{
+        filter: invert(1) grayscale(1);
+      }}
       body.md2pdf-dir-ltr .callout {{ direction: ltr; text-align: left; }}
       body.md2pdf-dir-rtl .callout {{ direction: rtl; text-align: right; }}
       body.md2pdf-dir-ltr .callout-title,
