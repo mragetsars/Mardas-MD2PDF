@@ -178,3 +178,56 @@ def test_cli_exposes_chromium_sandbox_modes():
     sandbox_action = next(action for action in parser._actions if "--chromium-sandbox" in action.option_strings)
 
     assert sandbox_action.choices == ["auto", "on", "off"]
+
+
+def test_outline_source_entries_follow_markdown_headings():
+    from mardas_md2pdf.markdown import render_markdown
+    from mardas_md2pdf.renderer import _outline_source_entries
+
+    result = render_markdown("# Intro\n\n## Details\n\n### Deep dive\n")
+
+    assert _outline_source_entries(result) == [
+        (1, "Intro"),
+        (2, "Details"),
+        (3, "Deep dive"),
+    ]
+
+
+def test_locate_outline_pages_uses_start_page_and_monotonic_lookup():
+    from mardas_md2pdf.renderer import _locate_outline_pages
+
+    page_texts = [
+        "cover",
+        "introoverview",
+        "detailsmoretext",
+        "deepdiveappendix",
+    ]
+    entries = [(1, "Intro"), (2, "Details"), (3, "Deep dive"), (2, "Missing")]
+
+    assert _locate_outline_pages(page_texts, entries, start_page=1) == [
+        (1, "Intro", 1),
+        (2, "Details", 2),
+        (3, "Deep dive", 3),
+        (2, "Missing", 3),
+    ]
+
+
+def test_add_pdf_outline_writes_nested_bookmarks(tmp_path):
+    from pypdf import PdfReader, PdfWriter
+
+    from mardas_md2pdf.renderer import _add_pdf_outline
+
+    output_path = tmp_path / "outlined.pdf"
+    writer = PdfWriter()
+    writer.add_blank_page(width=200, height=200)
+    writer.add_blank_page(width=200, height=200)
+    _add_pdf_outline(writer, [(1, "Intro", 0), (2, "Details", 1)])
+    with output_path.open("wb") as fh:
+        writer.write(fh)
+    writer.close()
+
+    reader = PdfReader(str(output_path))
+    outline = reader.outline
+
+    assert outline[0].title == "Intro"
+    assert outline[1][0].title == "Details"

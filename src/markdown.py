@@ -172,6 +172,7 @@ class MarkdownRenderResult:
     title: str = "Document"
     pygments_css: str = ""
     toc_html: str = ""
+    toc_entries: list[tuple[int, str, str, str]] = field(default_factory=list)
 
 
 @dataclass(slots=True)
@@ -1325,6 +1326,7 @@ def render_markdown(
         title=title,
         pygments_css=pygments_css,
         toc_html=toc_html,
+        toc_entries=toc_entries,
     )
 
 

@@ -1137,6 +1137,82 @@ def _pdf_metadata(result: MarkdownRenderResult, options: PdfOptions, title: str)
     return data
 
 
+def _outline_source_entries(result: MarkdownRenderResult) -> list[tuple[int, str]]:
+    """Return clean heading entries for PDF outline creation."""
+    entries: list[tuple[int, str]] = []
+    for entry in result.toc_entries:
+        if len(entry) < 2:
+            continue
+        level = max(1, min(int(entry[0]), 6))
+        title = _stringify_metadata_value(entry[1]).strip()
+        if title:
+            entries.append((level, title))
+    return entries
+
+
+def _normalize_pdf_search_text(value: str) -> str:
+    """Normalize extracted PDF text and heading titles for fuzzy page lookup."""
+    text = unicodedata.normalize("NFKC", value or "")
+    text = text.replace("‌", " ").replace("‏", " ").replace("‎", " ")
+    text = re.sub(r"[\s\W_]+", "", text, flags=re.UNICODE)
+    return text.casefold()
+
+
+def _pdf_page_texts(reader: PdfReader) -> list[str]:
+    texts: list[str] = []
+    for page in reader.pages:
+        try:
+            text = page.extract_text() or ""
+        except Exception:
+            text = ""
+        texts.append(_normalize_pdf_search_text(text))
+    return texts
+
+
+def _locate_outline_pages(
+    page_texts: list[str],
+    outline_entries: list[tuple[int, str]],
+    *,
+    start_page: int = 0,
+) -> list[tuple[int, str, int]]:
+    """Map outline headings to best-effort PDF page indexes.
+
+    Chromium does not expose named destinations after ``page.pdf``. pypdf text
+    extraction gives a stable enough fallback for generated documents; when a
+    heading cannot be found, the bookmark keeps the previous page so the outline
+    remains usable instead of disappearing entirely.
+    """
+    if not page_texts:
+        return []
+    page_count = len(page_texts)
+    current_page = max(0, min(start_page, page_count - 1))
+    located: list[tuple[int, str, int]] = []
+
+    for level, title in outline_entries:
+        needle = _normalize_pdf_search_text(title)
+        page_index = current_page
+        if needle:
+            for index in range(current_page, page_count):
+                if needle in page_texts[index]:
+                    page_index = index
+                    break
+        current_page = page_index
+        located.append((max(1, min(level, 6)), title, page_index))
+    return located
+
+
+def _add_pdf_outline(writer: PdfWriter, outline_entries: list[tuple[int, str, int]]) -> None:
+    """Attach a nested PDF outline to ``writer`` from located heading entries."""
+    parents: dict[int, Any] = {}
+    page_count = len(writer.pages)
+    for level, title, page_index in outline_entries:
+        if not title or page_index < 0 or page_index >= page_count:
+            continue
+        parent = parents.get(level - 1)
+        item = writer.add_outline_item(title, page_index, parent=parent)
+        parents[level] = item
+        for child_level in [key for key in parents if key > level]:
+            del parents[child_level]
 
 
 def _should_disable_chromium_sandbox(mode: str) -> bool:
@@ -1161,12 +1237,29 @@ def _chromium_launch_args(options: PdfOptions) -> list[str]:
     return args
 
 
-def _copy_pdf_with_metadata(input_path: Path, output_path: Path, metadata: dict[str, str]) -> None:
+def _copy_pdf_with_metadata(
+    input_path: Path,
+    output_path: Path,
+    metadata: dict[str, str],
+    outline_source_entries: list[tuple[int, str]] | None = None,
+    *,
+    outline_start_page: int = 0,
+) -> None:
     reader = PdfReader(str(input_path))
+    page_texts = _pdf_page_texts(reader) if outline_source_entries else []
     writer = PdfWriter()
     for page in reader.pages:
         writer.add_page(page)
     writer.add_metadata(metadata)
+    if outline_source_entries:
+        _add_pdf_outline(
+            writer,
+            _locate_outline_pages(
+                page_texts,
+                outline_source_entries,
+                start_page=outline_start_page,
+            ),
+        )
     with output_path.open("wb") as fh:
         writer.write(fh)
     writer.close()
@@ -1178,12 +1271,33 @@ def _apply_pdf_metadata(pdf_path: Path, metadata: dict[str, str]) -> None:
     tmp_path.replace(pdf_path)
 
 
-def _merge_pdfs(parts: list[Path], output_path: Path, metadata: dict[str, str] | None = None) -> None:
+def _merge_pdfs(
+    parts: list[Path],
+    output_path: Path,
+    metadata: dict[str, str] | None = None,
+    outline_source_entries: list[tuple[int, str]] | None = None,
+    *,
+    outline_start_page: int = 0,
+) -> None:
     writer = PdfWriter()
+    page_texts: list[str] = []
     for part in parts:
-        writer.append(str(part))
+        reader = PdfReader(str(part))
+        if outline_source_entries:
+            page_texts.extend(_pdf_page_texts(reader))
+        for page in reader.pages:
+            writer.add_page(page)
     if metadata:
         writer.add_metadata(metadata)
+    if outline_source_entries:
+        _add_pdf_outline(
+            writer,
+            _locate_outline_pages(
+                page_texts,
+                outline_source_entries,
+                start_page=outline_start_page,
+            ),
+        )
     with output_path.open("wb") as fh:
         writer.write(fh)
     writer.close()
@@ -1206,6 +1320,7 @@ def convert(options: PdfOptions) -> Path:
 
     title = options.title or _stringify_metadata_value(result.metadata.get("title")) or result.title
     pdf_metadata = _pdf_metadata(result, options, str(title))
+    outline_source_entries = _outline_source_entries(result)
 
     options.output_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -1244,7 +1359,14 @@ def convert(options: PdfOptions) -> Path:
                     _render_pdf(page, content_html, options, content_pdf, display_footer=True, title=str(title))
 
                     _report_progress(progress, "Merging PDF parts", 0.91)
-                    _merge_pdfs([cover_pdf, content_pdf], options.output_path, pdf_metadata)
+                    cover_page_count = len(PdfReader(str(cover_pdf)).pages)
+                    _merge_pdfs(
+                        [cover_pdf, content_pdf],
+                        options.output_path,
+                        pdf_metadata,
+                        outline_source_entries,
+                        outline_start_page=cover_page_count,
+                    )
                 else:
                     content_pdf = tmp / "content.pdf"
                     html_text = build_html(result, options, include_cover=False, include_content=True, include_watermark=True)
@@ -1252,7 +1374,12 @@ def convert(options: PdfOptions) -> Path:
                     _render_pdf(page, html_text, options, content_pdf, display_footer=True, title=str(title))
 
                     _report_progress(progress, "Writing metadata", 0.91)
-                    _copy_pdf_with_metadata(content_pdf, options.output_path, pdf_metadata)
+                    _copy_pdf_with_metadata(
+                        content_pdf,
+                        options.output_path,
+                        pdf_metadata,
+                        outline_source_entries,
+                    )
             finally:
                 browser.close()
     _report_progress(progress, "PDF created", 1.0)
