@@ -12,7 +12,7 @@ summary: |
   همین سند به عنوان نمونه زنده رندر نیز استفاده می‌شود و جلد، فهرست مطالب، متن ترکیبی فارسی/English، فرمول، کد، نمودار Mermaid، تصویر، جدول، پانویس، شکست صفحه و HTML امن را نمایش می‌دهد.
 institution: "Mardas Lab"
 course: "انتشار حرفه‌ای Markdown"
-version: "1.5.7"
+version: "1.6.0"
 status: "Stable"
 keywords:
   - Markdown
@@ -23,6 +23,10 @@ keywords:
 cover_label: "راهنمای کامل"
 lang: fa
 dir: rtl
+appearance:
+  style: modern
+  palette: blue
+  mode: light
 ---
 
 # معرفی
@@ -35,7 +39,7 @@ dir: rtl
 Markdown -> HTML ساختاریافته -> PDF با Chromium
 ```
 
-در این پروژه متن‌ها مستقیماً روی canvas فایل PDF رسم نمی‌شوند. ابتدا Markdown به HTML ساختاریافته تبدیل می‌شود، سپس CSS چاپی و تنظیمات theme اعمال می‌شود، فرمول‌ها با MathJax رندر می‌شوند و در مرحله آخر Chromium خروجی PDF را تولید می‌کند. این روش باعث پشتیبانی بهتر از layout چاپی، متن‌های ترکیبی RTL/LTR، فرمول‌های SVG، کدهای هایلایت‌شده، تصویرهای محلی و جدول‌های پیچیده می‌شود.
+در این پروژه متن‌ها مستقیماً روی canvas فایل PDF رسم نمی‌شوند. ابتدا Markdown به HTML ساختاریافته تبدیل می‌شود، سپس CSS چاپی و تنظیمات appearance اعمال می‌شود، فرمول‌ها با MathJax رندر می‌شوند و در مرحله آخر Chromium خروجی PDF را تولید می‌کند. این روش باعث پشتیبانی بهتر از layout چاپی، متن‌های ترکیبی RTL/LTR، فرمول‌های SVG، کدهای هایلایت‌شده، تصویرهای محلی و جدول‌های پیچیده می‌شود.
 
 > [!NOTE]
 > این راهنما هم مستند استفاده است و هم نمونه رندر. نسخه PDF همین فایل در پوشه `examples/` قرار دارد تا کاربر بتواند خروجی واقعی هر قابلیت مهم را بررسی کند.
@@ -68,7 +72,7 @@ Markdown -> HTML ساختاریافته -> PDF با Chromium
 | تصویر محلی | جاسازی تصویرهای Markdown و HTML امن به صورت data URI. |
 | کد HTML امن | پاک‌سازی HTML خام به صورت پیش‌فرض. |
 | پانویس | پشتیبانی از پانویس‌های چندخطی با محتوای Markdown. |
-| انواع Theme و profile | قالب‌های `github`، `modern`، `textbook-light`، `textbook-dark` و `academic` همراه با profileهای آماده. |
+| سیستم Appearance | انتخاب جداگانه `style`، `palette` و `mode` برای شکل سند، رنگ‌بندی و خروجی روشن/تاریک. |
 | اتوماسیون | رابط CLI مناسب برای اسکریپت‌ها و CI. |
 | رابط گرافیکی GUI | رابط گرافیکی محلی برای ویرایش، پیش‌نمایش تقریبی، تنظیم گزینه‌ها و خروجی گرفتن. |
 
@@ -128,10 +132,10 @@ pytest
 mrs-md2pdf input.md -o output.pdf
 ```
 
-تبدیل همراه با فهرست مطالب و theme مدرن:
+تبدیل همراه با فهرست مطالب و ظاهر GitHub-style:
 
 ```bash
-mrs-md2pdf input.md -o output.pdf --toc --profile github
+mrs-md2pdf input.md -o output.pdf --toc --style github --palette blue --mode light
 ```
 
 تولید خروجی طولانی با رفتار شبیه کتاب:
@@ -142,7 +146,9 @@ mrs-md2pdf input.md -o output.pdf \
   --toc-depth 4 \
   --toc-page-break \
   --h1-page-break \
-  --profile minimal
+  --style textbook \
+  --palette slate \
+  --mode light
 ```
 
 ذخیره HTML میانی برای بررسی و رفع اشکال:
@@ -165,7 +171,7 @@ mrs-md2pdf input.md -o output.pdf --progress on
 
 1. محتوای سند را در Markdown بنویسید.
 2. در ابتدای فایل، front matter شامل عنوان، نویسنده، زبان، جهت و metadata جلد را اضافه کنید.
-3. یک خروجی اولیه با `--toc` و theme مناسب بگیرید.
+3. یک خروجی اولیه با `--toc` و appearance مناسب بگیرید.
 4. جلد، فهرست مطالب، صفحه‌های دارای فرمول، صفحه‌های دارای کد، تصویرها و شماره صفحه را بررسی کنید.
 5. اگر layout نیاز به بررسی داشت، خروجی `--debug-html` بگیرید و HTML تولیدشده را در مرورگر ببینید.
 6. اصلاحات نهایی را در Markdown انجام دهید و PDF را دوباره بسازید.
@@ -193,7 +199,7 @@ department: "نام دانشکده یا دپارتمان"
 course: "نام درس یا پروژه"
 supervisor: "نام استاد یا راهنما"
 date: "۱۴۰۵-۰۲-۳۰"
-version: "1.5.7"
+version: "1.6.0"
 status: "Draft"
 keywords: [Markdown, PDF, RTL, MathJax]
 cover_label: "گزارش فنی"
@@ -228,7 +234,7 @@ dir: rtl
 - جلد جزو شماره صفحات محتوایی حساب نمی‌شود؛
 - شماره‌گذاری footer از صفحه بعد از جلد شروع می‌شود؛
 - طرح watermark فقط روی صفحات محتوایی اعمال می‌شود؛
-- قالب theme می‌تواند برای جلد پس‌زمینه تمام‌صفحه داشته باشد؛
+- style خروجی می‌تواند برای جلد پس‌زمینه تمام‌صفحه داشته باشد؛
 - در صورت نیاز، جلد کاملاً قابل حذف است.
 
 حذف جلد:
@@ -312,7 +318,7 @@ mrs-md2pdf input.md -o output.pdf --h1-page-break
 
 - نوشتن محتوای اصلی با Markdown.
 - افزودن front matter برای metadata.
-- انتخاب theme مناسب.
+- انتخاب appearance مناسب.
 - بررسی خروجی نهایی PDF.
 
 1. نصب پکیج.
@@ -607,24 +613,44 @@ mrs-md2pdf input.md -o output.pdf \
 
 طرح Watermark فقط روی صفحات محتوایی اعمال می‌شود و روی جلد قرار نمی‌گیرد.
 
-# انواع Theme
+# سیستم Appearance
 
-برنامه Mardas MD2PDF چند theme داخلی و profile آماده دارد. Profileها پیش‌فرض‌های مناسب برای نوع سند را انتخاب می‌کنند و themeها ظاهر CSS را کنترل می‌کنند.
+برنامه Mardas MD2PDF به جای چند سیستم موازی، یک مدل ظاهر دارد: `style` شکل و layout سند را کنترل می‌کند، `palette` رنگ‌های accent را تعیین می‌کند و `mode` خروجی روشن یا تاریک را انتخاب می‌کند.
 
-| Theme | کاربرد پیشنهادی |
+| Style | کاربرد پیشنهادی |
 | :--- | :--- |
-| `github` | مستندات پروژه‌ای شبیه README و خروجی نزدیک به GitHub-style Markdown. |
 | `modern` | مستندات عمومی، proposal، گزارش نرم‌افزاری و راهنمای محصول. |
-| `textbook-light` | جزوه‌های آموزشی طولانی و محتوای آموزشی فارسی/English. |
-| `textbook-dark` | مطالعه روی صفحه، بررسی در محیط کم‌نور و یادداشت‌های فنی شبیه ارائه. |
+| `github` | مستندات پروژه‌ای شبیه README و خروجی نزدیک به GitHub-style Markdown. |
+| `textbook` | جزوه‌های آموزشی طولانی و محتوای آموزشی فارسی/English. |
 | `academic` | گزارش رسمی، سند دانشگاهی، پیش‌نویس پایان‌نامه و مقاله ساختاریافته. |
 
-انتخاب profile یا theme:
+| Palette | حس رنگی |
+| :--- | :--- |
+| `blue` | آبی حرفه‌ای پیش‌فرض. |
+| `emerald` | سبز آرام برای گزارش‌ها و داشبوردها. |
+| `violet` | بنفش خلاقانه برای سندهای محصولی. |
+| `amber` | رنگ گرم برای محتوای آموزشی و review. |
+| `rose` | رنگ برجسته برای گزارش‌های editorial. |
+| `slate` | خنثی و رسمی برای مستندات فنی. |
+| `neutral` | خاکستری مینیمال برای خروجی رسمی. |
+
+انتخاب appearance از CLI:
 
 ```bash
-mrs-md2pdf input.md -o output.pdf --profile github
-mrs-md2pdf input.md -o output.pdf --theme academic
+mrs-md2pdf input.md -o output.pdf --style github --palette blue --mode light
+mrs-md2pdf input.md -o output.pdf --style academic --palette emerald --mode dark
 ```
+
+یا ذخیره در front matter:
+
+```yaml
+appearance:
+  style: modern
+  palette: blue
+  mode: light
+```
+
+برای دیدن گزینه‌ها از `--list-styles`، `--list-palettes` و `--list-modes` استفاده کنید.
 
 # روند کار با GUI
 
@@ -637,7 +663,7 @@ mrs-md2pdf-gui
 رابط کاربری GUI برای کاربرانی مناسب است که روند بصری را ترجیح می‌دهند:
 
 1. نوشتن یا paste کردن Markdown.
-2. انتخاب theme، زبان، جهت، اندازه صفحه و گزینه‌های خروجی.
+2. انتخاب style، palette، mode، زبان، جهت، اندازه صفحه و گزینه‌های خروجی.
 3. امکان attach کردن فایل‌ها یا پوشه‌های تصویر محلی.
 4. دیدن پیش‌نمایش تقریبی.
 5. در آخر export گرفتن از PDF نهایی.
@@ -648,7 +674,7 @@ Studio پیش‌نویس فعلی، layout، حالت روشن/تاریک، جه
 اگر export با خطا روبه‌رو شود، Studio وضعیت HTTP و کد پایدار backend مثل `invalid_json`، `invalid_page_size`، `invalid_toc_depth`، `invalid_watermark_opacity`، `markdown_too_large` یا `render_failed` را نشان می‌دهد. اگر GUI را روی host غیرلوکال bind کنید، backend هشدار می‌دهد؛ چون کاربران قابل دسترس در شبکه می‌توانند Markdown و asset بفرستند.
 
 > [!IMPORTANT]
-> پیش‌نمایش داخل GUI تقریبی است. PDF نهایی توسط backend renderer ساخته می‌شود و پردازش کامل Markdown، CSS theme، MathJax، جلد و layout چاپی Chromium روی آن اعمال می‌شود.
+> پیش‌نمایش داخل GUI تقریبی است. PDF نهایی توسط backend renderer ساخته می‌شود و پردازش کامل Markdown، CSS appearance، MathJax، جلد و layout چاپی Chromium روی آن اعمال می‌شود.
 
 # مرجع CLI
 
@@ -659,8 +685,10 @@ Studio پیش‌نویس فعلی، layout، حالت روشن/تاریک، جه
 | `--title`, `--author`, `--description` | override کردن metadata موجود در front matter. |
 | `--toc`, `--toc-depth` | فعال‌سازی و تنظیم فهرست مطالب. |
 | `--toc-page-break`, `--h1-page-break` | کنترل صفحه‌بندی چاپی. |
-| `--profile` | انتخاب `default`، `github`، `academic`، `persian-report` یا `minimal`. |
-| `--theme` | انتخاب `modern`، `github`، `textbook-light`، `textbook-dark` یا `academic`. اگر داده شود، theme انتخاب‌شده توسط profile را override می‌کند. |
+| `--style` | انتخاب `modern`، `github`، `textbook` یا `academic`. |
+| `--palette` | انتخاب `blue`، `emerald`، `violet`، `amber`، `rose`، `slate` یا `neutral`. |
+| `--mode` | انتخاب `light` یا `dark`. |
+| `--list-styles`, `--list-palettes`, `--list-modes` | نمایش گزینه‌های appearance و خروج. |
 | `--page-size` | اندازه صفحه مثل `A4`، `Letter`، `Legal`، `A4 landscape` یا ابعادی مثل `210mm 297mm`. |
 | `--dir` | اجبار جهت به `auto`، `ltr` یا `rtl`. |
 | `--margin-top`, `--margin-bottom`, `--margin-x` | کنترل margin صفحه. |
@@ -669,7 +697,7 @@ Studio پیش‌نویس فعلی، layout، حالت روشن/تاریک، جه
 | `--chromium-sandbox` | حالت sandbox مرورگر: `auto`، `on` یا `off`. مقدار پیش‌فرض: `auto`. |
 | `--debug-html` | ذخیره HTML میانی. |
 | `--no-cover`, `--cover-logo`, `--no-cover-logo` | تنظیم جلد. |
-| `--watermark`, `--watermark-image` | افزودن watermark متنی یا تصویری با لایه‌بندی هماهنگ با theme. |
+| `--watermark`, `--watermark-image` | افزودن watermark متنی یا تصویری با لایه‌بندی هماهنگ با mode. |
 | `--allow-remote-assets` | اجازه به سندهای قابل اعتماد برای بارگذاری تصویرهای remote `http(s)`. پیش‌فرض غیرفعال است. |
 | `--no-header-footer` | حذف footer چاپی. |
 | `--no-mathjax` | غیرفعال کردن MathJax. |
@@ -688,7 +716,7 @@ mrs-md2pdf --help
 یک دستور ساده برای ساخت PDF در اسکریپت:
 
 ```bash
-mrs-md2pdf docs/report.md -o build/report.pdf --toc --theme modern
+mrs-md2pdf docs/report.md -o build/report.pdf --toc --style modern --palette blue --mode light
 ```
 
 مخزن شامل workflow گیت‌هاب Actions است که Ruff، pytest و یک smoke test واقعی رندر با Chromium را روی نسخه‌های پشتیبانی‌شده Python اجرا می‌کند. برای CI بهتر است گزینه‌ها صریح باشند:
@@ -697,7 +725,9 @@ mrs-md2pdf docs/report.md -o build/report.pdf --toc --theme modern
 mrs-md2pdf docs/report.md -o build/report.pdf \
   --toc \
   --toc-depth 4 \
-  --theme modern \
+  --style modern \
+  --palette blue \
+  --mode light \
   --page-size A4 \
   --dir auto \
   --timeout-ms 60000 \

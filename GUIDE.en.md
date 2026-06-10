@@ -12,7 +12,7 @@ summary: |
   This document also acts as a live rendering sample for cover pages, tables of contents, mixed RTL/LTR text, formulas, code, Mermaid flowcharts, images, tables, footnotes, page breaks, and safe HTML.
 institution: "Mardas Lab"
 course: "Markdown Publishing"
-version: "1.5.7"
+version: "1.6.0"
 status: "Stable"
 keywords:
   - Markdown
@@ -23,6 +23,10 @@ keywords:
 cover_label: "Complete Guide"
 lang: en
 dir: ltr
+appearance:
+  style: github
+  palette: blue
+  mode: light
 ---
 
 # Introduction
@@ -70,7 +74,7 @@ Mardas MD2PDF focuses on the features that matter most for polished technical PD
 | Local images | Markdown and safe HTML images can be embedded as data URIs. |
 | Safe HTML | Raw HTML is sanitized by default. |
 | Footnotes | Multiline Markdown footnotes are supported. |
-| Themes and profiles | GitHub, modern, textbook-light, textbook-dark, and academic layouts. |
+| Appearance system | Separate `style`, `palette`, and `mode` choices for layout shape, color, and light/dark output. |
 | Automation | CLI workflow suitable for local scripts and CI jobs. |
 | GUI | Local browser-based editor, preview, option selector, and exporter. |
 
@@ -130,10 +134,10 @@ Create a simple PDF:
 mrs-md2pdf input.md -o output.pdf
 ```
 
-Create a PDF with a table of contents and the modern theme:
+Create a PDF with a table of contents and a GitHub-style appearance:
 
 ```bash
-mrs-md2pdf input.md -o output.pdf --toc --profile github
+mrs-md2pdf input.md -o output.pdf --toc --style github --palette blue --mode light
 ```
 
 Create a long report with book-like page flow:
@@ -144,7 +148,9 @@ mrs-md2pdf input.md -o output.pdf \
   --toc-depth 4 \
   --toc-page-break \
   --h1-page-break \
-  --profile minimal
+  --style textbook \
+  --palette slate \
+  --mode light
 ```
 
 Save the intermediate HTML for debugging:
@@ -167,7 +173,7 @@ A clean PDF workflow usually looks like this:
 
 1. Write the content in Markdown.
 2. Add YAML front matter for title, authors, language, direction, and cover metadata.
-3. Render a first PDF with `--toc` and the desired theme.
+3. Render a first PDF with `--toc` and the desired appearance.
 4. Review the cover, table of contents, math pages, code pages, image pages, and footer numbering.
 5. If layout debugging is needed, export `--debug-html` and inspect the generated HTML in a browser.
 6. Finalize the Markdown and render again.
@@ -195,7 +201,7 @@ department: "Department name"
 course: "Course or project title"
 supervisor: "Supervisor name"
 date: "2026-05-20"
-version: "1.5.7"
+version: "1.6.0"
 status: "Draft"
 keywords: [Markdown, PDF, RTL, MathJax]
 cover_label: "Technical Report"
@@ -230,7 +236,7 @@ The cover is rendered separately from the main document. This gives the output c
 - the cover is not counted as a content page;
 - footer page numbering starts after the cover;
 - watermarks are applied to content pages only;
-- the cover may use full-page theme backgrounds;
+- the cover may use full-page style backgrounds;
 - the cover can be disabled when a plain document is needed.
 
 Disable the cover:
@@ -314,7 +320,7 @@ Markdown paragraphs, **bold text**, *italic text*, `inline code`, links, ordered
 
 - Write content in Markdown.
 - Add front matter for metadata.
-- Render with the desired theme.
+- Render with the desired appearance.
 - Review the final PDF.
 
 1. Install the package.
@@ -361,20 +367,10 @@ Callouts use GitHub-style markers and are translated according to the document l
 
 # GitHub-style Markdown Compatibility
 
-Version 1.5.7 tightens the audit findings from the post-1.5.6 review: CLI and Studio page-size options are validated, Studio numeric options return client-facing errors, remote images are blocked by default, blocked images render visible placeholders, wide tables are fit for print, guide PDFs use deterministic metadata dates, and watermark layering is more theme-aware.
-
-## Rendering profiles
-
-Use the GitHub profile when the source document is similar to a README, project guide, API note, or engineering document:
+Version 1.6.0 replaces the older parallel visual controls with one appearance model: `style` controls shape and layout, `palette` controls accent colors, and `mode` controls light or dark output. Use the GitHub style when the source document is similar to a README, project guide, API note, or engineering document:
 
 ```bash
-mrs-md2pdf README.md -o README.pdf --profile github --toc
-```
-
-The profile selects the `github` visual theme unless you explicitly pass `--theme`. You can still override the theme manually:
-
-```bash
-mrs-md2pdf input.md -o output.pdf --profile github --theme modern
+mrs-md2pdf README.md -o README.pdf --style github --palette blue --mode light --toc
 ```
 
 ## Alerts
@@ -698,24 +694,44 @@ mrs-md2pdf input.md -o output.pdf \
 
 Watermarks are applied to content pages only, not to the cover page.
 
-# Themes
+# Appearance
 
-Mardas MD2PDF includes built-in themes and profile presets. Profiles choose sensible defaults for a document type; themes control the visual CSS.
+Mardas MD2PDF uses one appearance system instead of parallel visual presets. Choose a `style` for document shape, a `palette` for accent colors, and a `mode` for light or dark output.
 
-| Theme | Best for |
+| Style | Best for |
 | :--- | :--- |
-| `github` | README-like project documentation and GitHub-style Markdown output. |
 | `modern` | General documentation, proposals, software reports, and product-style guides. |
-| `textbook-light` | Long educational documents, course notes, Persian/English learning material. |
-| `textbook-dark` | Screen reading, low-light review, and presentation-like technical notes. |
+| `github` | README-like project documentation and GitHub-style Markdown output. |
+| `textbook` | Long educational documents, course notes, Persian/English learning material. |
 | `academic` | Formal reports, university documents, thesis-like drafts, and structured papers. |
 
-Choose a profile or theme with:
+| Palette | Accent feel |
+| :--- | :--- |
+| `blue` | Default professional blue. |
+| `emerald` | Calm green. |
+| `violet` | Creative purple. |
+| `amber` | Warm teaching/review accent. |
+| `rose` | Editorial red-pink accent. |
+| `slate` | Cool understated neutral. |
+| `neutral` | Minimal grayscale. |
+
+Choose appearance from the CLI:
 
 ```bash
-mrs-md2pdf input.md -o output.pdf --profile github
-mrs-md2pdf input.md -o output.pdf --theme academic
+mrs-md2pdf input.md -o output.pdf --style github --palette blue --mode light
+mrs-md2pdf input.md -o output.pdf --style academic --palette emerald --mode dark
 ```
+
+Or store it in front matter:
+
+```yaml
+appearance:
+  style: modern
+  palette: blue
+  mode: light
+```
+
+Discover choices with `--list-styles`, `--list-palettes`, and `--list-modes`.
 
 # GUI Workflow
 
@@ -728,18 +744,18 @@ mrs-md2pdf-gui
 The GUI is useful for users who prefer a visual workflow:
 
 1. Paste or type Markdown.
-2. Select theme, language, direction, page size, and export options.
+2. Select style, palette, mode, language, direction, page size, and export options.
 3. Attach local image files or image folders.
 4. Preview the document approximately.
 5. Export the final PDF and watch the export progress indicator in the footer.
 6. Use **Ctrl/Cmd+S** to save Markdown and **Ctrl/Cmd+Enter** to export quickly.
 
-Studio stores the current draft, layout, theme mode, direction toggle, editor width, and export settings in browser local storage. This makes accidental refreshes less disruptive during long editing sessions. Use **Reset State** when you want to clear the saved local draft and return to a clean workspace.
+Studio stores the current draft, layout, interface mode, direction toggle, editor width, and export settings in browser local storage. This makes accidental refreshes less disruptive during long editing sessions. Use **Reset State** when you want to clear the saved local draft and return to a clean workspace.
 
 If an export fails, Studio shows the HTTP status and stable backend error code, such as `invalid_json`, `invalid_page_size`, `invalid_toc_depth`, `invalid_watermark_opacity`, `markdown_too_large`, or `render_failed`. If you bind Studio to a non-local host, the backend prints a warning because other users on the reachable network can submit Markdown and attached assets.
 
 > [!IMPORTANT]
-> The GUI preview is approximate. The final PDF is produced by the backend renderer, which applies the full Markdown processing, theme CSS, MathJax rendering, cover logic, and Chromium print layout.
+> The GUI preview is approximate. The final PDF is produced by the backend renderer, which applies the full Markdown processing, appearance CSS, MathJax rendering, cover logic, and Chromium print layout.
 
 # CLI Reference
 
@@ -750,8 +766,10 @@ If an export fails, Studio shows the HTTP status and stable backend error code, 
 | `--title`, `--author`, `--description` | Override metadata from front matter. |
 | `--toc`, `--toc-depth` | Enable and configure the table of contents. |
 | `--toc-page-break`, `--h1-page-break` | Control printed page flow. |
-| `--profile` | Choose `default`, `github`, `academic`, `persian-report`, or `minimal`. |
-| `--theme` | Choose `modern`, `github`, `textbook-light`, `textbook-dark`, or `academic`. Overrides the profile theme. |
+| `--style` | Choose `modern`, `github`, `textbook`, or `academic`. |
+| `--palette` | Choose `blue`, `emerald`, `violet`, `amber`, `rose`, `slate`, or `neutral`. |
+| `--mode` | Choose `light` or `dark`. |
+| `--list-styles`, `--list-palettes`, `--list-modes` | Print available appearance choices and exit. |
 | `--page-size` | Use `A4`, `Letter`, `Legal`, `A4 landscape`, or dimensions such as `210mm 297mm`. |
 | `--dir` | Force `auto`, `ltr`, or `rtl`. |
 | `--margin-top`, `--margin-bottom`, `--margin-x` | Control page margins. |
@@ -760,7 +778,7 @@ If an export fails, Studio shows the HTTP status and stable backend error code, 
 | `--chromium-sandbox` | Chromium sandbox mode: `auto`, `on`, or `off`. Default: `auto`. |
 | `--debug-html` | Save the intermediate HTML. |
 | `--no-cover`, `--cover-logo`, `--no-cover-logo` | Configure the cover. |
-| `--watermark`, `--watermark-image` | Add theme-aware text or image watermarks over content pages. |
+| `--watermark`, `--watermark-image` | Add mode-aware text or image watermarks over content pages. |
 | `--allow-remote-assets` | Allow trusted Markdown to fetch remote `http(s)` images. Disabled by default. |
 | `--no-header-footer` | Disable printed footer. |
 | `--no-mathjax` | Do not load MathJax. |
@@ -779,7 +797,7 @@ mrs-md2pdf --help
 A typical automation command can be as simple as:
 
 ```bash
-mrs-md2pdf docs/report.md -o build/report.pdf --toc --theme modern
+mrs-md2pdf docs/report.md -o build/report.pdf --toc --style modern --palette blue --mode light
 ```
 
 The repository includes a GitHub Actions CI workflow that runs Ruff, pytest, and a Chromium render smoke test on supported Python versions. For CI workflows, prefer explicit options:
@@ -788,7 +806,9 @@ The repository includes a GitHub Actions CI workflow that runs Ruff, pytest, and
 mrs-md2pdf docs/report.md -o build/report.pdf \
   --toc \
   --toc-depth 4 \
-  --theme modern \
+  --style modern \
+  --palette blue \
+  --mode light \
   --page-size A4 \
   --dir auto \
   --timeout-ms 60000 \

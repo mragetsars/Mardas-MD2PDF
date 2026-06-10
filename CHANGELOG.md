@@ -2,6 +2,23 @@
 
 All notable changes to Mardas MD2PDF are tracked here.
 
+## 1.6.0 - 2026-06-10
+
+### Changed
+
+- Replaced the older visual controls with one appearance model built from `--style`, `--palette`, and `--mode`.
+- Removed the parallel `--theme` and `--profile` CLI options so the public interface stays small and predictable.
+- Updated Studio to expose style, palette, and mode controls directly and to copy the new CLI syntax.
+
+### Added
+
+- Added an appearance registry with built-in styles, palettes, mode validation, and list commands.
+- Added `docs/APPEARANCE.md` to document the new visual model and front-matter format.
+
+### Documentation
+
+- Refreshed README, English guide, Persian guide, helper scripts, CI smoke commands, and generated guide PDFs for the new appearance workflow.
+
 ## 1.5.7 - 2026-06-10
 
 ### Fixed

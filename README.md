@@ -2,13 +2,13 @@
 
 > **Professional Markdown to PDF converter for Persian, English, and mixed RTL/LTR technical documents**
 
-![Language](https://img.shields.io/badge/Language-Python-blue) ![Renderer](https://img.shields.io/badge/Renderer-Playwright%20%2B%20Chromium-green) ![Math](https://img.shields.io/badge/Math-MathJax-purple) ![Version](https://img.shields.io/badge/Version-v1.5.7-success) ![Status](https://img.shields.io/badge/Status-Stable-success) ![CI](https://github.com/mragetsars/Mardas-MD2PDF/actions/workflows/ci.yml/badge.svg)
+![Language](https://img.shields.io/badge/Language-Python-blue) ![Renderer](https://img.shields.io/badge/Renderer-Playwright%20%2B%20Chromium-green) ![Math](https://img.shields.io/badge/Math-MathJax-purple) ![Version](https://img.shields.io/badge/Version-v1.6.0-success) ![Status](https://img.shields.io/badge/Status-Stable-success) ![CI](https://github.com/mragetsars/Mardas-MD2PDF/actions/workflows/ci.yml/badge.svg)
 
 ## Overview
 
 This repository contains **Mardas MD2PDF**, a Markdown-to-PDF publishing tool designed for clean Persian, English, and mixed-language documents.
 
-The project converts Markdown into print-ready PDF files with support for RTL/LTR direction handling, Persian-friendly typography, cover pages, tables of contents, PDF outline bookmarks, GitHub-style Markdown features, MathJax formulas, enhanced syntax-highlighted code, Mermaid flowcharts, local images, footnotes, callouts, safe HTML, watermarks, and multiple visual profiles.
+The project converts Markdown into print-ready PDF files with support for RTL/LTR direction handling, Persian-friendly typography, cover pages, tables of contents, PDF outline bookmarks, GitHub-style Markdown features, MathJax formulas, enhanced syntax-highlighted code, Mermaid flowcharts, local images, footnotes, callouts, safe HTML, watermarks, and a clean appearance system built around styles, palettes, and light/dark modes.
 
 The main goal of the project is to make technical Markdown documents publishable as polished PDF outputs without forcing the author to leave the Markdown workflow.
 
@@ -20,7 +20,7 @@ Markdown -> Structured HTML -> Chromium PDF
 
 ## Architecture
 
-The system is organized around a browser-based rendering pipeline. Markdown is first parsed and normalized, then converted into a complete HTML document with theme CSS, cover metadata, table of contents, MathJax configuration, and print rules. Finally, Playwright controls Chromium to generate the final PDF.
+The system is organized around a browser-based rendering pipeline. Markdown is first parsed and normalized, then converted into a complete HTML document with appearance CSS, cover metadata, table of contents, MathJax configuration, and print rules. Finally, Playwright controls Chromium to generate the final PDF.
 
 ### Markdown Processing
 
@@ -28,7 +28,7 @@ The Markdown layer handles front matter, heading collection, table of contents a
 
 ### PDF Rendering
 
-The renderer builds the final printable HTML, validates page size and margin options, applies the selected theme, renders MathJax when enabled, separates the cover from numbered content pages, applies theme-aware watermark overlays, writes PDF metadata and bookmarks, and exports the result through Chromium.
+The renderer builds the final printable HTML, validates page size and margin options, applies the selected style, palette, and mode, renders MathJax when enabled, separates the cover from numbered content pages, applies mode-aware watermark overlays, writes PDF metadata and bookmarks, and exports the result through Chromium.
 
 ### Interfaces
 
@@ -46,6 +46,7 @@ The README is intentionally short and is meant to introduce the project. Complet
 - [Changelog](./CHANGELOG.md)
 - [Release checklist](./docs/RELEASE.md)
 - [Maintenance workflow](./docs/MAINTENANCE.md)
+- [Appearance system](./docs/APPEARANCE.md)
 - [Security policy](./SECURITY.md)
 
 Generated PDF versions of the guides are available in the [`examples/`](./examples/) directory.
@@ -64,7 +65,15 @@ python -m playwright install chromium
 Render a PDF:
 
 ```bash
-mrs-md2pdf input.md -o output.pdf --toc --profile github
+mrs-md2pdf input.md -o output.pdf --toc --style github --palette blue --mode light
+```
+
+Explore appearance choices:
+
+```bash
+mrs-md2pdf --list-styles
+mrs-md2pdf --list-palettes
+mrs-md2pdf --list-modes
 ```
 
 Launch the GUI:
@@ -73,7 +82,7 @@ Launch the GUI:
 mrs-md2pdf-gui
 ```
 
-The Studio interface remembers the current draft, layout, theme mode, and export options in browser local storage. Use **Reset State** to clear that local draft, **Ctrl/Cmd+S** to save Markdown, and **Ctrl/Cmd+Enter** to export the PDF. When Studio is bound to a non-local host, the backend prints a warning because reachable users can submit Markdown and attached assets.
+The Studio interface remembers the current draft, layout, interface mode, and appearance options in browser local storage. Use **Reset State** to clear that local draft, **Ctrl/Cmd+S** to save Markdown, and **Ctrl/Cmd+Enter** to export the PDF. When Studio is bound to a non-local host, the backend prints a warning because reachable users can submit Markdown and attached assets.
 
 ## Repository Structure
 
@@ -84,10 +93,10 @@ Mardas-MD2PDF/
 ├── src/                    # Python package source
 │   ├── markdown.py         # Markdown parsing, front matter, TOC, math, Mermaid, footnotes, safe HTML
 │   ├── mermaid.py          # Offline Mermaid flowchart-to-SVG renderer
-│   ├── renderer.py         # HTML assembly, themes/profiles, MathJax, Chromium PDF rendering
+│   ├── renderer.py         # HTML assembly, appearance CSS, MathJax, Chromium PDF rendering
 │   ├── cli.py              # Command-line interface
 │   ├── gui.py              # Local browser-based GUI backend
-│   └── assets/             # Themes, GUI shell, logo, and vendored MathJax files
+│   └── assets/             # Style CSS, GUI shell, logo, and vendored MathJax files
 ├── tests/                  # Automated pytest test suite
 ├── scripts/                # Helper scripts
 ├── docs/                   # Release, maintenance, and security documentation
@@ -127,7 +136,7 @@ pip install -e .[dev]
 ./scripts/check.sh
 ```
 
-The test suite covers Markdown transformation, GitHub-style features, direction handling, table of contents and outline generation, enhanced code highlighting, Mermaid SVG rendering, MathJax preservation, safe HTML, footnotes, local and remote image boundaries, renderer options, GUI availability, Studio option validation, page-size handling, wide-table print fitting, workspace persistence, deterministic example metadata, and fallback warnings.
+The test suite covers Markdown transformation, GitHub-style features, direction handling, table of contents and outline generation, enhanced code highlighting, Mermaid SVG rendering, MathJax preservation, safe HTML, footnotes, local and remote image boundaries, renderer options, GUI availability, Studio option validation, page-size handling, wide-table print fitting, workspace persistence, deterministic example metadata, appearance validation, and fallback warnings.
 
 ## Contributors
 
