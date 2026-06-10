@@ -729,6 +729,11 @@ The GUI is useful for users who prefer a visual workflow:
 3. Attach local image files or image folders.
 4. Preview the document approximately.
 5. Export the final PDF and watch the export progress indicator in the footer.
+6. Use **Ctrl/Cmd+S** to save Markdown and **Ctrl/Cmd+Enter** to export quickly.
+
+Studio stores the current draft, layout, theme mode, direction toggle, editor width, and export settings in browser local storage. This makes accidental refreshes less disruptive during long editing sessions. Use **Reset State** when you want to clear the saved local draft and return to a clean workspace.
+
+If an export fails, Studio shows the HTTP status and stable backend error code, such as `invalid_json`, `markdown_too_large`, or `render_failed`. If you bind Studio to a non-local host, the backend prints a warning because other users on the reachable network can submit Markdown and attached assets.
 
 > [!IMPORTANT]
 > The GUI preview is approximate. The final PDF is produced by the backend renderer, which applies the full Markdown processing, theme CSS, MathJax rendering, cover logic, and Chromium print layout.

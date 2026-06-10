@@ -35,7 +35,7 @@ The renderer builds the final printable HTML, applies the selected theme, config
 The project provides two user-facing interfaces:
 
 - `mrs-md2pdf` for command-line and automation workflows.
-- `mrs-md2pdf-gui` for local browser-based editing, previewing, option selection, and PDF export.
+- `mrs-md2pdf-gui` for local browser-based editing, previewing, option selection, PDF export, and browser-local workspace persistence.
 
 ## Documentation
 
@@ -72,6 +72,8 @@ Launch the GUI:
 ```bash
 mrs-md2pdf-gui
 ```
+
+The Studio interface remembers the current draft, layout, theme mode, and export options in browser local storage. Use **Reset State** to clear that local draft, **Ctrl/Cmd+S** to save Markdown, and **Ctrl/Cmd+Enter** to export the PDF. When Studio is bound to a non-local host, the backend prints a warning because reachable users can submit Markdown and attached assets.
 
 ## Repository Structure
 
@@ -125,7 +127,7 @@ pip install -e .[dev]
 ./scripts/check.sh
 ```
 
-The test suite covers Markdown transformation, GitHub-style features, direction handling, table of contents and outline generation, enhanced code highlighting, Mermaid SVG rendering, MathJax preservation, safe HTML, footnotes, local images, renderer options, GUI availability, page-size handling, and fallback warnings.
+The test suite covers Markdown transformation, GitHub-style features, direction handling, table of contents and outline generation, enhanced code highlighting, Mermaid SVG rendering, MathJax preservation, safe HTML, footnotes, local images, renderer options, GUI availability, Studio request errors, page-size handling, workspace persistence, and fallback warnings.
 
 ## Contributors
 

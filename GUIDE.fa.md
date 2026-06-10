@@ -641,6 +641,11 @@ mrs-md2pdf-gui
 3. امکان attach کردن فایل‌ها یا پوشه‌های تصویر محلی.
 4. دیدن پیش‌نمایش تقریبی.
 5. در آخر export گرفتن از PDF نهایی.
+6. استفاده از **Ctrl/Cmd+S** برای ذخیره Markdown و **Ctrl/Cmd+Enter** برای export سریع PDF.
+
+Studio پیش‌نویس فعلی، layout، حالت روشن/تاریک، جهت preview، عرض editor و گزینه‌های export را در local storage مرورگر نگه می‌دارد. این کار باعث می‌شود refresh ناخواسته صفحه در جلسه‌های ویرایش طولانی کمتر آزاردهنده باشد. برای پاک کردن پیش‌نویس محلی و برگشتن به حالت تمیز از **Reset State** استفاده کنید.
+
+اگر export با خطا روبه‌رو شود، Studio وضعیت HTTP و کد پایدار backend مثل `invalid_json`، `markdown_too_large` یا `render_failed` را نشان می‌دهد. اگر GUI را روی host غیرلوکال bind کنید، backend هشدار می‌دهد؛ چون کاربران قابل دسترس در شبکه می‌توانند Markdown و asset بفرستند.
 
 > [!IMPORTANT]
 > پیش‌نمایش داخل GUI تقریبی است. PDF نهایی توسط backend renderer ساخته می‌شود و پردازش کامل Markdown، CSS theme، MathJax، جلد و layout چاپی Chromium روی آن اعمال می‌شود.
