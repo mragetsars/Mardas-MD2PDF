@@ -224,3 +224,17 @@ def test_gui_copy_command_includes_branding_options():
     assert "--brand-name" in html
     assert "--brand-logo" in html
     assert "--brand-footer" in html
+
+
+def test_gui_zen_mode_has_escape_route_and_is_not_restored():
+    html = GUI_HTML.read_text(encoding="utf-8")
+
+    assert 'id="zenToolbar"' in html
+    assert 'id="zenExitBtn"' in html
+    assert 'function exitZen()' in html
+    assert "event.key === 'Escape' && currentLayout === 'zen'" in html
+    assert "lastNonZenLayout" in html
+    assert "layout: currentLayout === 'zen' ? lastNonZenLayout : currentLayout" in html
+    assert "['split','editor','preview'].includes(state.layout)" in html
+    assert "body.zen .zen-toolbar{display:flex}" in html
+    assert "Ctrl/Cmd+4" in Path(__file__).resolve().parents[1].joinpath("docs", "STUDIO.md").read_text(encoding="utf-8")

@@ -98,6 +98,8 @@
     .gutter::after{content:"";position:absolute;left:2px;top:50%;width:3px;height:64px;transform:translateY(-50%);border-radius:99px;background:var(--border-strong)}
     .sidebar-head,.pane-head{height:42px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 14px;border-bottom:1px solid var(--border);background:var(--panel-2);direction:ltr}
     .sidebar-head strong,.pane-head strong{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+    .sidebar-head{align-items:flex-start;min-height:52px;height:auto;padding-top:9px;padding-bottom:9px;flex-wrap:wrap}
+    .sidebar-head #appearanceName{max-width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:999px;background:var(--panel);color:var(--text);font-size:11px;font-weight:900;line-height:1.2;white-space:normal;overflow-wrap:anywhere}
     .sidebar-body{padding:12px;overflow:auto;scrollbar-width:thin}
     .card{border:1px solid var(--border);background:var(--panel);border-radius:18px;padding:12px;margin-bottom:12px}
     .card h3{margin:0 0 12px;font-size:13px;color:var(--text);display:flex;align-items:center;gap:8px}
@@ -161,6 +163,10 @@
     .footer-group{display:flex;align-items:center;gap:16px}
     .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);display:inline-block;margin-right:6px}
     .spinner{display:none}.busy .spinner{display:inline-block}.busy .btn-primary{opacity:.78;pointer-events:none}
+    .zen-toolbar{display:none;position:fixed;z-index:80;top:14px;right:14px;align-items:center;gap:8px;padding:8px;border:1px solid var(--border);border-radius:18px;background:color-mix(in srgb, var(--panel) 92%, transparent);box-shadow:var(--shadow);backdrop-filter:blur(16px);direction:ltr}
+    .zen-toolbar span{color:var(--muted);font-size:11px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;margin:0 4px}
+    .zen-toolbar .btn{height:34px;background:var(--panel-2)}
+    .zen-toolbar kbd{margin-left:4px;padding:2px 5px;border:1px solid var(--border-strong);border-radius:6px;background:var(--panel);color:var(--muted);font:800 10px/1 var(--code)}
     .export-progress{display:none;align-items:center;gap:9px;min-width:280px}
     .busy .export-progress,.export-progress.active{display:flex}
     .progress-track{width:180px;height:8px;border-radius:999px;background:var(--panel-3);border:1px solid var(--border);overflow:hidden}
@@ -174,8 +180,10 @@
     body.preview-focus .preview-pane{border-radius:0 22px 22px 0;border-left:1px solid var(--border)}
     body.zen .workspace{grid-template-columns:1fr;padding:0}
     body.zen .topbar,body.zen .sidebar,body.zen .editor-pane,body.zen .gutter,body.zen .footer{display:none}
-    body.zen .preview-pane{border:0;border-radius:0;box-shadow:none}
-    body.zen .preview{height:100vh;padding:56px max(8vw,70px)}
+    body.zen .preview-pane{border:0;border-radius:0;box-shadow:none;min-height:100vh}
+    body.zen .pane-head{position:sticky;top:0;z-index:30;padding-right:300px;background:color-mix(in srgb, var(--panel-2) 94%, transparent);backdrop-filter:blur(14px)}
+    body.zen .preview{height:calc(100vh - 42px);padding:56px max(8vw,70px) 80px}
+    body.zen .zen-toolbar{display:flex}
     @media(max-width:1160px){
       .app{min-width:0}.brand-copy span{display:none}.toolbar{gap:6px}.workspace{grid-template-columns:290px 1fr}.gutter,.preview-pane{display:none}.editor-pane{border-radius:0 22px 22px 0;border-right:1px solid var(--border)}
     }
@@ -207,6 +215,12 @@
         <button id="exportPdfBtn" class="btn btn-primary" onclick="renderPDF()"><span class="spinner">⏳</span>📄 Export PDF</button>
       </div>
     </header>
+    <div id="zenToolbar" class="zen-toolbar" aria-hidden="true">
+      <span>Zen preview</span>
+      <button class="btn" id="zenExitBtn" type="button" onclick="exitZen()">← Exit <kbd>Esc</kbd></button>
+      <button class="btn" id="zenDirBtn" type="button" onclick="toggleDirection()">↔️ RTL</button>
+      <button class="btn btn-primary" id="zenExportBtn" type="button" onclick="renderPDF()">📄 Export</button>
+    </div>
     <main class="workspace" id="workspace">
       <aside class="sidebar">
         <div class="sidebar-head"><strong>Export Settings</strong><span id="appearanceName">modern · blue · light</span></div>
@@ -310,10 +324,12 @@ const exportProgress = $('exportProgress');
 const exportProgressBar = $('exportProgressBar');
 const exportProgressLabel = $('exportProgressLabel');
 const interfaceBtn = $('interfaceBtn');
+const zenToolbar = $('zenToolbar');
 let renderTimer = null;
 let exportProgressTimer = null;
 let exportProgressValue = 0;
 let currentLayout = 'split';
+let lastNonZenLayout = 'split';
 const MARDAS_STUDIO_STATE_KEY = 'mardas-md2pdf-studio-state-v1';
 const MAX_STORED_MARKDOWN_CHARS = 250000;
 let saveStateTimer = null;
@@ -449,7 +465,7 @@ function getStudioState(){
   return {
     options: getOptions(),
     markdown,
-    layout: currentLayout,
+    layout: currentLayout === 'zen' ? lastNonZenLayout : currentLayout,
     lightMode: document.body.classList.contains('light-mode'),
     previewDirection: preview.getAttribute('dir') || 'auto',
     editorWidth: getComputedStyle(document.documentElement).getPropertyValue('--editor-width').trim()
@@ -487,11 +503,13 @@ function loadStudioState(){
       preview.setAttribute('dir', state.previewDirection);
       editor.setAttribute('dir', state.previewDirection);
       $('dirBtn').textContent = state.previewDirection === 'rtl' ? '↔️ LTR' : '↔️ RTL';
+      const zenDirBtn = $('zenDirBtn');
+      if (zenDirBtn) zenDirBtn.textContent = state.previewDirection === 'rtl' ? '↔️ LTR' : '↔️ RTL';
     }
     if (/^[0-9.]+px$/.test(state.editorWidth || '')) {
       document.documentElement.style.setProperty('--editor-width', state.editorWidth);
     }
-    if (['split','editor','preview','zen'].includes(state.layout)) {
+    if (['split','editor','preview'].includes(state.layout)) {
       setLayout(state.layout, { persist: false });
     }
     $('savedState').textContent = 'Restored local draft';
@@ -857,15 +875,30 @@ function toggleInterfaceMode(){
   scheduleStudioStateSave();
 }
 
+function exitZen(){
+  setLayout(lastNonZenLayout || 'split');
+}
+
 function setLayout(layout, options={}){
+  if (!['split','editor','preview','zen'].includes(layout)) layout = 'split';
+  if (layout === 'zen' && currentLayout !== 'zen') {
+    lastNonZenLayout = currentLayout === 'zen' ? lastNonZenLayout : currentLayout;
+  } else if (layout !== 'zen') {
+    lastNonZenLayout = layout;
+  }
   currentLayout = layout;
   document.body.classList.toggle('editor-focus', layout === 'editor');
   document.body.classList.toggle('preview-focus', layout === 'preview');
   document.body.classList.toggle('zen', layout === 'zen');
+  if (zenToolbar) zenToolbar.setAttribute('aria-hidden', layout === 'zen' ? 'false' : 'true');
   ['Split','Editor','Preview','Zen'].forEach(name => {
     const button = $('layout' + name);
     if (button) button.classList.toggle('active', name.toLowerCase() === layout);
   });
+  if (layout === 'zen') {
+    renderPreview();
+    requestAnimationFrame(() => preview.scrollTo({ top: 0, behavior: 'auto' }));
+  }
   if (options.persist !== false) scheduleStudioStateSave();
 }
 
@@ -874,6 +907,8 @@ function toggleDirection(){
   preview.setAttribute('dir', next);
   editor.setAttribute('dir', next);
   $('dirBtn').textContent = next === 'rtl' ? '↔️ LTR' : '↔️ RTL';
+  const zenDirBtn = $('zenDirBtn');
+  if (zenDirBtn) zenDirBtn.textContent = next === 'rtl' ? '↔️ LTR' : '↔️ RTL';
   scheduleStudioStateSave();
 }
 
@@ -894,9 +929,20 @@ window.addEventListener('mouseup', () => {
 });
 
 window.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && currentLayout === 'zen') {
+    event.preventDefault();
+    exitZen();
+    return;
+  }
   const modifier = event.ctrlKey || event.metaKey;
   if (!modifier) return;
   const key = event.key.toLowerCase();
+  const layoutShortcuts = { '1': 'split', '2': 'editor', '3': 'preview', '4': 'zen' };
+  if (layoutShortcuts[key]) {
+    event.preventDefault();
+    setLayout(layoutShortcuts[key]);
+    return;
+  }
   if (key === 's') {
     event.preventDefault();
     downloadMarkdown();

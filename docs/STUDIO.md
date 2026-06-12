@@ -47,6 +47,15 @@ Keyboard shortcuts:
 
 - **Ctrl/Cmd+S** saves the Markdown file.
 - **Ctrl/Cmd+Enter** exports the PDF.
+- **Ctrl/Cmd+1** returns to Split layout.
+- **Ctrl/Cmd+2** focuses the editor.
+- **Ctrl/Cmd+3** focuses the preview.
+- **Ctrl/Cmd+4** enters Zen preview.
+- **Esc** exits Zen preview.
+
+Zen preview is intentionally transient: Studio does not restore directly into Zen
+after a browser refresh. This prevents users from losing access to the main
+controls if they close or reload the page while previewing.
 
 ## Attached assets
 
