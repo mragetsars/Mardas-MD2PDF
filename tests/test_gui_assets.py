@@ -289,8 +289,11 @@ def test_gui_microinteractions_use_stable_numeric_and_soft_cards():
 
     assert 'font-variant-numeric:tabular-nums' in html
     assert '.choice-copy{color:color-mix' in html
-    assert 'body:not(.light-mode) .choice-copy{color:#c2c2c2}' in html
+    assert 'body:not(.light-mode) .choice-copy{color:#d0d0d0}' in html
     assert '.format-btn{height:30px' in html
+    assert '--muted:#b3b3b3' in html
+    assert '--faint:#9a9a9a' in html
+    assert '.editor-formatbar{gap:6px' in html
     assert 'border-color:transparent;background:transparent' in html
 
 def test_gui_uses_chatgpt_like_scrollbars_and_pure_interface_surfaces():
@@ -346,3 +349,22 @@ def test_gui_preview_exposes_render_status_and_footer_save_state():
     assert "setPreviewStatus('Updating preview...', true)" in html
     assert '<span id="savedState">Live preview</span>' in html
     assert 'Markdown source' in html
+
+
+def test_gui_sidebar_scrolls_and_palette_uses_compact_swatches():
+    html = GUI_HTML.read_text(encoding="utf-8")
+
+    assert '.sidebar{border-radius:22px 0 0 22px;border-right:0;display:flex;flex-direction:column;' in html
+    assert '.sidebar-body{padding:18px;display:flex;flex-direction:column;gap:16px;flex:1;min-height:0;overflow-y:auto;overflow-x:hidden}' in html
+    assert '.palette-grid{display:flex;align-items:center;gap:8px;flex-wrap:wrap' in html
+    assert '.palette-card{position:relative;display:inline-grid;place-items:center;width:34px;height:34px' in html
+    assert 'title="Blue palette" aria-label="Blue palette"' in html
+    assert '.palette-card > span:not(.palette-dot)' in html
+
+
+def test_gui_logo_uses_contain_fit_with_breathing_room():
+    html = GUI_HTML.read_text(encoding="utf-8")
+
+    assert '.brand-mark{overflow:hidden;background:transparent' in html
+    assert 'padding:4px' in html
+    assert '.brand-mark img{width:100%;height:100%;object-fit:contain;display:block}' in html

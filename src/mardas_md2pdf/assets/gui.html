@@ -15,8 +15,8 @@
       --editor:#0a0a0a;
       --preview:#111111;
       --text:#f4f4f5;
-      --muted:#a3a3a3;
-      --faint:#737373;
+      --muted:#b3b3b3;
+      --faint:#9a9a9a;
       --border:#2f2f2f;
       --border-strong:#3f3f46;
       --accent:#10a37f;
@@ -116,7 +116,7 @@
     .sidebar-head strong,.pane-head strong{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
     .sidebar-head{align-items:flex-start;min-height:52px;height:auto;padding-top:9px;padding-bottom:9px;flex-wrap:wrap}
     .sidebar-head #appearanceName{max-width:100%;padding:5px 8px;border:1px solid var(--border);border-radius:999px;background:var(--panel);color:var(--text);font-size:11px;font-weight:900;line-height:1.2;white-space:normal;overflow-wrap:anywhere}
-    .sidebar-body{padding:12px;overflow:auto;scrollbar-width:thin}
+    .sidebar-body{padding:12px;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;flex:1;min-height:0}
     .card{border:1px solid var(--border);background:var(--panel);border-radius:18px;padding:12px;margin-bottom:12px}
     .card h3{margin:0 0 12px;font-size:13px;color:var(--text);display:flex;align-items:center;gap:8px}
     .field{display:grid;gap:6px;margin-bottom:11px}
@@ -142,10 +142,15 @@
     .choice-card.active,.palette-card.active,.mode-card.active,.branding-card.active{border-color:var(--accent);background:color-mix(in srgb, var(--accent) 12%, var(--panel-2));box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent)}
     .choice-title{display:block;font-size:12px;font-weight:900;color:var(--text);line-height:1.25}
     .choice-copy{display:block;margin-top:4px;font-size:10px;line-height:1.45;color:var(--muted);font-weight:700}
-    .palette-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:12px}
-    .palette-card{display:flex;align-items:center;gap:8px;min-height:42px;font-size:11px;font-weight:900}
-    .palette-dot{width:18px;height:18px;border-radius:999px;background:linear-gradient(135deg,var(--swatch),var(--swatch2));box-shadow:0 0 0 3px color-mix(in srgb, var(--swatch) 18%, transparent);flex:0 0 auto}
+    .palette-grid{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 14px}
+    .palette-card{position:relative;display:inline-grid;place-items:center;width:34px;height:34px;min-height:34px;min-width:34px;padding:0;border-radius:999px;font-size:0;line-height:1}
+    .palette-dot{width:22px;height:22px;border-radius:999px;background:linear-gradient(135deg,var(--swatch),var(--swatch2));box-shadow:inset 0 0 0 1px color-mix(in srgb, #fff 36%, transparent),0 0 0 1px color-mix(in srgb, var(--swatch) 30%, transparent);flex:0 0 auto}
     .segmented-choice{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:12px}
+
+    .palette-card > span:not(.palette-dot){position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
+    .palette-card:focus-visible{outline:2px solid color-mix(in srgb, var(--accent) 72%, #fff);outline-offset:2px}
+    .settings-section:not([open]) .settings-body{opacity:0;transform:translateY(-4px)}
+    .settings-section>summary:hover{background:color-mix(in srgb, var(--panel-2) 72%, transparent)}
     .segmented-choice--three{grid-template-columns:repeat(3,minmax(0,1fr))}
     .mode-card,.branding-card{text-align:center;font-size:11px;font-weight:900;min-height:38px}
     .branding-card small,.mode-card small{display:block;margin-top:3px;font-size:9px;line-height:1.25;color:var(--faint);font-weight:800}
@@ -187,19 +192,19 @@
     .btn-icon span{display:none}
     .btn-quiet{background:transparent;border-color:transparent;color:var(--muted)}
     .btn-quiet:hover{border-color:var(--border);color:var(--text);background:var(--panel)}
-    .sidebar-body{padding:16px;display:flex;flex-direction:column;gap:14px}
+    .sidebar-body{padding:18px;display:flex;flex-direction:column;gap:16px;flex:1;min-height:0;overflow-y:auto;overflow-x:hidden}
     .settings-section{padding:0;margin:0;overflow:hidden}
-    .settings-section>summary{list-style:none;cursor:pointer;padding:15px 15px 13px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;border-bottom:1px solid transparent}
+    .settings-section>summary{list-style:none;cursor:pointer;padding:15px 15px 13px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;border-bottom:1px solid transparent;transition:background .18s ease,border-color .18s ease}
     .settings-section>summary::-webkit-details-marker{display:none}
     .settings-section>summary h3{margin:0;font-size:13px;color:var(--text);display:flex;align-items:center;gap:8px;line-height:1.2}
     .settings-section>summary small{display:block;margin-top:4px;color:var(--faint);font-size:10px;font-weight:700;line-height:1.35;letter-spacing:0;text-transform:none}
     .settings-section>summary::after{content:"";width:8px;height:8px;border-right:1.8px solid var(--muted);border-bottom:1.8px solid var(--muted);transform:rotate(45deg);transition:transform .22s ease,border-color .18s ease;margin-top:5px;flex:0 0 auto}
     .settings-section[open]>summary{border-bottom-color:var(--border)}
     .settings-section[open]>summary::after{transform:rotate(225deg)}
-    .settings-body{padding:15px}
+    .settings-body{padding:15px;transition:opacity .2s ease,transform .2s ease}
     .card{margin-bottom:0}
     .field{margin-bottom:14px}
-    .field label{color:color-mix(in srgb, var(--muted) 88%, var(--text));letter-spacing:.01em}
+    .field label{color:color-mix(in srgb, var(--muted) 92%, var(--text));letter-spacing:.01em}
     .field input,.field select{
       min-height:38px;border-color:var(--border-strong);background:color-mix(in srgb, var(--panel-2) 84%, #000 16%);
       box-shadow:inset 0 1px 0 color-mix(in srgb, #fff 5%, transparent);
@@ -245,9 +250,9 @@
     .btn .icon{width:15px;height:15px}
     .btn-primary .icon{width:16px;height:16px}
     .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);border:0;white-space:nowrap}
-    .brand-mark{overflow:hidden;background:var(--panel-2);border:1px solid var(--border);box-shadow:0 10px 28px rgba(0,0,0,.28)}
-    .brand-mark img{width:100%;height:100%;object-fit:cover;display:block}
-    body.light-mode .brand-mark{background:#fff;box-shadow:0 8px 20px rgba(15,23,42,.08)}
+    .brand-mark{overflow:hidden;background:transparent;border:1px solid var(--border);box-shadow:0 8px 22px rgba(0,0,0,.18);padding:4px}
+    .brand-mark img{width:100%;height:100%;object-fit:contain;display:block}
+    body.light-mode .brand-mark{background:#fff;box-shadow:0 8px 20px rgba(15,23,42,.06)}
     .tool-group{gap:7px}.tool-divider{opacity:.72}
     .btn-icon .icon{width:17px;height:17px}
     .settings-restore .icon{width:18px;height:18px}
@@ -256,21 +261,26 @@
     .settings-section>summary h3 span,.summary-title{display:flex;flex-direction:column;gap:0}
     .summary-title{flex-direction:row;align-items:center;gap:8px;font-size:13px;font-weight:900;color:var(--text)}
     .settings-section>summary:hover::after,.advanced-card summary:hover::after{border-color:var(--accent)}
-    .choice-grid{gap:10px;margin-bottom:14px}.choice-grid--style{gap:10px}.palette-grid{gap:10px;margin-bottom:14px}.segmented-choice{gap:10px;margin-bottom:14px}
+    .choice-grid{gap:12px;margin-bottom:16px}.choice-grid--style{gap:12px}.palette-grid{gap:8px;margin-bottom:16px}.segmented-choice{gap:10px;margin-bottom:14px}
     .choice-card,.palette-card,.mode-card,.branding-card{padding:12px;background:color-mix(in srgb, var(--panel-2) 86%, transparent);transition:border-color .2s ease,background .2s ease,box-shadow .22s ease,transform .18s ease}
-    .choice-card:hover,.palette-card:hover,.mode-card:hover,.branding-card:hover{box-shadow:0 10px 26px rgba(0,0,0,.16);transform:translateY(-2px)}
-    body.light-mode .choice-card:hover,body.light-mode .palette-card:hover,body.light-mode .mode-card:hover,body.light-mode .branding-card:hover{box-shadow:0 10px 24px rgba(15,23,42,.08)}
+    .choice-card:hover,.mode-card:hover,.branding-card:hover{box-shadow:0 10px 26px rgba(0,0,0,.16);transform:translateY(-2px)}
+    .palette-card:hover{transform:translateY(-1px) scale(1.06);box-shadow:0 8px 20px rgba(0,0,0,.18)}
+    .palette-card.active{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);transform:scale(1.04)}
+    .palette-card{padding:0;background:color-mix(in srgb, var(--panel-2) 76%, transparent)}
+    .palette-card.active{background:color-mix(in srgb, var(--accent) 10%, var(--panel-2))}
+    body.light-mode .choice-card:hover,body.light-mode .mode-card:hover,body.light-mode .branding-card:hover{box-shadow:0 10px 24px rgba(15,23,42,.08)}
+    body.light-mode .palette-card:hover{box-shadow:0 8px 18px rgba(15,23,42,.10)}
     .choice-copy{color:color-mix(in srgb, var(--muted) 78%, var(--text));line-height:1.38}
-    body:not(.light-mode) .choice-copy{color:#c2c2c2}
-    .editor-formatbar{gap:4px;padding:0 10px;background:color-mix(in srgb, var(--panel-2) 72%, transparent)}
+    body:not(.light-mode) .choice-copy{color:#d0d0d0}
+    .editor-formatbar{gap:6px;padding:0 12px;background:color-mix(in srgb, var(--panel-2) 72%, transparent);align-items:center}
     .format-btn{height:30px;min-width:32px;border-color:transparent;background:transparent;color:var(--muted);border-radius:8px;padding:0;transition:background .16s ease,color .16s ease,border-color .16s ease,transform .14s ease}
     .format-btn .icon{width:16px;height:16px}
     .format-btn:hover{color:var(--text);border-color:var(--border);background:var(--panel-3);transform:translateY(-1px)}
     .format-btn:active{transform:translateY(0)}
     .footer-group span,.progress-label,#statusWords,#statusChars{font-variant-numeric:tabular-nums}
     #statusWords,#statusChars,.progress-label{font-family:var(--code)}
-    .sidebar,.pane{box-shadow:0 18px 46px rgba(0,0,0,.34)}
-    body.light-mode .sidebar,body.light-mode .pane{box-shadow:0 18px 42px rgba(15,23,42,.06)}
+    .sidebar,.pane{box-shadow:0 16px 40px rgba(0,0,0,.24)}
+    body.light-mode .sidebar,body.light-mode .pane{box-shadow:0 16px 36px rgba(15,23,42,.055)}
   </style>
 </head>
 <body>
@@ -350,13 +360,13 @@
               <button type="button" class="choice-card" data-choice-value="academic"><span class="choice-title">Academic</span><span class="choice-copy">Formal structure, dense metadata, papers.</span></button>
             </div>
             <div class="palette-grid" data-choice-group="palette" aria-label="Palette">
-              <button type="button" class="palette-card active" data-choice-value="blue" style="--swatch:#2563eb;--swatch2:#7c3aed"><span class="palette-dot"></span><span>Blue</span></button>
-              <button type="button" class="palette-card" data-choice-value="emerald" style="--swatch:#059669;--swatch2:#0ea5e9"><span class="palette-dot"></span><span>Emerald</span></button>
-              <button type="button" class="palette-card" data-choice-value="violet" style="--swatch:#7c3aed;--swatch2:#db2777"><span class="palette-dot"></span><span>Violet</span></button>
-              <button type="button" class="palette-card" data-choice-value="amber" style="--swatch:#d97706;--swatch2:#dc2626"><span class="palette-dot"></span><span>Amber</span></button>
-              <button type="button" class="palette-card" data-choice-value="rose" style="--swatch:#e11d48;--swatch2:#7c3aed"><span class="palette-dot"></span><span>Rose</span></button>
-              <button type="button" class="palette-card" data-choice-value="slate" style="--swatch:#475569;--swatch2:#0f172a"><span class="palette-dot"></span><span>Slate</span></button>
-              <button type="button" class="palette-card" data-choice-value="neutral" style="--swatch:#525252;--swatch2:#171717"><span class="palette-dot"></span><span>Neutral</span></button>
+              <button type="button" class="palette-card active" data-choice-value="blue" title="Blue palette" aria-label="Blue palette" style="--swatch:#2563eb;--swatch2:#7c3aed"><span class="palette-dot"></span><span>Blue</span></button>
+              <button type="button" class="palette-card" data-choice-value="emerald" title="Emerald palette" aria-label="Emerald palette" style="--swatch:#059669;--swatch2:#0ea5e9"><span class="palette-dot"></span><span>Emerald</span></button>
+              <button type="button" class="palette-card" data-choice-value="violet" title="Violet palette" aria-label="Violet palette" style="--swatch:#7c3aed;--swatch2:#db2777"><span class="palette-dot"></span><span>Violet</span></button>
+              <button type="button" class="palette-card" data-choice-value="amber" title="Amber palette" aria-label="Amber palette" style="--swatch:#d97706;--swatch2:#dc2626"><span class="palette-dot"></span><span>Amber</span></button>
+              <button type="button" class="palette-card" data-choice-value="rose" title="Rose palette" aria-label="Rose palette" style="--swatch:#e11d48;--swatch2:#7c3aed"><span class="palette-dot"></span><span>Rose</span></button>
+              <button type="button" class="palette-card" data-choice-value="slate" title="Slate palette" aria-label="Slate palette" style="--swatch:#475569;--swatch2:#0f172a"><span class="palette-dot"></span><span>Slate</span></button>
+              <button type="button" class="palette-card" data-choice-value="neutral" title="Neutral palette" aria-label="Neutral palette" style="--swatch:#525252;--swatch2:#171717"><span class="palette-dot"></span><span>Neutral</span></button>
             </div>
             <div class="segmented-choice" data-choice-group="mode" aria-label="Mode">
               <button type="button" class="mode-card active" data-choice-value="light">Light<small>print-first</small></button>

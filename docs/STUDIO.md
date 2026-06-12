@@ -18,12 +18,15 @@ Studio is organized around the way a document is usually prepared:
 
 The goal is to keep common choices visible while keeping lower-level export
 controls out of the way until they are needed. The sidebar uses accordion
-sections so the current task can stay open without forcing long scrolling.
+sections and an internal scroll container so long settings content remains
+reachable without pushing the whole workspace off screen.
 
 ## Appearance cards
 
-Style, palette, mode, and branding are selected with visual cards. These cards
-map directly to the same render options used by the CLI:
+Style, mode, and branding are selected with visual cards. Palettes use compact
+color swatches so the full palette set stays visible without making the sidebar
+feel tall or crowded. These controls map directly to the same render options used
+by the CLI:
 
 ```yaml
 appearance:
@@ -66,9 +69,9 @@ Editor, Preview, or Zen buttons.
 
 The interface uses thin custom scrollbars and a pure light/dark surface model: a
 minimal black/charcoal workspace in dark mode and a clean white/soft-gray
-workspace in light mode. Toolbar actions use inline SVG icons and the project
-logo instead of emoji glyphs, so the interface stays consistent across operating
-systems and browsers.
+workspace in light mode. Toolbar actions use inline SVG icons and a contained
+project logo instead of emoji glyphs, so the interface stays consistent across
+operating systems and browsers.
 
 ## Local state
 
