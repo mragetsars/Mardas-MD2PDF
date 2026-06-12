@@ -9,10 +9,12 @@ All notable changes to Mardas MD2PDF are tracked here.
 - Redesigned the Studio sidebar into clear Document, Appearance, Branding, Layout, and Advanced sections.
 - Replaced raw style, palette, mode, and branding dropdowns with visual choice cards while keeping the same backend render options.
 - Improved Studio CLI-copy output so branding options are included when selected.
+- Polished the Studio toolbar, settings sidebar, editor, preview status, and status bar for a clearer daily writing workflow.
 
 ### Added
 
 - Added `docs/STUDIO.md` to document the refined visual workflow and local-export behavior.
+- Added a compact Markdown formatting toolbar, editor line numbers, preview render status, and proportional editor-to-preview scroll sync.
 
 ## 1.6.3 - 2026-06-10
 

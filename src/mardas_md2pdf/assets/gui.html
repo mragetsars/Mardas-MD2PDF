@@ -13,7 +13,7 @@
       --panel-2:#0f172a;
       --panel-3:#172033;
       --editor:#080d1b;
-      --preview:#0b1020;
+      --preview:#0e1527;
       --text:#e5e7eb;
       --muted:#9ca3af;
       --faint:#64748b;
@@ -39,7 +39,7 @@
       --panel-2:#f8fafc;
       --panel-3:#eef2ff;
       --editor:#ffffff;
-      --preview:#ffffff;
+      --preview:#f3f7fb;
       --text:#0f172a;
       --muted:#475569;
       --faint:#64748b;
@@ -163,6 +163,55 @@
     .footer-group{display:flex;align-items:center;gap:16px}
     .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);display:inline-block;margin-right:6px}
     .spinner{display:none}.busy .spinner{display:inline-block}.busy .btn-primary{opacity:.78;pointer-events:none}
+
+    .toolbar{flex:1;min-width:0}
+    .tool-group{display:inline-flex;align-items:center;gap:8px;min-width:0}
+    .tool-divider{width:1px;height:28px;background:var(--border);margin:0 2px;opacity:.9}
+    .btn-icon{width:36px;min-width:36px;padding:0;justify-content:center;font-size:15px}
+    .btn-icon span{display:none}
+    .btn-quiet{background:transparent;border-color:transparent;color:var(--muted)}
+    .btn-quiet:hover{border-color:var(--border);color:var(--text);background:var(--panel)}
+    .view-seg button{min-width:66px}
+    .view-seg button.active{box-shadow:inset 0 0 0 1px color-mix(in srgb, #fff 22%, transparent)}
+    .sidebar-body{padding:16px;display:flex;flex-direction:column;gap:14px}
+    .settings-section{padding:0;margin:0;overflow:hidden}
+    .settings-section>summary{list-style:none;cursor:pointer;padding:15px 15px 13px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;border-bottom:1px solid transparent}
+    .settings-section>summary::-webkit-details-marker{display:none}
+    .settings-section>summary h3{margin:0;font-size:13px;color:var(--text);display:flex;align-items:center;gap:8px;line-height:1.2}
+    .settings-section>summary small{display:block;margin-top:4px;color:var(--faint);font-size:10px;font-weight:700;line-height:1.35;letter-spacing:0;text-transform:none}
+    .settings-section>summary::after{content:'⌄';color:var(--muted);font-weight:900;transition:transform .16s;margin-top:2px}
+    .settings-section[open]>summary{border-bottom-color:var(--border)}
+    .settings-section[open]>summary::after{transform:rotate(180deg)}
+    .settings-body{padding:15px}
+    .card{margin-bottom:0}
+    .field{margin-bottom:14px}
+    .field label{color:color-mix(in srgb, var(--muted) 88%, var(--text));letter-spacing:.01em}
+    .field input,.field select{
+      min-height:38px;border-color:var(--border-strong);background:color-mix(in srgb, var(--panel-2) 84%, #000 16%);
+      box-shadow:inset 0 1px 0 color-mix(in srgb, #fff 5%, transparent);
+    }
+    body.light-mode .field input,body.light-mode .field select{background:#fff;box-shadow:inset 0 1px 0 rgba(15,23,42,.04)}
+    .switch{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:12px 0;user-select:none;cursor:pointer;color:var(--muted);font-size:11px;font-weight:850;line-height:1.35}
+    .switch input{appearance:none;width:42px;height:24px;border-radius:999px;border:1px solid var(--border-strong);background:var(--panel-2);position:relative;cursor:pointer;flex:0 0 auto;transition:background .18s,border-color .18s}
+    .switch input::after{content:'';position:absolute;width:18px;height:18px;top:2px;left:2px;border-radius:50%;background:var(--muted);transition:transform .18s,background .18s;box-shadow:0 3px 10px rgba(0,0,0,.25)}
+    .switch input:checked{background:linear-gradient(135deg,var(--accent),var(--accent-2));border-color:transparent}
+    .switch input:checked::after{transform:translateX(18px);background:#020617}
+    .editor-pane{display:grid;grid-template-rows:42px 40px minmax(0,1fr)}
+    .editor-formatbar{height:40px;display:flex;align-items:center;gap:6px;padding:0 12px;border-bottom:1px solid var(--border);background:color-mix(in srgb, var(--panel-2) 94%, transparent);direction:ltr;overflow:auto;scrollbar-width:none}
+    .editor-formatbar::-webkit-scrollbar{display:none}
+    .format-btn{height:28px;min-width:30px;border:1px solid var(--border);border-radius:9px;background:var(--panel);color:var(--text);font:850 12px/1 var(--font);cursor:pointer;display:inline-grid;place-items:center;padding:0 8px}
+    .format-btn:hover{border-color:var(--accent);background:var(--panel-3)}
+    .editor-shell{min-height:0;display:grid;grid-template-columns:52px 1fr;background:var(--editor)}
+    .line-numbers{overflow:hidden;padding:20px 8px 20px 0;border-right:1px solid var(--border);background:color-mix(in srgb, var(--editor) 82%, var(--panel) 18%);color:var(--faint);font:12px/1.72 var(--code);text-align:right;user-select:none;white-space:pre;direction:ltr}
+    textarea{height:100%;padding:20px;border-radius:0;line-height:1.72;scrollbar-width:thin}
+    .preview{height:calc(100% - 42px);border-left:1px solid color-mix(in srgb, var(--border) 60%, transparent)}
+    .preview-tools{min-width:0}
+    .preview-status{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:850;color:var(--faint)}
+    .preview-status::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--ok);display:inline-block}
+    .preview-status.rendering::before{background:transparent;border:2px solid var(--border-strong);border-top-color:var(--accent);animation:spin .7s linear infinite;width:10px;height:10px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .footer #savedState{color:var(--muted);font-weight:850}
+
     .zen-toolbar{display:none;position:fixed;z-index:80;top:14px;right:14px;align-items:center;gap:8px;padding:8px;border:1px solid var(--border);border-radius:18px;background:color-mix(in srgb, var(--panel) 92%, transparent);box-shadow:var(--shadow);backdrop-filter:blur(16px);direction:ltr}
     .zen-toolbar span{color:var(--muted);font-size:11px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;margin:0 4px}
     .zen-toolbar .btn{height:34px;background:var(--panel-2)}
@@ -199,20 +248,31 @@
         <span class="brand-mark">M</span>
         <span class="brand-copy"><strong>Mardas MD2PDF Studio</strong><span>Markdown to PDF Engine · v__MARDAS_VERSION__</span></span>
       </div>
-      <div class="toolbar">
-        <button class="btn" onclick="openFile()">📂 Open</button><input type="file" id="fileInput" accept=".md,.markdown,.txt" hidden>
-        <button class="btn" onclick="attachAssets()">🖼️ Attach Assets</button><input type="file" id="assetInput" multiple webkitdirectory hidden>
-        <button class="btn" onclick="downloadMarkdown()">💾 Save MD</button>
-        <button class="btn btn-ghost" onclick="clearStudioState()">↺ Reset State</button>
-        <button class="btn" onclick="copyCommand()">⌘ Copy CLI</button>
-        <div class="seg" aria-label="Layout">
-          <button id="layoutSplit" class="active" onclick="setLayout('split')">Split</button>
-          <button id="layoutEditor" onclick="setLayout('editor')">Editor</button>
-          <button id="layoutPreview" onclick="setLayout('preview')">Preview</button>
-          <button id="layoutZen" onclick="setLayout('zen')">Zen</button>
+      <div class="toolbar" role="toolbar" aria-label="Studio toolbar">
+        <div class="tool-group" aria-label="File actions">
+          <button class="btn" onclick="openFile()" title="Open Markdown file">📂 Open</button><input type="file" id="fileInput" accept=".md,.markdown,.txt" hidden>
+          <button class="btn" onclick="downloadMarkdown()" title="Save Markdown locally">💾 Save MD</button>
+          <button class="btn btn-icon btn-quiet" onclick="clearStudioState()" title="Reset local Studio state" aria-label="Reset local Studio state">↺<span>Reset State</span></button>
         </div>
-        <button class="btn btn-ghost" onclick="toggleInterfaceMode()" id="interfaceBtn">☀️ Light</button>
-        <button id="exportPdfBtn" class="btn btn-primary" onclick="renderPDF()"><span class="spinner">⏳</span>📄 Export PDF</button>
+        <span class="tool-divider" aria-hidden="true"></span>
+        <div class="tool-group" aria-label="Resources">
+          <button class="btn" onclick="attachAssets()" title="Attach image folders or files">🖼️ Attach</button><input type="file" id="assetInput" multiple webkitdirectory hidden>
+          <button class="btn btn-icon btn-quiet" onclick="copyCommand()" title="Copy matching CLI command" aria-label="Copy CLI command">⌘<span>Copy CLI</span></button>
+        </div>
+        <span class="tool-divider" aria-hidden="true"></span>
+        <div class="tool-group" aria-label="View mode">
+          <div class="seg view-seg" aria-label="Layout">
+            <button id="layoutSplit" class="active" onclick="setLayout('split')">Split</button>
+            <button id="layoutEditor" onclick="setLayout('editor')">Editor</button>
+            <button id="layoutPreview" onclick="setLayout('preview')">Preview</button>
+            <button id="layoutZen" onclick="setLayout('zen')">Zen</button>
+          </div>
+        </div>
+        <span class="tool-divider" aria-hidden="true"></span>
+        <div class="tool-group" aria-label="Export">
+          <button class="btn btn-icon btn-quiet" onclick="toggleInterfaceMode()" id="interfaceBtn" title="Toggle light/dark Studio UI" aria-label="Toggle light/dark Studio UI">☀️</button>
+          <button id="exportPdfBtn" class="btn btn-primary" onclick="renderPDF()"><span class="spinner">⏳</span>📄 Export PDF</button>
+        </div>
       </div>
     </header>
     <div id="zenToolbar" class="zen-toolbar" aria-hidden="true">
@@ -225,7 +285,7 @@
       <aside class="sidebar">
         <div class="sidebar-head"><strong>Export Settings</strong><span id="appearanceName">modern · blue · light</span></div>
         <div class="sidebar-body">
-          <section class="card"><h3>📌 Document<small>Basic identity and page setup</small></h3>
+          <details class="card settings-section" open><summary><h3>📌 Document<small>Basic identity and page setup</small></h3></summary><div class="settings-body">
             <p class="section-kicker">Start with the information readers see first: title, author, output file, page size, and document direction.</p>
             <div class="field"><label for="titleInput">Title</label><input id="titleInput" type="text" placeholder="Document title"></div>
             <div class="field"><label for="authorInput">Author</label><input id="authorInput" type="text" placeholder="Author or team"></div>
@@ -234,9 +294,9 @@
               <div class="field"><label for="pageSizeInput">Page size</label><select id="pageSizeInput"><option>A4</option><option>A4 landscape</option><option>Letter</option><option>Legal</option><option>210mm 297mm</option></select></div>
               <div class="field"><label for="directionInput">Direction</label><select id="directionInput"><option value="auto" selected>auto</option><option value="rtl">rtl</option><option value="ltr">ltr</option></select></div>
             </div>
-          </section>
+          </div></details>
 
-          <section class="card"><h3>🎨 Appearance<small>Shape, color, and light/dark output</small></h3>
+          <details class="card settings-section"><summary><h3>🎨 Appearance<small>Shape, color, and light/dark output</small></h3></summary><div class="settings-body">
             <p class="section-kicker">Choose one visual shape, then choose a color palette. Style does not decide color; palette does.</p>
             <div class="hidden-settings" aria-hidden="true">
               <select id="styleInput"><option value="modern" selected>modern</option><option value="github">github</option><option value="textbook">textbook</option><option value="academic">academic</option></select>
@@ -262,9 +322,9 @@
               <button type="button" class="mode-card active" data-choice-value="light">Light<small>print-first</small></button>
               <button type="button" class="mode-card" data-choice-value="dark">Dark<small>screen-first</small></button>
             </div>
-          </section>
+          </div></details>
 
-          <section class="card"><h3>🏷️ Branding<small>Keep output owned by the document</small></h3>
+          <details class="card settings-section"><summary><h3>🏷️ Branding<small>Keep output owned by the document</small></h3></summary><div class="settings-body">
             <p class="section-kicker">Branding is off by default. Use subtle or full only when the PDF should show a product, lab, or organization mark.</p>
             <div class="hidden-settings" aria-hidden="true"><select id="brandingInput"><option value="off" selected>off</option><option value="subtle">subtle</option><option value="full">full</option></select></div>
             <div class="segmented-choice segmented-choice--three" data-choice-group="branding" aria-label="Branding">
@@ -275,20 +335,20 @@
             <div class="field"><label for="brandNameInput">Brand name</label><input id="brandNameInput" type="text" placeholder="Optional organization name"></div>
             <div class="field"><label for="brandLogoInput">Brand logo path</label><input id="brandLogoInput" type="text" placeholder="Optional, e.g. images/logo.png"></div>
             <div class="field"><label for="brandFooterInput">Brand footer</label><input id="brandFooterInput" type="text" placeholder="Optional tagline"></div>
-          </section>
+          </div></details>
 
-          <section class="card"><h3>🧭 Layout<small>TOC, cover, and page flow</small></h3>
-            <label class="check"><input id="tocInput" type="checkbox" checked><span>Generate table of contents</span></label>
+          <details class="card settings-section"><summary><h3>🧭 Layout<small>TOC, cover, and page flow</small></h3></summary><div class="settings-body">
+            <label class="switch"><span>Generate table of contents</span><input id="tocInput" type="checkbox" checked></label>
             <div class="field"><label for="tocDepthInput">TOC depth</label><input id="tocDepthInput" type="number" min="1" max="6" value="6"></div>
-            <label class="check"><input id="tocPageBreakInput" type="checkbox" checked><span>Start content after TOC on new page</span></label>
-            <label class="check"><input id="h1PageBreakInput" type="checkbox" checked><span>Start each H1 on new page</span></label>
-            <label class="check"><input id="noCoverInput" type="checkbox"><span>No cover page</span></label>
-          </section>
+            <label class="switch"><span>Start content after TOC on new page</span><input id="tocPageBreakInput" type="checkbox" checked></label>
+            <label class="switch"><span>Start each H1 on new page</span><input id="h1PageBreakInput" type="checkbox" checked></label>
+            <label class="switch"><span>No cover page</span><input id="noCoverInput" type="checkbox"></label>
+          </div></details>
 
-          <details class="card advanced-card">
+          <details class="card advanced-card settings-section">
             <summary><span>⚙️ Advanced</span><small>Watermark, page footer, local assets</small></summary>
             <div class="advanced-body">
-              <label class="check"><input id="noHeaderFooterInput" type="checkbox"><span>Hide footer/page number</span></label>
+              <label class="switch"><span>Hide footer/page number</span><input id="noHeaderFooterInput" type="checkbox"></label>
               <div class="field"><label for="watermarkInput">Watermark text</label><input id="watermarkInput" type="text" placeholder="Optional"></div>
               <div class="field"><label for="watermarkOpacityInput">Opacity</label><input id="watermarkOpacityInput" type="number" min="0" max="1" step="0.01" value="0.065"></div>
               <button class="btn" onclick="attachAssets()">Attach image folder/files</button>
@@ -299,17 +359,28 @@
         </div>
       </aside>
       <section class="pane editor-pane">
-        <div class="pane-head"><strong>Markdown Editor</strong><span class="editor-tools"><span id="savedState">Live preview</span></span></div>
-        <textarea id="editor" dir="auto" spellcheck="false"></textarea>
+        <div class="pane-head"><strong>Markdown Editor</strong><span class="editor-tools"><span class="preview-note">Markdown source</span></span></div>
+        <div class="editor-formatbar" aria-label="Markdown formatting toolbar">
+          <button class="format-btn" type="button" onclick="insertMarkdown('bold')" title="Bold">B</button>
+          <button class="format-btn" type="button" onclick="insertMarkdown('italic')" title="Italic"><em>I</em></button>
+          <button class="format-btn" type="button" onclick="insertMarkdown('link')" title="Link">🔗</button>
+          <button class="format-btn" type="button" onclick="insertMarkdown('image')" title="Image">🖼️</button>
+          <button class="format-btn" type="button" onclick="insertMarkdown('code')" title="Code block">{ }</button>
+          <button class="format-btn" type="button" onclick="insertMarkdown('table')" title="Table">▦</button>
+        </div>
+        <div class="editor-shell">
+          <div id="lineNumbers" class="line-numbers" aria-hidden="true">1</div>
+          <textarea id="editor" dir="auto" spellcheck="false"></textarea>
+        </div>
       </section>
       <div class="gutter" id="gutter" title="Drag to resize editor and preview"></div>
       <section class="pane preview-pane">
-        <div class="pane-head"><strong>Preview</strong><span class="preview-tools"><span class="preview-note" title="The exported PDF uses the Python renderer, MathJax, appearance CSS, TOC, page breaks, and Chromium print layout.">Approximate preview</span><button class="btn" onclick="toggleDirection()" id="dirBtn">↔️ RTL</button></span></div>
+        <div class="pane-head"><strong>Preview</strong><span class="preview-tools"><span id="previewStatus" class="preview-status" title="The exported PDF uses the Python renderer, MathJax, appearance CSS, TOC, page breaks, and Chromium print layout.">Approximate preview</span><button class="btn" onclick="toggleDirection()" id="dirBtn">↔️ RTL</button></span></div>
         <div id="preview" class="preview" dir="auto"></div>
       </section>
     </main>
     <footer class="footer">
-      <div class="footer-group"><span id="statusWords">Words: 0</span><span id="statusChars">Chars: 0</span></div>
+      <div class="footer-group"><span id="statusWords">Words: 0</span><span id="statusChars">Chars: 0</span><span id="savedState">Live preview</span></div>
       <div class="footer-group"><div id="exportProgress" class="export-progress" aria-hidden="true"><div class="progress-track"><div id="exportProgressBar" class="progress-bar"></div></div><span id="exportProgressLabel" class="progress-label">0%</span></div><span><i class="dot"></i><span id="serverStatus">Ready</span></span></div>
     </footer>
   </div>
@@ -325,6 +396,8 @@ const exportProgressBar = $('exportProgressBar');
 const exportProgressLabel = $('exportProgressLabel');
 const interfaceBtn = $('interfaceBtn');
 const zenToolbar = $('zenToolbar');
+const lineNumbers = $('lineNumbers');
+const previewStatus = $('previewStatus');
 let renderTimer = null;
 let exportProgressTimer = null;
 let exportProgressValue = 0;
@@ -498,7 +571,7 @@ function loadStudioState(){
     if (typeof state.markdown === 'string') editor.value = state.markdown;
     setOptions(state.options || {});
     document.body.classList.toggle('light-mode', Boolean(state.lightMode));
-    interfaceBtn.textContent = state.lightMode ? '🌙 Dark' : '☀️ Light';
+    interfaceBtn.textContent = state.lightMode ? '🌙' : '☀️';
     if (['auto','rtl','ltr'].includes(state.previewDirection)) {
       preview.setAttribute('dir', state.previewDirection);
       editor.setAttribute('dir', state.previewDirection);
@@ -669,17 +742,87 @@ function renderMarkdownPreview(markdown){
   return out.join('\n');
 }
 
+function setPreviewStatus(message, rendering=false){
+  if (!previewStatus) return;
+  previewStatus.textContent = message;
+  previewStatus.classList.toggle('rendering', rendering);
+}
+
+function syncLineNumbers(){
+  if (!lineNumbers) return;
+  const lineCount = Math.max(1, editor.value.split('\n').length);
+  let numbers = '';
+  for (let i = 1; i <= lineCount; i++) numbers += i + (i === lineCount ? '' : '\n');
+  lineNumbers.textContent = numbers;
+  lineNumbers.scrollTop = editor.scrollTop;
+}
+
+function syncPreviewScroll(){
+  const editorMax = editor.scrollHeight - editor.clientHeight;
+  const previewMax = preview.scrollHeight - preview.clientHeight;
+  if (editorMax <= 0 || previewMax <= 0) return;
+  preview.scrollTop = (editor.scrollTop / editorMax) * previewMax;
+}
+
+function wrapSelection(prefix, suffix, fallback){
+  const start = editor.selectionStart;
+  const end = editor.selectionEnd;
+  const selected = editor.value.slice(start, end) || fallback;
+  const next = prefix + selected + suffix;
+  editor.setRangeText(next, start, end, 'end');
+  editor.focus();
+  renderPreview();
+  scheduleStudioStateSave();
+}
+
+function insertAtCursor(value){
+  const start = editor.selectionStart;
+  const end = editor.selectionEnd;
+  editor.setRangeText(value, start, end, 'end');
+  editor.focus();
+  renderPreview();
+  scheduleStudioStateSave();
+}
+
+function insertMarkdown(kind){
+  if (kind === 'bold') return wrapSelection('**', '**', 'bold text');
+  if (kind === 'italic') return wrapSelection('*', '*', 'italic text');
+  if (kind === 'link') return wrapSelection('[', '](https://example.com)', 'link text');
+  if (kind === 'image') return insertAtCursor('![Alt text](images/example.png)');
+  if (kind === 'code') return insertAtCursor('```python\nprint("Hello Mardas")\n```\n');
+  if (kind === 'table') return insertAtCursor('| Column A | Column B |\n|---|---|\n| Value | Value |\n');
+}
+
+function attachSettingsAccordion(){
+  const sections = Array.from(document.querySelectorAll('.settings-section'));
+  sections.forEach(section => {
+    section.addEventListener('toggle', () => {
+      if (!section.open) return;
+      sections.forEach(other => { if (other !== section) other.open = false; });
+    });
+  });
+}
+
 function renderPreview(){
   const text = editor.value;
   statusWords.textContent = 'Words: ' + (text.trim() ? text.trim().split(/\s+/).length : 0);
   statusChars.textContent = 'Chars: ' + text.length;
+  syncLineNumbers();
   preview.innerHTML = renderMarkdownPreview(text);
+  setPreviewStatus('Preview updated', false);
 }
 
 editor.addEventListener('input', () => {
   clearTimeout(renderTimer);
+  setPreviewStatus('Updating preview...', true);
+  syncLineNumbers();
   renderTimer = setTimeout(renderPreview, 140);
   scheduleStudioStateSave();
+});
+
+editor.addEventListener('scroll', () => {
+  syncLineNumbers();
+  syncPreviewScroll();
 });
 
 editor.addEventListener('keydown', (event) => {
@@ -690,6 +833,7 @@ editor.addEventListener('keydown', (event) => {
     editor.value = editor.value.slice(0, start) + '    ' + editor.value.slice(end);
     editor.selectionStart = editor.selectionEnd = start + 4;
     renderPreview();
+    syncLineNumbers();
   }
 });
 
@@ -871,7 +1015,7 @@ function copyCommand(){
 function toggleInterfaceMode(){
   document.body.classList.toggle('light-mode');
   const light = document.body.classList.contains('light-mode');
-  interfaceBtn.textContent = light ? '🌙 Dark' : '☀️ Light';
+  interfaceBtn.textContent = light ? '🌙' : '☀️';
   scheduleStudioStateSave();
 }
 
@@ -955,6 +1099,7 @@ window.addEventListener('keydown', (event) => {
 
 editor.value = `---\ntitle: "نمونه سند Mardas MD2PDF"\nauthor: "mragetsars"\ndate: "2026-05-12"\nlang: fa\nappearance:\n  style: modern\n  palette: blue\n  mode: light\n---\n\n# نمونه Markdown\n\nاین محیط برای ویرایش Markdown و گرفتن خروجی PDF با تنظیمات گرافیکی ساخته شده است.\n\n## Code\n\n\`\`\`python\nprint("Hello Mardas")\n\`\`\`\n\n| قابلیت | وضعیت |\n|---|---|\n| RTL/LTR | ✅ |\n| PDF Export | ✅ |\n`;
 attachChoiceCards();
+attachSettingsAccordion();
 attachOptionPersistence();
 loadStudioState();
 updateAppearanceName();

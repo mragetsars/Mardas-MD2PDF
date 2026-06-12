@@ -17,7 +17,8 @@ Studio is organized around the way a document is usually prepared:
 5. **Advanced** — page footer visibility, watermarking, and attached local assets.
 
 The goal is to keep common choices visible while keeping lower-level export
-controls out of the way until they are needed.
+controls out of the way until they are needed. The sidebar uses accordion
+sections so the current task can stay open without forcing long scrolling.
 
 ## Appearance cards
 
@@ -37,11 +38,29 @@ Style controls document shape and layout. Palette controls colors. Mode controls
 light or dark output. Branding is off by default so ordinary PDFs do not carry a
 large product mark.
 
+## Editor workflow
+
+The editor panel includes a compact Markdown toolbar for common insertions:
+bold, italic, link, image, code block, and table. The toolbar does not replace
+Markdown knowledge; it reduces repetitive typing while keeping the source plain.
+
+Line numbers are shown beside the editor to make it easier to discuss or debug a
+long document. The preview scroll position follows the editor proportionally, so
+users can keep the source and approximate preview in the same neighborhood.
+
+Preview updates are debounced. When Studio is waiting for the next preview pass,
+the preview header shows a small rendering indicator instead of leaving the user
+wondering whether the document is stuck.
+
 ## Local state
 
 Studio stores the current draft, sidebar settings, layout mode, interface mode,
 preview direction, and editor width in browser local storage. Use **Reset State**
 when you want to clear the saved local draft and return to a clean workspace.
+
+The top toolbar is grouped into File, Resources, View, and Export actions. Less
+important actions use compact icon buttons with tooltips, while **Export PDF**
+remains the primary call to action.
 
 Keyboard shortcuts:
 

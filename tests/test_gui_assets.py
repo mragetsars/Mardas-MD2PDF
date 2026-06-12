@@ -238,3 +238,50 @@ def test_gui_zen_mode_has_escape_route_and_is_not_restored():
     assert "['split','editor','preview'].includes(state.layout)" in html
     assert "body.zen .zen-toolbar{display:flex}" in html
     assert "Ctrl/Cmd+4" in Path(__file__).resolve().parents[1].joinpath("docs", "STUDIO.md").read_text(encoding="utf-8")
+
+
+def test_gui_topbar_uses_grouped_toolbar_and_icon_buttons():
+    html = GUI_HTML.read_text(encoding="utf-8")
+
+    assert 'role="toolbar" aria-label="Studio toolbar"' in html
+    assert 'class="tool-group" aria-label="File actions"' in html
+    assert 'class="tool-group" aria-label="Resources"' in html
+    assert 'class="tool-group" aria-label="View mode"' in html
+    assert 'class="tool-divider"' in html
+    assert 'class="btn btn-icon btn-quiet" onclick="copyCommand()"' in html
+    assert 'id="interfaceBtn" title="Toggle light/dark Studio UI"' in html
+
+
+def test_gui_settings_are_accordion_sections_with_switches():
+    html = GUI_HTML.read_text(encoding="utf-8")
+
+    assert 'class="card settings-section" open' in html
+    assert 'class="card settings-section"><summary><h3>🎨 Appearance' in html
+    assert 'class="card settings-section"><summary><h3>🏷️ Branding' in html
+    assert 'class="card settings-section"><summary><h3>🧭 Layout' in html
+    assert 'function attachSettingsAccordion' in html
+    assert 'class="switch"><span>Generate table of contents</span>' in html
+    assert 'class="switch"><span>Hide footer/page number</span>' in html
+
+
+def test_gui_editor_has_formatting_toolbar_line_numbers_and_sync_scroll():
+    html = GUI_HTML.read_text(encoding="utf-8")
+
+    assert 'class="editor-formatbar" aria-label="Markdown formatting toolbar"' in html
+    assert "onclick=\"insertMarkdown('bold')\"" in html
+    assert "onclick=\"insertMarkdown('table')\"" in html
+    assert 'id="lineNumbers" class="line-numbers"' in html
+    assert 'function insertMarkdown' in html
+    assert 'function syncLineNumbers' in html
+    assert 'function syncPreviewScroll' in html
+    assert "editor.addEventListener('scroll'" in html
+
+
+def test_gui_preview_exposes_render_status_and_footer_save_state():
+    html = GUI_HTML.read_text(encoding="utf-8")
+
+    assert 'id="previewStatus" class="preview-status"' in html
+    assert 'function setPreviewStatus' in html
+    assert "setPreviewStatus('Updating preview...', true)" in html
+    assert '<span id="savedState">Live preview</span>' in html
+    assert 'Markdown source' in html
