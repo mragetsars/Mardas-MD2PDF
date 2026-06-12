@@ -224,15 +224,15 @@ def test_studio_workspace_uses_edge_to_edge_engineering_layout() -> None:
     assert "border:0" in gutter_rule
     assert "transition:background-color .16s ease-out" in gutter_rule
     assert "width:1px" in gutter_baseline_rule
-    assert "opacity:.45" in gutter_baseline_rule
+    assert "opacity:.5" in gutter_baseline_rule
     assert "top:50%" in gutter_handle_rule
-    assert "height:66px" in gutter_handle_rule
-    assert "opacity:.32" in gutter_handle_rule
-    assert "height:108px" in gutter_hover_rule
-    assert "width:2px" in gutter_hover_rule
+    assert "height:34px" in gutter_handle_rule
+    assert "opacity:.34" in gutter_handle_rule
+    assert "height:118px" in gutter_hover_rule
+    assert "width:3px" in gutter_hover_rule
     assert "background:var(--accent)" in gutter_hover_rule
-    assert "width:3px" in gutter_active_rule
-    assert "height:148px" in gutter_active_rule
+    assert "width:4px" in gutter_active_rule
+    assert "height:168px" in gutter_active_rule
     assert "background:var(--accent)" in gutter_active_rule
     assert "box-shadow:" in gutter_active_rule
     assert ".gutter.is-dragging{" in html
@@ -403,3 +403,69 @@ def test_studio_gutters_track_dragging_state() -> None:
     assert "event.currentTarget.classList.add('is-dragging')" in html
     assert "document.querySelectorAll('.gutter.is-dragging')" in html
     assert "gutter.classList.remove('is-dragging')" in html
+
+
+
+def test_studio_preview_renders_export_like_markdown_features() -> None:
+    html = _gui_html()
+
+    for expected in (
+        "function parseFenceMeta",
+        "function renderCodeBlock",
+        "function renderMermaidPreview",
+        "function renderMathBlock",
+        "function renderCallout",
+        "function collectFootnotes",
+        "title=",
+        "linenos|linenums|line-numbers",
+        "code-preview__head",
+        "code-line-number",
+        "code-line.highlight",
+        "mermaid-preview",
+        "math-block",
+        "callout callout-",
+        "page-break-preview",
+        "footnotes",
+        "task-box",
+    ):
+        assert expected in html
+
+    assert "if (meta.lang === 'mermaid') return renderMermaidPreview(source);" in html
+    assert "preview uses renderer" not in html
+    assert "export uses renderer" in html
+
+
+def test_studio_editor_toolbar_exposes_project_features() -> None:
+    html = _gui_html()
+
+    for expected in (
+        "onclick=\"insertMarkdown('mermaid')\"",
+        "onclick=\"insertMarkdown('math')\"",
+        "onclick=\"insertMarkdown('callout')\"",
+        "onclick=\"insertMarkdown('footnote')\"",
+        "onclick=\"insertMarkdown('pagebreak')\"",
+        "#icon-diagram",
+        "#icon-sigma",
+        "#icon-alert-circle",
+        "#icon-footnote",
+        "#icon-page-break",
+        "format-divider",
+    ):
+        assert expected in html
+
+    assert "```python title=\"renderer.py\" {2,5-6} linenos" in html
+    assert "```mermaid" in html
+    assert "<!-- pagebreak -->" in html
+
+
+def test_studio_editor_line_numbers_scale_beyond_three_digits() -> None:
+    html = _gui_html()
+
+    editor_shell_rule = _css_rule(html, ".editor-shell")
+    line_number_rule = _css_rule(html, ".line-numbers")
+    assert "grid-template-columns:var(--line-number-width,56px) minmax(0,1fr)" in editor_shell_rule
+    assert "min-width:var(--line-number-width,56px)" in line_number_rule
+    assert "font:14px/1.72 var(--code)" in line_number_rule
+    assert "const digits = String(lineCount).length" in html
+    assert "--line-number-width" in html
+    assert "Math.min(96" in html
