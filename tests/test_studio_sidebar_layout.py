@@ -216,16 +216,23 @@ def test_studio_workspace_uses_edge_to_edge_engineering_layout() -> None:
     assert "22px" not in preview_pane_rule
 
     gutter_rule = _css_rule(html, ".gutter")
+    gutter_baseline_rule = _css_rule(html, ".gutter::before")
     gutter_handle_rule = _css_rule(html, ".gutter::after")
-    gutter_active_rule = _css_rule(html, ".gutter:hover::after,.gutter:active::after,.gutter.is-dragging::after")
+    gutter_hover_rule = _css_rule(html, ".gutter:hover::after")
+    gutter_active_rule = _css_rule(html, ".gutter:active::after,.gutter.is-dragging::after")
     assert "background:transparent" in gutter_rule
     assert "border:0" in gutter_rule
     assert "transition:background-color .16s ease-out" in gutter_rule
-    assert "width:1px" in gutter_handle_rule
-    assert "opacity:.42" in gutter_handle_rule
-    assert "top:10px" in gutter_handle_rule
-    assert "bottom:10px" in gutter_handle_rule
+    assert "width:1px" in gutter_baseline_rule
+    assert "opacity:.45" in gutter_baseline_rule
+    assert "top:50%" in gutter_handle_rule
+    assert "height:66px" in gutter_handle_rule
+    assert "opacity:.32" in gutter_handle_rule
+    assert "height:108px" in gutter_hover_rule
+    assert "width:2px" in gutter_hover_rule
+    assert "background:var(--accent)" in gutter_hover_rule
     assert "width:3px" in gutter_active_rule
+    assert "height:148px" in gutter_active_rule
     assert "background:var(--accent)" in gutter_active_rule
     assert "box-shadow:" in gutter_active_rule
     assert ".gutter.is-dragging{" in html
@@ -237,17 +244,38 @@ def test_studio_select_controls_reserve_arrow_space() -> None:
     select_rule = _css_rule(html, "select")
     assert "-webkit-appearance:none" in select_rule
     assert "appearance:none" in select_rule
-    assert "padding-right:42px" in select_rule
+    assert "padding-right:44px" in select_rule
     assert "padding-left:12px" in select_rule
     assert "text-overflow:ellipsis" in select_rule
-    assert 'background-image:url("data:image/svg+xml' in select_rule
-    assert "background-position:right 12px center" in select_rule
+    assert "background-image:var(--select-chevron)" in select_rule
+    assert "background-repeat:no-repeat" in select_rule
+    assert "background-position:right 14px center" in select_rule
     assert "background-size:16px 16px" in select_rule
+    assert "select::-ms-expand{display:none}" in html
+
+    root_rule = _css_rule(html, ":root")
+    light_root_rule = _css_rule(html, "body.light-mode")
+    assert "--select-chevron:url" in root_rule
+    assert "stroke='%23b3b3b3'" in root_rule
+    assert "--select-chevron:url" in light_root_rule
+    assert "stroke='%23475569'" in light_root_rule
 
     light_select_rule = _css_rule(html, "body.light-mode select")
-    assert "stroke='%23475569'" in light_select_rule
+    assert "background-image:var(--select-chevron)" in light_select_rule
+    assert "background-repeat:no-repeat" in light_select_rule
 
-    assert ".field select{padding-right:44px;background-position:right 13px center}" in html
+    field_select_rule = _css_rule(html, ".field select")
+    assert "padding-right:46px" in field_select_rule
+    assert "background-image:var(--select-chevron)" in field_select_rule
+    assert "background-repeat:no-repeat" in field_select_rule
+    assert "background-position:right 14px center" in field_select_rule
+
+    light_field_select_rule = _css_rule(html, "body.light-mode .field select")
+    assert "background-image:var(--select-chevron)" in light_field_select_rule
+    assert "background-repeat:no-repeat" in light_field_select_rule
+
+    assert ".field input,.field select{width:100%;background:var(--panel-2)}" not in html
+    assert "background:color-mix(in srgb, var(--panel-2) 84%, #000 16%)" not in html
 
 
 def test_studio_accordions_are_independent_and_animated() -> None:
@@ -341,6 +369,23 @@ def test_studio_settings_panel_has_more_breathing_room() -> None:
 
     setting_row_rule = _css_rule(html, ".setting-row")
     assert "gap:10px" in setting_row_rule
+
+
+def test_studio_advanced_section_uses_same_summary_layout() -> None:
+    html = _gui_html()
+
+    assert "summary-title" not in html
+    assert "advanced-body" not in html
+    assert ".advanced-card summary{" not in html
+    assert ".advanced-card summary small" not in html
+    assert '<span>Advanced<small>Watermark, page footer, local assets</small></span>' in html
+
+    summary_heading_rule = _css_rule(html, ".settings-section>summary h3")
+    assert "flex:1 1 auto" in summary_heading_rule
+
+    summary_small_rule = _css_rule(html, ".settings-section>summary small")
+    assert "white-space:normal" in summary_small_rule
+    assert "display:block" in summary_small_rule
 
 
 def test_studio_settings_restore_uses_comfortable_width() -> None:

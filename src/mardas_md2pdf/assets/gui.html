@@ -33,6 +33,7 @@
       --scroll-thumb:#4a4a4a;
       --scroll-thumb-hover:#6a6a6a;
       --scroll-track:transparent;
+      --select-chevron:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23b3b3b3' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
       interpolate-size:allow-keywords;
     }
     body.light-mode{
@@ -58,6 +59,7 @@
       --scroll-thumb:#cbd5e1;
       --scroll-thumb-hover:#94a3b8;
       --scroll-track:transparent;
+      --select-chevron:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
     }
     *{box-sizing:border-box}
     html,body{height:100%}
@@ -89,9 +91,10 @@
       padding:0 12px;outline:none;font-size:12px;font-weight:750;line-height:1;transition:border-color .16s,background .16s,transform .16s,box-shadow .16s;color-scheme:dark;
     }
     body.light-mode .btn,body.light-mode .seg button,body.light-mode select,body.light-mode input[type=text],body.light-mode input[type=number]{color-scheme:light}
-    select{-webkit-appearance:none;appearance:none;padding-left:12px;padding-right:42px;text-overflow:ellipsis;background-color:var(--panel);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23b3b3b3' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;background-size:16px 16px}
+    select{-webkit-appearance:none;appearance:none;padding-left:12px;padding-right:44px;text-overflow:ellipsis;background-color:var(--panel);background-image:var(--select-chevron);background-repeat:no-repeat;background-position:right 14px center;background-size:16px 16px;background-clip:padding-box}
+    select::-ms-expand{display:none}
     body.light-mode select,body.light-mode input[type=text],body.light-mode input[type=number]{border-color:var(--border-strong)}
-    body.light-mode select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")}
+    body.light-mode select{background-color:#fff;background-image:var(--select-chevron);background-repeat:no-repeat;background-position:right 14px center;background-size:16px 16px}
     .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;white-space:nowrap}
     .btn:hover,.seg button:hover{border-color:color-mix(in srgb, var(--accent) 58%, var(--border));background:var(--panel-2);transform:translateY(-1px)}
     .btn-primary{border:0;color:#ffffff;background:var(--accent);box-shadow:0 12px 30px color-mix(in srgb, var(--accent) 24%, transparent)}
@@ -108,10 +111,12 @@
     .pane.editor-pane{border-radius:0}
     .pane.preview-pane{border-radius:0}
     .gutter{cursor:col-resize;background:transparent;position:relative;border:0;transition:background-color .16s ease-out}
-    .gutter::after{content:"";position:absolute;left:50%;top:10px;bottom:10px;width:1px;transform:translateX(-50%);border-radius:999px;background:color-mix(in srgb, var(--border) 70%, transparent);opacity:.42;transition:width .18s ease-out,background-color .18s ease-out,box-shadow .18s ease-out,opacity .18s ease-out,top .18s ease-out,bottom .18s ease-out}
-    .gutter:hover{background:color-mix(in srgb, var(--accent) 5%, transparent)}
-    .gutter:hover::after,.gutter:active::after,.gutter.is-dragging::after{top:6px;bottom:6px;width:3px;opacity:1;background:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 10%, transparent),0 0 18px color-mix(in srgb, var(--accent) 28%, transparent)}
-    .gutter.is-dragging{background:color-mix(in srgb, var(--accent) 8%, transparent)}
+    .gutter::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;transform:translateX(-50%);background:color-mix(in srgb, var(--border) 72%, transparent);opacity:.45;pointer-events:none}
+    .gutter::after{content:"";position:absolute;left:50%;top:50%;width:1px;height:66px;transform:translate(-50%,-50%);border-radius:999px;background:color-mix(in srgb, var(--border-strong) 70%, transparent);opacity:.32;transition:height .18s ease-out,width .18s ease-out,background-color .18s ease-out,box-shadow .18s ease-out,opacity .18s ease-out}
+    .gutter:hover{background:color-mix(in srgb, var(--accent) 4%, transparent)}
+    .gutter:hover::after{width:2px;height:108px;opacity:1;background:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 10%, transparent),0 0 18px color-mix(in srgb, var(--accent) 28%, transparent)}
+    .gutter:active::after,.gutter.is-dragging::after{width:3px;height:148px;opacity:1;background:var(--accent);box-shadow:0 0 0 4px color-mix(in srgb, var(--accent) 12%, transparent),0 0 24px color-mix(in srgb, var(--accent) 34%, transparent)}
+    .gutter.is-dragging{background:color-mix(in srgb, var(--accent) 7%, transparent)}
     body.settings-collapsed .workspace{grid-template-columns:0 0 minmax(260px,var(--editor-width)) 7px minmax(260px,1fr);padding-left:64px}
     body.settings-collapsed .sidebar,body.settings-collapsed .settings-gutter{opacity:0;pointer-events:none;transform:translateX(-12px)}
     .settings-restore{position:fixed;z-index:70;top:76px;left:16px;width:42px;height:42px;border:1px solid var(--border);border-radius:14px;background:color-mix(in srgb, var(--panel) 90%, transparent);color:var(--text);box-shadow:var(--shadow);display:none;place-items:center;cursor:pointer;backdrop-filter:blur(14px)}
@@ -127,8 +132,8 @@
     .card h3{margin:0 0 12px;font-size:13px;color:var(--text);display:flex;align-items:center;gap:8px}
     .field{display:grid;gap:6px;margin-bottom:11px}
     .field label,.check span{font-size:11px;color:var(--muted);font-weight:800}
-    .field input,.field select{width:100%;background:var(--panel-2)}
-    .field select{padding-right:44px;background-position:right 13px center}
+    .field input{width:100%;background-color:var(--panel-2)}
+    .field select{width:100%;padding-right:46px;background-color:var(--panel-2);background-image:var(--select-chevron);background-repeat:no-repeat;background-position:right 14px center;background-size:16px 16px}
     .field input:focus,.field select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent)}
     .check{display:flex;align-items:center;gap:9px;margin:10px 0;user-select:none;cursor:pointer}
     .check input{appearance:none;width:18px;height:18px;border-radius:6px;border:1px solid var(--border-strong);background:var(--panel-2);display:grid;place-items:center;cursor:pointer}
@@ -165,12 +170,6 @@
     .mode-card,.branding-card{text-align:center;font-size:11px;font-weight:900;min-height:38px}
     .branding-card small,.mode-card small{display:block;margin-top:3px;font-size:9px;line-height:1.25;color:var(--faint);font-weight:800}
     .advanced-card{padding:0;overflow:hidden}
-    .advanced-card summary{list-style:none;cursor:pointer;padding:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px;font-weight:900;color:var(--text)}
-    .advanced-card summary::-webkit-details-marker{display:none}
-    .advanced-card summary small{display:block;margin-top:2px;color:var(--faint);font-size:10px;font-weight:700}
-    .advanced-card summary::after{content:"";width:8px;height:8px;border-right:1.8px solid var(--muted);border-bottom:1.8px solid var(--muted);transform:rotate(45deg);transition:transform .22s ease,border-color .18s ease;flex:0 0 auto}
-    .advanced-card[open] summary::after{transform:rotate(225deg)}
-    .advanced-body{border-top:1px solid var(--border);padding:15px}
     .setting-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
     .asset-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
     .asset-chip{max-width:100%;border:1px solid var(--border);border-radius:999px;padding:4px 8px;font-size:10px;color:var(--muted);background:var(--panel-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -213,8 +212,8 @@
     .sidebar-body>.card:last-child,.sidebar-body>.settings-section:last-child{margin-bottom:0}
     .settings-section>summary{position:relative;list-style:none;cursor:pointer;padding:16px 16px 15px;display:flex;align-items:flex-start;justify-content:space-between;gap:14px;min-width:0;border-bottom:1px solid transparent;transition:background .18s ease,border-color .18s ease,color .18s ease}
     .settings-section>summary::-webkit-details-marker{display:none}
-    .settings-section>summary h3{margin:0;min-width:0;font-size:13px;color:var(--text);display:flex;align-items:center;gap:9px;line-height:1.2}
-    .settings-section>summary small{display:block;margin-top:4px;color:var(--faint);font-size:10px;font-weight:700;line-height:1.35;letter-spacing:0;text-transform:none;overflow:hidden;text-overflow:ellipsis}
+    .settings-section>summary h3{margin:0;min-width:0;flex:1 1 auto;font-size:13px;color:var(--text);display:flex;align-items:center;gap:9px;line-height:1.2}
+    .settings-section>summary small{display:block;margin-top:4px;color:var(--faint);font-size:10px;font-weight:700;line-height:1.35;letter-spacing:0;text-transform:none;overflow:hidden;text-overflow:ellipsis;white-space:normal}
     .settings-section>summary::after{content:"";width:8px;height:8px;border-right:1.8px solid var(--muted);border-bottom:1.8px solid var(--muted);transform:rotate(45deg);transition:transform .22s ease,border-color .18s ease;margin-top:5px;flex:0 0 auto}
     .settings-section[open]{border-color:color-mix(in srgb, var(--accent) 14%, var(--border));box-shadow:0 6px 18px rgba(0,0,0,.055)}
     body.light-mode .settings-section[open]{box-shadow:0 8px 20px rgba(15,23,42,.04)}
@@ -225,10 +224,11 @@
     .field{gap:7px;margin-bottom:16px}
     .field label{color:color-mix(in srgb, var(--muted) 92%, var(--text));letter-spacing:.01em}
     .field input,.field select{
-      min-height:38px;border-color:var(--border-strong);background:color-mix(in srgb, var(--panel-2) 84%, #000 16%);
+      min-height:38px;border-color:var(--border-strong);background-color:color-mix(in srgb, var(--panel-2) 84%, #000 16%);
       box-shadow:inset 0 1px 0 color-mix(in srgb, #fff 5%, transparent);
     }
-    body.light-mode .field input,body.light-mode .field select{background-color:#fff;box-shadow:inset 0 1px 0 rgba(15,23,42,.04)}
+    body.light-mode .field input{background-color:#fff;box-shadow:inset 0 1px 0 rgba(15,23,42,.04)}
+    body.light-mode .field select{background-color:#fff;box-shadow:inset 0 1px 0 rgba(15,23,42,.04);background-image:var(--select-chevron);background-repeat:no-repeat;background-position:right 14px center;background-size:16px 16px}
     .switch{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:14px 0;user-select:none;cursor:pointer;color:var(--muted);font-size:11px;font-weight:850;line-height:1.35}
     .switch span{min-width:0}
     .switch input{appearance:none;width:46px;height:26px;border-radius:999px;border:1px solid color-mix(in srgb, var(--border-strong) 78%, transparent);background:color-mix(in srgb, var(--panel-3) 74%, #000 26%);position:relative;cursor:pointer;flex:0 0 auto;box-shadow:inset 0 1px 1px rgba(255,255,255,.05),inset 0 -1px 2px rgba(0,0,0,.28);transition:background .24s cubic-bezier(.2,.8,.2,1),border-color .2s ease,box-shadow .2s ease}
@@ -283,12 +283,11 @@
     .btn-icon .icon{width:17px;height:17px;margin:auto}
     .settings-restore .icon{width:18px;height:18px}
     .spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:spin .75s linear infinite}
-    .settings-section>summary h3 .icon,.summary-title .icon{width:15px;height:15px;color:var(--accent);margin-top:0}
-    .settings-section>summary h3 span,.summary-title{display:flex;flex-direction:column;gap:0;min-width:0;letter-spacing:.01em}
-    .summary-title{flex-direction:row;align-items:center;gap:8px;font-size:13px;font-weight:900;color:var(--text)}
+    .settings-section>summary h3 .icon{width:15px;height:15px;color:var(--accent);margin-top:0;flex:0 0 auto}
+    .settings-section>summary h3 span{display:flex;flex-direction:column;gap:0;min-width:0;letter-spacing:.01em}
     .settings-section>summary:hover::after,.advanced-card summary:hover::after{border-color:var(--accent)}
     .settings-section>summary:focus-visible{outline:2px solid color-mix(in srgb, var(--accent) 65%, #ffffff);outline-offset:-2px}
-    .settings-section[open]>summary h3 .icon,.settings-section[open] .summary-title .icon{color:color-mix(in srgb, var(--accent) 82%, #ffffff)}
+    .settings-section[open]>summary h3 .icon{color:color-mix(in srgb, var(--accent) 82%, #ffffff)}
     .choice-grid{gap:12px;margin-bottom:18px}.choice-grid--style{gap:12px}.palette-grid{gap:8px;margin-bottom:18px}.segmented-choice{gap:10px;margin-bottom:16px}
     .choice-card,.palette-card,.mode-card,.branding-card{padding:13px;background:color-mix(in srgb, var(--panel-2) 86%, transparent);transition:border-color .18s ease-out,background-color .18s ease-out,box-shadow .18s ease-out,transform .16s ease-out}
     .choice-card:hover,.mode-card:hover,.branding-card:hover{box-shadow:0 10px 26px rgba(0,0,0,.16);transform:translateY(-2px)}
@@ -424,8 +423,8 @@
           </div></details>
 
           <details class="card advanced-card settings-section">
-            <summary><span class="summary-title"><svg class="icon" aria-hidden="true"><use href="#icon-settings"></use></svg><span>Advanced</span></span><small>Watermark, page footer, local assets</small></summary>
-            <div class="advanced-body">
+            <summary><h3><svg class="icon" aria-hidden="true"><use href="#icon-settings"></use></svg><span>Advanced<small>Watermark, page footer, local assets</small></span></h3></summary>
+            <div class="settings-body">
               <label class="switch"><span>Hide footer/page number</span><input id="noHeaderFooterInput" type="checkbox"></label>
               <div class="field"><label for="watermarkInput">Watermark text</label><input id="watermarkInput" type="text" placeholder="Optional"></div>
               <div class="field"><label for="watermarkOpacityInput">Opacity</label><input id="watermarkOpacityInput" type="number" min="0" max="1" step="0.01" value="0.065"></div>
