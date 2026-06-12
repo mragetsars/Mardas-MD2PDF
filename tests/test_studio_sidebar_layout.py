@@ -169,6 +169,10 @@ def test_studio_logo_and_toolbar_icons_are_minimal_and_centered() -> None:
         assert "box-shadow:none" in rule
         assert "linear-gradient" not in rule
 
+    light_logo_rule = _css_rule(html, "body.light-mode .brand-mark img")
+    assert "filter:invert(1)" in light_logo_rule
+    assert "opacity:.88" in light_logo_rule
+
     header_title_rule = _css_rule(html, ".sidebar-head strong,.pane-head strong")
     assert "font-size:11px" in header_title_rule
     assert "font-weight:900" in header_title_rule
@@ -213,21 +217,37 @@ def test_studio_workspace_uses_edge_to_edge_engineering_layout() -> None:
 
     gutter_rule = _css_rule(html, ".gutter")
     gutter_handle_rule = _css_rule(html, ".gutter::after")
-    assert "background:var(--bg-soft)" in gutter_rule
+    gutter_active_rule = _css_rule(html, ".gutter:hover::after,.gutter:active::after,.gutter.is-dragging::after")
+    assert "background:transparent" in gutter_rule
     assert "border:0" in gutter_rule
+    assert "transition:background-color .16s ease-out" in gutter_rule
     assert "width:1px" in gutter_handle_rule
-    assert "height:100%" in gutter_handle_rule
+    assert "opacity:.42" in gutter_handle_rule
+    assert "top:10px" in gutter_handle_rule
+    assert "bottom:10px" in gutter_handle_rule
+    assert "width:3px" in gutter_active_rule
+    assert "background:var(--accent)" in gutter_active_rule
+    assert "box-shadow:" in gutter_active_rule
+    assert ".gutter.is-dragging{" in html
 
 
 def test_studio_select_controls_reserve_arrow_space() -> None:
     html = _gui_html()
 
     select_rule = _css_rule(html, "select")
-    assert "padding-right:36px" in select_rule
+    assert "-webkit-appearance:none" in select_rule
+    assert "appearance:none" in select_rule
+    assert "padding-right:42px" in select_rule
     assert "padding-left:12px" in select_rule
     assert "text-overflow:ellipsis" in select_rule
+    assert 'background-image:url("data:image/svg+xml' in select_rule
+    assert "background-position:right 12px center" in select_rule
+    assert "background-size:16px 16px" in select_rule
 
-    assert ".field select{padding-right:38px}" in html
+    light_select_rule = _css_rule(html, "body.light-mode select")
+    assert "stroke='%23475569'" in light_select_rule
+
+    assert ".field select{padding-right:44px;background-position:right 13px center}" in html
 
 
 def test_studio_accordions_are_independent_and_animated() -> None:
@@ -240,7 +260,8 @@ def test_studio_accordions_are_independent_and_animated() -> None:
     details_content_rule = _css_rule(html, ".settings-section::details-content")
     assert "block-size:0" in details_content_rule
     assert "overflow:clip" in details_content_rule
-    assert "content-visibility .26s allow-discrete" in details_content_rule
+    assert "block-size .2s ease-out" in details_content_rule
+    assert "content-visibility .2s allow-discrete" in details_content_rule
 
     open_details_content_rule = _css_rule(html, ".settings-section[open]::details-content")
     assert "block-size:auto" in open_details_content_rule
@@ -264,6 +285,10 @@ def test_studio_uses_monochromatic_accent_controls() -> None:
     checked_switch_rule = _css_rule(html, ".switch input:checked")
     assert "background:var(--accent)" in checked_switch_rule
     assert "linear-gradient" not in checked_switch_rule
+
+    light_checked_switch_rule = _css_rule(html, "body.light-mode .switch input:checked")
+    assert "background:var(--accent)" in light_checked_switch_rule
+    assert "border-color:var(--accent)" in light_checked_switch_rule
 
     checked_checkbox_rule = _css_rule(html, ".check input:checked")
     assert "background:var(--accent)" in checked_checkbox_rule
@@ -316,3 +341,20 @@ def test_studio_settings_panel_has_more_breathing_room() -> None:
 
     setting_row_rule = _css_rule(html, ".setting-row")
     assert "gap:10px" in setting_row_rule
+
+
+def test_studio_settings_restore_uses_comfortable_width() -> None:
+    html = _gui_html()
+
+    assert "const SETTINGS_MIN_WIDTH = 280;" in html
+    assert "const SETTINGS_RESTORE_WIDTH = 318;" in html
+    assert "const SETTINGS_COMFORT_WIDTH = 290;" in html
+    assert "requestedWidth < SETTINGS_COMFORT_WIDTH ? SETTINGS_RESTORE_WIDTH : requestedWidth" in html
+
+
+def test_studio_gutters_track_dragging_state() -> None:
+    html = _gui_html()
+
+    assert "event.currentTarget.classList.add('is-dragging')" in html
+    assert "document.querySelectorAll('.gutter.is-dragging')" in html
+    assert "gutter.classList.remove('is-dragging')" in html
