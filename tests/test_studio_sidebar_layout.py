@@ -79,7 +79,7 @@ def test_studio_light_mode_uses_layered_surface_colors() -> None:
     assert "--border:#cbd5e1" in light_mode_rule
 
     light_brand_rule = _css_rule(html, "body.light-mode .brand-mark")
-    assert "background:color-mix" in light_brand_rule
+    assert "background:transparent" in light_brand_rule
     assert "border:0" in light_brand_rule
     assert "box-shadow:none" in light_brand_rule
 
@@ -97,7 +97,7 @@ def test_collapsed_settings_restore_button_has_reserved_space() -> None:
     assert ".workspace,body.settings-collapsed .workspace{grid-template-columns:1fr;padding:10px}" in html
 
 
-def test_studio_open_accordion_state_uses_inner_indicator_without_radius_breaks() -> None:
+def test_studio_open_accordion_state_is_minimal_without_side_rails() -> None:
     html = _gui_html()
 
     closed_rule = _css_rule(html, ".settings-section")
@@ -106,32 +106,22 @@ def test_studio_open_accordion_state_uses_inner_indicator_without_radius_breaks(
 
     summary_rule = _css_rule(html, ".settings-section>summary")
     assert "position:relative" in summary_rule
+    assert "padding:16px 16px 15px" in summary_rule
 
-    indicator_rule = _css_rule(html, ".settings-section>summary::before")
-    for expected in (
-        "position:absolute",
-        "width:3px",
-        "background:linear-gradient",
-        "opacity:0",
-        "transform:scaleY(.35)",
-    ):
-        assert expected in indicator_rule
+    assert ".settings-section>summary::before" not in html
+    assert ".settings-section[open]>summary::before" not in html
 
     open_rule = _css_rule(html, ".settings-section[open]")
     assert "border-left" not in open_rule
     assert "box-shadow:" in open_rule
     assert "background:" not in open_rule
 
-    open_indicator_rule = _css_rule(html, ".settings-section[open]>summary::before")
-    assert "opacity:1" in open_indicator_rule
-    assert "transform:scaleY(1)" in open_indicator_rule
-
     light_open_rule = _css_rule(html, "body.light-mode .settings-section[open]")
     assert "box-shadow:" in light_open_rule
     assert "background:" not in light_open_rule
 
     open_summary_rule = _css_rule(html, ".settings-section[open]>summary")
-    assert "background:transparent" in open_summary_rule
+    assert "background:color-mix" in open_summary_rule
     assert "border-bottom-color:" in open_summary_rule
 
 
@@ -174,7 +164,8 @@ def test_studio_logo_and_toolbar_icons_are_minimal_and_centered() -> None:
         _css_rule(html, "body.light-mode .brand-mark"),
     ]
     for rule in brand_rules:
-        assert "border:0" in rule or "border:" not in rule
+        assert "background:transparent" in rule
+        assert "border:0" in rule
         assert "box-shadow:none" in rule
         assert "linear-gradient" not in rule
 
@@ -192,5 +183,77 @@ def test_studio_logo_and_toolbar_icons_are_minimal_and_centered() -> None:
     assert "place-items:center" in icon_button_rule
 
     format_button_rule = _css_rule(html, ".format-btn")
+    assert "border:0" in format_button_rule
     assert "display:inline-grid" in format_button_rule
     assert "place-items:center" in format_button_rule
+
+
+def test_studio_uses_monochromatic_accent_controls() -> None:
+    html = _gui_html()
+
+    dark_root = _css_rule(html, ":root")
+    light_root = _css_rule(html, "body.light-mode")
+    assert "--accent-2:#0f766e" in dark_root
+    assert "--accent-3:#14b8a6" in dark_root
+    assert "--accent-2:#0f766e" in light_root
+    assert "--accent-3:#14b8a6" in light_root
+
+    primary_rule = _css_rule(html, ".btn-primary")
+    assert "background:var(--accent)" in primary_rule
+    assert "linear-gradient" not in primary_rule
+
+    checked_switch_rule = _css_rule(html, ".switch input:checked")
+    assert "background:var(--accent)" in checked_switch_rule
+    assert "linear-gradient" not in checked_switch_rule
+
+    checked_checkbox_rule = _css_rule(html, ".check input:checked")
+    assert "background:var(--accent)" in checked_checkbox_rule
+    assert "linear-gradient" not in checked_checkbox_rule
+
+    progress_rule = _css_rule(html, ".progress-bar")
+    assert "background:var(--accent)" in progress_rule
+    assert "linear-gradient" not in progress_rule
+
+
+def test_studio_toolbar_controls_use_ghost_button_chrome() -> None:
+    html = _gui_html()
+
+    toolbar_button_rule = _css_rule(html, ".tool-group .btn:not(.btn-primary)")
+    assert "border-color:transparent" in toolbar_button_rule
+    assert "background:transparent" in toolbar_button_rule
+    assert "box-shadow:none" in toolbar_button_rule
+
+    toolbar_hover_rule = _css_rule(html, ".tool-group .btn:not(.btn-primary):hover")
+    assert "background:color-mix" in toolbar_hover_rule
+    assert "border-color:transparent" in toolbar_hover_rule
+
+    quiet_hover_rule = _css_rule(html, ".btn-quiet:hover")
+    assert "border-color:transparent" in quiet_hover_rule
+    assert "box-shadow:none" in quiet_hover_rule
+
+    format_button_rule = _css_rule(html, ".format-btn")
+    assert "border:0" in format_button_rule
+    assert "background:transparent" in format_button_rule
+
+    format_hover_rule = _css_rule(html, ".format-btn:hover")
+    assert "background:color-mix" in format_hover_rule
+    assert "border-color" not in format_hover_rule
+
+
+def test_studio_settings_panel_has_more_breathing_room() -> None:
+    html = _gui_html()
+
+    summary_rule = _css_rule(html, ".settings-section>summary")
+    assert "padding:16px 16px 15px" in summary_rule
+    assert "gap:14px" in summary_rule
+
+    assert ".settings-body{padding:18px 16px 20px" in html
+
+    kicker_rule = _css_rule(html, ".section-kicker")
+    assert "margin:0 0 16px" in kicker_rule
+    assert "line-height:1.55" in kicker_rule
+
+    assert ".field{gap:7px;margin-bottom:16px}" in html
+
+    setting_row_rule = _css_rule(html, ".setting-row")
+    assert "gap:10px" in setting_row_rule
