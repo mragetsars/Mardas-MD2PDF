@@ -34,6 +34,18 @@ from .markdown import MarkdownRenderResult, render_markdown_file
 
 MAX_EMBED_ASSET_BYTES = 20 * 1024 * 1024
 ProgressCallback = Callable[[str, float], None]
+BRANDING_MODES = ("off", "subtle", "full")
+PRODUCT_BRAND_NAME = "Mardas MD2PDF"
+PRODUCT_BRAND_FOOTER = "Markdown to PDF Engine"
+
+
+def validate_branding_mode(value: str | None) -> str:
+    """Validate and normalize cover branding mode names."""
+    normalized = str(value or "off").strip().lower()
+    if normalized not in BRANDING_MODES:
+        allowed = ", ".join(BRANDING_MODES)
+        raise ValueError(f"must be one of: {allowed}")
+    return normalized
 
 
 def _report_progress(callback: ProgressCallback | None, message: str, fraction: float) -> None:
@@ -77,7 +89,10 @@ class PdfOptions:
     cover: bool = True
     cover_logo: Path | None = None
     cover_logo_enabled: bool = True
-    cover_brand_enabled: bool = True
+    branding: str | None = None
+    brand_name: str | None = None
+    brand_logo: Path | None = None
+    brand_footer: str | None = None
     watermark_text: str | None = None
     watermark_image: Path | None = None
     watermark_opacity: float = 0.065
@@ -198,7 +213,107 @@ def _default_logo_path() -> Path | None:
 def _cover_logo_uri(options: PdfOptions) -> str | None:
     if not options.cover_logo_enabled:
         return None
-    return _image_data_uri(options.cover_logo or _default_logo_path())
+    return _image_data_uri(options.cover_logo or options.brand_logo or _default_logo_path())
+
+
+def _metadata_dict(value: Any) -> dict[str, Any]:
+    return value if isinstance(value, dict) else {}
+
+
+def _metadata_nested_value(metadata: dict[str, Any], section: str, *keys: str) -> Any:
+    nested = _metadata_dict(metadata.get(section))
+    for key in keys:
+        value = nested.get(key)
+        if value not in (None, ""):
+            return value
+    return ""
+
+
+@dataclass(slots=True)
+class CoverBranding:
+    mode: str
+    name: str
+    footer: str
+    logo: Path | None
+    product: bool = False
+
+
+def _resolve_cover_branding(metadata: dict[str, Any], options: PdfOptions, base_dir: Path) -> CoverBranding:
+    branding_meta = _metadata_dict(metadata.get("branding"))
+    explicit_mode = (
+        options.branding
+        or branding_meta.get("mode")
+        or _first_metadata_value(metadata, "branding_mode", "brand_mode")
+    )
+
+    brand_name = (
+        options.brand_name
+        or _metadata_nested_value(metadata, "brand", "name", "title", "label")
+        or branding_meta.get("name")
+        or _first_metadata_value(metadata, "brand_name")
+    )
+    brand_footer = (
+        options.brand_footer
+        or _metadata_nested_value(metadata, "brand", "footer", "tagline", "subtitle")
+        or branding_meta.get("footer")
+        or branding_meta.get("tagline")
+        or _first_metadata_value(metadata, "brand_footer", "brand_tagline")
+    )
+
+    logo_value = (
+        _metadata_nested_value(metadata, "brand", "logo", "image")
+        or branding_meta.get("logo")
+        or branding_meta.get("image")
+        or _first_metadata_value(metadata, "brand_logo")
+    )
+    metadata_brand_logo = _metadata_path(logo_value, base_dir)
+    logo = options.brand_logo or metadata_brand_logo or options.cover_logo
+
+    has_user_brand = bool(_stringify_metadata_value(brand_name) or _stringify_metadata_value(brand_footer) or logo)
+    mode = validate_branding_mode(explicit_mode or ("full" if has_user_brand else "off"))
+
+    product_brand = not has_user_brand
+    name = _stringify_metadata_value(brand_name) or PRODUCT_BRAND_NAME
+    footer = _stringify_metadata_value(brand_footer) or (PRODUCT_BRAND_FOOTER if product_brand else "")
+
+    if not options.cover_logo_enabled:
+        logo = None
+    if product_brand and mode == "full" and logo is None:
+        logo = _default_logo_path()
+
+    return CoverBranding(mode=mode, name=name, footer=footer, logo=logo, product=product_brand)
+
+
+def _brand_logo_html(branding: CoverBranding) -> str:
+    logo_uri = _image_data_uri(branding.logo) if branding.logo else None
+    if logo_uri:
+        return f'<img class="md2pdf-cover__logo" src="{html.escape(logo_uri)}" alt="{html.escape(branding.name)} logo">'
+    initial = (branding.name.strip()[:1] or "M").upper()
+    return f'<span class="md2pdf-cover__logo md2pdf-cover__logo--fallback">{html.escape(initial)}</span>'
+
+
+def _cover_brand_html(branding: CoverBranding) -> str:
+    if branding.mode == "off":
+        return ""
+    if branding.mode == "subtle" and branding.product:
+        return (
+            '<div class="md2pdf-cover__brand md2pdf-cover__brand--subtle" dir="ltr">'
+            '<span class="md2pdf-cover__brand-copy">'
+            f'<strong>Generated with {html.escape(PRODUCT_BRAND_NAME)}</strong>'
+            '</span>'
+            '</div>'
+        )
+    mark_html = '' if branding.mode == "subtle" else f'<span class="md2pdf-cover__mark">{_brand_logo_html(branding)}</span>'
+    footer_html = f'<em>{html.escape(branding.footer)}</em>' if branding.footer else ""
+    return (
+        f'<div class="md2pdf-cover__brand md2pdf-cover__brand--{html.escape(branding.mode)}" dir="ltr">'
+        f'{mark_html}'
+        '<span class="md2pdf-cover__brand-copy">'
+        f'<strong>{html.escape(branding.name)}</strong>'
+        f'{footer_html}'
+        '</span>'
+        '</div>'
+    )
 
 
 def _watermark_html(options: PdfOptions) -> str:
@@ -610,6 +725,23 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
       }}
       body.md2pdf-dir-ltr .md2pdf-cover__detail > strong {{ font-family: var(--font-en), var(--font-fa); }}
       body.md2pdf-dir-rtl .md2pdf-cover__detail > strong {{ font-family: var(--font-fa), var(--font-en); }}
+      .md2pdf-cover--branding-off .md2pdf-cover__top {{ min-height: 14mm; }}
+      .md2pdf-cover__brand--subtle {{
+        padding: 0 !important;
+        border: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        opacity: 0.72;
+      }}
+      .md2pdf-cover__brand--subtle .md2pdf-cover__brand-copy strong {{
+        color: var(--muted, #64748b) !important;
+        font-size: 6.4pt !important;
+        letter-spacing: 0.12em !important;
+        text-transform: uppercase !important;
+      }}
+      .md2pdf-cover__brand--subtle .md2pdf-cover__brand-copy em {{
+        display: none !important;
+      }}
       .md2pdf-document {{
         position: relative;
         z-index: 1;
@@ -928,6 +1060,7 @@ def _cover_html(
     lang: str = "fa",
     document_direction: str = "rtl",
     labels: dict[str, str] | None = None,
+    branding: CoverBranding | None = None,
 ) -> str:
     labels = labels or _localized_labels(lang)
     detail_cards: list[str] = []
@@ -941,31 +1074,16 @@ def _cover_html(
         card = _cover_detail(label, value, multiline=isinstance(value, (list, tuple, set)))
         if card:
             detail_cards.append(card)
-    logo_uri = _cover_logo_uri(options)
-    logo_html = (
-        f'<img class="md2pdf-cover__logo" src="{html.escape(logo_uri)}" alt="Mardas logo">'
-        if logo_uri
-        else '<span class="md2pdf-cover__logo md2pdf-cover__logo--fallback">M</span>'
-    )
     subtitle_text = _stringify_metadata_value(subtitle)
     subtitle_html = (
         f'<p class="md2pdf-cover__subtitle" dir="auto">{html.escape(subtitle_text)}</p>' if subtitle_text else ""
     )
     summary_html = _paragraph_block_html(description, "md2pdf-cover__summary")
     details_html = ''.join(detail_cards)
-    brand_html = ""
-    cover_classes = "md2pdf-cover"
-    if options.cover_brand_enabled:
-        brand_html = f"""
-          <div class="md2pdf-cover__brand" dir="ltr">
-            <span class="md2pdf-cover__mark">{logo_html}</span>
-            <span class="md2pdf-cover__brand-copy">
-              <strong>Mardas MD2PDF</strong>
-              <em>Markdown to PDF Engine</em>
-            </span>
-          </div>
-        """
-    else:
+    branding = branding or CoverBranding(mode="off", name=PRODUCT_BRAND_NAME, footer=PRODUCT_BRAND_FOOTER, logo=None, product=True)
+    brand_html = _cover_brand_html(branding)
+    cover_classes = f"md2pdf-cover md2pdf-cover--branding-{branding.mode}"
+    if branding.mode == "off":
         cover_classes += " md2pdf-cover--unbranded"
 
     return f"""
@@ -1062,9 +1180,11 @@ def build_html(
     )
 
     cover_options = options
-    metadata_logo = _metadata_path(_first_metadata_value(metadata, "cover_logo", "logo"), options.input_path.resolve().parent)
+    base_dir = options.input_path.resolve().parent
+    metadata_logo = _metadata_path(_first_metadata_value(metadata, "cover_logo", "logo"), base_dir)
     if metadata_logo and not options.cover_logo:
         cover_options = replace(options, cover_logo=metadata_logo)
+    branding = _resolve_cover_branding(metadata, cover_options, base_dir)
 
     extra_details: list[tuple[str, Any]] = []
     detail_fields = [
@@ -1096,6 +1216,7 @@ def build_html(
             lang=str(lang),
             document_direction=document_direction,
             labels=labels,
+            branding=branding,
         )
         if include_cover and options.cover
         else ""

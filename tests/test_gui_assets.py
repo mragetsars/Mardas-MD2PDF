@@ -126,13 +126,15 @@ def test_studio_validates_render_options():
     assert options["style"] == "modern"
     assert options["palette"] == "blue"
     assert options["mode"] == "light"
+    assert options["branding"] == "off"
     assert options["toc"] is False
     assert options["cover"] is False
 
-    custom = gui._validated_render_options({"style": "textbook", "palette": "emerald", "mode": "dark"})
+    custom = gui._validated_render_options({"style": "textbook", "palette": "emerald", "mode": "dark", "branding": "full"})
     assert custom["style"] == "textbook"
     assert custom["palette"] == "emerald"
     assert custom["mode"] == "dark"
+    assert custom["branding"] == "full"
 
     for bad_options, code in [
         ({"tocDepth": "bad"}, "invalid_toc_depth"),
@@ -144,6 +146,7 @@ def test_studio_validates_render_options():
         ({"style": "textbook-dark"}, "invalid_style"),
         ({"palette": "neon"}, "invalid_palette"),
         ({"mode": "auto"}, "invalid_mode"),
+        ({"branding": "loud"}, "invalid_branding"),
     ]:
         with pytest.raises(gui.StudioRequestError) as exc_info:
             gui._validated_render_options(bad_options)
@@ -157,6 +160,9 @@ def test_gui_uses_appearance_controls_instead_of_theme_profile_controls():
     assert "styleInput" in html
     assert "paletteInput" in html
     assert "modeInput" in html
+    assert "brandingInput" in html
+    assert "brandNameInput" in html
+    assert "brandFooterInput" in html
     assert "appearanceName" in html
     assert "pdfThemeInput" not in html
     assert "profileName" not in html

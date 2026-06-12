@@ -14,7 +14,7 @@ from typing import Any
 
 from . import __version__
 from .appearance import validate_mode_name, validate_palette_name, validate_style_name
-from .renderer import PdfOptions, convert, validate_page_size
+from .renderer import PdfOptions, convert, validate_branding_mode, validate_page_size
 
 
 MAX_GUI_REQUEST_BYTES = 32 * 1024 * 1024
@@ -162,11 +162,16 @@ def _validated_render_options(options: dict[str, Any]) -> dict[str, Any]:
         mode = validate_mode_name(options.get("mode") or "light")
     except ValueError as exc:
         raise StudioRequestError(str(exc), code="invalid_mode") from exc
+    try:
+        branding = validate_branding_mode(options.get("branding") or "off")
+    except ValueError as exc:
+        raise StudioRequestError(str(exc), code="invalid_branding") from exc
 
     return {
         "style": style,
         "palette": palette,
         "mode": mode,
+        "branding": branding,
         "toc": _json_bool(options.get("toc"), default=True, code="invalid_toc", label="toc"),
         "toc_depth": _json_int_range(
             options.get("tocDepth"),
@@ -367,6 +372,9 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
                     palette=render_options["palette"],
                     mode=render_options["mode"],
                     cover=render_options["cover"],
+                    branding=render_options["branding"],
+                    brand_name=(str(options.get("brandName") or "").strip() or None),
+                    brand_footer=(str(options.get("brandFooter") or "").strip() or None),
                     watermark_text=(str(options.get("watermark") or "").strip() or None),
                     watermark_opacity=render_options["watermark_opacity"],
                     no_header_footer=render_options["no_header_footer"],

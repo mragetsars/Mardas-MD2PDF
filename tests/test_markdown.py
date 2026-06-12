@@ -59,13 +59,18 @@ def test_public_appearance_choices_are_separated_by_responsibility():
     assert all("--profile" not in action.option_strings for action in parser._actions)
 
 
-def test_hidden_unbranded_cover_option_is_not_in_help():
+def test_cover_branding_option_is_explicit_and_clean():
     from mardas_md2pdf.cli import build_parser
 
     parser = build_parser()
     help_text = parser.format_help()
-    assert "--no-cover-brand" not in help_text
-    assert any("--no-cover-brand" in action.option_strings for action in parser._actions)
+    branding_action = next(action for action in parser._actions if "--branding" in action.option_strings)
+
+    assert branding_action.choices == ("off", "subtle", "full")
+    assert "--branding" in help_text
+    assert "--brand-name" in help_text
+    assert "--brand-logo" in help_text
+    assert all("--no-cover-brand" not in action.option_strings for action in parser._actions)
 
 
 def test_gui_entrypoint_module_exists():
@@ -322,7 +327,7 @@ lang: en
     assert "فهرست مطالب" not in result.toc_html
     assert "Note" in result.body_html
     assert '<html lang="en" dir="ltr">' in html
-    assert 'class="md2pdf-cover" lang="en" dir="ltr"' in html
+    assert 'class="md2pdf-cover md2pdf-cover--branding-off md2pdf-cover--unbranded" lang="en" dir="ltr"' in html
     assert "Generated Document" in html
     assert "PDF Report" not in html
     assert '<section class="md2pdf-cover__top" dir="ltr">' in html

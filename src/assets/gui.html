@@ -193,9 +193,12 @@
             <div class="field"><label for="styleInput">Style</label><select id="styleInput"><option value="modern" selected>modern</option><option value="github">github</option><option value="textbook">textbook</option><option value="academic">academic</option></select></div>
             <div class="field"><label for="paletteInput">Palette</label><select id="paletteInput"><option value="blue" selected>blue</option><option value="emerald">emerald</option><option value="violet">violet</option><option value="amber">amber</option><option value="rose">rose</option><option value="slate">slate</option><option value="neutral">neutral</option></select></div>
             <div class="field"><label for="modeInput">Mode</label><select id="modeInput"><option value="light" selected>light</option><option value="dark">dark</option></select></div>
+            <div class="field"><label for="brandingInput">Cover branding</label><select id="brandingInput"><option value="off" selected>off</option><option value="subtle">subtle</option><option value="full">full</option></select></div>
+            <div class="field"><label for="brandNameInput">Brand name</label><input id="brandNameInput" type="text" placeholder="Optional organization name"></div>
+            <div class="field"><label for="brandFooterInput">Brand footer</label><input id="brandFooterInput" type="text" placeholder="Optional tagline"></div>
             <label class="check"><input id="noCoverInput" type="checkbox"><span>No cover page</span></label>
             <label class="check"><input id="noHeaderFooterInput" type="checkbox"><span>Hide footer/page number</span></label>
-            <p class="hint">Style controls layout shape; palette controls accent colors; mode controls light or dark output.</p>
+            <p class="hint">Style controls layout shape; palette controls accent colors; mode controls light or dark output. Branding is off by default so exported PDFs belong to the document owner.</p>
           </section>
           <section class="card"><h3>🧭 Structure</h3>
             <label class="check"><input id="tocInput" type="checkbox" checked><span>Generate table of contents</span></label>
@@ -258,6 +261,9 @@ function getOptions(){
     style: $('styleInput').value,
     palette: $('paletteInput').value,
     mode: $('modeInput').value,
+    branding: $('brandingInput').value,
+    brandName: $('brandNameInput').value,
+    brandFooter: $('brandFooterInput').value,
     noCover: $('noCoverInput').checked,
     noHeaderFooter: $('noHeaderFooterInput').checked,
     toc: $('tocInput').checked,
@@ -304,6 +310,9 @@ function setOptions(options){
   if (hasOwnOption(options, 'style')) setSelectValue('styleInput', options.style);
   if (hasOwnOption(options, 'palette')) setSelectValue('paletteInput', options.palette);
   if (hasOwnOption(options, 'mode')) setSelectValue('modeInput', options.mode);
+  if (hasOwnOption(options, 'branding')) setSelectValue('brandingInput', options.branding);
+  if (hasOwnOption(options, 'brandName')) setFieldValue('brandNameInput', options.brandName);
+  if (hasOwnOption(options, 'brandFooter')) setFieldValue('brandFooterInput', options.brandFooter);
   if (hasOwnOption(options, 'noCover')) setFieldChecked('noCoverInput', options.noCover);
   if (hasOwnOption(options, 'noHeaderFooter')) setFieldChecked('noHeaderFooterInput', options.noHeaderFooter);
   if (hasOwnOption(options, 'toc')) setFieldChecked('tocInput', options.toc);
@@ -550,7 +559,7 @@ editor.addEventListener('keydown', (event) => {
   }
 });
 
-['styleInput', 'paletteInput', 'modeInput'].forEach(id => {
+['styleInput', 'paletteInput', 'modeInput', 'brandingInput'].forEach(id => {
   $(id).addEventListener('change', () => {
     updateAppearanceName();
     scheduleStudioStateSave();

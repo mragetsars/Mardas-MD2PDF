@@ -486,3 +486,77 @@ def test_numbered_code_css_aligns_line_numbers_with_code_rows(tmp_path):
     assert "padding: 4.2mm 2.2mm 4.2mm 4mm !important;" in html
     assert "body.md2pdf-style-textbook .code-block--numbered .linenos pre" in html
     assert "background-color: color-mix(in srgb, var(--accent-soft" in html
+
+
+def test_cover_branding_is_off_by_default(tmp_path):
+    from mardas_md2pdf.markdown import render_markdown
+    from mardas_md2pdf.renderer import PdfOptions, build_html
+
+    md = "---\ntitle: User Report\n---\n\n# Body\n"
+    input_path = tmp_path / "report.md"
+    input_path.write_text(md, encoding="utf-8")
+    html = build_html(render_markdown(md), PdfOptions(input_path=input_path, output_path=tmp_path / "out.pdf"))
+
+    assert "md2pdf-cover--branding-off" in html
+    assert '<div class="md2pdf-cover__brand' not in html
+    assert '<span class="md2pdf-cover__brand-copy' not in html
+    assert '<strong>Mardas MD2PDF</strong>' not in html
+    assert '<em>Markdown to PDF Engine</em>' not in html
+
+
+def test_cover_branding_full_is_explicit(tmp_path):
+    from mardas_md2pdf.markdown import render_markdown
+    from mardas_md2pdf.renderer import PdfOptions, build_html
+
+    md = "---\ntitle: Guide\nbranding:\n  mode: full\n---\n\n# Body\n"
+    input_path = tmp_path / "guide.md"
+    input_path.write_text(md, encoding="utf-8")
+    html = build_html(render_markdown(md), PdfOptions(input_path=input_path, output_path=tmp_path / "out.pdf"))
+
+    assert "md2pdf-cover--branding-full" in html
+    assert "md2pdf-cover__brand--full" in html
+    assert "Mardas MD2PDF" in html
+    assert "Markdown to PDF Engine" in html
+
+
+def test_cover_branding_uses_custom_brand_metadata(tmp_path):
+    from mardas_md2pdf.markdown import render_markdown
+    from mardas_md2pdf.renderer import PdfOptions, build_html
+
+    md = """---
+title: Internal Report
+branding:
+  mode: full
+brand:
+  name: Acme Research Lab
+  footer: Internal Report
+---
+
+# Body
+"""
+    input_path = tmp_path / "branded.md"
+    input_path.write_text(md, encoding="utf-8")
+    html = build_html(render_markdown(md), PdfOptions(input_path=input_path, output_path=tmp_path / "out.pdf"))
+
+    assert "md2pdf-cover--branding-full" in html
+    assert "Acme Research Lab" in html
+    assert "Internal Report" in html
+    assert "Markdown to PDF Engine" not in html
+
+
+def test_cover_branding_subtle_is_not_a_large_brand_block(tmp_path):
+    from mardas_md2pdf.markdown import render_markdown
+    from mardas_md2pdf.renderer import PdfOptions, build_html
+
+    md = "---\ntitle: Report\n---\n\n# Body\n"
+    input_path = tmp_path / "subtle.md"
+    input_path.write_text(md, encoding="utf-8")
+    html = build_html(
+        render_markdown(md),
+        PdfOptions(input_path=input_path, output_path=tmp_path / "out.pdf", branding="subtle"),
+    )
+
+    assert "md2pdf-cover--branding-subtle" in html
+    assert "md2pdf-cover__brand--subtle" in html
+    assert "Generated with Mardas MD2PDF" in html
+    assert '<span class="md2pdf-cover__mark"' not in html

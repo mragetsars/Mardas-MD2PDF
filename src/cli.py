@@ -13,7 +13,7 @@ from .appearance import (
     STYLE_DESCRIPTIONS,
     STYLES,
 )
-from .renderer import PdfOptions, convert, validate_page_size
+from .renderer import BRANDING_MODES, PdfOptions, convert, validate_branding_mode, validate_page_size
 
 
 class _CliProgressBar:
@@ -106,9 +106,17 @@ def build_parser() -> argparse.ArgumentParser:
         help="Document contrast mode: light or dark.",
     )
     parser.add_argument("--no-cover", action="store_true", help="Do not generate the automatic cover page")
-    parser.add_argument("--cover-logo", type=Path, help="Logo image for the cover page. Defaults to the bundled Mardas logo")
-    parser.add_argument("--no-cover-logo", action="store_true", help="Hide the logo on the generated cover page")
-    parser.add_argument("--no-cover-brand", action="store_true", help=argparse.SUPPRESS)
+    parser.add_argument(
+        "--branding",
+        choices=BRANDING_MODES,
+        default=None,
+        help="Cover branding mode. off hides tool branding, subtle shows a small generated-with note, full shows a cover brand block. Defaults to front matter or off.",
+    )
+    parser.add_argument("--brand-name", help="Brand or organization name to show on the cover when branding is enabled")
+    parser.add_argument("--brand-logo", type=Path, help="Brand logo image for the cover when branding is enabled")
+    parser.add_argument("--brand-footer", help="Small brand subtitle/footer shown under the cover brand name")
+    parser.add_argument("--cover-logo", type=Path, help="Alias for --brand-logo")
+    parser.add_argument("--no-cover-logo", action="store_true", help="Hide any logo on the generated cover brand block")
     parser.add_argument("--watermark", help="Text watermark to repeat on all content pages. The cover is never watermarked")
     parser.add_argument("--watermark-image", type=Path, help="Image watermark to repeat on all content pages. The cover is never watermarked")
     parser.add_argument("--watermark-opacity", type=float, default=0.065, help="Watermark opacity between 0 and 1; default: 0.065")
@@ -162,12 +170,17 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("input is required unless you use --list-styles, --list-palettes, or --list-modes")
     if not input_path.exists():
         parser.error(f"Input file not found: {input_path}")
-    if args.cover_logo and not args.cover_logo.exists():
-        parser.error(f"Cover logo not found: {args.cover_logo}")
+    brand_logo = args.brand_logo or args.cover_logo
+    if brand_logo and not brand_logo.exists():
+        parser.error(f"Brand logo not found: {brand_logo}")
     if args.watermark_image and not args.watermark_image.exists():
         parser.error(f"Watermark image not found: {args.watermark_image}")
     if not 0 <= args.watermark_opacity <= 1:
         parser.error("--watermark-opacity must be between 0 and 1")
+    try:
+        branding = validate_branding_mode(args.branding) if args.branding is not None else None
+    except ValueError as exc:
+        parser.error(f"--branding {exc}")
     try:
         page_size = validate_page_size(args.page_size)
     except ValueError as exc:
@@ -200,9 +213,12 @@ def main(argv: list[str] | None = None) -> int:
         palette=args.palette,
         mode=args.mode,
         cover=not args.no_cover,
-        cover_logo=args.cover_logo,
+        cover_logo=brand_logo,
         cover_logo_enabled=not args.no_cover_logo,
-        cover_brand_enabled=not args.no_cover_brand,
+        branding=branding,
+        brand_name=args.brand_name,
+        brand_logo=brand_logo,
+        brand_footer=args.brand_footer,
         watermark_text=args.watermark,
         watermark_image=args.watermark_image,
         watermark_opacity=args.watermark_opacity,
