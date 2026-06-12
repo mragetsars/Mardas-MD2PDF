@@ -140,3 +140,22 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 - Bumped the project to version 1.5.1 after progress feedback and Mermaid print-safety work.
 - Refreshed the generated guide PDF examples.
+
+
+## 1.5.0 and earlier - 2026-05-26
+
+### Added
+
+- Established the core Markdown-to-PDF pipeline: Markdown parsing, structured HTML assembly, print CSS, Playwright/Chromium PDF export, and local CLI usage.
+- Added Persian, English, and mixed RTL/LTR document support with direction-aware cover pages, content flow, tables, code blocks, and metadata labels.
+- Added professional cover pages, tables of contents, page numbers, local image embedding, GitHub-style task lists and alerts, footnotes, raw HTML sanitization, MathJax formulas, and offline Mermaid flowchart rendering.
+- Added the first visual system with GitHub, modern, textbook, and academic output looks, plus Persian-friendly typography and generated PDF guide examples.
+- Added the local Studio GUI for browser-based editing, preview-oriented option selection, asset attachment, and PDF export.
+
+### Changed
+
+- Iteratively refined print layout, code block rendering, table behavior, cover metadata, Mermaid sizing, and guide documentation before the structured changelog was introduced.
+
+### Notes
+
+- This entry summarizes the public baseline before the structured changelog began. Later entries are kept version-by-version.

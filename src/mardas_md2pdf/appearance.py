@@ -10,7 +10,7 @@ DEFAULT_MODE = "light"
 STYLE_FILES = {
     "modern": {"light": "style-modern.css", "dark": "style-modern.css"},
     "github": {"light": "style-github.css", "dark": "style-github.css"},
-    "textbook": {"light": "style-textbook-light.css", "dark": "style-textbook-dark.css"},
+    "textbook": {"light": "style-textbook.css", "dark": "style-textbook.css"},
     "academic": {"light": "style-academic.css", "dark": "style-academic.css"},
 }
 STYLES = tuple(STYLE_FILES)
@@ -288,6 +288,12 @@ body.md2pdf-mode-dark {{
   --quote: {surface['panel']};
   --code-bg: {surface['code']};
   --code-ink: {surface['ink']};
+  --md2pdf-details-bg: {surface['panel']};
+  --md2pdf-details-ink: {surface['ink']};
+  --md2pdf-mermaid-figure-bg: {surface['panel']};
+  --md2pdf-mermaid-node-bg: {surface['panel_soft']};
+  --md2pdf-mermaid-stroke: var(--accent);
+  --md2pdf-mermaid-label-halo: {surface['page']};
   background: {surface['page']} !important;
   color: var(--ink) !important;
 }}

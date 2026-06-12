@@ -211,7 +211,7 @@ branding:
   mode: full
 brand:
   name: "Acme Research Lab"
-  logo: "src/assets/Mardas.png"
+  logo: "src/mardas_md2pdf/assets/Mardas.png"
   footer: "Internal Technical Report"
 lang: en
 dir: ltr
@@ -643,7 +643,7 @@ Chromium sandboxing is controlled by `--chromium-sandbox`:
 | `on` | Always request Chromium sandboxing. |
 | `off` | Pass `--no-sandbox`; use only in trusted containers or isolated CI jobs. |
 
-For untrusted documents, render in a container or disposable environment and keep `--unsafe-html` off. See `SECURITY.md` for the full policy.
+For untrusted documents, render in a container or disposable environment and keep `--unsafe-html` off. See `../SECURITY.md` for the full policy.
 
 ## PDF navigation and metadata
 
@@ -704,7 +704,7 @@ Image watermark:
 
 ```bash
 mrs-md2pdf input.md -o output.pdf \
-  --watermark-image ./src/assets/Mardas.png \
+  --watermark-image ./src/mardas_md2pdf/assets/Mardas.png \
   --watermark-opacity 0.05 \
   --watermark-width 95mm
 ```

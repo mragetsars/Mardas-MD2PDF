@@ -35,7 +35,7 @@ mrs-md2pdf-gui = "mardas_md2pdf.gui:main"
 
 [tool.setuptools]
 packages = ["mardas_md2pdf", "mardas_md2pdf.assets", "mardas_md2pdf.assets.mathjax"]
-package-dir = {"mardas_md2pdf" = "src"}
+package-dir = {"" = "src"}
 include-package-data = true
 
 [tool.setuptools.package-data]

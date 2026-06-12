@@ -16,11 +16,11 @@ def test_project_version_metadata_matches() -> None:
     project = tomllib.loads(_read("pyproject.toml"))["project"]
     version = project["version"]
 
-    assert f'__version__ = "{version}"' in _read("src/__init__.py")
+    assert f'__version__ = "{version}"' in _read("src/mardas_md2pdf/__init__.py")
     assert f"Version-v{version}-success" in _read("README.md")
-    assert f'version: "{version}"' in _read("GUIDE.en.md")
-    assert f'version: "{version}"' in _read("GUIDE.fa.md")
-    assert re.search(rf"^## {re.escape(version)} - \d{{4}}-\d{{2}}-\d{{2}}", _read("CHANGELOG.md"), re.MULTILINE)
+    assert f'version: "{version}"' in _read("docs/guides/GUIDE.en.md")
+    assert f'version: "{version}"' in _read("docs/guides/GUIDE.fa.md")
+    assert re.search(rf"^## {re.escape(version)} - \d{{4}}-\d{{2}}-\d{{2}}", _read("docs/CHANGELOG.md"), re.MULTILINE)
 
 
 def test_maintenance_scripts_are_executable() -> None:
@@ -29,6 +29,7 @@ def test_maintenance_scripts_are_executable() -> None:
         "scripts/check.sh",
         "scripts/build_examples.sh",
         "scripts/build_dist.sh",
+        "scripts/clean_workspace.sh",
     ]:
         path = ROOT / relative_path
         assert path.is_file()
@@ -44,6 +45,7 @@ def test_release_docs_reference_maintenance_scripts() -> None:
         "./scripts/check.sh",
         "./scripts/build_examples.sh",
         "./scripts/build_dist.sh",
+        "./scripts/clean_workspace.sh",
     ]:
         assert command in release_doc
         assert command in maintenance_doc

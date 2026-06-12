@@ -33,7 +33,7 @@ MARDAS_TIMEOUT_MS=240000 ./scripts/build_examples.sh
 
 ## Appearance matrix audit
 
-When changing `src/appearance.py` or any `src/assets/style-*.css` file, render
+When changing `src/mardas_md2pdf/appearance.py` or any `src/mardas_md2pdf/assets/style-*.css` file, render
 every built-in style, palette, and mode combination before shipping the patch:
 
 ```bash
@@ -68,3 +68,20 @@ Keep generated patch sets easy to apply:
 3. Run `./scripts/check.sh` before formatting patches.
 4. Regenerate `examples/*.pdf` only in a dedicated `docs: refresh guide PDF examples` commit.
 5. Keep binary outputs out of normal code commits unless the commit is explicitly about generated assets.
+
+
+## Workspace cleanup
+
+Generated artifacts should not live in the repository root. Use the cleanup helper
+when local test runs, editable installs, or patch application leave cache/build files
+behind:
+
+```bash
+./scripts/clean_workspace.sh
+./scripts/clean_workspace.sh --patches
+```
+
+The default cleanup removes Python caches, pytest/ruff caches, build outputs,
+editable-install metadata, and the common root-level `output.pdf` scratch file.
+The `--patches` option also removes a temporary root-level `patches/` directory
+after patch sets have been applied.

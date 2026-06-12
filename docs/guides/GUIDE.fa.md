@@ -209,7 +209,7 @@ branding:
   mode: full
 brand:
   name: "آزمایشگاه پژوهشی Acme"
-  logo: "src/assets/Mardas.png"
+  logo: "src/mardas_md2pdf/assets/Mardas.png"
   footer: "گزارش فنی داخلی"
 lang: fa
 dir: rtl
@@ -564,7 +564,7 @@ Mardas MD2PDF یک ابزار انتشار محلی است. فایل Markdown، 
 | `on` | همیشه sandbox کرومیوم را درخواست می‌کند. |
 | `off` | گزینه `--no-sandbox` را به Chromium می‌دهد؛ فقط در containerهای قابل اعتماد یا CI جداشده استفاده شود. |
 
-برای سندهای نامطمئن، خروجی را داخل container یا محیط disposable بسازید و `--unsafe-html` را خاموش نگه دارید. جزئیات کامل در `SECURITY.md` آمده است.
+برای سندهای نامطمئن، خروجی را داخل container یا محیط disposable بسازید و `--unsafe-html` را خاموش نگه دارید. جزئیات کامل در `../SECURITY.md` آمده است.
 
 ## ناوبری PDF و metadata
 
@@ -623,7 +623,7 @@ mrs-md2pdf input.md -o output.pdf --watermark "DRAFT"
 
 ```bash
 mrs-md2pdf input.md -o output.pdf \
-  --watermark-image ./src/assets/Mardas.png \
+  --watermark-image ./src/mardas_md2pdf/assets/Mardas.png \
   --watermark-opacity 0.05 \
   --watermark-width 95mm
 ```

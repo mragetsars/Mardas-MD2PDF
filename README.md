@@ -41,14 +41,14 @@ The project provides two user-facing interfaces:
 
 The README is intentionally short and is meant to introduce the project. Complete usage details are maintained in the guide files:
 
-- [English Guide](./GUIDE.en.md)
-- [راهنمای فارسی](./GUIDE.fa.md)
-- [Changelog](./CHANGELOG.md)
+- [English Guide](./docs/guides/GUIDE.en.md)
+- [راهنمای فارسی](./docs/guides/GUIDE.fa.md)
+- [Changelog](./docs/CHANGELOG.md)
 - [Release checklist](./docs/RELEASE.md)
 - [Maintenance workflow](./docs/MAINTENANCE.md)
 - [Appearance system](./docs/APPEARANCE.md)
 - [Cover branding](./docs/BRANDING.md)
-- [Security policy](./SECURITY.md)
+- [Security policy](./docs/SECURITY.md)
 
 Generated PDF versions of the guides are available in the [`examples/`](./examples/) directory.
 
@@ -97,23 +97,21 @@ The project is organized as follows:
 
 ```text
 Mardas-MD2PDF/
-├── src/                    # Python package source
+├── src/mardas_md2pdf/      # Python package source
 │   ├── markdown.py         # Markdown parsing, front matter, TOC, math, Mermaid, footnotes, safe HTML
 │   ├── mermaid.py          # Offline Mermaid flowchart-to-SVG renderer
 │   ├── renderer.py         # HTML assembly, appearance CSS, MathJax, Chromium PDF rendering
 │   ├── cli.py              # Command-line interface
 │   ├── gui.py              # Local browser-based GUI backend
 │   └── assets/             # Style CSS, GUI shell, logo, and vendored MathJax files
-├── tests/                  # Automated pytest test suite
-├── scripts/                # Helper scripts
-├── docs/                   # Release, maintenance, and security documentation
+├── docs/                   # Guides, changelog, release, maintenance, security, and feature references
+│   └── guides/             # Complete English and Persian user guides
 ├── examples/               # Generated PDF examples from the guide files
-├── GUIDE.en.md             # Complete English user guide
-├── GUIDE.fa.md             # Complete Persian user guide
-├── README.png              # Project preview image
-├── CHANGELOG.md            # Release notes
+├── scripts/                # Helper scripts for checks, examples, distributions, and cleanup
+├── tests/                  # Automated pytest test suite
 ├── pyproject.toml          # Package metadata and dependencies
 ├── .github/workflows/      # CI and release artifact automation
+├── LICENSE                 # MIT license
 └── README.md               # Project introduction
 ```
 
@@ -134,7 +132,7 @@ These files are intended to show the real PDF output produced by the current doc
 
 Mardas MD2PDF is intended for local publishing workflows. By default, local images are resolved relative to the Markdown file, embedded before Chromium renders the PDF, and unresolved or out-of-bound image paths are replaced with a visible blocked placeholder instead of being loaded through the document `<base>` URL. Remote `http(s)` images are blocked by default for privacy; use `--allow-remote-assets` only for trusted documents that intentionally fetch network images. Raw HTML is sanitized unless `--unsafe-html` is used, and safe `data:` image URLs are limited to common raster formats.
 
-Chromium sandboxing is configurable with `--chromium-sandbox auto|on|off`; the default `auto` keeps sandboxing enabled for normal users and disables it only when running as root in container-style environments. See [SECURITY.md](./SECURITY.md) for the full trust boundary.
+Chromium sandboxing is configurable with `--chromium-sandbox auto|on|off`; the default `auto` keeps sandboxing enabled for normal users and disables it only when running as root in container-style environments. See [docs/SECURITY.md](./docs/SECURITY.md) for the full trust boundary.
 
 ## Testing
 
@@ -142,6 +140,14 @@ Chromium sandboxing is configurable with `--chromium-sandbox auto|on|off`; the d
 pip install -e .[dev]
 ./scripts/check.sh
 ```
+
+Clean local build and patch artifacts when the working tree starts to feel noisy:
+
+```bash
+./scripts/clean_workspace.sh
+./scripts/clean_workspace.sh --patches  # also remove a temporary root-level patches/ directory
+```
+
 
 The test suite covers Markdown transformation, GitHub-style features, direction handling, table of contents and outline generation, enhanced code highlighting, Mermaid SVG rendering, MathJax preservation, safe HTML, footnotes, local and remote image boundaries, renderer options, GUI availability, Studio option validation, page-size handling, wide-table print fitting, workspace persistence, deterministic example metadata, appearance validation, and fallback warnings. For visual changes to styles, palettes, or light/dark mode, run `python scripts/audit_appearance_matrix.py --output-dir build/appearance-audit --render-png` and inspect the generated matrix.
 

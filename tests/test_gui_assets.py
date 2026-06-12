@@ -1,7 +1,7 @@
 from pathlib import Path
 
 
-GUI_HTML = Path(__file__).resolve().parents[1] / "src" / "assets" / "gui.html"
+GUI_HTML = Path(__file__).resolve().parents[1] / "src" / "mardas_md2pdf" / "assets" / "gui.html"
 
 
 def test_gui_marks_preview_as_approximate_and_exposes_custom_page_sizes():
