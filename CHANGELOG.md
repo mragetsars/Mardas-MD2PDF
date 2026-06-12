@@ -2,6 +2,18 @@
 
 All notable changes to Mardas MD2PDF are tracked here.
 
+## 1.6.3 - 2026-06-10
+
+### Changed
+
+- Made cover branding explicit with `branding.mode: off`, `subtle`, or `full`.
+- Changed the default cover behavior to unbranded output, so ordinary user PDFs no longer show a large Mardas MD2PDF brand block.
+- Added custom organization branding through `brand.name`, `brand.logo`, `brand.footer`, and matching CLI/Studio options.
+
+### Documentation
+
+- Added `docs/BRANDING.md` and refreshed the English/Persian guides for the new cover branding workflow.
+
 ## 1.6.2 - 2026-06-10
 
 ### Fixed

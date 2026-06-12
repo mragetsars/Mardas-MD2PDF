@@ -2,7 +2,7 @@
 
 > **Professional Markdown to PDF converter for Persian, English, and mixed RTL/LTR technical documents**
 
-![Language](https://img.shields.io/badge/Language-Python-blue) ![Renderer](https://img.shields.io/badge/Renderer-Playwright%20%2B%20Chromium-green) ![Math](https://img.shields.io/badge/Math-MathJax-purple) ![Version](https://img.shields.io/badge/Version-v1.6.2-success) ![Status](https://img.shields.io/badge/Status-Stable-success) ![CI](https://github.com/mragetsars/Mardas-MD2PDF/actions/workflows/ci.yml/badge.svg)
+![Language](https://img.shields.io/badge/Language-Python-blue) ![Renderer](https://img.shields.io/badge/Renderer-Playwright%20%2B%20Chromium-green) ![Math](https://img.shields.io/badge/Math-MathJax-purple) ![Version](https://img.shields.io/badge/Version-v1.6.3-success) ![Status](https://img.shields.io/badge/Status-Stable-success) ![CI](https://github.com/mragetsars/Mardas-MD2PDF/actions/workflows/ci.yml/badge.svg)
 
 ## Overview
 
@@ -47,6 +47,7 @@ The README is intentionally short and is meant to introduce the project. Complet
 - [Release checklist](./docs/RELEASE.md)
 - [Maintenance workflow](./docs/MAINTENANCE.md)
 - [Appearance system](./docs/APPEARANCE.md)
+- [Cover branding](./docs/BRANDING.md)
 - [Security policy](./SECURITY.md)
 
 Generated PDF versions of the guides are available in the [`examples/`](./examples/) directory.
@@ -66,6 +67,12 @@ Render a PDF:
 
 ```bash
 mrs-md2pdf input.md -o output.pdf --toc --style github --palette blue --mode light
+```
+
+Cover branding is off by default so exported PDFs belong to the document owner. Enable explicit branding only when desired:
+
+```bash
+mrs-md2pdf input.md -o output.pdf --branding full --brand-name "Acme Research Lab"
 ```
 
 Explore appearance choices:

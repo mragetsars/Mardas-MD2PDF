@@ -12,7 +12,7 @@ summary: |
   This document also acts as a live rendering sample for cover pages, tables of contents, mixed RTL/LTR text, formulas, code, Mermaid flowcharts, images, tables, footnotes, page breaks, and safe HTML.
 institution: "Mardas Lab"
 course: "Markdown Publishing"
-version: "1.6.2"
+version: "1.6.3"
 status: "Stable"
 keywords:
   - Markdown
@@ -27,6 +27,8 @@ appearance:
   style: github
   palette: blue
   mode: light
+branding:
+  mode: full
 ---
 
 # Introduction
@@ -201,11 +203,16 @@ department: "Department name"
 course: "Course or project title"
 supervisor: "Supervisor name"
 date: "2026-05-20"
-version: "1.6.2"
+version: "1.6.3"
 status: "Draft"
 keywords: [Markdown, PDF, RTL, MathJax]
 cover_label: "Technical Report"
-cover_logo: "src/assets/Mardas.png"
+branding:
+  mode: full
+brand:
+  name: "Acme Research Lab"
+  logo: "src/assets/Mardas.png"
+  footer: "Internal Technical Report"
 lang: en
 dir: ltr
 ---
@@ -225,7 +232,9 @@ dir: ltr
 | `date`, `version`, `status` | Cover cards used for document state. |
 | `keywords` / `tags` | Cover keywords and PDF metadata keywords. |
 | `cover_label` | Small label above the cover title. |
-| `cover_logo` / `logo` | Custom logo path relative to the Markdown file. |
+| `branding.mode` | Cover branding mode: `off`, `subtle`, or `full`. Default is `off`. |
+| `brand.name`, `brand.logo`, `brand.footer` | Optional organization branding shown when branding is enabled. |
+| `cover_logo` / `logo` | Legacy/custom logo path relative to the Markdown file. Prefer `brand.logo` for new documents. |
 | `lang` | Built-in UI language, usually `en` or `fa`. |
 | `dir` | Document shell direction: `auto`, `ltr`, or `rtl`. |
 
@@ -245,10 +254,16 @@ Disable the cover:
 mrs-md2pdf input.md -o output.pdf --no-cover
 ```
 
-Use a custom logo:
+The default cover is unbranded. Enable full project or organization branding only when needed:
 
 ```bash
-mrs-md2pdf input.md -o output.pdf --cover-logo ./src/assets/Mardas.png
+mrs-md2pdf input.md -o output.pdf --branding full --brand-name "Acme Research Lab"
+```
+
+Use a custom brand logo:
+
+```bash
+mrs-md2pdf input.md -o output.pdf --branding full --brand-logo ./assets/logo.png
 ```
 
 Keep the cover but hide the logo:
@@ -256,6 +271,8 @@ Keep the cover but hide the logo:
 ```bash
 mrs-md2pdf input.md -o output.pdf --no-cover-logo
 ```
+
+Use `branding.mode: subtle` for a small generated-with note, and keep `branding.mode: full` for documents that intentionally show a product or organization brand. The guides in `examples/` use full branding because they document Mardas MD2PDF itself.
 
 # Language and Direction
 
@@ -694,6 +711,47 @@ mrs-md2pdf input.md -o output.pdf \
 
 Watermarks are applied to content pages only, not to the cover page.
 
+# Cover Branding
+
+Generated PDFs are unbranded by default. This avoids turning ordinary reports into product advertisements and keeps the cover focused on the document owner.
+
+```yaml
+branding:
+  mode: off
+```
+
+Available modes:
+
+| Mode | Use case |
+| :--- | :--- |
+| `off` | Default for ordinary reports and handouts. |
+| `subtle` | Small generated-with note for informal shared drafts. |
+| `full` | Intentional project or organization branding. |
+
+Custom organization branding:
+
+```yaml
+branding:
+  mode: full
+brand:
+  name: "Acme Research Lab"
+  logo: "assets/acme.png"
+  footer: "Internal Technical Report"
+```
+
+CLI equivalent:
+
+```bash
+mrs-md2pdf input.md -o output.pdf \
+  --branding full \
+  --brand-name "Acme Research Lab" \
+  --brand-logo assets/acme.png \
+  --brand-footer "Internal Technical Report"
+```
+
+The English and Persian guides explicitly use `branding.mode: full` because they are project examples.
+
+
 # Appearance
 
 Mardas MD2PDF uses one appearance system instead of parallel visual presets. Choose a `style` for document shape, a `palette` for accent colors, and a `mode` for light or dark output.
@@ -779,7 +837,7 @@ If an export fails, Studio shows the HTTP status and stable backend error code, 
 | `--chromium-path` | Custom Chromium or Chrome executable path. |
 | `--chromium-sandbox` | Chromium sandbox mode: `auto`, `on`, or `off`. Default: `auto`. |
 | `--debug-html` | Save the intermediate HTML. |
-| `--no-cover`, `--cover-logo`, `--no-cover-logo` | Configure the cover. |
+| `--no-cover`, `--branding`, `--brand-name`, `--brand-logo`, `--brand-footer`, `--no-cover-logo` | Configure the cover and explicit branding. |
 | `--watermark`, `--watermark-image` | Add mode-aware text or image watermarks over content pages. |
 | `--allow-remote-assets` | Allow trusted Markdown to fetch remote `http(s)` images. Disabled by default. |
 | `--no-header-footer` | Disable printed footer. |

@@ -12,7 +12,7 @@ summary: |
   همین سند به عنوان نمونه زنده رندر نیز استفاده می‌شود و جلد، فهرست مطالب، متن ترکیبی فارسی/English، فرمول، کد، نمودار Mermaid، تصویر، جدول، پانویس، شکست صفحه و HTML امن را نمایش می‌دهد.
 institution: "Mardas Lab"
 course: "انتشار حرفه‌ای Markdown"
-version: "1.6.2"
+version: "1.6.3"
 status: "Stable"
 keywords:
   - Markdown
@@ -27,6 +27,8 @@ appearance:
   style: modern
   palette: blue
   mode: light
+branding:
+  mode: full
 ---
 
 # معرفی
@@ -199,11 +201,16 @@ department: "نام دانشکده یا دپارتمان"
 course: "نام درس یا پروژه"
 supervisor: "نام استاد یا راهنما"
 date: "۱۴۰۵-۰۲-۳۰"
-version: "1.6.2"
+version: "1.6.3"
 status: "Draft"
 keywords: [Markdown, PDF, RTL, MathJax]
 cover_label: "گزارش فنی"
-cover_logo: "src/assets/Mardas.png"
+branding:
+  mode: full
+brand:
+  name: "آزمایشگاه پژوهشی Acme"
+  logo: "src/assets/Mardas.png"
+  footer: "گزارش فنی داخلی"
 lang: fa
 dir: rtl
 ---
@@ -223,7 +230,9 @@ dir: rtl
 | `date`, `version`, `status` | کارت‌های وضعیت سند روی جلد. |
 | `keywords` / `tags` | کلیدواژه‌های جلد و metadata فایل PDF. |
 | `cover_label` | برچسب کوچک بالای عنوان جلد. |
-| `cover_logo` / `logo` | مسیر لوگوی سفارشی نسبت به فایل Markdown. |
+| `branding.mode` | حالت برندینگ جلد: `off`، `subtle` یا `full`. مقدار پیش‌فرض `off` است. |
+| `brand.name`, `brand.logo`, `brand.footer` | برند سازمانی اختیاری که در صورت فعال بودن branding روی جلد می‌آید. |
+| `cover_logo` / `logo` | مسیر لوگوی سفارشی قدیمی/ساده نسبت به فایل Markdown. برای سندهای جدید `brand.logo` تمیزتر است. |
 | `lang` | زبان داخلی رابط سند، معمولاً `fa` یا `en`. |
 | `dir` | جهت پوسته سند: `auto`، `ltr` یا `rtl`. |
 
@@ -243,10 +252,16 @@ dir: rtl
 mrs-md2pdf input.md -o output.pdf --no-cover
 ```
 
-استفاده از لوگوی سفارشی:
+جلد به صورت پیش‌فرض بدون برندینگ خروجی می‌گیرد تا سند عادی شبیه تبلیغ ابزار نباشد. برندینگ کامل را فقط وقتی فعال کنید که واقعاً لازم است:
 
 ```bash
-mrs-md2pdf input.md -o output.pdf --cover-logo ./src/assets/Mardas.png
+mrs-md2pdf input.md -o output.pdf --branding full --brand-name "Acme Research Lab"
+```
+
+استفاده از لوگوی برند سفارشی:
+
+```bash
+mrs-md2pdf input.md -o output.pdf --branding full --brand-logo ./assets/logo.png
 ```
 
 حفظ جلد بدون نمایش لوگو:
@@ -254,6 +269,8 @@ mrs-md2pdf input.md -o output.pdf --cover-logo ./src/assets/Mardas.png
 ```bash
 mrs-md2pdf input.md -o output.pdf --no-cover-logo
 ```
+
+برای یادداشت کوچک تولیدشده با ابزار از `branding.mode: subtle` استفاده کنید. راهنماهای رسمی پروژه چون خود Mardas MD2PDF را مستند می‌کنند، به‌صورت صریح `branding.mode: full` دارند.
 
 # زبان و جهت سند
 
@@ -613,6 +630,47 @@ mrs-md2pdf input.md -o output.pdf \
 
 طرح Watermark فقط روی صفحات محتوایی اعمال می‌شود و روی جلد قرار نمی‌گیرد.
 
+# برندینگ جلد
+
+خروجی‌های PDF به صورت پیش‌فرض بدون برندینگ ساخته می‌شوند. این رفتار باعث می‌شود گزارش، جزوه یا سند کاری کاربر شبیه تبلیغ محصول نباشد و مالکیت بصری سند برای خود کاربر بماند.
+
+```yaml
+branding:
+  mode: off
+```
+
+حالت‌های موجود:
+
+| حالت | کاربرد |
+| :--- | :--- |
+| `off` | پیش‌فرض برای گزارش‌ها و جزوه‌های عادی. |
+| `subtle` | یادداشت کوچک generated-with برای پیش‌نویس‌های غیررسمی. |
+| `full` | برندینگ عمدی پروژه یا سازمان. |
+
+نمونه برند سازمانی:
+
+```yaml
+branding:
+  mode: full
+brand:
+  name: "Acme Research Lab"
+  logo: "assets/acme.png"
+  footer: "Internal Technical Report"
+```
+
+معادل CLI:
+
+```bash
+mrs-md2pdf input.md -o output.pdf \
+  --branding full \
+  --brand-name "Acme Research Lab" \
+  --brand-logo assets/acme.png \
+  --brand-footer "Internal Technical Report"
+```
+
+راهنماهای فارسی و انگلیسی پروژه چون نمونه رسمی Mardas MD2PDF هستند، به شکل صریح از `branding.mode: full` استفاده می‌کنند.
+
+
 # سیستم Appearance
 
 برنامه Mardas MD2PDF به جای چند سیستم موازی، یک مدل ظاهر دارد: `style` شکل و layout سند را کنترل می‌کند، `palette` رنگ‌های accent را تعیین می‌کند و `mode` خروجی روشن یا تاریک را انتخاب می‌کند.
@@ -698,7 +756,7 @@ Studio پیش‌نویس فعلی، layout، حالت روشن/تاریک، جه
 | `--chromium-path` | مسیر سفارشی Chromium یا Chrome. |
 | `--chromium-sandbox` | حالت sandbox مرورگر: `auto`، `on` یا `off`. مقدار پیش‌فرض: `auto`. |
 | `--debug-html` | ذخیره HTML میانی. |
-| `--no-cover`, `--cover-logo`, `--no-cover-logo` | تنظیم جلد. |
+| `--no-cover`, `--branding`, `--brand-name`, `--brand-logo`, `--brand-footer`, `--no-cover-logo` | تنظیم جلد و برندینگ صریح. |
 | `--watermark`, `--watermark-image` | افزودن watermark متنی یا تصویری با لایه‌بندی هماهنگ با mode. |
 | `--allow-remote-assets` | اجازه به سندهای قابل اعتماد برای بارگذاری تصویرهای remote `http(s)`. پیش‌فرض غیرفعال است. |
 | `--no-header-footer` | حذف footer چاپی. |
