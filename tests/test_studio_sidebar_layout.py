@@ -94,7 +94,7 @@ def test_collapsed_settings_restore_button_has_reserved_space() -> None:
     assert "top:76px" in restore_rule
     assert "left:16px" in restore_rule
 
-    assert ".workspace,body.settings-collapsed .workspace{grid-template-columns:1fr;padding:10px}" in html
+    assert ".workspace,body.settings-collapsed .workspace{grid-template-columns:1fr;padding:0}" in html
 
 
 def test_studio_open_accordion_state_is_minimal_without_side_rails() -> None:
@@ -186,6 +186,65 @@ def test_studio_logo_and_toolbar_icons_are_minimal_and_centered() -> None:
     assert "border:0" in format_button_rule
     assert "display:inline-grid" in format_button_rule
     assert "place-items:center" in format_button_rule
+
+
+def test_studio_workspace_uses_edge_to_edge_engineering_layout() -> None:
+    html = _gui_html()
+
+    workspace_rule = _css_rule(html, ".workspace")
+    assert "padding:0" in workspace_rule
+    assert "gap:0" in workspace_rule
+    assert "padding:14px" not in workspace_rule
+
+    panel_rule = _css_rule(html, ".sidebar,.pane")
+    for expected in ("border:0", "border-radius:0", "box-shadow:none", "background:var(--panel)"):
+        assert expected in panel_rule
+
+    sidebar_rule = _css_rule(html, ".sidebar")
+    assert "border-radius:22px" not in sidebar_rule
+    assert "border-right:0" not in sidebar_rule
+
+    editor_pane_rule = _css_rule(html, ".pane.editor-pane")
+    preview_pane_rule = _css_rule(html, ".pane.preview-pane")
+    assert "border-radius:0" in editor_pane_rule
+    assert "border-radius:0" in preview_pane_rule
+    assert "22px" not in editor_pane_rule
+    assert "22px" not in preview_pane_rule
+
+    gutter_rule = _css_rule(html, ".gutter")
+    gutter_handle_rule = _css_rule(html, ".gutter::after")
+    assert "background:var(--bg-soft)" in gutter_rule
+    assert "border:0" in gutter_rule
+    assert "width:1px" in gutter_handle_rule
+    assert "height:100%" in gutter_handle_rule
+
+
+def test_studio_select_controls_reserve_arrow_space() -> None:
+    html = _gui_html()
+
+    select_rule = _css_rule(html, "select")
+    assert "padding-right:36px" in select_rule
+    assert "padding-left:12px" in select_rule
+    assert "text-overflow:ellipsis" in select_rule
+
+    assert ".field select{padding-right:38px}" in html
+
+
+def test_studio_accordions_are_independent_and_animated() -> None:
+    html = _gui_html()
+
+    assert "function attachSettingsAccordion" not in html
+    assert "attachSettingsAccordion();" not in html
+    assert "other.open = false" not in html
+
+    details_content_rule = _css_rule(html, ".settings-section::details-content")
+    assert "block-size:0" in details_content_rule
+    assert "overflow:clip" in details_content_rule
+    assert "content-visibility .26s allow-discrete" in details_content_rule
+
+    open_details_content_rule = _css_rule(html, ".settings-section[open]::details-content")
+    assert "block-size:auto" in open_details_content_rule
+    assert "@starting-style" in html
 
 
 def test_studio_uses_monochromatic_accent_controls() -> None:

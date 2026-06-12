@@ -33,6 +33,7 @@
       --scroll-thumb:#4a4a4a;
       --scroll-thumb-hover:#6a6a6a;
       --scroll-track:transparent;
+      interpolate-size:allow-keywords;
     }
     body.light-mode{
       --bg:#f1f5f9;
@@ -88,6 +89,7 @@
       padding:0 12px;outline:none;font-size:12px;font-weight:750;line-height:1;transition:border-color .16s,background .16s,transform .16s,box-shadow .16s;color-scheme:dark;
     }
     body.light-mode .btn,body.light-mode .seg button,body.light-mode select,body.light-mode input[type=text],body.light-mode input[type=number]{color-scheme:light}
+    select{padding-left:12px;padding-right:36px;text-overflow:ellipsis}
     body.light-mode select,body.light-mode input[type=text],body.light-mode input[type=number]{border-color:var(--border-strong)}
     .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;white-space:nowrap}
     .btn:hover,.seg button:hover{border-color:color-mix(in srgb, var(--accent) 58%, var(--border));background:var(--panel-2);transform:translateY(-1px)}
@@ -99,22 +101,22 @@
     .seg{display:inline-flex;align-items:center;gap:0;border:1px solid var(--border);border-radius:13px;overflow:hidden;background:var(--panel)}
     .seg button{border:0;border-radius:0;background:transparent;padding:0 10px;color:var(--muted);cursor:pointer}
     .seg button.active{color:#ffffff;background:var(--accent)}
-    .workspace{display:grid;grid-template-columns:var(--sidebar-width) 7px minmax(260px,var(--editor-width)) 7px minmax(260px,1fr);min-height:0;padding:14px;gap:0;transition:grid-template-columns .24s ease,padding .24s ease}
-    .sidebar,.pane{border:1px solid var(--border);background:color-mix(in srgb, var(--panel) 94%, transparent);box-shadow:var(--shadow);min-height:0;overflow:hidden}
-    .sidebar{height:100%;border-radius:22px 0 0 22px;border-right:0;display:flex;flex-direction:column;overflow:hidden;transition:opacity .2s ease,transform .22s ease}
-    .pane.editor-pane{border-radius:0;border-right:0}
-    .pane.preview-pane{border-radius:0 22px 22px 0;border-left:0}
-    .gutter{cursor:col-resize;background:transparent;position:relative;transition:background .16s}
-    .gutter:hover{background:color-mix(in srgb, var(--accent) 10%, transparent)}
-    .gutter::after{content:"";position:absolute;left:2px;top:50%;width:3px;height:64px;transform:translateY(-50%);border-radius:99px;background:var(--border-strong);transition:background .16s,height .16s}
-    .gutter:hover::after{height:96px;background:var(--accent)}
+    .workspace{display:grid;grid-template-columns:var(--sidebar-width) 7px minmax(260px,var(--editor-width)) 7px minmax(260px,1fr);min-height:0;padding:0;gap:0;transition:grid-template-columns .24s ease,padding-left .24s ease}
+    .sidebar,.pane{border:0;border-radius:0;background:var(--panel);box-shadow:none;min-height:0;overflow:hidden}
+    .sidebar{height:100%;display:flex;flex-direction:column;overflow:hidden;transition:opacity .2s ease,transform .22s ease}
+    .pane.editor-pane{border-radius:0}
+    .pane.preview-pane{border-radius:0}
+    .gutter{cursor:col-resize;background:var(--bg-soft);position:relative;border:0;transition:background .16s}
+    .gutter:hover{background:color-mix(in srgb, var(--accent) 8%, var(--bg-soft))}
+    .gutter::after{content:"";position:absolute;left:50%;top:0;width:1px;height:100%;transform:translateX(-50%);border-radius:0;background:color-mix(in srgb, var(--border) 86%, transparent);transition:background .16s,box-shadow .16s}
+    .gutter:hover::after{background:color-mix(in srgb, var(--accent) 58%, var(--border));box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 8%, transparent)}
     body.settings-collapsed .workspace{grid-template-columns:0 0 minmax(260px,var(--editor-width)) 7px minmax(260px,1fr);padding-left:64px}
     body.settings-collapsed .sidebar,body.settings-collapsed .settings-gutter{opacity:0;pointer-events:none;transform:translateX(-12px)}
     .settings-restore{position:fixed;z-index:70;top:76px;left:16px;width:42px;height:42px;border:1px solid var(--border);border-radius:14px;background:color-mix(in srgb, var(--panel) 90%, transparent);color:var(--text);box-shadow:var(--shadow);display:none;place-items:center;cursor:pointer;backdrop-filter:blur(14px)}
     .settings-restore:hover{border-color:var(--accent);background:var(--panel-2)}
     body.light-mode .settings-restore{background:rgba(255,255,255,.94);border-color:var(--border-strong);box-shadow:0 12px 28px rgba(15,23,42,.14)}
     body.settings-collapsed .settings-restore{display:grid}
-    .sidebar-head,.pane-head{height:46px;min-height:46px;flex:0 0 46px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 14px;border-bottom:1px solid var(--border);background:var(--panel-2);direction:ltr}
+    .sidebar-head,.pane-head{height:46px;min-height:46px;flex:0 0 46px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 14px;border-bottom:1px solid var(--border);background:color-mix(in srgb, var(--panel-2) 88%, var(--bg-soft));direction:ltr}
     .sidebar-head strong,.pane-head strong{font-size:11px;font-weight:900;letter-spacing:.11em;line-height:1;text-transform:uppercase;color:var(--muted);text-rendering:geometricPrecision}
     .sidebar-head{flex-wrap:nowrap}
     .sidebar-head strong{flex:0 0 auto;min-width:0}
@@ -124,6 +126,7 @@
     .field{display:grid;gap:6px;margin-bottom:11px}
     .field label,.check span{font-size:11px;color:var(--muted);font-weight:800}
     .field input,.field select{width:100%;background:var(--panel-2)}
+    .field select{padding-right:38px}
     .field input:focus,.field select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent)}
     .check{display:flex;align-items:center;gap:9px;margin:10px 0;user-select:none;cursor:pointer}
     .check input{appearance:none;width:18px;height:18px;border-radius:6px;border:1px solid var(--border-strong);background:var(--panel-2);display:grid;place-items:center;cursor:pointer}
@@ -151,6 +154,9 @@
 
     .palette-card > span:not(.palette-dot){position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
     .palette-card:focus-visible{outline:2px solid color-mix(in srgb, var(--accent) 72%, #fff);outline-offset:2px}
+    .settings-section::details-content{block-size:0;overflow:clip;transition:block-size .26s cubic-bezier(.2,.8,.2,1),content-visibility .26s allow-discrete}
+    .settings-section[open]::details-content{block-size:auto}
+    @starting-style{.settings-section[open]::details-content{block-size:0}}
     .settings-section:not([open]) .settings-body{opacity:0;transform:translateY(-4px)}
     .settings-section>summary:hover{background:color-mix(in srgb, var(--panel-2) 72%, transparent)}
     .segmented-choice--three{grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -208,11 +214,11 @@
     .settings-section>summary h3{margin:0;min-width:0;font-size:13px;color:var(--text);display:flex;align-items:center;gap:9px;line-height:1.2}
     .settings-section>summary small{display:block;margin-top:4px;color:var(--faint);font-size:10px;font-weight:700;line-height:1.35;letter-spacing:0;text-transform:none;overflow:hidden;text-overflow:ellipsis}
     .settings-section>summary::after{content:"";width:8px;height:8px;border-right:1.8px solid var(--muted);border-bottom:1.8px solid var(--muted);transform:rotate(45deg);transition:transform .22s ease,border-color .18s ease;margin-top:5px;flex:0 0 auto}
-    .settings-section[open]{border-color:color-mix(in srgb, var(--accent) 26%, var(--border));box-shadow:0 6px 18px rgba(0,0,0,.10),0 0 0 1px color-mix(in srgb, var(--accent) 7%, transparent)}
-    body.light-mode .settings-section[open]{box-shadow:0 10px 24px rgba(15,23,42,.055),0 0 0 1px color-mix(in srgb, var(--accent) 7%, transparent)}
-    .settings-section[open]>summary{border-bottom-color:color-mix(in srgb, var(--accent) 18%, var(--border));background:color-mix(in srgb, var(--panel-2) 64%, transparent)}
+    .settings-section[open]{border-color:color-mix(in srgb, var(--accent) 14%, var(--border));box-shadow:0 6px 18px rgba(0,0,0,.055)}
+    body.light-mode .settings-section[open]{box-shadow:0 8px 20px rgba(15,23,42,.04)}
+    .settings-section[open]>summary{border-bottom-color:color-mix(in srgb, var(--accent) 12%, var(--border));background:color-mix(in srgb, var(--panel-2) 70%, transparent)}
     .settings-section[open]>summary::after{transform:rotate(225deg)}
-    .settings-body{padding:18px 16px 20px;transition:opacity .2s ease,transform .2s ease}
+    .settings-body{padding:18px 16px 20px;transition:opacity .22s ease,transform .22s ease;will-change:opacity,transform}
     .card{margin-bottom:0}
     .field{gap:7px;margin-bottom:16px}
     .field label{color:color-mix(in srgb, var(--muted) 92%, var(--text));letter-spacing:.01em}
@@ -253,10 +259,10 @@
     .progress-label{min-width:42px;text-align:right;font-variant-numeric:tabular-nums;color:var(--muted);font-weight:900}
     body.resizing-panes *{cursor:col-resize !important;user-select:none !important}
     @media(max-width:1160px){
-      .app{min-width:0}.brand-copy span{display:none}.toolbar{gap:6px}.workspace{grid-template-columns:290px 7px 1fr}.preview-gutter,.preview-pane{display:none}.editor-pane{border-radius:0 22px 22px 0;border-right:1px solid var(--border)}
+      .app{min-width:0}.brand-copy span{display:none}.toolbar{gap:6px}.workspace{grid-template-columns:290px 7px 1fr}.preview-gutter,.preview-pane{display:none}.editor-pane{border-radius:0;border-right:0}
     }
     @media(max-width:800px){
-      .topbar{height:auto;min-height:64px;align-items:flex-start;padding:12px;flex-direction:column}.app{grid-template-rows:auto 1fr 32px}.workspace,body.settings-collapsed .workspace{grid-template-columns:1fr;padding:10px}.sidebar,.settings-gutter,.settings-restore{display:none!important}.editor-pane{border-radius:20px}.toolbar{justify-content:flex-start}.preview-pane,.preview-gutter{display:none}
+      .topbar{height:auto;min-height:64px;align-items:flex-start;padding:12px;flex-direction:column}.app{grid-template-rows:auto 1fr 32px}.workspace,body.settings-collapsed .workspace{grid-template-columns:1fr;padding:0}.sidebar,.settings-gutter,.settings-restore{display:none!important}.editor-pane{border-radius:0}.toolbar{justify-content:flex-start}.preview-pane,.preview-gutter{display:none}
     }
 
 
@@ -297,8 +303,8 @@
     .format-btn:active{transform:translateY(0)}
     .footer-group span,.progress-label,#statusWords,#statusChars{font-variant-numeric:tabular-nums}
     #statusWords,#statusChars,.progress-label{font-family:var(--code)}
-    .sidebar,.pane{box-shadow:0 16px 40px rgba(0,0,0,.24)}
-    body.light-mode .sidebar,body.light-mode .pane{box-shadow:0 18px 42px rgba(15,23,42,.10)}
+    .sidebar,.pane{box-shadow:none}
+    body.light-mode .sidebar,body.light-mode .pane{box-shadow:none}
   </style>
 </head>
 <body>
@@ -894,16 +900,6 @@ function insertMarkdown(kind){
   if (kind === 'table') return insertAtCursor('| Column A | Column B |\n|---|---|\n| Value | Value |\n');
 }
 
-function attachSettingsAccordion(){
-  const sections = Array.from(document.querySelectorAll('.settings-section'));
-  sections.forEach(section => {
-    section.addEventListener('toggle', () => {
-      if (!section.open) return;
-      sections.forEach(other => { if (other !== section) other.open = false; });
-    });
-  });
-}
-
 function renderPreview(){
   const text = editor.value;
   statusWords.textContent = 'Words: ' + (text.trim() ? text.trim().split(/\s+/).length : 0);
@@ -1224,7 +1220,6 @@ window.addEventListener('keydown', (event) => {
 
 editor.value = `---\ntitle: "نمونه سند Mardas MD2PDF"\nauthor: "mragetsars"\ndate: "2026-05-12"\nlang: fa\nappearance:\n  style: modern\n  palette: blue\n  mode: light\n---\n\n# نمونه Markdown\n\nاین محیط برای ویرایش Markdown و گرفتن خروجی PDF با تنظیمات گرافیکی ساخته شده است.\n\n## Code\n\n\`\`\`python\nprint("Hello Mardas")\n\`\`\`\n\n| قابلیت | وضعیت |\n|---|---|\n| RTL/LTR | OK |\n| PDF Export | OK |\n`;
 attachChoiceCards();
-attachSettingsAccordion();
 attachOptionPersistence();
 loadStudioState();
 updateAppearanceName();
