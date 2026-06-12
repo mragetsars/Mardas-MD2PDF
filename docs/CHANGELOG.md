@@ -10,6 +10,8 @@ All notable changes to Mardas MD2PDF are tracked here.
 - Replaced raw style, palette, mode, and branding dropdowns with visual choice cards while keeping the same backend render options.
 - Improved Studio CLI-copy output so branding options are included when selected.
 - Polished the Studio toolbar, settings sidebar, editor, preview status, and status bar for a clearer daily writing workflow.
+- Replaced static Studio view-mode buttons with draggable/resizable panes and an auto-collapsing settings sidebar.
+- Retuned the Studio interface to pure light/dark surfaces with thin custom scrollbars and higher-contrast export-button interaction states.
 
 ### Added
 

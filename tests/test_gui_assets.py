@@ -226,18 +226,23 @@ def test_gui_copy_command_includes_branding_options():
     assert "--brand-footer" in html
 
 
-def test_gui_zen_mode_has_escape_route_and_is_not_restored():
+def test_gui_replaces_static_view_modes_with_resizable_panes():
     html = GUI_HTML.read_text(encoding="utf-8")
 
-    assert 'id="zenToolbar"' in html
-    assert 'id="zenExitBtn"' in html
-    assert 'function exitZen()' in html
-    assert "event.key === 'Escape' && currentLayout === 'zen'" in html
-    assert "lastNonZenLayout" in html
-    assert "layout: currentLayout === 'zen' ? lastNonZenLayout : currentLayout" in html
-    assert "['split','editor','preview'].includes(state.layout)" in html
-    assert "body.zen .zen-toolbar{display:flex}" in html
-    assert "Ctrl/Cmd+4" in Path(__file__).resolve().parents[1].joinpath("docs", "STUDIO.md").read_text(encoding="utf-8")
+    assert 'id="settingsGutter"' in html
+    assert 'id="previewGutter"' in html
+    assert 'id="settingsRestoreBtn"' in html
+    assert 'function resizeSettingsPane' in html
+    assert 'function resizePreviewPane' in html
+    assert 'function collapseSettingsPane' in html
+    assert 'function expandSettingsPane' in html
+    assert 'SETTINGS_COLLAPSE_THRESHOLD' in html
+    assert 'settingsCollapsed' in html
+    assert 'layoutSplit' not in html
+    assert 'layoutEditor' not in html
+    assert 'layoutPreview' not in html
+    assert 'layoutZen' not in html
+    assert 'zenToolbar' not in html
 
 
 def test_gui_topbar_uses_grouped_toolbar_and_icon_buttons():
@@ -246,10 +251,31 @@ def test_gui_topbar_uses_grouped_toolbar_and_icon_buttons():
     assert 'role="toolbar" aria-label="Studio toolbar"' in html
     assert 'class="tool-group" aria-label="File actions"' in html
     assert 'class="tool-group" aria-label="Resources"' in html
-    assert 'class="tool-group" aria-label="View mode"' in html
+    assert 'class="tool-group" aria-label="Export"' in html
+    assert 'class="tool-group" aria-label="View mode"' not in html
     assert 'class="tool-divider"' in html
     assert 'class="btn btn-icon btn-quiet" onclick="copyCommand()"' in html
     assert 'id="interfaceBtn" title="Toggle light/dark Studio UI"' in html
+
+
+def test_gui_uses_chatgpt_like_scrollbars_and_pure_interface_surfaces():
+    html = GUI_HTML.read_text(encoding="utf-8")
+
+    assert '*::-webkit-scrollbar' in html
+    assert '--scroll-thumb:#4a4a4a' in html
+    assert '--scroll-thumb:#c7c7c7' in html
+    assert '--bg:#000000' in html
+    assert '--panel-2:#212121' in html
+    assert '--bg:#ffffff' in html
+    assert '--preview:#f7f7f8' in html
+
+
+def test_gui_export_button_keeps_contrast_on_hover_and_active():
+    html = GUI_HTML.read_text(encoding="utf-8")
+
+    assert '.btn-primary:hover{color:#ffffff' in html
+    assert '.btn-primary:active{color:#ffffff' in html
+    assert '.btn-primary:focus-visible' in html
 
 
 def test_gui_settings_are_accordion_sections_with_switches():

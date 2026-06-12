@@ -6,64 +6,71 @@
   <title>Mardas MD2PDF Studio</title>
   <style>
     :root{
-      --bg:#0b1020;
-      --bg-soft:#111827;
-      --shell:rgba(11,16,32,.88);
-      --panel:#111827;
-      --panel-2:#0f172a;
-      --panel-3:#172033;
-      --editor:#080d1b;
-      --preview:#0e1527;
-      --text:#e5e7eb;
-      --muted:#9ca3af;
-      --faint:#64748b;
-      --border:#243044;
-      --border-strong:#334155;
-      --accent:#22d3ee;
-      --accent-2:#a78bfa;
-      --accent-3:#f472b6;
-      --ok:#34d399;
+      --bg:#000000;
+      --bg-soft:#0d0d0d;
+      --shell:rgba(0,0,0,.82);
+      --panel:#171717;
+      --panel-2:#212121;
+      --panel-3:#2a2a2a;
+      --editor:#0a0a0a;
+      --preview:#111111;
+      --text:#f4f4f5;
+      --muted:#a3a3a3;
+      --faint:#737373;
+      --border:#2f2f2f;
+      --border-strong:#3f3f46;
+      --accent:#10a37f;
+      --accent-2:#7c3aed;
+      --accent-3:#06b6d4;
+      --ok:#22c55e;
       --danger:#fb7185;
-      --shadow:0 18px 50px rgba(0,0,0,.28);
+      --shadow:0 18px 48px rgba(0,0,0,.42);
       --radius:16px;
       --sidebar-width:318px;
       --editor-width:50%;
       --font:'Inter','Vazirmatn','Segoe UI',Arial,sans-serif;
       --code:'JetBrains Mono','SFMono-Regular','Consolas','Monaco',monospace;
+      --scroll-thumb:#4a4a4a;
+      --scroll-thumb-hover:#6a6a6a;
+      --scroll-track:transparent;
     }
     body.light-mode{
-      --bg:#f8fafc;
-      --bg-soft:#eef6ff;
-      --shell:rgba(255,255,255,.82);
+      --bg:#ffffff;
+      --bg-soft:#f7f7f8;
+      --shell:rgba(255,255,255,.86);
       --panel:#ffffff;
-      --panel-2:#f8fafc;
-      --panel-3:#eef2ff;
+      --panel-2:#f7f7f8;
+      --panel-3:#ececf1;
       --editor:#ffffff;
-      --preview:#f3f7fb;
-      --text:#0f172a;
-      --muted:#475569;
-      --faint:#64748b;
-      --border:#e2e8f0;
-      --border-strong:#cbd5e1;
-      --accent:#2563eb;
-      --accent-2:#7c3aed;
-      --accent-3:#db2777;
+      --preview:#f7f7f8;
+      --text:#111111;
+      --muted:#5f6368;
+      --faint:#8e8ea0;
+      --border:#e5e5e5;
+      --border-strong:#d1d5db;
+      --accent:#10a37f;
+      --accent-2:#2563eb;
+      --accent-3:#7c3aed;
       --ok:#059669;
       --danger:#e11d48;
-      --shadow:0 18px 45px rgba(15,23,42,.10);
+      --shadow:0 18px 45px rgba(0,0,0,.08);
+      --scroll-thumb:#c7c7c7;
+      --scroll-thumb-hover:#9ca3af;
+      --scroll-track:transparent;
     }
     *{box-sizing:border-box}
     html,body{height:100%}
+    *{scrollbar-width:thin;scrollbar-color:var(--scroll-thumb) var(--scroll-track)}
+    *::-webkit-scrollbar{width:10px;height:10px}
+    *::-webkit-scrollbar-track{background:var(--scroll-track)}
+    *::-webkit-scrollbar-thumb{background:var(--scroll-thumb);border:3px solid transparent;border-radius:999px;background-clip:padding-box}
+    *::-webkit-scrollbar-thumb:hover{background:var(--scroll-thumb-hover);background-clip:padding-box}
     body{
       margin:0;
       overflow:hidden;
       color:var(--text);
       font-family:var(--font);
-      background:
-        radial-gradient(circle at 3% 0%, color-mix(in srgb, var(--accent) 24%, transparent), transparent 27rem),
-        radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--accent-2) 18%, transparent), transparent 30rem),
-        radial-gradient(circle at 100% 100%, color-mix(in srgb, var(--accent-3) 13%, transparent), transparent 32rem),
-        var(--bg);
+      background:var(--bg);
     }
     button,input,select,textarea{font:inherit}
     .app{height:100%;display:grid;grid-template-rows:64px 1fr 32px;min-width:760px}
@@ -83,19 +90,28 @@
     body.light-mode .btn,body.light-mode .seg button,body.light-mode select,body.light-mode input[type=text],body.light-mode input[type=number]{color-scheme:light}
     .btn{display:inline-flex;align-items:center;gap:7px;cursor:pointer;white-space:nowrap}
     .btn:hover,.seg button:hover{border-color:color-mix(in srgb, var(--accent) 58%, var(--border));background:var(--panel-2);transform:translateY(-1px)}
-    .btn-primary{border:0;color:#020617;background:linear-gradient(135deg,var(--accent),var(--accent-2));box-shadow:0 12px 30px color-mix(in srgb, var(--accent) 20%, transparent)}
-    .btn-primary:hover{filter:saturate(1.08);box-shadow:0 16px 36px color-mix(in srgb, var(--accent) 28%, transparent)}
+    .btn-primary{border:0;color:#ffffff;background:linear-gradient(135deg,var(--accent),color-mix(in srgb,var(--accent) 72%, var(--accent-2)));box-shadow:0 12px 30px color-mix(in srgb, var(--accent) 24%, transparent)}
+    .btn-primary:hover{color:#ffffff;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 84%, #ffffff),var(--accent-2));box-shadow:0 16px 36px color-mix(in srgb, var(--accent) 34%, transparent);filter:none}
+    .btn-primary:active{color:#ffffff;transform:translateY(0) scale(.985);box-shadow:0 8px 22px color-mix(in srgb, var(--accent) 28%, transparent)}
+    .btn-primary:focus-visible{outline:2px solid color-mix(in srgb, var(--accent) 70%, #ffffff);outline-offset:2px}
     .btn-ghost{background:transparent}
     .seg{display:inline-flex;align-items:center;gap:0;border:1px solid var(--border);border-radius:13px;overflow:hidden;background:var(--panel)}
     .seg button{border:0;border-radius:0;background:transparent;padding:0 10px;color:var(--muted);cursor:pointer}
     .seg button.active{color:#020617;background:linear-gradient(135deg,var(--accent),var(--accent-2))}
-    .workspace{display:grid;grid-template-columns:var(--sidebar-width) minmax(260px,var(--editor-width)) 7px minmax(260px,1fr);min-height:0;padding:14px;gap:0}
-    .sidebar,.pane{border:1px solid var(--border);background:color-mix(in srgb, var(--panel) 92%, transparent);box-shadow:var(--shadow);min-height:0;overflow:hidden}
-    .sidebar{border-radius:22px 0 0 22px;border-right:0;display:flex;flex-direction:column}
+    .workspace{display:grid;grid-template-columns:var(--sidebar-width) 7px minmax(260px,var(--editor-width)) 7px minmax(260px,1fr);min-height:0;padding:14px;gap:0;transition:grid-template-columns .24s ease,padding .24s ease}
+    .sidebar,.pane{border:1px solid var(--border);background:color-mix(in srgb, var(--panel) 94%, transparent);box-shadow:var(--shadow);min-height:0;overflow:hidden}
+    .sidebar{border-radius:22px 0 0 22px;border-right:0;display:flex;flex-direction:column;transition:opacity .2s ease,transform .22s ease}
     .pane.editor-pane{border-radius:0;border-right:0}
     .pane.preview-pane{border-radius:0 22px 22px 0;border-left:0}
-    .gutter{cursor:col-resize;background:linear-gradient(180deg,transparent,var(--border),transparent);position:relative}
-    .gutter::after{content:"";position:absolute;left:2px;top:50%;width:3px;height:64px;transform:translateY(-50%);border-radius:99px;background:var(--border-strong)}
+    .gutter{cursor:col-resize;background:transparent;position:relative;transition:background .16s}
+    .gutter:hover{background:color-mix(in srgb, var(--accent) 10%, transparent)}
+    .gutter::after{content:"";position:absolute;left:2px;top:50%;width:3px;height:64px;transform:translateY(-50%);border-radius:99px;background:var(--border-strong);transition:background .16s,height .16s}
+    .gutter:hover::after{height:96px;background:var(--accent)}
+    body.settings-collapsed .workspace{grid-template-columns:0 0 minmax(260px,var(--editor-width)) 7px minmax(260px,1fr)}
+    body.settings-collapsed .sidebar,body.settings-collapsed .settings-gutter{opacity:0;pointer-events:none;transform:translateX(-12px)}
+    .settings-restore{position:fixed;z-index:70;top:82px;left:18px;width:42px;height:42px;border:1px solid var(--border);border-radius:14px;background:color-mix(in srgb, var(--panel) 90%, transparent);color:var(--text);box-shadow:var(--shadow);display:none;place-items:center;cursor:pointer;backdrop-filter:blur(14px)}
+    .settings-restore:hover{border-color:var(--accent);background:var(--panel-2)}
+    body.settings-collapsed .settings-restore{display:grid}
     .sidebar-head,.pane-head{height:42px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 14px;border-bottom:1px solid var(--border);background:var(--panel-2);direction:ltr}
     .sidebar-head strong,.pane-head strong{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
     .sidebar-head{align-items:flex-start;min-height:52px;height:auto;padding-top:9px;padding-bottom:9px;flex-wrap:wrap}
@@ -171,8 +187,6 @@
     .btn-icon span{display:none}
     .btn-quiet{background:transparent;border-color:transparent;color:var(--muted)}
     .btn-quiet:hover{border-color:var(--border);color:var(--text);background:var(--panel)}
-    .view-seg button{min-width:66px}
-    .view-seg button.active{box-shadow:inset 0 0 0 1px color-mix(in srgb, #fff 22%, transparent)}
     .sidebar-body{padding:16px;display:flex;flex-direction:column;gap:14px}
     .settings-section{padding:0;margin:0;overflow:hidden}
     .settings-section>summary{list-style:none;cursor:pointer;padding:15px 15px 13px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;border-bottom:1px solid transparent}
@@ -212,32 +226,17 @@
     @keyframes spin{to{transform:rotate(360deg)}}
     .footer #savedState{color:var(--muted);font-weight:850}
 
-    .zen-toolbar{display:none;position:fixed;z-index:80;top:14px;right:14px;align-items:center;gap:8px;padding:8px;border:1px solid var(--border);border-radius:18px;background:color-mix(in srgb, var(--panel) 92%, transparent);box-shadow:var(--shadow);backdrop-filter:blur(16px);direction:ltr}
-    .zen-toolbar span{color:var(--muted);font-size:11px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;margin:0 4px}
-    .zen-toolbar .btn{height:34px;background:var(--panel-2)}
-    .zen-toolbar kbd{margin-left:4px;padding:2px 5px;border:1px solid var(--border-strong);border-radius:6px;background:var(--panel);color:var(--muted);font:800 10px/1 var(--code)}
     .export-progress{display:none;align-items:center;gap:9px;min-width:280px}
     .busy .export-progress,.export-progress.active{display:flex}
     .progress-track{width:180px;height:8px;border-radius:999px;background:var(--panel-3);border:1px solid var(--border);overflow:hidden}
     .progress-bar{width:0%;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--accent),var(--accent-2));box-shadow:0 0 18px color-mix(in srgb, var(--accent) 30%, transparent);transition:width .22s ease}
     .progress-label{min-width:42px;text-align:right;font-variant-numeric:tabular-nums;color:var(--muted);font-weight:900}
-    body.editor-focus .workspace{grid-template-columns:var(--sidebar-width) 1fr 0 0}
-    body.editor-focus .gutter,body.editor-focus .preview-pane{display:none}
-    body.editor-focus .editor-pane{border-radius:0 22px 22px 0;border-right:1px solid var(--border)}
-    body.preview-focus .workspace{grid-template-columns:var(--sidebar-width) 0 0 1fr}
-    body.preview-focus .gutter,body.preview-focus .editor-pane{display:none}
-    body.preview-focus .preview-pane{border-radius:0 22px 22px 0;border-left:1px solid var(--border)}
-    body.zen .workspace{grid-template-columns:1fr;padding:0}
-    body.zen .topbar,body.zen .sidebar,body.zen .editor-pane,body.zen .gutter,body.zen .footer{display:none}
-    body.zen .preview-pane{border:0;border-radius:0;box-shadow:none;min-height:100vh}
-    body.zen .pane-head{position:sticky;top:0;z-index:30;padding-right:300px;background:color-mix(in srgb, var(--panel-2) 94%, transparent);backdrop-filter:blur(14px)}
-    body.zen .preview{height:calc(100vh - 42px);padding:56px max(8vw,70px) 80px}
-    body.zen .zen-toolbar{display:flex}
+    body.resizing-panes *{cursor:col-resize !important;user-select:none !important}
     @media(max-width:1160px){
-      .app{min-width:0}.brand-copy span{display:none}.toolbar{gap:6px}.workspace{grid-template-columns:290px 1fr}.gutter,.preview-pane{display:none}.editor-pane{border-radius:0 22px 22px 0;border-right:1px solid var(--border)}
+      .app{min-width:0}.brand-copy span{display:none}.toolbar{gap:6px}.workspace{grid-template-columns:290px 7px 1fr}.preview-gutter,.preview-pane{display:none}.editor-pane{border-radius:0 22px 22px 0;border-right:1px solid var(--border)}
     }
     @media(max-width:800px){
-      .topbar{height:auto;min-height:64px;align-items:flex-start;padding:12px;flex-direction:column}.app{grid-template-rows:auto 1fr 32px}.workspace{grid-template-columns:1fr;padding:10px}.sidebar{display:none}.editor-pane{border-radius:20px}.toolbar{justify-content:flex-start}.preview-pane{display:none}
+      .topbar{height:auto;min-height:64px;align-items:flex-start;padding:12px;flex-direction:column}.app{grid-template-rows:auto 1fr 32px}.workspace{grid-template-columns:1fr;padding:10px}.sidebar,.settings-gutter,.settings-restore{display:none!important}.editor-pane{border-radius:20px}.toolbar{justify-content:flex-start}.preview-pane,.preview-gutter{display:none}
     }
   </style>
 </head>
@@ -260,29 +259,15 @@
           <button class="btn btn-icon btn-quiet" onclick="copyCommand()" title="Copy matching CLI command" aria-label="Copy CLI command">⌘<span>Copy CLI</span></button>
         </div>
         <span class="tool-divider" aria-hidden="true"></span>
-        <div class="tool-group" aria-label="View mode">
-          <div class="seg view-seg" aria-label="Layout">
-            <button id="layoutSplit" class="active" onclick="setLayout('split')">Split</button>
-            <button id="layoutEditor" onclick="setLayout('editor')">Editor</button>
-            <button id="layoutPreview" onclick="setLayout('preview')">Preview</button>
-            <button id="layoutZen" onclick="setLayout('zen')">Zen</button>
-          </div>
-        </div>
-        <span class="tool-divider" aria-hidden="true"></span>
         <div class="tool-group" aria-label="Export">
           <button class="btn btn-icon btn-quiet" onclick="toggleInterfaceMode()" id="interfaceBtn" title="Toggle light/dark Studio UI" aria-label="Toggle light/dark Studio UI">☀️</button>
           <button id="exportPdfBtn" class="btn btn-primary" onclick="renderPDF()"><span class="spinner">⏳</span>📄 Export PDF</button>
         </div>
       </div>
     </header>
-    <div id="zenToolbar" class="zen-toolbar" aria-hidden="true">
-      <span>Zen preview</span>
-      <button class="btn" id="zenExitBtn" type="button" onclick="exitZen()">← Exit <kbd>Esc</kbd></button>
-      <button class="btn" id="zenDirBtn" type="button" onclick="toggleDirection()">↔️ RTL</button>
-      <button class="btn btn-primary" id="zenExportBtn" type="button" onclick="renderPDF()">📄 Export</button>
-    </div>
+    <button id="settingsRestoreBtn" class="settings-restore" type="button" onclick="expandSettingsPane()" title="Show export settings" aria-label="Show export settings">⚙️</button>
     <main class="workspace" id="workspace">
-      <aside class="sidebar">
+      <aside id="sidebar" class="sidebar">
         <div class="sidebar-head"><strong>Export Settings</strong><span id="appearanceName">modern · blue · light</span></div>
         <div class="sidebar-body">
           <details class="card settings-section" open><summary><h3>📌 Document<small>Basic identity and page setup</small></h3></summary><div class="settings-body">
@@ -358,6 +343,7 @@
           </details>
         </div>
       </aside>
+      <div class="gutter settings-gutter" id="settingsGutter" title="Drag to resize or collapse export settings" aria-label="Resize export settings panel"></div>
       <section class="pane editor-pane">
         <div class="pane-head"><strong>Markdown Editor</strong><span class="editor-tools"><span class="preview-note">Markdown source</span></span></div>
         <div class="editor-formatbar" aria-label="Markdown formatting toolbar">
@@ -373,7 +359,7 @@
           <textarea id="editor" dir="auto" spellcheck="false"></textarea>
         </div>
       </section>
-      <div class="gutter" id="gutter" title="Drag to resize editor and preview"></div>
+      <div class="gutter preview-gutter" id="previewGutter" title="Drag to resize editor and preview" aria-label="Resize editor and preview panels"></div>
       <section class="pane preview-pane">
         <div class="pane-head"><strong>Preview</strong><span class="preview-tools"><span id="previewStatus" class="preview-status" title="The exported PDF uses the Python renderer, MathJax, appearance CSS, TOC, page breaks, and Chromium print layout.">Approximate preview</span><button class="btn" onclick="toggleDirection()" id="dirBtn">↔️ RTL</button></span></div>
         <div id="preview" class="preview" dir="auto"></div>
@@ -395,14 +381,20 @@ const exportProgress = $('exportProgress');
 const exportProgressBar = $('exportProgressBar');
 const exportProgressLabel = $('exportProgressLabel');
 const interfaceBtn = $('interfaceBtn');
-const zenToolbar = $('zenToolbar');
 const lineNumbers = $('lineNumbers');
 const previewStatus = $('previewStatus');
+const workspace = $('workspace');
+const settingsGutter = $('settingsGutter');
+const previewGutter = $('previewGutter');
+const SETTINGS_COLLAPSE_THRESHOLD = 150;
+const SETTINGS_MIN_WIDTH = 220;
+const SETTINGS_MAX_WIDTH = 520;
+const EDITOR_MIN_WIDTH = 280;
 let renderTimer = null;
 let exportProgressTimer = null;
 let exportProgressValue = 0;
-let currentLayout = 'split';
-let lastNonZenLayout = 'split';
+let activeResizePane = null;
+let settingsCollapsed = false;
 const MARDAS_STUDIO_STATE_KEY = 'mardas-md2pdf-studio-state-v1';
 const MAX_STORED_MARKDOWN_CHARS = 250000;
 let saveStateTimer = null;
@@ -538,10 +530,11 @@ function getStudioState(){
   return {
     options: getOptions(),
     markdown,
-    layout: currentLayout === 'zen' ? lastNonZenLayout : currentLayout,
     lightMode: document.body.classList.contains('light-mode'),
     previewDirection: preview.getAttribute('dir') || 'auto',
-    editorWidth: getComputedStyle(document.documentElement).getPropertyValue('--editor-width').trim()
+    editorWidth: getComputedStyle(document.documentElement).getPropertyValue('--editor-width').trim(),
+    sidebarWidth: getComputedStyle(document.documentElement).getPropertyValue('--sidebar-width').trim(),
+    settingsCollapsed
   };
 }
 
@@ -576,14 +569,17 @@ function loadStudioState(){
       preview.setAttribute('dir', state.previewDirection);
       editor.setAttribute('dir', state.previewDirection);
       $('dirBtn').textContent = state.previewDirection === 'rtl' ? '↔️ LTR' : '↔️ RTL';
-      const zenDirBtn = $('zenDirBtn');
-      if (zenDirBtn) zenDirBtn.textContent = state.previewDirection === 'rtl' ? '↔️ LTR' : '↔️ RTL';
+    }
+    if (/^[0-9.]+px$/.test(state.sidebarWidth || '')) {
+      document.documentElement.style.setProperty('--sidebar-width', state.sidebarWidth);
     }
     if (/^[0-9.]+px$/.test(state.editorWidth || '')) {
       document.documentElement.style.setProperty('--editor-width', state.editorWidth);
     }
-    if (['split','editor','preview'].includes(state.layout)) {
-      setLayout(state.layout, { persist: false });
+    if (state.settingsCollapsed === true) {
+      collapseSettingsPane({ persist: false });
+    } else {
+      expandSettingsPane({ persist: false });
     }
     $('savedState').textContent = 'Restored local draft';
     return true;
@@ -1019,30 +1015,33 @@ function toggleInterfaceMode(){
   scheduleStudioStateSave();
 }
 
-function exitZen(){
-  setLayout(lastNonZenLayout || 'split');
+function currentSidebarWidth(){
+  return parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sidebar-width')) || 318;
 }
 
-function setLayout(layout, options={}){
-  if (!['split','editor','preview','zen'].includes(layout)) layout = 'split';
-  if (layout === 'zen' && currentLayout !== 'zen') {
-    lastNonZenLayout = currentLayout === 'zen' ? lastNonZenLayout : currentLayout;
-  } else if (layout !== 'zen') {
-    lastNonZenLayout = layout;
-  }
-  currentLayout = layout;
-  document.body.classList.toggle('editor-focus', layout === 'editor');
-  document.body.classList.toggle('preview-focus', layout === 'preview');
-  document.body.classList.toggle('zen', layout === 'zen');
-  if (zenToolbar) zenToolbar.setAttribute('aria-hidden', layout === 'zen' ? 'false' : 'true');
-  ['Split','Editor','Preview','Zen'].forEach(name => {
-    const button = $('layout' + name);
-    if (button) button.classList.toggle('active', name.toLowerCase() === layout);
-  });
-  if (layout === 'zen') {
-    renderPreview();
-    requestAnimationFrame(() => preview.scrollTo({ top: 0, behavior: 'auto' }));
-  }
+function clamp(value, minimum, maximum){
+  return Math.max(minimum, Math.min(maximum, value));
+}
+
+function setSidebarWidth(width, options={}){
+  const next = clamp(width, SETTINGS_MIN_WIDTH, SETTINGS_MAX_WIDTH);
+  document.documentElement.style.setProperty('--sidebar-width', next + 'px');
+  settingsCollapsed = false;
+  document.body.classList.remove('settings-collapsed');
+  if (options.persist !== false) scheduleStudioStateSave();
+}
+
+function collapseSettingsPane(options={}){
+  settingsCollapsed = true;
+  document.body.classList.add('settings-collapsed');
+  if (options.persist !== false) scheduleStudioStateSave();
+}
+
+function expandSettingsPane(options={}){
+  settingsCollapsed = false;
+  document.body.classList.remove('settings-collapsed');
+  const width = parseFloat(options.width || currentSidebarWidth()) || 318;
+  document.documentElement.style.setProperty('--sidebar-width', clamp(width, SETTINGS_MIN_WIDTH, SETTINGS_MAX_WIDTH) + 'px');
   if (options.persist !== false) scheduleStudioStateSave();
 }
 
@@ -1051,41 +1050,62 @@ function toggleDirection(){
   preview.setAttribute('dir', next);
   editor.setAttribute('dir', next);
   $('dirBtn').textContent = next === 'rtl' ? '↔️ LTR' : '↔️ RTL';
-  const zenDirBtn = $('zenDirBtn');
-  if (zenDirBtn) zenDirBtn.textContent = next === 'rtl' ? '↔️ LTR' : '↔️ RTL';
   scheduleStudioStateSave();
 }
 
-let resizing = false;
-$('gutter').addEventListener('mousedown', () => { resizing = true; document.body.style.userSelect = 'none'; });
-window.addEventListener('mousemove', (event) => {
-  if (!resizing || currentLayout !== 'split') return;
-  const workspace = $('workspace').getBoundingClientRect();
-  const sidebar = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sidebar-width')) || 318;
-  const available = workspace.width - sidebar - 7;
-  const editorWidth = Math.max(260, Math.min(available - 260, event.clientX - workspace.left - sidebar));
-  document.documentElement.style.setProperty('--editor-width', editorWidth + 'px');
-});
-window.addEventListener('mouseup', () => {
-  if (resizing) scheduleStudioStateSave();
-  resizing = false;
-  document.body.style.userSelect = '';
-});
+function startPaneResize(kind, event){
+  activeResizePane = kind;
+  document.body.classList.add('resizing-panes');
+  document.body.style.userSelect = 'none';
+  event.preventDefault();
+}
 
-window.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape' && currentLayout === 'zen') {
-    event.preventDefault();
-    exitZen();
+function resizeSettingsPane(event){
+  const rect = workspace.getBoundingClientRect();
+  const width = event.clientX - rect.left;
+  if (width < SETTINGS_COLLAPSE_THRESHOLD) {
+    collapseSettingsPane({ persist: false });
     return;
   }
+  setSidebarWidth(width, { persist: false });
+}
+
+function resizePreviewPane(event){
+  const rect = workspace.getBoundingClientRect();
+  const sidebar = settingsCollapsed ? 0 : currentSidebarWidth();
+  const settingsGutterWidth = settingsCollapsed ? 0 : 7;
+  const previewGutterWidth = 7;
+  const editorStart = rect.left + sidebar + settingsGutterWidth;
+  const available = rect.width - sidebar - settingsGutterWidth - previewGutterWidth;
+  const editorWidth = clamp(event.clientX - editorStart, EDITOR_MIN_WIDTH, Math.max(EDITOR_MIN_WIDTH, available - EDITOR_MIN_WIDTH));
+  document.documentElement.style.setProperty('--editor-width', editorWidth + 'px');
+}
+
+function onPanePointerMove(event){
+  if (!activeResizePane) return;
+  if (activeResizePane === 'settings') resizeSettingsPane(event);
+  if (activeResizePane === 'preview') resizePreviewPane(event);
+}
+
+function stopPaneResize(){
+  if (activeResizePane) scheduleStudioStateSave();
+  activeResizePane = null;
+  document.body.classList.remove('resizing-panes');
+  document.body.style.userSelect = '';
+}
+
+settingsGutter.addEventListener('mousedown', event => startPaneResize('settings', event));
+previewGutter.addEventListener('mousedown', event => startPaneResize('preview', event));
+window.addEventListener('mousemove', onPanePointerMove);
+window.addEventListener('mouseup', stopPaneResize);
+
+window.addEventListener('keydown', (event) => {
   const modifier = event.ctrlKey || event.metaKey;
   if (!modifier) return;
   const key = event.key.toLowerCase();
-  const layoutShortcuts = { '1': 'split', '2': 'editor', '3': 'preview', '4': 'zen' };
-  if (layoutShortcuts[key]) {
+  if (key === ',') {
     event.preventDefault();
-    setLayout(layoutShortcuts[key]);
-    return;
+    settingsCollapsed ? expandSettingsPane() : collapseSettingsPane();
   }
   if (key === 's') {
     event.preventDefault();

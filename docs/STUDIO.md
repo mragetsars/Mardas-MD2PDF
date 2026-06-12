@@ -52,13 +52,30 @@ Preview updates are debounced. When Studio is waiting for the next preview pass,
 the preview header shows a small rendering indicator instead of leaving the user
 wondering whether the document is stuck.
 
+## Workspace layout
+
+Studio uses draggable panes instead of static view-mode buttons. Drag the
+separator between **Export Settings** and the editor to resize the settings
+panel. If the panel is dragged below the collapse threshold, it hides itself with
+a soft transition. Use the small floating gear button in the upper-left corner to
+restore it.
+
+The separator between the editor and preview resizes the writing and reading
+areas. This keeps the workspace fluid without forcing users through Split,
+Editor, Preview, or Zen buttons.
+
+The interface uses thin custom scrollbars and a pure light/dark surface model: a
+minimal black/charcoal workspace in dark mode and a clean white/soft-gray
+workspace in light mode.
+
 ## Local state
 
-Studio stores the current draft, sidebar settings, layout mode, interface mode,
-preview direction, and editor width in browser local storage. Use **Reset State**
-when you want to clear the saved local draft and return to a clean workspace.
+Studio stores the current draft, sidebar settings, interface mode, preview
+direction, sidebar width, editor width, and collapsed settings state in browser
+local storage. Use **Reset State** when you want to clear the saved local draft
+and return to a clean workspace.
 
-The top toolbar is grouped into File, Resources, View, and Export actions. Less
+The top toolbar is grouped into File, Resources, and Export actions. Less
 important actions use compact icon buttons with tooltips, while **Export PDF**
 remains the primary call to action.
 
@@ -66,15 +83,7 @@ Keyboard shortcuts:
 
 - **Ctrl/Cmd+S** saves the Markdown file.
 - **Ctrl/Cmd+Enter** exports the PDF.
-- **Ctrl/Cmd+1** returns to Split layout.
-- **Ctrl/Cmd+2** focuses the editor.
-- **Ctrl/Cmd+3** focuses the preview.
-- **Ctrl/Cmd+4** enters Zen preview.
-- **Esc** exits Zen preview.
-
-Zen preview is intentionally transient: Studio does not restore directly into Zen
-after a browser refresh. This prevents users from losing access to the main
-controls if they close or reload the page while previewing.
+- **Ctrl/Cmd+,** toggles the settings sidebar.
 
 ## Attached assets
 
