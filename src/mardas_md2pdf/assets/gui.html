@@ -126,7 +126,7 @@
     .check{display:flex;align-items:center;gap:9px;margin:10px 0;user-select:none;cursor:pointer}
     .check input{appearance:none;width:18px;height:18px;border-radius:6px;border:1px solid var(--border-strong);background:var(--panel-2);display:grid;place-items:center;cursor:pointer}
     .check input:checked{background:linear-gradient(135deg,var(--accent),var(--accent-2));border-color:transparent}
-    .check input:checked::after{content:"✓";font-size:12px;font-weight:900;color:#020617}
+    .check input:checked::after{content:"";width:8px;height:4px;border-left:2px solid #020617;border-bottom:2px solid #020617;transform:rotate(-45deg);margin-top:-2px}
     .hint{font-size:11px;line-height:1.55;color:var(--faint);margin-top:4px}
 
     .card h3 small{display:block;margin-top:2px;color:var(--faint);font-size:10px;font-weight:700;letter-spacing:0;text-transform:none}
@@ -153,8 +153,8 @@
     .advanced-card summary{list-style:none;cursor:pointer;padding:12px;display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px;font-weight:900;color:var(--text)}
     .advanced-card summary::-webkit-details-marker{display:none}
     .advanced-card summary small{display:block;margin-top:2px;color:var(--faint);font-size:10px;font-weight:700}
-    .advanced-card summary::after{content:"▾";color:var(--muted);transition:transform .16s}
-    .advanced-card[open] summary::after{transform:rotate(180deg)}
+    .advanced-card summary::after{content:"";width:8px;height:8px;border-right:1.8px solid var(--muted);border-bottom:1.8px solid var(--muted);transform:rotate(45deg);transition:transform .22s ease,border-color .18s ease;flex:0 0 auto}
+    .advanced-card[open] summary::after{transform:rotate(225deg)}
     .advanced-body{border-top:1px solid var(--border);padding:12px}
     .setting-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
     .asset-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
@@ -193,9 +193,9 @@
     .settings-section>summary::-webkit-details-marker{display:none}
     .settings-section>summary h3{margin:0;font-size:13px;color:var(--text);display:flex;align-items:center;gap:8px;line-height:1.2}
     .settings-section>summary small{display:block;margin-top:4px;color:var(--faint);font-size:10px;font-weight:700;line-height:1.35;letter-spacing:0;text-transform:none}
-    .settings-section>summary::after{content:'⌄';color:var(--muted);font-weight:900;transition:transform .16s;margin-top:2px}
+    .settings-section>summary::after{content:"";width:8px;height:8px;border-right:1.8px solid var(--muted);border-bottom:1.8px solid var(--muted);transform:rotate(45deg);transition:transform .22s ease,border-color .18s ease;margin-top:5px;flex:0 0 auto}
     .settings-section[open]>summary{border-bottom-color:var(--border)}
-    .settings-section[open]>summary::after{transform:rotate(180deg)}
+    .settings-section[open]>summary::after{transform:rotate(225deg)}
     .settings-body{padding:15px}
     .card{margin-bottom:0}
     .field{margin-bottom:14px}
@@ -238,39 +238,94 @@
     @media(max-width:800px){
       .topbar{height:auto;min-height:64px;align-items:flex-start;padding:12px;flex-direction:column}.app{grid-template-rows:auto 1fr 32px}.workspace{grid-template-columns:1fr;padding:10px}.sidebar,.settings-gutter,.settings-restore{display:none!important}.editor-pane{border-radius:20px}.toolbar{justify-content:flex-start}.preview-pane,.preview-gutter{display:none}
     }
+
+
+    .icon-sprite{position:absolute;width:0;height:0;overflow:hidden}
+    .icon{width:16px;height:16px;stroke:currentColor;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
+    .btn .icon{width:15px;height:15px}
+    .btn-primary .icon{width:16px;height:16px}
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);border:0;white-space:nowrap}
+    .brand-mark{overflow:hidden;background:var(--panel-2);border:1px solid var(--border);box-shadow:0 10px 28px rgba(0,0,0,.28)}
+    .brand-mark img{width:100%;height:100%;object-fit:cover;display:block}
+    body.light-mode .brand-mark{background:#fff;box-shadow:0 8px 20px rgba(15,23,42,.08)}
+    .tool-group{gap:7px}.tool-divider{opacity:.72}
+    .btn-icon .icon{width:17px;height:17px}
+    .settings-restore .icon{width:18px;height:18px}
+    .spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:spin .75s linear infinite}
+    .settings-section>summary h3 .icon,.summary-title .icon{width:15px;height:15px;color:var(--accent);margin-top:1px}
+    .settings-section>summary h3 span,.summary-title{display:flex;flex-direction:column;gap:0}
+    .summary-title{flex-direction:row;align-items:center;gap:8px;font-size:13px;font-weight:900;color:var(--text)}
+    .settings-section>summary:hover::after,.advanced-card summary:hover::after{border-color:var(--accent)}
+    .choice-grid{gap:10px;margin-bottom:14px}.choice-grid--style{gap:10px}.palette-grid{gap:10px;margin-bottom:14px}.segmented-choice{gap:10px;margin-bottom:14px}
+    .choice-card,.palette-card,.mode-card,.branding-card{padding:12px;background:color-mix(in srgb, var(--panel-2) 86%, transparent);transition:border-color .2s ease,background .2s ease,box-shadow .22s ease,transform .18s ease}
+    .choice-card:hover,.palette-card:hover,.mode-card:hover,.branding-card:hover{box-shadow:0 10px 26px rgba(0,0,0,.16);transform:translateY(-2px)}
+    body.light-mode .choice-card:hover,body.light-mode .palette-card:hover,body.light-mode .mode-card:hover,body.light-mode .branding-card:hover{box-shadow:0 10px 24px rgba(15,23,42,.08)}
+    .choice-copy{color:color-mix(in srgb, var(--muted) 78%, var(--text));line-height:1.38}
+    body:not(.light-mode) .choice-copy{color:#c2c2c2}
+    .editor-formatbar{gap:4px;padding:0 10px;background:color-mix(in srgb, var(--panel-2) 72%, transparent)}
+    .format-btn{height:30px;min-width:32px;border-color:transparent;background:transparent;color:var(--muted);border-radius:8px;padding:0;transition:background .16s ease,color .16s ease,border-color .16s ease,transform .14s ease}
+    .format-btn .icon{width:16px;height:16px}
+    .format-btn:hover{color:var(--text);border-color:var(--border);background:var(--panel-3);transform:translateY(-1px)}
+    .format-btn:active{transform:translateY(0)}
+    .footer-group span,.progress-label,#statusWords,#statusChars{font-variant-numeric:tabular-nums}
+    #statusWords,#statusChars,.progress-label{font-family:var(--code)}
+    .sidebar,.pane{box-shadow:0 18px 46px rgba(0,0,0,.34)}
+    body.light-mode .sidebar,body.light-mode .pane{box-shadow:0 18px 42px rgba(15,23,42,.06)}
   </style>
 </head>
 <body>
+  <svg class="icon-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+  <symbol id="icon-folder-open" viewBox="0 0 24 24"><path d="M3 7.5V18a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-7.5L9.5 5H5a2 2 0 0 0-2 2.5Z"/><path d="M3 10h18"/></symbol>
+  <symbol id="icon-save" viewBox="0 0 24 24"><path d="M5 3h12l2 2v16H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M7 3v7h9"/><path d="M8 21v-6h8v6"/></symbol>
+  <symbol id="icon-rotate-ccw" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v6h6"/></symbol>
+  <symbol id="icon-image" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.5"/><path d="m21 15-4.5-4.5L7 20"/></symbol>
+  <symbol id="icon-terminal" viewBox="0 0 24 24"><path d="m7 8 4 4-4 4"/><path d="M13 16h4"/><rect x="3" y="4" width="18" height="16" rx="2"/></symbol>
+  <symbol id="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></symbol>
+  <symbol id="icon-moon" viewBox="0 0 24 24"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a7 7 0 1 0 10.5 10.5Z"/></symbol>
+  <symbol id="icon-file-down" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M12 11v6"/><path d="m9 14 3 3 3-3"/></symbol>
+  <symbol id="icon-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.88.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.88l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.55V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.88-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9c.22.59.78 1 1.4 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1Z"/></symbol>
+  <symbol id="icon-file-text" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h6"/></symbol>
+  <symbol id="icon-palette" viewBox="0 0 24 24"><path d="M12 3a9 9 0 0 0 0 18h1.5a1.8 1.8 0 0 0 .7-3.45 1.8 1.8 0 0 1 .7-3.45H16a5 5 0 0 0 0-10Z"/><circle cx="7.5" cy="10" r=".8"/><circle cx="10" cy="7" r=".8"/><circle cx="14" cy="7" r=".8"/></symbol>
+  <symbol id="icon-badge" viewBox="0 0 24 24"><path d="M7 4h10a2 2 0 0 1 2 2v12l-7-3-7 3V6a2 2 0 0 1 2-2Z"/></symbol>
+  <symbol id="icon-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m15 9-2 6-4 2 2-6 4-2Z"/></symbol>
+  <symbol id="icon-bold" viewBox="0 0 24 24"><path d="M7 5h6a4 4 0 0 1 0 8H7Z"/><path d="M7 13h7a4 4 0 0 1 0 8H7Z"/></symbol>
+  <symbol id="icon-italic" viewBox="0 0 24 24"><path d="M10 5h8M6 19h8M14 5l-4 14"/></symbol>
+  <symbol id="icon-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.5.5l2-2A5 5 0 0 0 12.5 4l-1.1 1.1"/><path d="M14 11a5 5 0 0 0-7.5-.5l-2 2A5 5 0 0 0 11.5 20l1.1-1.1"/></symbol>
+  <symbol id="icon-code" viewBox="0 0 24 24"><path d="m8 9-4 3 4 3M16 9l4 3-4 3M14 5l-4 14"/></symbol>
+  <symbol id="icon-table" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M8 5v14M16 5v14"/></symbol>
+  <symbol id="icon-arrow-left-right" viewBox="0 0 24 24"><path d="M8 7 4 11l4 4"/><path d="M4 11h16"/><path d="m16 7 4 4-4 4"/></symbol>
+  <symbol id="icon-panel-left" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/><path d="m14 9 3 3-3 3"/></symbol>
+</svg>
   <div class="app">
     <header class="topbar">
       <div class="brand">
-        <span class="brand-mark">M</span>
+        <span class="brand-mark"><img src="/assets/Mardas.png" alt="" /></span>
         <span class="brand-copy"><strong>Mardas MD2PDF Studio</strong><span>Markdown to PDF Engine · v__MARDAS_VERSION__</span></span>
       </div>
       <div class="toolbar" role="toolbar" aria-label="Studio toolbar">
         <div class="tool-group" aria-label="File actions">
-          <button class="btn" onclick="openFile()" title="Open Markdown file">📂 Open</button><input type="file" id="fileInput" accept=".md,.markdown,.txt" hidden>
-          <button class="btn" onclick="downloadMarkdown()" title="Save Markdown locally">💾 Save MD</button>
-          <button class="btn btn-icon btn-quiet" onclick="clearStudioState()" title="Reset local Studio state" aria-label="Reset local Studio state">↺<span>Reset State</span></button>
+          <button class="btn" onclick="openFile()" title="Open Markdown file"><svg class="icon" aria-hidden="true"><use href="#icon-folder-open"></use></svg><span>Open</span></button><input type="file" id="fileInput" accept=".md,.markdown,.txt" hidden>
+          <button class="btn" onclick="downloadMarkdown()" title="Save Markdown locally"><svg class="icon" aria-hidden="true"><use href="#icon-save"></use></svg><span>Save MD</span></button>
+          <button class="btn btn-icon btn-quiet" onclick="clearStudioState()" title="Reset local Studio state" aria-label="Reset local Studio state"><svg class="icon" aria-hidden="true"><use href="#icon-rotate-ccw"></use></svg><span class="sr-only">Reset State</span></button>
         </div>
         <span class="tool-divider" aria-hidden="true"></span>
         <div class="tool-group" aria-label="Resources">
-          <button class="btn" onclick="attachAssets()" title="Attach image folders or files">🖼️ Attach</button><input type="file" id="assetInput" multiple webkitdirectory hidden>
-          <button class="btn btn-icon btn-quiet" onclick="copyCommand()" title="Copy matching CLI command" aria-label="Copy CLI command">⌘<span>Copy CLI</span></button>
+          <button class="btn" onclick="attachAssets()" title="Attach image folders or files"><svg class="icon" aria-hidden="true"><use href="#icon-image"></use></svg><span>Attach</span></button><input type="file" id="assetInput" multiple webkitdirectory hidden>
+          <button class="btn btn-icon btn-quiet" onclick="copyCommand()" title="Copy matching CLI command" aria-label="Copy CLI command"><svg class="icon" aria-hidden="true"><use href="#icon-terminal"></use></svg><span class="sr-only">Copy CLI</span></button>
         </div>
         <span class="tool-divider" aria-hidden="true"></span>
         <div class="tool-group" aria-label="Export">
-          <button class="btn btn-icon btn-quiet" onclick="toggleInterfaceMode()" id="interfaceBtn" title="Toggle light/dark Studio UI" aria-label="Toggle light/dark Studio UI">☀️</button>
-          <button id="exportPdfBtn" class="btn btn-primary" onclick="renderPDF()"><span class="spinner">⏳</span>📄 Export PDF</button>
+          <button class="btn btn-icon btn-quiet" onclick="toggleInterfaceMode()" id="interfaceBtn" title="Switch to light Studio UI" aria-label="Switch to light Studio UI"><svg class="icon" aria-hidden="true"><use href="#icon-sun"></use></svg></button>
+          <button id="exportPdfBtn" class="btn btn-primary" onclick="renderPDF()"><span class="spinner" aria-hidden="true"></span><svg class="icon" aria-hidden="true"><use href="#icon-file-down"></use></svg><span>Export PDF</span></button>
         </div>
       </div>
     </header>
-    <button id="settingsRestoreBtn" class="settings-restore" type="button" onclick="expandSettingsPane()" title="Show export settings" aria-label="Show export settings">⚙️</button>
+    <button id="settingsRestoreBtn" class="settings-restore" type="button" onclick="expandSettingsPane()" title="Show export settings" aria-label="Show export settings"><svg class="icon" aria-hidden="true"><use href="#icon-panel-left"></use></svg></button>
     <main class="workspace" id="workspace">
       <aside id="sidebar" class="sidebar">
         <div class="sidebar-head"><strong>Export Settings</strong><span id="appearanceName">modern · blue · light</span></div>
         <div class="sidebar-body">
-          <details class="card settings-section" open><summary><h3>📌 Document<small>Basic identity and page setup</small></h3></summary><div class="settings-body">
+          <details class="card settings-section" open><summary><h3><svg class="icon" aria-hidden="true"><use href="#icon-file-text"></use></svg><span>Document<small>Basic identity and page setup</small></span></h3></summary><div class="settings-body">
             <p class="section-kicker">Start with the information readers see first: title, author, output file, page size, and document direction.</p>
             <div class="field"><label for="titleInput">Title</label><input id="titleInput" type="text" placeholder="Document title"></div>
             <div class="field"><label for="authorInput">Author</label><input id="authorInput" type="text" placeholder="Author or team"></div>
@@ -281,7 +336,7 @@
             </div>
           </div></details>
 
-          <details class="card settings-section"><summary><h3>🎨 Appearance<small>Shape, color, and light/dark output</small></h3></summary><div class="settings-body">
+          <details class="card settings-section"><summary><h3><svg class="icon" aria-hidden="true"><use href="#icon-palette"></use></svg><span>Appearance<small>Shape, color, and light/dark output</small></span></h3></summary><div class="settings-body">
             <p class="section-kicker">Choose one visual shape, then choose a color palette. Style does not decide color; palette does.</p>
             <div class="hidden-settings" aria-hidden="true">
               <select id="styleInput"><option value="modern" selected>modern</option><option value="github">github</option><option value="textbook">textbook</option><option value="academic">academic</option></select>
@@ -309,7 +364,7 @@
             </div>
           </div></details>
 
-          <details class="card settings-section"><summary><h3>🏷️ Branding<small>Keep output owned by the document</small></h3></summary><div class="settings-body">
+          <details class="card settings-section"><summary><h3><svg class="icon" aria-hidden="true"><use href="#icon-badge"></use></svg><span>Branding<small>Keep output owned by the document</small></span></h3></summary><div class="settings-body">
             <p class="section-kicker">Branding is off by default. Use subtle or full only when the PDF should show a product, lab, or organization mark.</p>
             <div class="hidden-settings" aria-hidden="true"><select id="brandingInput"><option value="off" selected>off</option><option value="subtle">subtle</option><option value="full">full</option></select></div>
             <div class="segmented-choice segmented-choice--three" data-choice-group="branding" aria-label="Branding">
@@ -322,7 +377,7 @@
             <div class="field"><label for="brandFooterInput">Brand footer</label><input id="brandFooterInput" type="text" placeholder="Optional tagline"></div>
           </div></details>
 
-          <details class="card settings-section"><summary><h3>🧭 Layout<small>TOC, cover, and page flow</small></h3></summary><div class="settings-body">
+          <details class="card settings-section"><summary><h3><svg class="icon" aria-hidden="true"><use href="#icon-compass"></use></svg><span>Layout<small>TOC, cover, and page flow</small></span></h3></summary><div class="settings-body">
             <label class="switch"><span>Generate table of contents</span><input id="tocInput" type="checkbox" checked></label>
             <div class="field"><label for="tocDepthInput">TOC depth</label><input id="tocDepthInput" type="number" min="1" max="6" value="6"></div>
             <label class="switch"><span>Start content after TOC on new page</span><input id="tocPageBreakInput" type="checkbox" checked></label>
@@ -331,7 +386,7 @@
           </div></details>
 
           <details class="card advanced-card settings-section">
-            <summary><span>⚙️ Advanced</span><small>Watermark, page footer, local assets</small></summary>
+            <summary><span class="summary-title"><svg class="icon" aria-hidden="true"><use href="#icon-settings"></use></svg><span>Advanced</span></span><small>Watermark, page footer, local assets</small></summary>
             <div class="advanced-body">
               <label class="switch"><span>Hide footer/page number</span><input id="noHeaderFooterInput" type="checkbox"></label>
               <div class="field"><label for="watermarkInput">Watermark text</label><input id="watermarkInput" type="text" placeholder="Optional"></div>
@@ -347,12 +402,12 @@
       <section class="pane editor-pane">
         <div class="pane-head"><strong>Markdown Editor</strong><span class="editor-tools"><span class="preview-note">Markdown source</span></span></div>
         <div class="editor-formatbar" aria-label="Markdown formatting toolbar">
-          <button class="format-btn" type="button" onclick="insertMarkdown('bold')" title="Bold">B</button>
-          <button class="format-btn" type="button" onclick="insertMarkdown('italic')" title="Italic"><em>I</em></button>
-          <button class="format-btn" type="button" onclick="insertMarkdown('link')" title="Link">🔗</button>
-          <button class="format-btn" type="button" onclick="insertMarkdown('image')" title="Image">🖼️</button>
-          <button class="format-btn" type="button" onclick="insertMarkdown('code')" title="Code block">{ }</button>
-          <button class="format-btn" type="button" onclick="insertMarkdown('table')" title="Table">▦</button>
+          <button class="format-btn" type="button" onclick="insertMarkdown('bold')" title="Bold" aria-label="Bold"><svg class="icon" aria-hidden="true"><use href="#icon-bold"></use></svg></button>
+          <button class="format-btn" type="button" onclick="insertMarkdown('italic')" title="Italic" aria-label="Italic"><svg class="icon" aria-hidden="true"><use href="#icon-italic"></use></svg></button>
+          <button class="format-btn" type="button" onclick="insertMarkdown('link')" title="Link" aria-label="Link"><svg class="icon" aria-hidden="true"><use href="#icon-link"></use></svg></button>
+          <button class="format-btn" type="button" onclick="insertMarkdown('image')" title="Image" aria-label="Image"><svg class="icon" aria-hidden="true"><use href="#icon-image"></use></svg></button>
+          <button class="format-btn" type="button" onclick="insertMarkdown('code')" title="Code block" aria-label="Code block"><svg class="icon" aria-hidden="true"><use href="#icon-code"></use></svg></button>
+          <button class="format-btn" type="button" onclick="insertMarkdown('table')" title="Table" aria-label="Table"><svg class="icon" aria-hidden="true"><use href="#icon-table"></use></svg></button>
         </div>
         <div class="editor-shell">
           <div id="lineNumbers" class="line-numbers" aria-hidden="true">1</div>
@@ -361,7 +416,7 @@
       </section>
       <div class="gutter preview-gutter" id="previewGutter" title="Drag to resize editor and preview" aria-label="Resize editor and preview panels"></div>
       <section class="pane preview-pane">
-        <div class="pane-head"><strong>Preview</strong><span class="preview-tools"><span id="previewStatus" class="preview-status" title="The exported PDF uses the Python renderer, MathJax, appearance CSS, TOC, page breaks, and Chromium print layout.">Approximate preview</span><button class="btn" onclick="toggleDirection()" id="dirBtn">↔️ RTL</button></span></div>
+        <div class="pane-head"><strong>Preview</strong><span class="preview-tools"><span id="previewStatus" class="preview-status" title="The exported PDF uses the Python renderer, MathJax, appearance CSS, TOC, page breaks, and Chromium print layout.">Approximate preview</span><button class="btn" onclick="toggleDirection()" id="dirBtn" title="Toggle preview direction"><svg class="icon" aria-hidden="true"><use href="#icon-arrow-left-right"></use></svg><span id="dirBtnLabel">RTL</span></button></span></div>
         <div id="preview" class="preview" dir="auto"></div>
       </section>
     </main>
@@ -398,6 +453,28 @@ let settingsCollapsed = false;
 const MARDAS_STUDIO_STATE_KEY = 'mardas-md2pdf-studio-state-v1';
 const MAX_STORED_MARKDOWN_CHARS = 250000;
 let saveStateTimer = null;
+
+function setIconUse(button, iconName){
+  const use = button && button.querySelector('use');
+  if (use) use.setAttribute('href', '#icon-' + iconName);
+}
+
+function updateInterfaceButton(){
+  const light = document.body.classList.contains('light-mode');
+  setIconUse(interfaceBtn, light ? 'moon' : 'sun');
+  const label = light ? 'Switch to dark Studio UI' : 'Switch to light Studio UI';
+  interfaceBtn.setAttribute('title', label);
+  interfaceBtn.setAttribute('aria-label', label);
+}
+
+function updateDirectionButton(direction){
+  const normalized = direction === 'rtl' ? 'rtl' : 'ltr';
+  const label = normalized === 'rtl' ? 'LTR' : 'RTL';
+  const button = $('dirBtn');
+  const labelNode = $('dirBtnLabel');
+  if (labelNode) labelNode.textContent = label;
+  if (button) button.setAttribute('title', 'Switch preview direction to ' + label);
+}
 
 function getOptions(){
   return {
@@ -564,11 +641,11 @@ function loadStudioState(){
     if (typeof state.markdown === 'string') editor.value = state.markdown;
     setOptions(state.options || {});
     document.body.classList.toggle('light-mode', Boolean(state.lightMode));
-    interfaceBtn.textContent = state.lightMode ? '🌙' : '☀️';
+    updateInterfaceButton();
     if (['auto','rtl','ltr'].includes(state.previewDirection)) {
       preview.setAttribute('dir', state.previewDirection);
       editor.setAttribute('dir', state.previewDirection);
-      $('dirBtn').textContent = state.previewDirection === 'rtl' ? '↔️ LTR' : '↔️ RTL';
+      updateDirectionButton(state.previewDirection);
     }
     if (/^[0-9.]+px$/.test(state.sidebarWidth || '')) {
       document.documentElement.style.setProperty('--sidebar-width', state.sidebarWidth);
@@ -1011,7 +1088,7 @@ function copyCommand(){
 function toggleInterfaceMode(){
   document.body.classList.toggle('light-mode');
   const light = document.body.classList.contains('light-mode');
-  interfaceBtn.textContent = light ? '🌙' : '☀️';
+  updateInterfaceButton();
   scheduleStudioStateSave();
 }
 
@@ -1049,7 +1126,7 @@ function toggleDirection(){
   const next = preview.getAttribute('dir') === 'rtl' ? 'ltr' : 'rtl';
   preview.setAttribute('dir', next);
   editor.setAttribute('dir', next);
-  $('dirBtn').textContent = next === 'rtl' ? '↔️ LTR' : '↔️ RTL';
+  updateDirectionButton(next);
   scheduleStudioStateSave();
 }
 
@@ -1117,7 +1194,7 @@ window.addEventListener('keydown', (event) => {
   }
 });
 
-editor.value = `---\ntitle: "نمونه سند Mardas MD2PDF"\nauthor: "mragetsars"\ndate: "2026-05-12"\nlang: fa\nappearance:\n  style: modern\n  palette: blue\n  mode: light\n---\n\n# نمونه Markdown\n\nاین محیط برای ویرایش Markdown و گرفتن خروجی PDF با تنظیمات گرافیکی ساخته شده است.\n\n## Code\n\n\`\`\`python\nprint("Hello Mardas")\n\`\`\`\n\n| قابلیت | وضعیت |\n|---|---|\n| RTL/LTR | ✅ |\n| PDF Export | ✅ |\n`;
+editor.value = `---\ntitle: "نمونه سند Mardas MD2PDF"\nauthor: "mragetsars"\ndate: "2026-05-12"\nlang: fa\nappearance:\n  style: modern\n  palette: blue\n  mode: light\n---\n\n# نمونه Markdown\n\nاین محیط برای ویرایش Markdown و گرفتن خروجی PDF با تنظیمات گرافیکی ساخته شده است.\n\n## Code\n\n\`\`\`python\nprint("Hello Mardas")\n\`\`\`\n\n| قابلیت | وضعیت |\n|---|---|\n| RTL/LTR | OK |\n| PDF Export | OK |\n`;
 attachChoiceCards();
 attachSettingsAccordion();
 attachOptionPersistence();

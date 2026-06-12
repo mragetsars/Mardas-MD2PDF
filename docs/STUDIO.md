@@ -57,7 +57,7 @@ wondering whether the document is stuck.
 Studio uses draggable panes instead of static view-mode buttons. Drag the
 separator between **Export Settings** and the editor to resize the settings
 panel. If the panel is dragged below the collapse threshold, it hides itself with
-a soft transition. Use the small floating gear button in the upper-left corner to
+a soft transition. Use the small floating sidebar button in the upper-left corner to
 restore it.
 
 The separator between the editor and preview resizes the writing and reading
@@ -66,7 +66,9 @@ Editor, Preview, or Zen buttons.
 
 The interface uses thin custom scrollbars and a pure light/dark surface model: a
 minimal black/charcoal workspace in dark mode and a clean white/soft-gray
-workspace in light mode.
+workspace in light mode. Toolbar actions use inline SVG icons and the project
+logo instead of emoji glyphs, so the interface stays consistent across operating
+systems and browsers.
 
 ## Local state
 
@@ -76,7 +78,7 @@ local storage. Use **Reset State** when you want to clear the saved local draft
 and return to a clean workspace.
 
 The top toolbar is grouped into File, Resources, and Export actions. Less
-important actions use compact icon buttons with tooltips, while **Export PDF**
+important actions use compact SVG icon buttons with tooltips, while **Export PDF**
 remains the primary call to action.
 
 Keyboard shortcuts:

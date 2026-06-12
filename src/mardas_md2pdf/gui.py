@@ -301,6 +301,14 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
             html = _asset_text("gui.html").replace("__MARDAS_VERSION__", __version__)
             self._send_text(html)
             return
+        if self.path == "/assets/Mardas.png":
+            data = (resources.files("mardas_md2pdf") / "assets" / "Mardas.png").read_bytes()
+            self.send_response(200)
+            self.send_header("Content-Type", "image/png")
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+            return
         if self.path == "/api/version":
             self._send_json({"version": __version__})
             return

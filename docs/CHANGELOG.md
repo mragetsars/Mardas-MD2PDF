@@ -12,6 +12,7 @@ All notable changes to Mardas MD2PDF are tracked here.
 - Polished the Studio toolbar, settings sidebar, editor, preview status, and status bar for a clearer daily writing workflow.
 - Replaced static Studio view-mode buttons with draggable/resizable panes and an auto-collapsing settings sidebar.
 - Retuned the Studio interface to pure light/dark surfaces with thin custom scrollbars and higher-contrast export-button interaction states.
+- Replaced emoji-based Studio controls with inline SVG icons, restored the project logo in the header, and refined micro-interactions for cards, accordions, toolbar buttons, and status counters.
 
 ### Added
 

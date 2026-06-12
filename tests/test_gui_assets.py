@@ -200,7 +200,8 @@ def test_gui_groups_export_settings_into_user_facing_sections():
     assert "Appearance<small>Shape, color, and light/dark output</small>" in html
     assert "Branding<small>Keep output owned by the document</small>" in html
     assert "Layout<small>TOC, cover, and page flow</small>" in html
-    assert "<summary><span>⚙️ Advanced</span>" in html
+    assert "summary-title" in html
+    assert "#icon-settings" in html
 
 
 def test_gui_uses_visual_choice_cards_for_appearance_workflow():
@@ -255,8 +256,42 @@ def test_gui_topbar_uses_grouped_toolbar_and_icon_buttons():
     assert 'class="tool-group" aria-label="View mode"' not in html
     assert 'class="tool-divider"' in html
     assert 'class="btn btn-icon btn-quiet" onclick="copyCommand()"' in html
-    assert 'id="interfaceBtn" title="Toggle light/dark Studio UI"' in html
+    assert 'id="interfaceBtn" title="Switch to light Studio UI"' in html
 
+
+
+
+def test_gui_uses_inline_svg_icons_and_project_logo():
+    html = GUI_HTML.read_text(encoding="utf-8")
+
+    assert 'class="icon-sprite"' in html
+    assert 'href="#icon-folder-open"' in html
+    assert 'href="#icon-save"' in html
+    assert 'href="#icon-file-down"' in html
+    assert 'href="#icon-bold"' in html
+    assert 'href="#icon-table"' in html
+    assert '<span class="brand-mark"><img src="/assets/Mardas.png" alt="" /></span>' in html
+    assert 'stroke-width:1.8' in html
+
+
+def test_gui_has_no_emoji_icon_glyphs():
+    html = GUI_HTML.read_text(encoding="utf-8")
+    emoji_codepoints = [
+        0x1F4C2, 0x1F4BE, 0x1F5BC, 0x2600, 0x1F319, 0x1F4CC, 0x1F3A8,
+        0x1F3F7, 0x1F9ED, 0x2699, 0x1F4C4, 0x1F517, 0x2705,
+    ]
+    for codepoint in emoji_codepoints:
+        assert chr(codepoint) not in html
+
+
+def test_gui_microinteractions_use_stable_numeric_and_soft_cards():
+    html = GUI_HTML.read_text(encoding="utf-8")
+
+    assert 'font-variant-numeric:tabular-nums' in html
+    assert '.choice-copy{color:color-mix' in html
+    assert 'body:not(.light-mode) .choice-copy{color:#c2c2c2}' in html
+    assert '.format-btn{height:30px' in html
+    assert 'border-color:transparent;background:transparent' in html
 
 def test_gui_uses_chatgpt_like_scrollbars_and_pure_interface_surfaces():
     html = GUI_HTML.read_text(encoding="utf-8")
@@ -282,9 +317,9 @@ def test_gui_settings_are_accordion_sections_with_switches():
     html = GUI_HTML.read_text(encoding="utf-8")
 
     assert 'class="card settings-section" open' in html
-    assert 'class="card settings-section"><summary><h3>🎨 Appearance' in html
-    assert 'class="card settings-section"><summary><h3>🏷️ Branding' in html
-    assert 'class="card settings-section"><summary><h3>🧭 Layout' in html
+    assert '#icon-palette' in html
+    assert '#icon-badge' in html
+    assert '#icon-compass' in html
     assert 'function attachSettingsAccordion' in html
     assert 'class="switch"><span>Generate table of contents</span>' in html
     assert 'class="switch"><span>Hide footer/page number</span>' in html
