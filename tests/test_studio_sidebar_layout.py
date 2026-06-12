@@ -66,22 +66,68 @@ def test_studio_sidebar_uses_block_scroller_without_flex_leakage() -> None:
     assert ".sidebar-body>.card:last-child,.sidebar-body>.settings-section:last-child{margin-bottom:0}" in html
 
 
-def test_studio_light_mode_and_open_accordion_contrast_are_explicit() -> None:
+def test_studio_light_mode_uses_layered_surface_colors() -> None:
     html = _gui_html()
 
     light_mode_rule = _css_rule(html, "body.light-mode")
-    assert "--border-strong:#aeb8c5" in light_mode_rule
-    assert "--border:#d9dee7" in light_mode_rule
+    assert "--bg:#f1f5f9" in light_mode_rule
+    assert "--bg-soft:#e2e8f0" in light_mode_rule
+    assert "--panel:#ffffff" in light_mode_rule
+    assert "--editor:#ffffff" in light_mode_rule
+    assert "--preview:#ffffff" in light_mode_rule
+    assert "--border-strong:#94a3b8" in light_mode_rule
+    assert "--border:#cbd5e1" in light_mode_rule
 
     light_brand_rule = _css_rule(html, "body.light-mode .brand-mark")
     assert "background:linear-gradient" in light_brand_rule
     assert "border-color:" in light_brand_rule
 
+
+def test_collapsed_settings_restore_button_has_reserved_space() -> None:
+    html = _gui_html()
+
+    collapsed_workspace_rule = _css_rule(html, "body.settings-collapsed .workspace")
+    assert "padding-left:64px" in collapsed_workspace_rule
+
+    restore_rule = _css_rule(html, ".settings-restore")
+    assert "top:76px" in restore_rule
+    assert "left:16px" in restore_rule
+
+    assert ".workspace,body.settings-collapsed .workspace{grid-template-columns:1fr;padding:10px}" in html
+
+
+def test_studio_open_accordion_state_is_minimal_and_stable() -> None:
+    html = _gui_html()
+
+    closed_rule = _css_rule(html, ".settings-section")
+    assert "border-left:3px solid transparent" in closed_rule
+
     open_rule = _css_rule(html, ".settings-section[open]")
-    assert "border-color:" in open_rule
-    assert "background:" in open_rule
+    assert "border-left:3px solid var(--accent)" in open_rule
     assert "box-shadow:" in open_rule
+    assert "background:" not in open_rule
+
+    light_open_rule = _css_rule(html, "body.light-mode .settings-section[open]")
+    assert "box-shadow:" in light_open_rule
+    assert "background:" not in light_open_rule
 
     open_summary_rule = _css_rule(html, ".settings-section[open]>summary")
-    assert "background:" in open_summary_rule
+    assert "background:transparent" in open_summary_rule
     assert "border-bottom-color:" in open_summary_rule
+
+
+def test_studio_footer_and_light_switches_have_clear_boundaries() -> None:
+    html = _gui_html()
+
+    footer_rule = _css_rule(html, ".footer")
+    assert "padding:0 20px" in footer_rule
+    assert "overflow:hidden" in footer_rule
+
+    light_switch_rule = _css_rule(html, "body.light-mode .switch input")
+    assert "background:#e2e8f0" in light_switch_rule
+    assert "border-color:#94a3b8" in light_switch_rule
+    assert "box-shadow:" in light_switch_rule
+
+    light_switch_knob_rule = _css_rule(html, "body.light-mode .switch input::after")
+    assert "background:#ffffff" in light_switch_knob_rule
+    assert "box-shadow:" in light_switch_knob_rule
