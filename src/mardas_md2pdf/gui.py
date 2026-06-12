@@ -355,6 +355,15 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
                 pdf_path = tmp / filename
                 md_path.write_text(markdown, encoding="utf-8")
                 _write_gui_assets(tmp, assets)
+                brand_logo_path = None
+                brand_logo_value = str(options.get("brandLogo") or "").strip()
+                if brand_logo_value:
+                    brand_logo_path = tmp / _safe_asset_relative_path(brand_logo_value, fallback="brand-logo")
+                    if not brand_logo_path.is_file():
+                        raise StudioRequestError(
+                            "brandLogo must match an attached asset path.",
+                            code="invalid_brand_logo",
+                        )
 
                 pdf_options = PdfOptions(
                     input_path=md_path,
@@ -374,6 +383,7 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
                     cover=render_options["cover"],
                     branding=render_options["branding"],
                     brand_name=(str(options.get("brandName") or "").strip() or None),
+                    brand_logo=brand_logo_path,
                     brand_footer=(str(options.get("brandFooter") or "").strip() or None),
                     watermark_text=(str(options.get("watermark") or "").strip() or None),
                     watermark_opacity=render_options["watermark_opacity"],

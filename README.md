@@ -2,7 +2,7 @@
 
 > **Professional Markdown to PDF converter for Persian, English, and mixed RTL/LTR technical documents**
 
-![Language](https://img.shields.io/badge/Language-Python-blue) ![Renderer](https://img.shields.io/badge/Renderer-Playwright%20%2B%20Chromium-green) ![Math](https://img.shields.io/badge/Math-MathJax-purple) ![Version](https://img.shields.io/badge/Version-v1.6.3-success) ![Status](https://img.shields.io/badge/Status-Stable-success) ![CI](https://github.com/mragetsars/Mardas-MD2PDF/actions/workflows/ci.yml/badge.svg)
+![Language](https://img.shields.io/badge/Language-Python-blue) ![Renderer](https://img.shields.io/badge/Renderer-Playwright%20%2B%20Chromium-green) ![Math](https://img.shields.io/badge/Math-MathJax-purple) ![Version](https://img.shields.io/badge/Version-v1.6.4-success) ![Status](https://img.shields.io/badge/Status-Stable-success) ![CI](https://github.com/mragetsars/Mardas-MD2PDF/actions/workflows/ci.yml/badge.svg)
 
 ## Overview
 
@@ -48,6 +48,7 @@ The README is intentionally short and is meant to introduce the project. Complet
 - [Maintenance workflow](./docs/MAINTENANCE.md)
 - [Appearance system](./docs/APPEARANCE.md)
 - [Cover branding](./docs/BRANDING.md)
+- [Studio workflow](./docs/STUDIO.md)
 - [Security policy](./docs/SECURITY.md)
 
 Generated PDF versions of the guides are available in the [`examples/`](./examples/) directory.
@@ -89,7 +90,7 @@ Launch the GUI:
 mrs-md2pdf-gui
 ```
 
-The Studio interface remembers the current draft, layout, interface mode, and appearance options in browser local storage. Use **Reset State** to clear that local draft, **Ctrl/Cmd+S** to save Markdown, and **Ctrl/Cmd+Enter** to export the PDF. When Studio is bound to a non-local host, the backend prints a warning because reachable users can submit Markdown and attached assets.
+The Studio interface groups export settings into Document, Appearance, Branding, Layout, and Advanced sections. Appearance and branding choices use visual cards, while advanced controls such as watermarks and local assets stay collapsed until needed. Studio remembers the current draft, layout, interface mode, and export options in browser local storage. Use **Reset State** to clear that local draft, **Ctrl/Cmd+S** to save Markdown, and **Ctrl/Cmd+Enter** to export the PDF. When Studio is bound to a non-local host, the backend prints a warning because reachable users can submit Markdown and attached assets. See [Studio workflow](./docs/STUDIO.md) for details.
 
 ## Repository Structure
 

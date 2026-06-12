@@ -12,7 +12,7 @@ summary: |
   همین سند به عنوان نمونه زنده رندر نیز استفاده می‌شود و جلد، فهرست مطالب، متن ترکیبی فارسی/English، فرمول، کد، نمودار Mermaid، تصویر، جدول، پانویس، شکست صفحه و HTML امن را نمایش می‌دهد.
 institution: "Mardas Lab"
 course: "انتشار حرفه‌ای Markdown"
-version: "1.6.3"
+version: "1.6.4"
 status: "Stable"
 keywords:
   - Markdown
@@ -201,7 +201,7 @@ department: "نام دانشکده یا دپارتمان"
 course: "نام درس یا پروژه"
 supervisor: "نام استاد یا راهنما"
 date: "۱۴۰۵-۰۲-۳۰"
-version: "1.6.3"
+version: "1.6.4"
 status: "Draft"
 keywords: [Markdown, PDF, RTL, MathJax]
 cover_label: "گزارش فنی"
@@ -723,13 +723,15 @@ mrs-md2pdf-gui
 رابط کاربری GUI برای کاربرانی مناسب است که روند بصری را ترجیح می‌دهند:
 
 1. نوشتن یا paste کردن Markdown.
-2. انتخاب style، palette، mode، زبان، جهت، اندازه صفحه و گزینه‌های خروجی.
-3. امکان attach کردن فایل‌ها یا پوشه‌های تصویر محلی.
-4. دیدن پیش‌نمایش تقریبی.
-5. در آخر export گرفتن از PDF نهایی.
-6. استفاده از **Ctrl/Cmd+S** برای ذخیره Markdown و **Ctrl/Cmd+Enter** برای export سریع PDF.
+2. تکمیل بخش **Document** برای عنوان، نویسنده، نام فایل خروجی، اندازه صفحه و جهت.
+3. انتخاب کارت‌های **Appearance** برای style، palette و mode روشن/تاریک.
+4. استفاده از **Branding** فقط وقتی PDF باید نشان سازمان، محصول یا آزمایشگاه داشته باشد.
+5. استفاده از **Layout** برای فهرست مطالب، جلد و جریان صفحه‌ها.
+6. باز کردن **Advanced** فقط برای watermark، حذف شماره صفحه یا attach کردن assetهای محلی.
+7. دیدن پیش‌نمایش تقریبی، سپس export گرفتن از PDF نهایی و مشاهده progress در footer.
+8. استفاده از **Ctrl/Cmd+S** برای ذخیره Markdown و **Ctrl/Cmd+Enter** برای export سریع PDF.
 
-Studio پیش‌نویس فعلی، layout، حالت روشن/تاریک، جهت preview، عرض editor و گزینه‌های export را در local storage مرورگر نگه می‌دارد. این کار باعث می‌شود refresh ناخواسته صفحه در جلسه‌های ویرایش طولانی کمتر آزاردهنده باشد. برای پاک کردن پیش‌نویس محلی و برگشتن به حالت تمیز از **Reset State** استفاده کنید.
+Studio پیش‌نویس فعلی، layout، حالت روشن/تاریک، جهت preview، عرض editor و گزینه‌های export را در local storage مرورگر نگه می‌دارد. این کار باعث می‌شود refresh ناخواسته صفحه در جلسه‌های ویرایش طولانی کمتر آزاردهنده باشد. برای پاک کردن پیش‌نویس محلی و برگشتن به حالت تمیز از **Reset State** استفاده کنید. همین روند در `docs/STUDIO.md` هم مستند شده است.
 
 اگر export با خطا روبه‌رو شود، Studio وضعیت HTTP و کد پایدار backend مثل `invalid_json`، `invalid_page_size`، `invalid_toc_depth`، `invalid_watermark_opacity`، `markdown_too_large` یا `render_failed` را نشان می‌دهد. اگر GUI را روی host غیرلوکال bind کنید، backend هشدار می‌دهد؛ چون کاربران قابل دسترس در شبکه می‌توانند Markdown و asset بفرستند.
 

@@ -2,6 +2,18 @@
 
 All notable changes to Mardas MD2PDF are tracked here.
 
+## 1.6.4 - 2026-06-12
+
+### Changed
+
+- Redesigned the Studio sidebar into clear Document, Appearance, Branding, Layout, and Advanced sections.
+- Replaced raw style, palette, mode, and branding dropdowns with visual choice cards while keeping the same backend render options.
+- Improved Studio CLI-copy output so branding options are included when selected.
+
+### Added
+
+- Added `docs/STUDIO.md` to document the refined visual workflow and local-export behavior.
+
 ## 1.6.3 - 2026-06-10
 
 ### Changed

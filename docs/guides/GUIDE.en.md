@@ -12,7 +12,7 @@ summary: |
   This document also acts as a live rendering sample for cover pages, tables of contents, mixed RTL/LTR text, formulas, code, Mermaid flowcharts, images, tables, footnotes, page breaks, and safe HTML.
 institution: "Mardas Lab"
 course: "Markdown Publishing"
-version: "1.6.3"
+version: "1.6.4"
 status: "Stable"
 keywords:
   - Markdown
@@ -203,7 +203,7 @@ department: "Department name"
 course: "Course or project title"
 supervisor: "Supervisor name"
 date: "2026-05-20"
-version: "1.6.3"
+version: "1.6.4"
 status: "Draft"
 keywords: [Markdown, PDF, RTL, MathJax]
 cover_label: "Technical Report"
@@ -804,13 +804,15 @@ mrs-md2pdf-gui
 The GUI is useful for users who prefer a visual workflow:
 
 1. Paste or type Markdown.
-2. Select style, palette, mode, language, direction, page size, and export options.
-3. Attach local image files or image folders.
-4. Preview the document approximately.
-5. Export the final PDF and watch the export progress indicator in the footer.
-6. Use **Ctrl/Cmd+S** to save Markdown and **Ctrl/Cmd+Enter** to export quickly.
+2. Fill the **Document** section for title, author, output filename, page size, and direction.
+3. Choose **Appearance** cards for style, palette, and light/dark mode.
+4. Choose **Branding** only when the PDF should show a product, organization, or lab mark.
+5. Use **Layout** for TOC, cover, and page-flow choices.
+6. Open **Advanced** only when you need watermarks, hidden page numbers, or attached local assets.
+7. Preview the document approximately, then export the final PDF and watch the export progress indicator in the footer.
+8. Use **Ctrl/Cmd+S** to save Markdown and **Ctrl/Cmd+Enter** to export quickly.
 
-Studio stores the current draft, layout, interface mode, direction toggle, editor width, and export settings in browser local storage. This makes accidental refreshes less disruptive during long editing sessions. Use **Reset State** when you want to clear the saved local draft and return to a clean workspace.
+Studio stores the current draft, layout, interface mode, direction toggle, editor width, and export settings in browser local storage. This makes accidental refreshes less disruptive during long editing sessions. Use **Reset State** when you want to clear the saved local draft and return to a clean workspace. The same workflow is documented in `docs/STUDIO.md`.
 
 If an export fails, Studio shows the HTTP status and stable backend error code, such as `invalid_json`, `invalid_page_size`, `invalid_toc_depth`, `invalid_watermark_opacity`, `markdown_too_large`, or `render_failed`. If you bind Studio to a non-local host, the backend prints a warning because other users on the reachable network can submit Markdown and attached assets.
 

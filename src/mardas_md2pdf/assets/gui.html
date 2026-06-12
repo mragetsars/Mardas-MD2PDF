@@ -110,6 +110,35 @@
     .check input:checked{background:linear-gradient(135deg,var(--accent),var(--accent-2));border-color:transparent}
     .check input:checked::after{content:"✓";font-size:12px;font-weight:900;color:#020617}
     .hint{font-size:11px;line-height:1.55;color:var(--faint);margin-top:4px}
+
+    .card h3 small{display:block;margin-top:2px;color:var(--faint);font-size:10px;font-weight:700;letter-spacing:0;text-transform:none}
+    .section-kicker{margin:-4px 0 12px;color:var(--faint);font-size:11px;line-height:1.5}
+    .hidden-settings{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
+    .choice-grid{display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:12px}
+    .choice-grid--style{grid-template-columns:1fr 1fr}
+    .choice-card,.palette-card,.mode-card,.branding-card{
+      width:100%;border:1px solid var(--border);background:var(--panel-2);color:var(--text);border-radius:15px;
+      padding:10px;text-align:left;cursor:pointer;transition:border-color .16s,background .16s,box-shadow .16s,transform .16s;
+    }
+    .choice-card:hover,.palette-card:hover,.mode-card:hover,.branding-card:hover{border-color:color-mix(in srgb, var(--accent) 55%, var(--border));transform:translateY(-1px)}
+    .choice-card.active,.palette-card.active,.mode-card.active,.branding-card.active{border-color:var(--accent);background:color-mix(in srgb, var(--accent) 12%, var(--panel-2));box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent)}
+    .choice-title{display:block;font-size:12px;font-weight:900;color:var(--text);line-height:1.25}
+    .choice-copy{display:block;margin-top:4px;font-size:10px;line-height:1.45;color:var(--muted);font-weight:700}
+    .palette-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:12px}
+    .palette-card{display:flex;align-items:center;gap:8px;min-height:42px;font-size:11px;font-weight:900}
+    .palette-dot{width:18px;height:18px;border-radius:999px;background:linear-gradient(135deg,var(--swatch),var(--swatch2));box-shadow:0 0 0 3px color-mix(in srgb, var(--swatch) 18%, transparent);flex:0 0 auto}
+    .segmented-choice{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:12px}
+    .segmented-choice--three{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .mode-card,.branding-card{text-align:center;font-size:11px;font-weight:900;min-height:38px}
+    .branding-card small,.mode-card small{display:block;margin-top:3px;font-size:9px;line-height:1.25;color:var(--faint);font-weight:800}
+    .advanced-card{padding:0;overflow:hidden}
+    .advanced-card summary{list-style:none;cursor:pointer;padding:12px;display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px;font-weight:900;color:var(--text)}
+    .advanced-card summary::-webkit-details-marker{display:none}
+    .advanced-card summary small{display:block;margin-top:2px;color:var(--faint);font-size:10px;font-weight:700}
+    .advanced-card summary::after{content:"▾";color:var(--muted);transition:transform .16s}
+    .advanced-card[open] summary::after{transform:rotate(180deg)}
+    .advanced-body{border-top:1px solid var(--border);padding:12px}
+    .setting-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
     .asset-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
     .asset-chip{max-width:100%;border:1px solid var(--border);border-radius:999px;padding:4px 8px;font-size:10px;color:var(--muted);background:var(--panel-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .editor-tools{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:11px;font-weight:800}
@@ -182,39 +211,77 @@
       <aside class="sidebar">
         <div class="sidebar-head"><strong>Export Settings</strong><span id="appearanceName">modern · blue · light</span></div>
         <div class="sidebar-body">
-          <section class="card"><h3>📌 Document</h3>
+          <section class="card"><h3>📌 Document<small>Basic identity and page setup</small></h3>
+            <p class="section-kicker">Start with the information readers see first: title, author, output file, page size, and document direction.</p>
             <div class="field"><label for="titleInput">Title</label><input id="titleInput" type="text" placeholder="Document title"></div>
-            <div class="field"><label for="authorInput">Author</label><input id="authorInput" type="text" placeholder="Author"></div>
+            <div class="field"><label for="authorInput">Author</label><input id="authorInput" type="text" placeholder="Author or team"></div>
             <div class="field"><label for="filenameInput">Output filename</label><input id="filenameInput" type="text" value="mardas-document.pdf"></div>
-            <div class="field"><label for="pageSizeInput">Page size</label><select id="pageSizeInput"><option>A4</option><option>A4 landscape</option><option>Letter</option><option>Legal</option><option>210mm 297mm</option></select></div>
-            <div class="field"><label for="directionInput">Document direction</label><select id="directionInput"><option value="auto" selected>auto</option><option value="rtl">rtl</option><option value="ltr">ltr</option></select></div>
+            <div class="setting-row">
+              <div class="field"><label for="pageSizeInput">Page size</label><select id="pageSizeInput"><option>A4</option><option>A4 landscape</option><option>Letter</option><option>Legal</option><option>210mm 297mm</option></select></div>
+              <div class="field"><label for="directionInput">Direction</label><select id="directionInput"><option value="auto" selected>auto</option><option value="rtl">rtl</option><option value="ltr">ltr</option></select></div>
+            </div>
           </section>
-          <section class="card"><h3>🎨 Appearance</h3>
-            <div class="field"><label for="styleInput">Style</label><select id="styleInput"><option value="modern" selected>modern</option><option value="github">github</option><option value="textbook">textbook</option><option value="academic">academic</option></select></div>
-            <div class="field"><label for="paletteInput">Palette</label><select id="paletteInput"><option value="blue" selected>blue</option><option value="emerald">emerald</option><option value="violet">violet</option><option value="amber">amber</option><option value="rose">rose</option><option value="slate">slate</option><option value="neutral">neutral</option></select></div>
-            <div class="field"><label for="modeInput">Mode</label><select id="modeInput"><option value="light" selected>light</option><option value="dark">dark</option></select></div>
-            <div class="field"><label for="brandingInput">Cover branding</label><select id="brandingInput"><option value="off" selected>off</option><option value="subtle">subtle</option><option value="full">full</option></select></div>
+
+          <section class="card"><h3>🎨 Appearance<small>Shape, color, and light/dark output</small></h3>
+            <p class="section-kicker">Choose one visual shape, then choose a color palette. Style does not decide color; palette does.</p>
+            <div class="hidden-settings" aria-hidden="true">
+              <select id="styleInput"><option value="modern" selected>modern</option><option value="github">github</option><option value="textbook">textbook</option><option value="academic">academic</option></select>
+              <select id="paletteInput"><option value="blue" selected>blue</option><option value="emerald">emerald</option><option value="violet">violet</option><option value="amber">amber</option><option value="rose">rose</option><option value="slate">slate</option><option value="neutral">neutral</option></select>
+              <select id="modeInput"><option value="light" selected>light</option><option value="dark">dark</option></select>
+            </div>
+            <div class="choice-grid choice-grid--style" data-choice-group="style" aria-label="Style">
+              <button type="button" class="choice-card active" data-choice-value="modern"><span class="choice-title">Modern</span><span class="choice-copy">Rounded cards, spacious layout, polished reports.</span></button>
+              <button type="button" class="choice-card" data-choice-value="github"><span class="choice-title">GitHub</span><span class="choice-copy">Developer-friendly Markdown, code, tables, docs.</span></button>
+              <button type="button" class="choice-card" data-choice-value="textbook"><span class="choice-title">Textbook</span><span class="choice-copy">Long-form lessons, chapters, readable pages.</span></button>
+              <button type="button" class="choice-card" data-choice-value="academic"><span class="choice-title">Academic</span><span class="choice-copy">Formal structure, dense metadata, papers.</span></button>
+            </div>
+            <div class="palette-grid" data-choice-group="palette" aria-label="Palette">
+              <button type="button" class="palette-card active" data-choice-value="blue" style="--swatch:#2563eb;--swatch2:#7c3aed"><span class="palette-dot"></span><span>Blue</span></button>
+              <button type="button" class="palette-card" data-choice-value="emerald" style="--swatch:#059669;--swatch2:#0ea5e9"><span class="palette-dot"></span><span>Emerald</span></button>
+              <button type="button" class="palette-card" data-choice-value="violet" style="--swatch:#7c3aed;--swatch2:#db2777"><span class="palette-dot"></span><span>Violet</span></button>
+              <button type="button" class="palette-card" data-choice-value="amber" style="--swatch:#d97706;--swatch2:#dc2626"><span class="palette-dot"></span><span>Amber</span></button>
+              <button type="button" class="palette-card" data-choice-value="rose" style="--swatch:#e11d48;--swatch2:#7c3aed"><span class="palette-dot"></span><span>Rose</span></button>
+              <button type="button" class="palette-card" data-choice-value="slate" style="--swatch:#475569;--swatch2:#0f172a"><span class="palette-dot"></span><span>Slate</span></button>
+              <button type="button" class="palette-card" data-choice-value="neutral" style="--swatch:#525252;--swatch2:#171717"><span class="palette-dot"></span><span>Neutral</span></button>
+            </div>
+            <div class="segmented-choice" data-choice-group="mode" aria-label="Mode">
+              <button type="button" class="mode-card active" data-choice-value="light">Light<small>print-first</small></button>
+              <button type="button" class="mode-card" data-choice-value="dark">Dark<small>screen-first</small></button>
+            </div>
+          </section>
+
+          <section class="card"><h3>🏷️ Branding<small>Keep output owned by the document</small></h3>
+            <p class="section-kicker">Branding is off by default. Use subtle or full only when the PDF should show a product, lab, or organization mark.</p>
+            <div class="hidden-settings" aria-hidden="true"><select id="brandingInput"><option value="off" selected>off</option><option value="subtle">subtle</option><option value="full">full</option></select></div>
+            <div class="segmented-choice segmented-choice--three" data-choice-group="branding" aria-label="Branding">
+              <button type="button" class="branding-card active" data-choice-value="off">Off<small>clean cover</small></button>
+              <button type="button" class="branding-card" data-choice-value="subtle">Subtle<small>small note</small></button>
+              <button type="button" class="branding-card" data-choice-value="full">Full<small>brand block</small></button>
+            </div>
             <div class="field"><label for="brandNameInput">Brand name</label><input id="brandNameInput" type="text" placeholder="Optional organization name"></div>
+            <div class="field"><label for="brandLogoInput">Brand logo path</label><input id="brandLogoInput" type="text" placeholder="Optional, e.g. images/logo.png"></div>
             <div class="field"><label for="brandFooterInput">Brand footer</label><input id="brandFooterInput" type="text" placeholder="Optional tagline"></div>
-            <label class="check"><input id="noCoverInput" type="checkbox"><span>No cover page</span></label>
-            <label class="check"><input id="noHeaderFooterInput" type="checkbox"><span>Hide footer/page number</span></label>
-            <p class="hint">Style controls layout shape; palette controls accent colors; mode controls light or dark output. Branding is off by default so exported PDFs belong to the document owner.</p>
           </section>
-          <section class="card"><h3>🧭 Structure</h3>
+
+          <section class="card"><h3>🧭 Layout<small>TOC, cover, and page flow</small></h3>
             <label class="check"><input id="tocInput" type="checkbox" checked><span>Generate table of contents</span></label>
             <div class="field"><label for="tocDepthInput">TOC depth</label><input id="tocDepthInput" type="number" min="1" max="6" value="6"></div>
             <label class="check"><input id="tocPageBreakInput" type="checkbox" checked><span>Start content after TOC on new page</span></label>
             <label class="check"><input id="h1PageBreakInput" type="checkbox" checked><span>Start each H1 on new page</span></label>
+            <label class="check"><input id="noCoverInput" type="checkbox"><span>No cover page</span></label>
           </section>
-          <section class="card"><h3>💧 Watermark</h3>
-            <div class="field"><label for="watermarkInput">Watermark text</label><input id="watermarkInput" type="text" placeholder="Optional"></div>
-            <div class="field"><label for="watermarkOpacityInput">Opacity</label><input id="watermarkOpacityInput" type="number" min="0" max="1" step="0.01" value="0.065"></div>
-          </section>
-          <section class="card"><h3>🖼️ Local Assets</h3>
-            <button class="btn" onclick="attachAssets()">Attach image folder/files</button>
-            <p class="hint">For Markdown image links such as <code>images/chart.png</code>, attach the image folder or files before exporting. Assets are embedded by the local Python renderer. Up to 250 assets, 12 MB per asset, and 32 MB total are accepted.</p>
-            <div id="assetList" class="asset-list"></div>
-          </section>
+
+          <details class="card advanced-card">
+            <summary><span>⚙️ Advanced</span><small>Watermark, page footer, local assets</small></summary>
+            <div class="advanced-body">
+              <label class="check"><input id="noHeaderFooterInput" type="checkbox"><span>Hide footer/page number</span></label>
+              <div class="field"><label for="watermarkInput">Watermark text</label><input id="watermarkInput" type="text" placeholder="Optional"></div>
+              <div class="field"><label for="watermarkOpacityInput">Opacity</label><input id="watermarkOpacityInput" type="number" min="0" max="1" step="0.01" value="0.065"></div>
+              <button class="btn" onclick="attachAssets()">Attach image folder/files</button>
+              <p class="hint">For Markdown image links such as <code>images/chart.png</code> or brand logos, attach the image folder or files before exporting. Up to 250 assets, 12 MB per asset, and 32 MB total are accepted.</p>
+              <div id="assetList" class="asset-list"></div>
+            </div>
+          </details>
         </div>
       </aside>
       <section class="pane editor-pane">
@@ -263,6 +330,7 @@ function getOptions(){
     mode: $('modeInput').value,
     branding: $('brandingInput').value,
     brandName: $('brandNameInput').value,
+    brandLogo: $('brandLogoInput').value,
     brandFooter: $('brandFooterInput').value,
     noCover: $('noCoverInput').checked,
     noHeaderFooter: $('noHeaderFooterInput').checked,
@@ -312,6 +380,7 @@ function setOptions(options){
   if (hasOwnOption(options, 'mode')) setSelectValue('modeInput', options.mode);
   if (hasOwnOption(options, 'branding')) setSelectValue('brandingInput', options.branding);
   if (hasOwnOption(options, 'brandName')) setFieldValue('brandNameInput', options.brandName);
+  if (hasOwnOption(options, 'brandLogo')) setFieldValue('brandLogoInput', options.brandLogo);
   if (hasOwnOption(options, 'brandFooter')) setFieldValue('brandFooterInput', options.brandFooter);
   if (hasOwnOption(options, 'noCover')) setFieldChecked('noCoverInput', options.noCover);
   if (hasOwnOption(options, 'noHeaderFooter')) setFieldChecked('noHeaderFooterInput', options.noHeaderFooter);
@@ -324,8 +393,55 @@ function setOptions(options){
   updateAppearanceName();
 }
 
+const CHOICE_GROUP_FIELDS = { style: 'styleInput', palette: 'paletteInput', mode: 'modeInput', branding: 'brandingInput' };
+
+function choiceButtons(group){
+  return Array.from(document.querySelectorAll('[data-choice-group="' + group + '"] [data-choice-value], [data-choice-group="' + group + '"][data-choice-value]'));
+}
+
+function syncChoiceCards(){
+  Object.entries(CHOICE_GROUP_FIELDS).forEach(([group, inputId]) => {
+    const field = $(inputId);
+    if (!field) return;
+    const value = field.value;
+    choiceButtons(group).forEach(button => {
+      const active = button.dataset.choiceValue === value;
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+  });
+}
+
+function setChoice(group, value, options={}){
+  const inputId = CHOICE_GROUP_FIELDS[group];
+  if (!inputId) return;
+  const field = $(inputId);
+  if (!field) return;
+  const exists = Array.from(field.options || []).some(option => option.value === value);
+  if (!exists) return;
+  field.value = value;
+  updateAppearanceName();
+  if (options.persist !== false) scheduleStudioStateSave();
+}
+
+function attachChoiceCards(){
+  Object.keys(CHOICE_GROUP_FIELDS).forEach(group => {
+    choiceButtons(group).forEach(button => {
+      button.addEventListener('click', () => setChoice(group, button.dataset.choiceValue || '', { persist: true }));
+      button.addEventListener('keydown', event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          setChoice(group, button.dataset.choiceValue || '', { persist: true });
+        }
+      });
+    });
+  });
+}
+
 function updateAppearanceName(){
-  $('appearanceName').textContent = $('styleInput').value + ' · ' + $('paletteInput').value + ' · ' + $('modeInput').value;
+  const branding = $('brandingInput').value === 'off' ? '' : ' · branding ' + $('brandingInput').value;
+  $('appearanceName').textContent = $('styleInput').value + ' · ' + $('paletteInput').value + ' · ' + $('modeInput').value + branding;
+  syncChoiceCards();
 }
 
 function getStudioState(){
@@ -560,7 +676,9 @@ editor.addEventListener('keydown', (event) => {
 });
 
 ['styleInput', 'paletteInput', 'modeInput', 'brandingInput'].forEach(id => {
-  $(id).addEventListener('change', () => {
+  const field = $(id);
+  if (!field) return;
+  field.addEventListener('change', () => {
     updateAppearanceName();
     scheduleStudioStateSave();
   });
@@ -723,7 +841,11 @@ function copyCommand(){
   if (options.noCover) cmd.push('--no-cover');
   if (options.noHeaderFooter) cmd.push('--no-header-footer');
   if (options.direction && options.direction !== 'auto') cmd.push('--dir ' + options.direction);
-  if (options.watermark) cmd.push('--watermark "' + options.watermark.replace(/"/g, '\\"') + '"');
+  if (options.branding && options.branding !== 'off') cmd.push('--branding ' + options.branding);
+  if (options.brandName) cmd.push('--brand-name "' + options.brandName.replace(/"/g, '\"') + '"');
+  if (options.brandLogo) cmd.push('--brand-logo "' + options.brandLogo.replace(/"/g, '\"') + '"');
+  if (options.brandFooter) cmd.push('--brand-footer "' + options.brandFooter.replace(/"/g, '\"') + '"');
+  if (options.watermark) cmd.push('--watermark "' + options.watermark.replace(/"/g, '\"') + '"');
   navigator.clipboard.writeText(cmd.join(' '));
   serverStatus.textContent = 'CLI command copied';
 }
@@ -786,6 +908,7 @@ window.addEventListener('keydown', (event) => {
 });
 
 editor.value = `---\ntitle: "نمونه سند Mardas MD2PDF"\nauthor: "mragetsars"\ndate: "2026-05-12"\nlang: fa\nappearance:\n  style: modern\n  palette: blue\n  mode: light\n---\n\n# نمونه Markdown\n\nاین محیط برای ویرایش Markdown و گرفتن خروجی PDF با تنظیمات گرافیکی ساخته شده است.\n\n## Code\n\n\`\`\`python\nprint("Hello Mardas")\n\`\`\`\n\n| قابلیت | وضعیت |\n|---|---|\n| RTL/LTR | ✅ |\n| PDF Export | ✅ |\n`;
+attachChoiceCards();
 attachOptionPersistence();
 loadStudioState();
 updateAppearanceName();

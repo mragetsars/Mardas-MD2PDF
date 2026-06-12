@@ -32,6 +32,26 @@ def test_gui_asset_writer_enforces_size_limits(tmp_path, monkeypatch):
     assert not (tmp_path / "c.png").exists()
 
 
+
+
+def test_studio_brand_logo_path_uses_attached_assets(tmp_path):
+    from mardas_md2pdf import gui
+
+    gui._write_gui_assets(
+        tmp_path,
+        [
+            {
+                "path": "images/logo.png",
+                "data": "data:image/png;base64,eA==",
+            }
+        ],
+    )
+
+    logo = tmp_path / gui._safe_asset_relative_path("images/logo.png", fallback="brand-logo")
+    assert logo.is_file()
+    assert logo.read_bytes() == b"x"
+
+
 def test_gui_documents_asset_limits():
     html = GUI_HTML.read_text(encoding="utf-8")
 
@@ -162,6 +182,7 @@ def test_gui_uses_appearance_controls_instead_of_theme_profile_controls():
     assert "modeInput" in html
     assert "brandingInput" in html
     assert "brandNameInput" in html
+    assert "brandLogoInput" in html
     assert "brandFooterInput" in html
     assert "appearanceName" in html
     assert "pdfThemeInput" not in html
@@ -170,3 +191,36 @@ def test_gui_uses_appearance_controls_instead_of_theme_profile_controls():
     assert "--style" in html
     assert "--palette" in html
     assert "--mode" in html
+
+
+def test_gui_groups_export_settings_into_user_facing_sections():
+    html = GUI_HTML.read_text(encoding="utf-8")
+
+    assert "Document<small>Basic identity and page setup</small>" in html
+    assert "Appearance<small>Shape, color, and light/dark output</small>" in html
+    assert "Branding<small>Keep output owned by the document</small>" in html
+    assert "Layout<small>TOC, cover, and page flow</small>" in html
+    assert "<summary><span>⚙️ Advanced</span>" in html
+
+
+def test_gui_uses_visual_choice_cards_for_appearance_workflow():
+    html = GUI_HTML.read_text(encoding="utf-8")
+
+    assert 'data-choice-group="style"' in html
+    assert 'data-choice-value="modern"' in html
+    assert 'data-choice-value="academic"' in html
+    assert 'data-choice-group="palette"' in html
+    assert 'class="palette-dot"' in html
+    assert 'data-choice-group="mode"' in html
+    assert 'data-choice-group="branding"' in html
+    assert "function attachChoiceCards" in html
+    assert "function syncChoiceCards" in html
+
+
+def test_gui_copy_command_includes_branding_options():
+    html = GUI_HTML.read_text(encoding="utf-8")
+
+    assert "--branding " in html
+    assert "--brand-name" in html
+    assert "--brand-logo" in html
+    assert "--brand-footer" in html
