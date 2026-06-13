@@ -89,7 +89,17 @@ SAFE_RAW_HTML_TAGS = {
     "u",
     "ul",
 }
-GLOBAL_SAFE_ATTRS = {"class", "id", "dir", "lang", "title", "role", "aria-label", "data-lang"}
+GLOBAL_SAFE_ATTRS = {
+    "class",
+    "id",
+    "dir",
+    "lang",
+    "title",
+    "role",
+    "aria-label",
+    "data-lang",
+    "data-line-start",
+}
 TAG_SAFE_ATTRS = {
     "a": {"href", "name", "target", "rel"},
     "img": {"src", "alt", "width", "height"},
@@ -148,6 +158,15 @@ def ui_label(key: str, *, lang: str | None = None, text_hint: str = "") -> str:
             "callout_important": "مهم",
             "callout_warning": "هشدار",
             "callout_caution": "احتیاط",
+            "callout_info": "اطلاعات",
+            "callout_success": "موفقیت",
+            "callout_question": "پرسش",
+            "callout_failure": "خطا",
+            "callout_danger": "خطر",
+            "callout_bug": "اشکال",
+            "callout_example": "نمونه",
+            "callout_quote": "نقل‌قول",
+            "callout_abstract": "خلاصه",
             "footnote": "پانویس",
         },
         "en": {
@@ -158,6 +177,15 @@ def ui_label(key: str, *, lang: str | None = None, text_hint: str = "") -> str:
             "callout_important": "Important",
             "callout_warning": "Warning",
             "callout_caution": "Caution",
+            "callout_info": "Info",
+            "callout_success": "Success",
+            "callout_question": "Question",
+            "callout_failure": "Failure",
+            "callout_danger": "Danger",
+            "callout_bug": "Bug",
+            "callout_example": "Example",
+            "callout_quote": "Quote",
+            "callout_abstract": "Abstract",
             "footnote": "Footnote",
         },
     }
@@ -194,12 +222,14 @@ class CodeHtmlFormatter(HtmlFormatter):
         *,
         linenos: bool = False,
         hl_lines: list[int] | None = None,
+        line_start: int = 1,
     ) -> None:
         super().__init__(
             style=style,
             cssclass="codehilite",
             nowrap=False,
             linenos="table" if linenos else False,
+            linenostart=max(1, int(line_start or 1)),
             hl_lines=hl_lines or [],
         )
 
@@ -275,6 +305,15 @@ CODE_FENCE_LINE_NUMBER_KEYS = {
     "numberlines",
     "lineNumbers",
 }
+CODE_FENCE_LINE_START_KEYS = {
+    "start",
+    "startline",
+    "start-line",
+    "line-start",
+    "linenostart",
+    "lineno-start",
+    "first-line",
+}
 CODE_FENCE_LINE_NUMBER_CLASSES = {
     "linenos",
     "line-numbers",
@@ -284,6 +323,7 @@ CODE_FENCE_LINE_NUMBER_CLASSES = {
     "numberLines",
 }
 CODE_FENCE_LINE_NUMBER_KEY_SET = {item.lower() for item in CODE_FENCE_LINE_NUMBER_KEYS}
+CODE_FENCE_LINE_START_KEY_SET = {item.lower() for item in CODE_FENCE_LINE_START_KEYS}
 CODE_FENCE_LANGUAGE_ALIASES = {
     "mmd": "mermaid",
     "py": "python",
@@ -336,6 +376,14 @@ def _truthy_attr_value(value: str | None) -> bool:
     if value is None:
         return False
     return str(value).strip().lower() not in {"", "0", "false", "no", "off", "none"}
+
+
+def _positive_int_attr(value: str | None, *, fallback: int = 1) -> int:
+    try:
+        parsed = int(str(value or "").strip())
+    except (TypeError, ValueError):
+        return fallback
+    return parsed if parsed > 0 else fallback
 
 
 def _first_language_class(attrs: str) -> str:
@@ -415,11 +463,18 @@ def parse_code_fence_info(info: str | None) -> dict[str, Any]:
         )
     )
 
+    line_start = 1
+    for key, value in kv.items():
+        if key.lower() in CODE_FENCE_LINE_START_KEY_SET:
+            line_start = _positive_int_attr(value, fallback=1)
+            break
+
     return {
         "language": language,
         "title": title,
         "linenos": linenos,
         "highlight_lines": sorted(set(highlight_values)),
+        "line_start": line_start,
         "attrs": attrs,
     }
 
@@ -434,6 +489,7 @@ def highlight_code(
     extra_classes: str = "",
     linenos: bool = False,
     highlight_lines: list[int] | None = None,
+    line_start: int = 1,
 ) -> str:
     parts = (lang or "").strip().split()
     language = parts[0] if parts else ""
@@ -443,7 +499,17 @@ def highlight_code(
     except ClassNotFound:
         lexer = TextLexer(stripall=False)
         label = language or "text"
-    formatter = CodeHtmlFormatter(code_style, linenos=linenos, hl_lines=highlight_lines)
+    normalized_highlight_lines = highlight_lines or []
+    if line_start > 1 and normalized_highlight_lines and all(
+        line >= line_start for line in normalized_highlight_lines
+    ):
+        normalized_highlight_lines = [line - line_start + 1 for line in normalized_highlight_lines]
+    formatter = CodeHtmlFormatter(
+        code_style,
+        linenos=linenos,
+        hl_lines=normalized_highlight_lines,
+        line_start=line_start,
+    )
     highlighted = highlight(code, lexer, formatter)
     caption_value = caption if caption not in (None, "") else label.upper()
     caption_html = (
@@ -452,6 +518,8 @@ def highlight_code(
         else ""
     )
     extra_attrs = f" data-lang=\"{html.escape(language)}\"" if language else ""
+    if linenos and line_start > 1:
+        extra_attrs += f" data-line-start=\"{line_start}\""
     classes = "code-block" + (f" {html.escape(extra_classes)}" if extra_classes else "")
     if linenos:
         classes += " code-block--numbered"
@@ -1323,33 +1391,72 @@ def postprocess_html(body_html: str, *, code_style: str = "github-dark", lang: s
         if li.parent and li.parent.name in {"ul", "ol"}:
             li.parent["class"] = list(set(li.parent.get("class", []) + ["task-list"]))
 
-    # Obsidian/GitHub flavored callouts: > [!NOTE]
+    # Obsidian/GitHub flavored callouts: > [!NOTE], > [!TIP] Title, > [!NOTE]-
     text_hint = soup.get_text(" ", strip=True)
-    callout_titles = {
-        "NOTE": ui_label("callout_note", lang=lang, text_hint=text_hint),
-        "TIP": ui_label("callout_tip", lang=lang, text_hint=text_hint),
-        "IMPORTANT": ui_label("callout_important", lang=lang, text_hint=text_hint),
-        "WARNING": ui_label("callout_warning", lang=lang, text_hint=text_hint),
-        "CAUTION": ui_label("callout_caution", lang=lang, text_hint=text_hint),
+    callout_kind_aliases = {
+        "NOTE": "note",
+        "INFO": "info",
+        "TODO": "info",
+        "TIP": "tip",
+        "HINT": "tip",
+        "IMPORTANT": "important",
+        "WARNING": "warning",
+        "WARN": "warning",
+        "CAUTION": "caution",
+        "ATTENTION": "caution",
+        "SUCCESS": "success",
+        "CHECK": "success",
+        "DONE": "success",
+        "QUESTION": "question",
+        "HELP": "question",
+        "FAQ": "question",
+        "FAILURE": "failure",
+        "FAIL": "failure",
+        "MISSING": "failure",
+        "DANGER": "danger",
+        "ERROR": "danger",
+        "BUG": "bug",
+        "EXAMPLE": "example",
+        "QUOTE": "quote",
+        "CITE": "quote",
+        "ABSTRACT": "abstract",
+        "SUMMARY": "abstract",
+        "TLDR": "abstract",
     }
+    callout_titles = {
+        canonical: ui_label(f"callout_{canonical}", lang=lang, text_hint=text_hint)
+        for canonical in sorted(set(callout_kind_aliases.values()))
+    }
+    callout_re = re.compile(
+        r"^\[!(?P<kind>[A-Z][A-Z0-9_-]*)\](?P<fold>[+-])?\s*(?P<title>.*)$",
+        re.I,
+    )
     for blockquote in soup.find_all("blockquote"):
         first_p = blockquote.find("p")
         if not first_p:
             continue
-        text = first_p.get_text(" ", strip=True)
-        match = re.match(r"^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*(.*)$", text, re.I)
+        text = first_p.get_text("\n", strip=True)
+        first_line, _, remainder = text.partition("\n")
+        match = callout_re.match(first_line.strip())
         if not match:
             continue
-        kind = match.group(1).upper()
-        rest = match.group(2).strip()
-        blockquote["class"] = list(set(blockquote.get("class", []) + ["callout", f"callout-{kind.lower()}"]))
+        raw_kind = match.group("kind").upper().replace("-", "_")
+        canonical = callout_kind_aliases.get(raw_kind)
+        if not canonical:
+            continue
+        custom_title = match.group("title").strip()
+        classes = set(blockquote.get("class", []))
+        classes.update({"callout", f"callout-{canonical}"})
+        if match.group("fold"):
+            classes.add("callout-foldable")
+        blockquote["class"] = sorted(classes)
         title_tag = soup.new_tag("strong")
         title_tag["class"] = "callout-title"
-        title_tag.string = callout_titles.get(kind, kind)
+        title_tag.string = custom_title or callout_titles.get(canonical, canonical.title())
         first_p.clear()
         first_p.append(title_tag)
-        if rest:
-            first_p.append(" " + rest)
+        if remainder.strip():
+            first_p.append("\n" + remainder.strip())
 
     # Explicit page break marker: <div class="page-break"></div> or ---page---
     for div in soup.find_all("div", class_=lambda c: c and "page-break" in c):
@@ -1487,6 +1594,7 @@ def render_markdown(
             caption=fence_info["title"] or None,
             linenos=bool(fence_info["linenos"]),
             highlight_lines=fence_info["highlight_lines"],
+            line_start=int(fence_info.get("line_start") or 1),
         ) + "\n"
 
     md.renderer.rules["fence"] = render_fence

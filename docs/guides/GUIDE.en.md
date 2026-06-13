@@ -12,7 +12,7 @@ summary: |
   This document also acts as a live rendering sample for cover pages, tables of contents, mixed RTL/LTR text, formulas, code, Mermaid flowcharts, images, tables, footnotes, page breaks, and safe HTML.
 institution: "Mardas Lab"
 course: "Markdown Publishing"
-version: "1.6.4"
+version: "1.7.0"
 status: "Stable"
 keywords:
   - Markdown
@@ -32,6 +32,9 @@ branding:
 ---
 
 # Introduction
+
+> [!NOTE]
+> Version 1.7.0 improves renderer fidelity for advanced code-fence metadata, Mermaid flowcharts, and extended callouts. See `docs/MARKDOWN-FIDELITY.md` for the dedicated feature reference.
 
 Mardas MD2PDF is a Markdown-to-PDF publishing tool designed for documents that mix Persian and English content. It keeps the writing workflow simple while giving the final PDF a professional printed layout.
 

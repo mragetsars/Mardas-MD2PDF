@@ -22,3 +22,4 @@ docs live in their own directories.
 - [Appearance system](./APPEARANCE.md)
 - [Cover branding](./BRANDING.md)
 - [Studio workflow](./STUDIO.md)
+- [Markdown fidelity](./MARKDOWN-FIDELITY.md)

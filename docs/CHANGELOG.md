@@ -2,6 +2,18 @@
 
 All notable changes to Mardas MD2PDF are tracked here.
 
+## 1.7.0 - 2026-06-13
+
+### Added
+
+- Improved Markdown feature fidelity for advanced fenced-code metadata, including titles, line numbers, line highlights, aliases, and custom starting line numbers.
+- Expanded GitHub/Obsidian-style callout support with additional aliases such as `INFO`, `SUCCESS`, `QUESTION`, `DANGER`, `BUG`, `EXAMPLE`, `QUOTE`, and `ABSTRACT`.
+- Added `docs/MARKDOWN-FIDELITY.md` as the dedicated feature reference for supported Markdown syntax and renderer expectations.
+
+### Changed
+
+- Updated the public documentation and guide metadata for the 1.7.0 renderer-fidelity release.
+
 ## 1.6.4 - 2026-06-12
 
 ### Changed

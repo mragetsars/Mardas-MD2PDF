@@ -65,3 +65,42 @@ def test_mermaid_svg_supports_additional_common_node_shapes():
     assert 'md2pdf-mermaid-node-subroutine' in svg
     assert 'md2pdf-mermaid-node-stadium' in svg
     assert svg.count('</marker>') == 1
+
+
+def test_code_fence_parser_accepts_start_line_metadata():
+    parsed = parse_code_fence_info('python linenos linenostart=42 title="module.py" {43}')
+
+    assert parsed["language"] == "python"
+    assert parsed["title"] == "module.py"
+    assert parsed["linenos"] is True
+    assert parsed["line_start"] == 42
+    assert parsed["highlight_lines"] == [43]
+
+
+def test_numbered_code_blocks_can_start_from_custom_line():
+    result = render_markdown(
+        '```python linenos linenostart=42 title="module.py" {43}\n'
+        'def first():\n'
+        '    return 1\n'
+        '```\n'
+    )
+
+    assert 'data-line-start="42"' in result.body_html
+    assert '<figcaption dir="auto">module.py</figcaption>' in result.body_html
+    assert 'class="hll"' in result.body_html
+    assert '>42<' in result.body_html
+
+
+def test_extended_callout_aliases_render_as_pdf_callouts():
+    result = render_markdown(
+        '> [!SUCCESS] Build passed\n'
+        '> Everything is green.\n\n'
+        '> [!QUESTION]- Why?\n'
+        '> Because the renderer supports aliases.\n'
+    )
+
+    assert 'callout-success' in result.body_html
+    assert 'callout-question' in result.body_html
+    assert 'callout-foldable' in result.body_html
+    assert '<strong class="callout-title">Build passed</strong>' in result.body_html
+    assert '<strong class="callout-title">Why?</strong>' in result.body_html
