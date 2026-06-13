@@ -197,8 +197,11 @@ def _parse_node_expr(expr: str) -> MermaidNode | None:
     shape = "rect"
 
     patterns: list[tuple[str, str, str, str]] = [
-        ("[[", "]]", "subroutine", "rect"),
+        ("[[", "]]", "subroutine", "subroutine"),
+        ("{{", "}}", "hexagon", "hexagon"),
         ("((", "))", "circle", "circle"),
+        ("[(", ")]", "database", "database"),
+        ("([", "])", "stadium", "stadium"),
         ("[/", "/]", "parallelogram", "parallelogram"),
         ("[\\", "\\]", "parallelogram", "parallelogram"),
         ("[", "]", "rect", "rect"),
@@ -317,6 +320,9 @@ def _measure_node(node: MermaidNode) -> None:
     if node.shape == "diamond":
         node.width = max(node.width + 18, 120)
         node.height = max(node.height + 16, 72)
+    if node.shape in {"database", "hexagon", "subroutine", "stadium"}:
+        node.width = max(node.width + 14, 124)
+        node.height = max(node.height + 8, 58)
 
 
 def _wrap_label(label: str, max_chars: int = 22) -> list[str]:
@@ -397,13 +403,25 @@ def _node_svg(node: MermaidNode) -> str:
     elif node.shape == "diamond":
         points = f"{x + w / 2:.1f},{y:.1f} {x + w:.1f},{y + h / 2:.1f} {x + w / 2:.1f},{y + h:.1f} {x:.1f},{y + h / 2:.1f}"
         shape = f'<polygon class="md2pdf-mermaid-node-shape" points="{points}" />'
+    elif node.shape == "hexagon":
+        inset = min(26, w * 0.18)
+        points = f"{x + inset:.1f},{y:.1f} {x + w - inset:.1f},{y:.1f} {x + w:.1f},{y + h / 2:.1f} {x + w - inset:.1f},{y + h:.1f} {x + inset:.1f},{y + h:.1f} {x:.1f},{y + h / 2:.1f}"
+        shape = f'<polygon class="md2pdf-mermaid-node-shape" points="{points}" />'
     elif node.shape == "parallelogram":
         skew = min(22, w * 0.16)
         points = f"{x + skew:.1f},{y:.1f} {x + w:.1f},{y:.1f} {x + w - skew:.1f},{y + h:.1f} {x:.1f},{y + h:.1f}"
         shape = f'<polygon class="md2pdf-mermaid-node-shape" points="{points}" />'
+    elif node.shape == "database":
+        curve = min(16, h * 0.28)
+        body = f"M{x:.1f},{y + curve:.1f} C{x:.1f},{y:.1f} {x + w:.1f},{y:.1f} {x + w:.1f},{y + curve:.1f} L{x + w:.1f},{y + h - curve:.1f} C{x + w:.1f},{y + h:.1f} {x:.1f},{y + h:.1f} {x:.1f},{y + h - curve:.1f} Z"
+        top = f"M{x:.1f},{y + curve:.1f} C{x:.1f},{y + curve * 2:.1f} {x + w:.1f},{y + curve * 2:.1f} {x + w:.1f},{y + curve:.1f}"
+        shape = f'<path class="md2pdf-mermaid-node-shape" d="{body}" /><path class="md2pdf-mermaid-node-shape md2pdf-mermaid-node-detail" d="{top}" />'
     else:
-        rx = 16 if node.shape == "round" else 9
-        shape = f'<rect class="md2pdf-mermaid-node-shape" x="{x:.1f}" y="{y:.1f}" width="{w:.1f}" height="{h:.1f}" rx="{rx}" />'
+        rx = h / 2 if node.shape == "stadium" else (16 if node.shape in {"round", "subroutine"} else 9)
+        shape = f'<rect class="md2pdf-mermaid-node-shape" x="{x:.1f}" y="{y:.1f}" width="{w:.1f}" height="{h:.1f}" rx="{rx:.1f}" />'
+        if node.shape == "subroutine":
+            pad = min(14, w * 0.12)
+            shape += f'<path class="md2pdf-mermaid-node-shape md2pdf-mermaid-node-detail" d="M{x + pad:.1f},{y:.1f} V{y + h:.1f} M{x + w - pad:.1f},{y:.1f} V{y + h:.1f}" />'
     return f'<g class="md2pdf-mermaid-node md2pdf-mermaid-node-{html.escape(node.shape)}" data-node-id="{safe_id}">{shape}{text}</g>'
 
 

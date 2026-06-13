@@ -89,7 +89,7 @@ SAFE_RAW_HTML_TAGS = {
     "u",
     "ul",
 }
-GLOBAL_SAFE_ATTRS = {"class", "id", "dir", "lang", "title", "role", "aria-label"}
+GLOBAL_SAFE_ATTRS = {"class", "id", "dir", "lang", "title", "role", "aria-label", "data-lang"}
 TAG_SAFE_ATTRS = {
     "a": {"href", "name", "target", "rel"},
     "img": {"src", "alt", "width", "height"},
@@ -252,14 +252,57 @@ def dominant_direction(text: str) -> str:
 
 
 CODE_FENCE_TITLE_RE = re.compile(r"(?:^|\s)(?:title|filename|file)=(?P<quote>[\"\'])(?P<value>.*?)(?P=quote)")
-CODE_FENCE_BRACE_RE = re.compile(r"\{(?P<spec>[0-9,\-\s]+)\}")
+CODE_FENCE_BRACE_RE = re.compile(r"\{(?P<spec>[^}]*)\}")
+CODE_FENCE_KV_RE = re.compile(
+    r"(?P<key>[A-Za-z][\w-]*)\s*=\s*"
+    r"(?:(?P<quote>[\"'])(?P<quoted>.*?)(?P=quote)|(?P<bare>[^\s}]+))"
+)
+CODE_FENCE_ATTR_CLASS_RE = re.compile(r"(?<!\S)\.(?P<class>[A-Za-z_][\w.-]*)")
+CODE_FENCE_TITLE_KEYS = {"title", "filename", "file", "caption", "name"}
+CODE_FENCE_HIGHLIGHT_KEYS = {
+    "hl_lines",
+    "hl-lines",
+    "highlight",
+    "line-highlight",
+    "lines",
+    "emphasize-lines",
+}
+CODE_FENCE_LINE_NUMBER_KEYS = {
+    "linenos",
+    "line-numbers",
+    "linenumbers",
+    "numbered",
+    "numberlines",
+    "lineNumbers",
+}
+CODE_FENCE_LINE_NUMBER_CLASSES = {
+    "linenos",
+    "line-numbers",
+    "linenumbers",
+    "numbered",
+    "numberlines",
+    "numberLines",
+}
+CODE_FENCE_LINE_NUMBER_KEY_SET = {item.lower() for item in CODE_FENCE_LINE_NUMBER_KEYS}
+CODE_FENCE_LANGUAGE_ALIASES = {
+    "mmd": "mermaid",
+    "py": "python",
+    "js": "javascript",
+    "ts": "typescript",
+    "sh": "bash",
+    "shell": "bash",
+    "zsh": "bash",
+    "md": "markdown",
+    "yml": "yaml",
+}
 
 
 def _parse_line_highlights(spec: str | None) -> list[int]:
     if not spec:
         return []
     values: set[int] = set()
-    for part in spec.split(','):
+    cleaned = str(spec).strip().strip("{}[]()\"'").replace(";", ",")
+    for part in re.split(r"[,\s]+", cleaned):
         part = part.strip()
         if not part:
             continue
@@ -275,24 +318,108 @@ def _parse_line_highlights(spec: str | None) -> list[int]:
     return sorted(values)
 
 
+def _normalize_code_language(value: str | None) -> str:
+    language = (value or "").strip().strip(".").lower()
+    return CODE_FENCE_LANGUAGE_ALIASES.get(language, language)
+
+
+def _parse_code_fence_key_values(attrs: str) -> dict[str, str]:
+    values: dict[str, str] = {}
+    for match in CODE_FENCE_KV_RE.finditer(attrs or ""):
+        key = match.group("key").strip()
+        value = match.group("quoted") if match.group("quote") else match.group("bare")
+        values[key] = (value or "").strip()
+    return values
+
+
+def _truthy_attr_value(value: str | None) -> bool:
+    if value is None:
+        return False
+    return str(value).strip().lower() not in {"", "0", "false", "no", "off", "none"}
+
+
+def _first_language_class(attrs: str) -> str:
+    for match in CODE_FENCE_ATTR_CLASS_RE.finditer(attrs or ""):
+        name = match.group("class")
+        if name in CODE_FENCE_LINE_NUMBER_CLASSES:
+            continue
+        if name.startswith("language-"):
+            return _normalize_code_language(name.removeprefix("language-"))
+        return _normalize_code_language(name)
+    return ""
+
+
 def parse_code_fence_info(info: str | None) -> dict[str, Any]:
-    """Parse GitHub/documentation-style fenced code metadata."""
+    """Parse documentation-style fenced code metadata.
+
+    The parser accepts the common variants used by GitHub, MkDocs, Pandoc,
+    Quarto, and documentation generators, for example::
+
+        ```python title="renderer.py" {2,5-6} linenos
+        ```{.python .numberLines hl_lines="2 5-6" title=renderer.py}
+
+    Unknown attributes are intentionally preserved in ``attrs`` but ignored by
+    the renderer so future syntax can be added without breaking existing input.
+    """
     text = (info or "").strip()
-    parts = text.split(maxsplit=1)
-    language = parts[0] if parts else ""
-    attrs = parts[1] if len(parts) > 1 else ""
+    language = ""
+    attrs = ""
 
-    title_match = CODE_FENCE_TITLE_RE.search(attrs)
-    title = title_match.group('value').strip() if title_match else ""
+    if text.startswith("{"):
+        match = CODE_FENCE_BRACE_RE.match(text)
+        if match:
+            attrs = match.group("spec").strip()
+            remainder = text[match.end() :].strip()
+            if remainder:
+                attrs = f"{attrs} {remainder}".strip()
+            language = _first_language_class(attrs)
+        else:
+            attrs = text
+    else:
+        parts = text.split(maxsplit=1)
+        if parts:
+            language = _normalize_code_language(parts[0])
+        attrs = parts[1] if len(parts) > 1 else ""
+        brace_language = _first_language_class(attrs)
+        if not language and brace_language:
+            language = brace_language
 
-    brace_match = CODE_FENCE_BRACE_RE.search(attrs)
-    highlight_lines = _parse_line_highlights(brace_match.group('spec') if brace_match else None)
-    linenos = bool(re.search(r"(?:^|\s)(?:linenos|line-numbers|numbered)(?:\s|$)", attrs, re.I))
+    kv = _parse_code_fence_key_values(attrs)
+
+    title = ""
+    for key, value in kv.items():
+        if key.lower() in CODE_FENCE_TITLE_KEYS:
+            title = value
+            break
+
+    highlight_values: list[int] = []
+    for brace_match in CODE_FENCE_BRACE_RE.finditer(attrs):
+        spec = brace_match.group("spec")
+        if re.fullmatch(r"[0-9,;\-\s]+", spec.strip()):
+            highlight_values.extend(_parse_line_highlights(spec))
+    for key, value in kv.items():
+        if key.lower() in CODE_FENCE_HIGHLIGHT_KEYS:
+            highlight_values.extend(_parse_line_highlights(value))
+
+    attrs_lower = attrs.lower()
+    linenos = bool(
+        re.search(
+            r"(?:^|\s)(?:linenos|line-numbers|numbered|numberlines|lineNumbers)(?:\s|$)",
+            attrs,
+            re.I,
+        )
+        or any(f".{name.lower()}" in attrs_lower for name in CODE_FENCE_LINE_NUMBER_CLASSES)
+        or any(
+            key.lower() in CODE_FENCE_LINE_NUMBER_KEY_SET and _truthy_attr_value(value)
+            for key, value in kv.items()
+        )
+    )
+
     return {
         "language": language,
         "title": title,
         "linenos": linenos,
-        "highlight_lines": highlight_lines,
+        "highlight_lines": sorted(set(highlight_values)),
         "attrs": attrs,
     }
 
@@ -339,12 +466,13 @@ def highlight_code(
 
 
 
-def mermaid_placeholder(code: str) -> str:
+def mermaid_placeholder(code: str, caption: str | None = None) -> str:
     """Keep Mermaid source safe until post-processing renders it as SVG."""
     escaped = html.escape(code.rstrip("\n"))
+    caption_text = html.escape((caption or "MERMAID").strip() or "MERMAID")
     return (
         '<figure class="mermaid-diagram mermaid-diagram--pending" dir="ltr">'
-        '<figcaption>MERMAID</figcaption>'
+        f'<figcaption>{caption_text}</figcaption>'
         '<pre><code class="language-mermaid">'
         f"{escaped}"
         '</code></pre>'
@@ -1350,7 +1478,7 @@ def render_markdown(
         fence_info = parse_code_fence_info(token.info)
         lang = fence_info["language"]
         if is_mermaid_language(lang):
-            return mermaid_placeholder(token.content) + "\n"
+            return mermaid_placeholder(token.content, fence_info["title"] or None) + "\n"
         return highlight_code(
             token.content,
             lang,

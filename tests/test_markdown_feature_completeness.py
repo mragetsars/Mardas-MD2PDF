@@ -1,0 +1,67 @@
+from mardas_md2pdf.markdown import parse_code_fence_info, render_markdown
+from mardas_md2pdf.mermaid import render_mermaid_to_svg
+
+
+def test_code_fence_parser_accepts_pandoc_style_attributes():
+    info = '{.python .numberLines title=renderer.py hl_lines="2 5-6"}'
+
+    parsed = parse_code_fence_info(info)
+
+    assert parsed["language"] == "python"
+    assert parsed["title"] == "renderer.py"
+    assert parsed["linenos"] is True
+    assert parsed["highlight_lines"] == [2, 5, 6]
+
+
+def test_code_fence_parser_accepts_aliases_and_unquoted_values():
+    parsed = parse_code_fence_info('py filename=app.py lineNumbers=true highlight=1,3-4')
+
+    assert parsed["language"] == "python"
+    assert parsed["title"] == "app.py"
+    assert parsed["linenos"] is True
+    assert parsed["highlight_lines"] == [1, 3, 4]
+
+
+def test_code_fence_attributes_render_with_title_line_numbers_and_highlights():
+    result = render_markdown(
+        '```{.python .numberLines title=renderer.py hl_lines="2 4-5"}\n'
+        'def convert(markdown: str) -> bytes:\n'
+        '    html = render_markdown(markdown)\n'
+        '    pdf = render_pdf(html)\n'
+        '    return pdf\n'
+        '```\n'
+    )
+
+    assert '<figcaption dir="auto">renderer.py</figcaption>' in result.body_html
+    assert 'data-lang="python"' in result.body_html
+    assert 'code-block--numbered' in result.body_html
+    assert 'code-block--highlighted' in result.body_html
+    assert 'class="hll"' in result.body_html
+
+
+def test_mermaid_fence_title_is_preserved_as_caption():
+    result = render_markdown(
+        '```mermaid title="Pipeline"\n'
+        'flowchart LR\n'
+        '  A[Input] --> B[Output]\n'
+        '```\n'
+    )
+
+    assert '<figcaption dir="auto">Pipeline</figcaption>' in result.body_html
+    assert 'mermaid-diagram--rendered' in result.body_html
+
+
+def test_mermaid_svg_supports_additional_common_node_shapes():
+    svg = render_mermaid_to_svg(
+        'flowchart LR\n'
+        '  Store[(Database)] --> Transform{{Transform}}\n'
+        '  Transform --> Stage[[Subroutine]]\n'
+        '  Stage --> Done([Done])\n'
+    )
+
+    assert svg is not None
+    assert 'md2pdf-mermaid-node-database' in svg
+    assert 'md2pdf-mermaid-node-hexagon' in svg
+    assert 'md2pdf-mermaid-node-subroutine' in svg
+    assert 'md2pdf-mermaid-node-stadium' in svg
+    assert svg.count('</marker>') == 1

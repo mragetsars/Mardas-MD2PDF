@@ -898,6 +898,11 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
         stroke: var(--md2pdf-mermaid-stroke, var(--accent, var(--blue, #2563eb)));
         stroke-width: 1.5;
       }}
+      .md2pdf-mermaid-node-detail {{
+        fill: none;
+        opacity: .66;
+        pointer-events: none;
+      }}
       .md2pdf-mermaid-node-label {{
         fill: var(--md2pdf-mermaid-node-ink, var(--ink, #172033));
         font-size: 12px;
