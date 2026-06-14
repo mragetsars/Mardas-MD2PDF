@@ -2,6 +2,21 @@
 
 All notable changes to Mardas MD2PDF are tracked here.
 
+## 1.8.3 - 2026-06-14
+
+### Fixed
+
+- Promoted common image and table caption patterns into semantic print blocks so captions stay attached to their figure or table in generated PDFs.
+- Added consistent caption classes for figures, tables, code listings, and Mermaid diagrams, with print CSS that prevents captions from orphaning away from their associated content.
+
+### Documentation
+
+- Expanded `docs/PDF-TYPOGRAPHY.md` with caption and semantic print-block guidance for English and Persian documents.
+
+### Tests
+
+- Added regression coverage for image captions, table captions, code listing captions, Mermaid diagram captions, and caption-specific print CSS.
+
 ## 1.8.2 - 2026-06-14
 
 ### Fixed

@@ -45,3 +45,46 @@ def test_build_html_includes_print_flow_css(tmp_path: Path):
     assert "@media print" in html
     assert "break-before: avoid-page" in html
     assert "code-block--long" in html
+
+
+def test_image_caption_pair_becomes_semantic_figure_caption():
+    result = render_markdown('![Architecture](diagram.png)\n\n*Figure 1. Architecture overview.*\n')
+
+    assert 'class="md2pdf-figure"' in result.body_html
+    assert 'md2pdf-caption--figure' in result.body_html
+    assert 'Figure 1. Architecture overview.' in result.body_html
+
+
+def test_table_caption_pair_becomes_semantic_table_caption():
+    result = render_markdown(
+        '| Component | Role |\n'
+        '|---|---|\n'
+        '| Renderer | PDF output |\n\n'
+        'Table 1. Rendering pipeline components.\n'
+    )
+
+    assert '<caption class="md2pdf-caption md2pdf-caption--table" dir="auto">' in result.body_html
+    assert 'Table 1. Rendering pipeline components.' in result.body_html
+    assert 'class="table-wrap"' in result.body_html
+
+
+def test_code_and_mermaid_captions_get_semantic_caption_classes():
+    result = render_markdown(
+        '```python title="renderer.py"\nprint("hi")\n```\n\n'
+        '```mermaid title="Pipeline"\nflowchart LR\n  A --> B\n```\n'
+    )
+
+    assert 'md2pdf-caption--code' in result.body_html
+    assert 'md2pdf-caption--diagram' in result.body_html
+    assert 'renderer.py' in result.body_html
+    assert 'Pipeline' in result.body_html
+
+
+def test_layout_css_contains_semantic_caption_rules(tmp_path: Path):
+    options = PdfOptions(input_path=tmp_path / "input.md", output_path=tmp_path / "out.pdf")
+    css, _classes = _layout_css(options, document_direction="ltr")
+
+    assert ".md2pdf-caption" in css
+    assert "caption-side: top" in css
+    assert "md2pdf-caption--table" in css
+    assert "table > caption.md2pdf-caption--table" in css

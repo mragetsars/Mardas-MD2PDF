@@ -20,6 +20,28 @@ fragile:
 - table headers are repeated by Chromium where the PDF engine supports table
   header groups.
 
+
+## Captions and semantic print blocks
+
+The renderer treats visual blocks as semantic print units so captions stay with
+the content they describe:
+
+- Markdown image plus adjacent caption paragraphs become `<figure class="md2pdf-figure">`
+  with `.md2pdf-caption--figure`;
+- tables can use native `<caption>` elements, or an adjacent paragraph such as
+  `Table 1. Results` / `جدول ۱. نتایج`, which is promoted to
+  `.md2pdf-caption--table`;
+- fenced code titles, filenames, and captions become `.md2pdf-caption--code`;
+- Mermaid titles become `.md2pdf-caption--diagram`.
+
+Caption prefixes are intentionally conservative. Ordinary prose is left alone,
+while common English and Persian labels such as `Figure`, `Fig.`, `Table`,
+`Listing`, `Diagram`, `شکل`, `تصویر`, `جدول`, `کد`, and `نمودار` are recognized.
+
+Print CSS keeps captions from orphaning away from their figure, code listing,
+table, or diagram. Table captions use native `caption-side: top` so browser PDF
+engines can keep the caption inside the table flow.
+
 ## Code blocks
 
 Code blocks are semantic `<figure class="code-block">` elements. During Markdown
@@ -71,3 +93,15 @@ same patch that changes print behavior:
 ```bash
 bash scripts/build_examples.sh
 ```
+
+## Caption audit checks
+
+When reviewing generated PDFs after caption changes, check these cases in both
+English and Persian guides when they are present:
+
+- image followed by `Figure` / `شکل` caption text;
+- table followed or preceded by `Table` / `جدول` caption text;
+- fenced code blocks with `title`, `filename`, or `caption` metadata;
+- Mermaid fences with titles;
+- captions near a page boundary, so they do not separate from the visual block.
+

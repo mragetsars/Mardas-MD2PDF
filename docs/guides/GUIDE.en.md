@@ -12,7 +12,7 @@ summary: |
   This document also acts as a live rendering sample for cover pages, tables of contents, mixed RTL/LTR text, formulas, code, Mermaid flowcharts, images, tables, footnotes, page breaks, and safe HTML.
 institution: "Mardas Lab"
 course: "Markdown Publishing"
-version: "1.8.2"
+version: "1.8.3"
 status: "Stable"
 keywords:
   - Markdown
@@ -52,6 +52,8 @@ The renderer does not draw paragraphs manually on a PDF canvas. Instead, it conv
 ## Rendering sample checklist
 
 The guide intentionally contains compact test cases for the renderer. When you review the generated PDF, check that these samples appear correctly:
+
+Captioned images, tables, code listings, and Mermaid diagrams are now normalized as semantic print blocks so captions remain attached to their associated content in the generated PDF.
 
 | Sample area | What to verify in the PDF |
 | :--- | :--- |

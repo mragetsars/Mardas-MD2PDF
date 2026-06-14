@@ -32,7 +32,8 @@ def test_code_fence_attributes_render_with_title_line_numbers_and_highlights():
         '```\n'
     )
 
-    assert '<figcaption dir="auto">renderer.py</figcaption>' in result.body_html
+    assert 'md2pdf-caption--code' in result.body_html
+    assert 'renderer.py</figcaption>' in result.body_html
     assert 'data-lang="python"' in result.body_html
     assert 'code-block--numbered' in result.body_html
     assert 'code-block--highlighted' in result.body_html
@@ -47,7 +48,8 @@ def test_mermaid_fence_title_is_preserved_as_caption():
         '```\n'
     )
 
-    assert '<figcaption dir="auto">Pipeline</figcaption>' in result.body_html
+    assert 'md2pdf-caption--diagram' in result.body_html
+    assert 'Pipeline</figcaption>' in result.body_html
     assert 'mermaid-diagram--rendered' in result.body_html
 
 
@@ -86,7 +88,8 @@ def test_numbered_code_blocks_can_start_from_custom_line():
     )
 
     assert 'data-line-start="42"' in result.body_html
-    assert '<figcaption dir="auto">module.py</figcaption>' in result.body_html
+    assert 'md2pdf-caption--code' in result.body_html
+    assert 'module.py</figcaption>' in result.body_html
     assert 'class="hll"' in result.body_html
     assert '>42<' in result.body_html
 

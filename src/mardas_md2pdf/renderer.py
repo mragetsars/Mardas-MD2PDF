@@ -980,6 +980,30 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
         line-height: 1.55;
         text-align: center;
       }}
+      .md2pdf-caption {{
+        color: var(--md2pdf-caption-ink, var(--muted, #64748b));
+        font-size: var(--md2pdf-caption-size, 8.7pt);
+        line-height: 1.48;
+        font-weight: 650;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }}
+      .md2pdf-caption--figure,
+      .md2pdf-caption--diagram {{
+        text-align: center;
+      }}
+      .md2pdf-caption--code {{
+        text-align: start;
+      }}
+      table > caption.md2pdf-caption--table {{
+        caption-side: top;
+        padding: 2.2mm 3mm;
+        border-bottom: 1px solid var(--line, #dbe3ef);
+        background: var(--md2pdf-table-caption-bg, color-mix(in srgb, var(--soft, #f4f7fb) 82%, #ffffff));
+        color: var(--md2pdf-table-caption-ink, var(--ink, #172033));
+        font: 750 8.6pt/1.45 var(--font-fa), var(--font-en), sans-serif;
+        text-align: start;
+      }}
       .md2pdf-details {{
         margin: 1.2em 0;
         padding: 4mm 4.5mm;
@@ -1029,9 +1053,12 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
           break-inside: auto;
           page-break-inside: auto;
         }}
-        .code-block figcaption, .mermaid-diagram figcaption, .md2pdf-figure > figcaption {{
+        .code-block figcaption, .mermaid-diagram figcaption, .md2pdf-figure > figcaption,
+        table > caption.md2pdf-caption--table, .md2pdf-caption {{
           break-after: avoid;
           page-break-after: avoid;
+          break-inside: avoid;
+          page-break-inside: avoid;
         }}
         .code-block pre {{
           white-space: pre-wrap;
@@ -1045,6 +1072,10 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
         .table-wrap {{
           break-inside: avoid;
           page-break-inside: avoid;
+        }}
+        .table-wrap table caption {{
+          break-after: avoid-page;
+          page-break-after: avoid;
         }}
         .table-wrap--long, .table-wrap--wide, .table-wrap--very-wide {{
           break-inside: auto;

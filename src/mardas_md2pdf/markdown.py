@@ -171,6 +171,10 @@ def ui_label(key: str, *, lang: str | None = None, text_hint: str = "") -> str:
             "callout_quote": "نقل‌قول",
             "callout_abstract": "خلاصه",
             "footnote": "پانویس",
+            "caption_figure": "شکل",
+            "caption_table": "جدول",
+            "caption_code": "کد",
+            "caption_diagram": "نمودار",
         },
         "en": {
             "toc_title": "Table of Contents",
@@ -190,6 +194,10 @@ def ui_label(key: str, *, lang: str | None = None, text_hint: str = "") -> str:
             "callout_quote": "Quote",
             "callout_abstract": "Abstract",
             "footnote": "Footnote",
+            "caption_figure": "Figure",
+            "caption_table": "Table",
+            "caption_code": "Listing",
+            "caption_diagram": "Diagram",
         },
     }
     family = language_family(lang, text_hint)
@@ -516,7 +524,9 @@ def highlight_code(
     highlighted = highlight(code, lexer, formatter)
     caption_value = caption if caption not in (None, "") else label.upper()
     caption_html = (
-        f'<figcaption dir="auto">{html.escape(caption_value)}</figcaption>'
+        '<figcaption class="md2pdf-caption md2pdf-caption--code" dir="auto">'
+        f'{html.escape(caption_value)}'
+        '</figcaption>'
         if caption_value
         else ""
     )
@@ -549,7 +559,9 @@ def mermaid_placeholder(code: str, caption: str | None = None) -> str:
     caption_text = html.escape((caption or "MERMAID").strip() or "MERMAID")
     return (
         '<figure class="mermaid-diagram mermaid-diagram--pending" dir="ltr">'
-        f'<figcaption>{caption_text}</figcaption>'
+        '<figcaption class="md2pdf-caption md2pdf-caption--diagram" dir="auto">'
+        f'{caption_text}'
+        '</figcaption>'
         '<pre><code class="language-mermaid">'
         f"{escaped}"
         '</code></pre>'
@@ -1276,6 +1288,68 @@ def apply_literal_autolinks(soup: BeautifulSoup) -> None:
         fragment.unwrap()
 
 
+CAPTION_PREFIX_RE = re.compile(
+    r"^(?:"
+    r"fig(?:ure)?\.?(?:\s+[0-9۰-۹٠-٩]+)?|"
+    r"image(?:\s+[0-9۰-۹٠-٩]+)?|"
+    r"table(?:\s+[0-9۰-۹٠-٩]+)?|"
+    r"listing(?:\s+[0-9۰-۹٠-٩]+)?|"
+    r"code(?:\s+[0-9۰-۹٠-٩]+)?|"
+    r"diagram(?:\s+[0-9۰-۹٠-٩]+)?|"
+    r"شکل(?:\s+[0-9۰-۹٠-٩]+)?|"
+    r"تصویر(?:\s+[0-9۰-۹٠-٩]+)?|"
+    r"جدول(?:\s+[0-9۰-۹٠-٩]+)?|"
+    r"کد(?:\s+[0-9۰-۹٠-٩]+)?|"
+    r"نمودار(?:\s+[0-9۰-۹٠-٩]+)?"
+    r")\b",
+    re.I,
+)
+TABLE_CAPTION_RE = re.compile(r"^(?:table(?:\s+[0-9۰-۹٠-٩]+)?|جدول(?:\s+[0-9۰-۹٠-٩]+)?)[\s:：.\-–—]+", re.I)
+
+
+def _caption_paragraph_html(paragraph: Tag, *, expected: str | None = None) -> str:
+    """Return paragraph HTML when it is an unambiguous print caption."""
+    text = paragraph.get_text(" ", strip=True)
+    if not text:
+        return ""
+    if expected == "table" and not TABLE_CAPTION_RE.match(text):
+        return ""
+    if expected is None and not CAPTION_PREFIX_RE.match(text):
+        return ""
+    return "".join(str(child) for child in paragraph.contents).strip()
+
+
+def _append_caption_from_html(soup: BeautifulSoup, parent: Tag, caption_html: str, *, kind: str) -> Tag:
+    caption = soup.new_tag("figcaption" if parent.name == "figure" else "caption")
+    caption["class"] = ["md2pdf-caption", f"md2pdf-caption--{kind}"]
+    caption["dir"] = "auto"
+    caption.append(BeautifulSoup(caption_html, "html.parser"))
+    parent.append(caption)
+    return caption
+
+
+def normalize_semantic_captions(soup: BeautifulSoup) -> None:
+    """Apply consistent caption classes to figures, diagrams, code, and tables."""
+    for figure in soup.find_all("figure"):
+        classes = set(figure.get("class", []))
+        kind = "figure"
+        if "code-block" in classes:
+            kind = "code"
+        elif "mermaid-diagram" in classes:
+            kind = "diagram"
+        for caption in figure.find_all("figcaption", recursive=False):
+            caption_classes = set(caption.get("class", []))
+            caption_classes.update({"md2pdf-caption", f"md2pdf-caption--{kind}"})
+            caption["class"] = sorted(caption_classes)
+            caption["dir"] = caption.get("dir") or "auto"
+    for table in soup.find_all("table"):
+        for caption in table.find_all("caption", recursive=False):
+            caption_classes = set(caption.get("class", []))
+            caption_classes.update({"md2pdf-caption", "md2pdf-caption--table"})
+            caption["class"] = sorted(caption_classes)
+            caption["dir"] = caption.get("dir") or "auto"
+
+
 def promote_image_caption_pairs(soup: BeautifulSoup) -> None:
     """Turn common Markdown image-caption pairs into semantic figures.
 
@@ -1296,16 +1370,9 @@ def promote_image_caption_pairs(soup: BeautifulSoup) -> None:
             continue
         next_sibling = paragraph.find_next_sibling()
         caption_html = ""
-        if (
-            isinstance(next_sibling, Tag)
-            and next_sibling.name == "p"
-            and len(next_sibling.contents) == 1
-            and isinstance(next_sibling.contents[0], Tag)
-            and next_sibling.contents[0].name in {"em", "strong"}
-        ):
-            caption_text = next_sibling.get_text(" ", strip=True)
-            if re.match(r"^(figure|fig\.|شکل|تصویر)\b", caption_text, re.I):
-                caption_html = str(next_sibling.contents[0])
+        if isinstance(next_sibling, Tag) and next_sibling.name == "p":
+            caption_html = _caption_paragraph_html(next_sibling)
+            if caption_html:
                 next_sibling.decompose()
         figure = soup.new_tag("figure")
         figure["class"] = "md2pdf-figure"
@@ -1313,11 +1380,35 @@ def promote_image_caption_pairs(soup: BeautifulSoup) -> None:
         paragraph.replace_with(figure)
         figure.append(images[0].extract())
         if caption_html:
-            caption = soup.new_tag("figcaption")
-            caption.append(BeautifulSoup(caption_html, "html.parser"))
-            figure.append(caption)
+            _append_caption_from_html(soup, figure, caption_html, kind="figure")
 
 
+def promote_table_caption_pairs(soup: BeautifulSoup) -> None:
+    """Attach adjacent table captions to tables before table wrapping."""
+    for table in list(soup.find_all("table")):
+        if table.find("caption", recursive=False):
+            continue
+        caption_source = table.find_next_sibling()
+        placement = "append"
+        caption_html = ""
+        if isinstance(caption_source, Tag) and caption_source.name == "p":
+            caption_html = _caption_paragraph_html(caption_source, expected="table")
+        if not caption_html:
+            caption_source = table.find_previous_sibling()
+            placement = "insert"
+            if isinstance(caption_source, Tag) and caption_source.name == "p":
+                caption_html = _caption_paragraph_html(caption_source, expected="table")
+        if not caption_html:
+            continue
+        caption = soup.new_tag("caption")
+        caption["class"] = ["md2pdf-caption", "md2pdf-caption--table"]
+        caption["dir"] = "auto"
+        caption.append(BeautifulSoup(caption_html, "html.parser"))
+        if placement == "insert":
+            table.insert(0, caption)
+        else:
+            table.insert(0, caption)
+        caption_source.decompose()
 
 
 def _table_column_count(table: Tag) -> int:
@@ -1343,9 +1434,11 @@ def postprocess_html(body_html: str, *, code_style: str = "github-dark", lang: s
     soup = BeautifulSoup(body_html, "html.parser")
 
     promote_image_caption_pairs(soup)
+    promote_table_caption_pairs(soup)
     render_mermaid_placeholders(soup)
     apply_literal_autolinks(soup)
     normalize_raw_code_blocks(soup, code_style=code_style)
+    normalize_semantic_captions(soup)
 
     # Direction-aware blocks and inline content.
     for tag in soup.find_all(["p", "li", "td", "th", "h1", "h2", "h3", "h4", "h5", "h6", "figcaption"]):
