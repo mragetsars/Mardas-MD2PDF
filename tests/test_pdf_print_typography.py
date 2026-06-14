@@ -112,6 +112,8 @@ def test_guide_image_references_use_document_local_assets():
     assert (guide_dir / "images/logo.svg").exists()
     assert "images/architecture.svg" in en
     assert "images/logo.svg" in en
+    assert "images/architecture.png" not in en
+    assert "images/logo.png" not in en
     assert "images/architecture.svg" in fa
     assert "images/logo.svg" in fa
 
@@ -134,6 +136,26 @@ def test_local_svg_images_embed_and_keep_semantic_captions(tmp_path: Path):
     assert 'src="data:image/svg+xml;base64,' in result.body_html
     assert 'md2pdf-caption--figure' in result.body_html
     assert 'Image blocked or missing' not in result.body_html
+
+
+def test_guide_architecture_svg_title_is_not_clipped():
+    svg_path = Path("docs/guides/images/architecture.svg")
+    svg = svg_path.read_text(encoding="utf-8")
+
+    assert "Markdown to structured print pipeline" in svg
+    assert "meta-start" in svg
+    assert "text-anchor:start" in svg
+    assert 'class="meta meta-start"' in svg
+    assert 'x="126"' in svg
+
+
+def test_pdf_typography_docs_cover_guide_media_audit():
+    docs = Path("docs/PDF-TYPOGRAPHY.md").read_text(encoding="utf-8")
+
+    assert "Guide media samples" in docs
+    assert "blocked placeholders" in docs
+    assert "Images and Safe HTML" in docs
+
 
 def test_footer_context_collects_running_metadata(tmp_path: Path):
     result = render_markdown(

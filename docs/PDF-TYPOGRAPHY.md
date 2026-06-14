@@ -86,6 +86,23 @@ logo image rendered through safe HTML. Blocked placeholders are still tested in
 the automated suite, but the public guide examples should demonstrate the
 successful path first.
 
+
+## Final guide consistency checks
+
+The generated guide PDFs are treated as the public visual samples for this
+project. After a print-polish patch, audit them for consistency as well as
+correctness:
+
+- guide image examples should use the same document-local assets that the PDF
+  actually renders;
+- example snippets should not drift from the live sample immediately below them;
+- duplicated release notes or navigation notes should be collapsed into one
+  clear paragraph;
+- SVG sample diagrams should keep all labels inside the viewBox so text is not
+  clipped at the page edge;
+- refreshed `examples/GUIDE.en.pdf` and `examples/GUIDE.fa.pdf` should be
+  committed with the same patch that changes guide-facing output.
+
 ## Audit checklist
 
 When changing print typography, render the guides and inspect at least these

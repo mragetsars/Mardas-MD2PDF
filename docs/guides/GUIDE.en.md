@@ -1,4 +1,5 @@
 ---
+Visible TOC links and PDF viewer bookmarks use the same preserved heading destinations, so both navigation surfaces jump to the actual content heading rather than to a matching row inside the table of contents.
 title: "Mardas MD2PDF Guide"
 subtitle: "Complete user manual and feature reference"
 authors:
@@ -12,7 +13,7 @@ summary: |
   This document also acts as a live rendering sample for cover pages, tables of contents, mixed RTL/LTR text, formulas, code, Mermaid flowcharts, images, tables, footnotes, page breaks, and safe HTML.
 institution: "Mardas Lab"
 course: "Markdown Publishing"
-version: "1.8.6"
+version: "1.8.7"
 status: "Stable"
 keywords:
   - Markdown
@@ -210,7 +211,7 @@ department: "Department name"
 course: "Course or project title"
 supervisor: "Supervisor name"
 date: "2026-05-20"
-version: "1.8.6"
+version: "1.8.7"
 status: "Draft"
 keywords: [Markdown, PDF, RTL, MathJax]
 cover_label: "Technical Report"
@@ -594,7 +595,7 @@ If a Mermaid block uses advanced syntax outside the supported subset, keep a sma
 Markdown images are embedded when they point to local files. A common caption pattern is also promoted to a real PDF figure:
 
 ```md
-![Architecture diagram](images/architecture.png)
+![Architecture diagram](images/architecture.svg)
 
 *Figure 1. Architecture overview.*
 ```
@@ -602,7 +603,7 @@ Markdown images are embedded when they point to local files. A common caption pa
 When the caption starts with `Figure`, `Fig.`, `شکل`, or `تصویر`, the renderer wraps the image and caption in a semantic figure block. Safe HTML image attributes such as `width` and `height` are preserved:
 
 ```html
-<img src="images/logo.png" width="240" alt="Project logo">
+<img src="images/logo.svg" width="240" alt="Project logo">
 ```
 
 

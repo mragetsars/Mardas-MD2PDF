@@ -1,4 +1,5 @@
 ---
+لینک‌های فهرست مطالب چاپی و bookmarkهای PDF viewer از مقصدهای ثابت همان headingها استفاده می‌کنند؛ بنابراین هر دو باید به عنوان واقعی در متن سند بروند، نه به ردیف مشابه داخل خود فهرست مطالب.
 title: "راهنمای Mardas MD2PDF"
 subtitle: "راهنمای کامل استفاده و مرجع امکانات"
 authors:
@@ -12,7 +13,7 @@ summary: |
   همین سند به عنوان نمونه زنده رندر نیز استفاده می‌شود و جلد، فهرست مطالب، متن ترکیبی فارسی/English، فرمول، کد، نمودار Mermaid، تصویر، جدول، پانویس، شکست صفحه و HTML امن را نمایش می‌دهد.
 institution: "Mardas Lab"
 course: "انتشار حرفه‌ای Markdown"
-version: "1.8.6"
+version: "1.8.7"
 status: "Stable"
 keywords:
   - Markdown
@@ -208,7 +209,7 @@ department: "نام دانشکده یا دپارتمان"
 course: "نام درس یا پروژه"
 supervisor: "نام استاد یا راهنما"
 date: "۱۴۰۵-۰۲-۳۰"
-version: "1.8.6"
+version: "1.8.7"
 status: "Draft"
 keywords: [Markdown, PDF, RTL, MathJax]
 cover_label: "گزارش فنی"

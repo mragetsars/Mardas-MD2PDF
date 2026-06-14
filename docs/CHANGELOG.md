@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.8.7 - 2026-06-14
+
+### Fixed
+
+- Polished the official guide PDF media audit by synchronizing the documented image snippets with the SVG assets rendered in the live samples.
+- Fixed the architecture SVG heading so its leading text is not clipped in generated guide PDFs.
+- Collapsed duplicated visible-TOC navigation notes in the English and Persian guides.
+
 ## 1.8.4 - 2026-06-14
 
 ### Fixed

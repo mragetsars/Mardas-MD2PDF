@@ -18,13 +18,14 @@
       .card-accent{fill:#ecfdf5;stroke:#10a37f;stroke-width:2;filter:url(#shadow)}
       .label{font:700 26px Inter,Segoe UI,Arial,sans-serif;fill:#0f172a;text-anchor:middle}
       .meta{font:600 16px Inter,Segoe UI,Arial,sans-serif;fill:#64748b;text-anchor:middle}
+      .meta-start{text-anchor:start}
       .arrow{fill:none;stroke:#10a37f;stroke-width:5;stroke-linecap:round;marker-end:url(#arrow)}
       .dot{fill:url(#accent)}
     </style>
   </defs>
   <rect x="24" y="24" width="912" height="472" rx="28" class="bg"/>
   <circle cx="88" cy="84" r="10" class="dot"/>
-  <text x="118" y="92" class="meta" text-anchor="start">Markdown to structured print pipeline</text>
+  <text x="126" y="92" class="meta meta-start">Markdown to structured print pipeline</text>
 
   <rect x="72" y="190" width="170" height="120" rx="22" class="card"/>
   <text x="157" y="242" class="label">Markdown</text>
