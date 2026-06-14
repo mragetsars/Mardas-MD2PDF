@@ -2,6 +2,21 @@
 
 All notable changes to Mardas MD2PDF are tracked here.
 
+## 1.8.2 - 2026-06-14
+
+### Fixed
+
+- Improved PDF print-flow rules so headings stay with following content, paragraphs use orphan/widow protection, and figures, callouts, math displays, Mermaid diagrams, and image placeholders avoid awkward page splits.
+- Marked long code blocks and long/wide tables with print-flow hints so compact blocks stay together while large technical blocks can split cleanly instead of leaving large blank pages.
+
+### Documentation
+
+- Added `docs/PDF-TYPOGRAPHY.md` to document print-flow rules, long-code behavior, long-table behavior, and the visual audit checklist for generated PDFs.
+
+### Tests
+
+- Added regression coverage for long code/table print-flow classes and the injected print typography CSS.
+
 ## 1.8.1 - 2026-06-14
 
 ### Fixed

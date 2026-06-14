@@ -57,3 +57,4 @@ When debugging a navigation issue, inspect both layers:
   array pointing at the target page;
 - the PDF outline item should point at the same heading coordinate.
 
+See also [PDF typography and print flow](./PDF-TYPOGRAPHY.md) for page-break and long-block behavior.

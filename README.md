@@ -2,7 +2,7 @@
 
 > **Professional Markdown to PDF converter for Persian, English, and mixed RTL/LTR technical documents**
 
-![Language](https://img.shields.io/badge/Language-Python-blue) ![Renderer](https://img.shields.io/badge/Renderer-Playwright%20%2B%20Chromium-green) ![Math](https://img.shields.io/badge/Math-MathJax-purple) ![Version](https://img.shields.io/badge/Version-v1.8.1-success) ![Status](https://img.shields.io/badge/Status-Stable-success) ![CI](https://github.com/mragetsars/Mardas-MD2PDF/actions/workflows/ci.yml/badge.svg)
+![Language](https://img.shields.io/badge/Language-Python-blue) ![Renderer](https://img.shields.io/badge/Renderer-Playwright%20%2B%20Chromium-green) ![Math](https://img.shields.io/badge/Math-MathJax-purple) ![Version](https://img.shields.io/badge/Version-v1.8.2-success) ![Status](https://img.shields.io/badge/Status-Stable-success) ![CI](https://github.com/mragetsars/Mardas-MD2PDF/actions/workflows/ci.yml/badge.svg)
 
 ## Overview
 
@@ -27,6 +27,8 @@ The system is organized around a browser-based rendering pipeline. Markdown is f
 The Markdown layer handles front matter, heading collection, table of contents and PDF outline generation, GitHub-style task lists, alerts, autolinks, heading anchors, image captions, enhanced code blocks with titles, line numbers, line highlights, and line-start metadata, Mermaid diagrams, extended callouts, footnotes, safe HTML, local image embedding with blocked placeholders, print-fit wide tables, math protection, and direction-aware document metadata.
 
 ### PDF Rendering
+
+Print-flow rules now keep headings with their first block, protect ordinary paragraphs from orphan/widow lines, and let long code blocks or large tables split only when avoiding the split would waste page space.
 
 PDF navigation is kept consistent across both navigation layers: the visible table of contents and the PDF viewer outline/bookmarks both jump to the same real heading destinations after metadata writing and cover/content merging.
 
@@ -53,6 +55,7 @@ The README is intentionally short and is meant to introduce the project. Complet
 - [Studio workflow](./docs/STUDIO.md)
 - [Markdown fidelity](./docs/MARKDOWN-FIDELITY.md)
 - [PDF navigation](./docs/PDF-NAVIGATION.md)
+- [PDF typography and print flow](./docs/PDF-TYPOGRAPHY.md)
 - [Security policy](./docs/SECURITY.md)
 
 Generated PDF versions of the guides are available in the [`examples/`](./examples/) directory.

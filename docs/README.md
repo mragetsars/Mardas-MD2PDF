@@ -24,3 +24,4 @@ docs live in their own directories.
 - [Studio workflow](./STUDIO.md)
 - [Markdown fidelity](./MARKDOWN-FIDELITY.md)
 - [PDF navigation](./PDF-NAVIGATION.md)
+- [PDF typography and print flow](./PDF-TYPOGRAPHY.md)

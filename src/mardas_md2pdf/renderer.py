@@ -995,6 +995,73 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
         font-weight: 850;
         color: var(--md2pdf-details-title, var(--accent, var(--blue, #2563eb)));
       }}
+      @media print {{
+        .md2pdf-article {{
+          orphans: 3;
+          widows: 3;
+        }}
+        h1, h2, h3, h4, h5, h6 {{
+          break-after: avoid-page;
+          break-inside: avoid;
+          page-break-after: avoid;
+          page-break-inside: avoid;
+          orphans: 3;
+          widows: 3;
+        }}
+        h1 + *, h2 + *, h3 + *, h4 + *, h5 + *, h6 + * {{
+          break-before: avoid-page;
+          page-break-before: avoid;
+        }}
+        p, li, blockquote, .callout, .md2pdf-details {{
+          orphans: 3;
+          widows: 3;
+        }}
+        blockquote, .callout, .md2pdf-details, .md2pdf-image-placeholder,
+        .math.display, .md2pdf-figure, .mermaid-diagram {{
+          break-inside: avoid;
+          page-break-inside: avoid;
+        }}
+        .code-block {{
+          break-inside: avoid;
+          page-break-inside: avoid;
+        }}
+        .code-block--long, .code-block--very-long {{
+          break-inside: auto;
+          page-break-inside: auto;
+        }}
+        .code-block figcaption, .mermaid-diagram figcaption, .md2pdf-figure > figcaption {{
+          break-after: avoid;
+          page-break-after: avoid;
+        }}
+        .code-block pre {{
+          white-space: pre-wrap;
+          overflow-wrap: anywhere;
+          word-break: normal;
+        }}
+        .code-block--numbered .code pre {{
+          white-space: pre-wrap;
+          overflow-wrap: anywhere;
+        }}
+        .table-wrap {{
+          break-inside: avoid;
+          page-break-inside: avoid;
+        }}
+        .table-wrap--long, .table-wrap--wide, .table-wrap--very-wide {{
+          break-inside: auto;
+          page-break-inside: auto;
+        }}
+        .table-wrap--long table, .table-wrap--wide table, .table-wrap--very-wide table {{
+          break-inside: auto;
+          page-break-inside: auto;
+        }}
+        thead {{
+          display: table-header-group;
+        }}
+        tr {{
+          break-inside: avoid;
+          page-break-inside: avoid;
+        }}
+      }}
       .code-block--numbered .codehilite > .table-wrap {{
         margin: 0;
         border: 0;

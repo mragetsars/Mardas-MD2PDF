@@ -12,7 +12,7 @@ summary: |
   This document also acts as a live rendering sample for cover pages, tables of contents, mixed RTL/LTR text, formulas, code, Mermaid flowcharts, images, tables, footnotes, page breaks, and safe HTML.
 institution: "Mardas Lab"
 course: "Markdown Publishing"
-version: "1.8.1"
+version: "1.8.2"
 status: "Stable"
 keywords:
   - Markdown
@@ -184,6 +184,8 @@ A clean PDF workflow usually looks like this:
 6. Finalize the Markdown and render again.
 
 For important documents, always review the final PDF visually. Automated tests can catch many problems, but typography, spacing, and page breaks still need human review.
+
+PDF print-flow rules keep headings with following content, protect paragraphs from orphan/widow lines, and allow long code blocks or large tables to continue on the next page when keeping them together would waste space.
 
 # Front Matter
 

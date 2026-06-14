@@ -99,6 +99,9 @@ GLOBAL_SAFE_ATTRS = {
     "aria-label",
     "data-lang",
     "data-line-start",
+    "data-lines",
+    "data-md2pdf-columns",
+    "data-md2pdf-rows",
 }
 TAG_SAFE_ATTRS = {
     "a": {"href", "name", "target", "rel"},
@@ -517,7 +520,9 @@ def highlight_code(
         if caption_value
         else ""
     )
+    line_count = max(1, len(code.rstrip("\n").splitlines()))
     extra_attrs = f" data-lang=\"{html.escape(language)}\"" if language else ""
+    extra_attrs += f" data-lines=\"{line_count}\""
     if linenos and line_start > 1:
         extra_attrs += f" data-line-start=\"{line_start}\""
     classes = "code-block" + (f" {html.escape(extra_classes)}" if extra_classes else "")
@@ -525,6 +530,10 @@ def highlight_code(
         classes += " code-block--numbered"
     if highlight_lines:
         classes += " code-block--highlighted"
+    if line_count >= 36:
+        classes += " code-block--long"
+    if line_count >= 90:
+        classes += " code-block--very-long"
     return (
         f'<figure class="{classes}" dir="ltr"{extra_attrs}>'
         f"{caption_html}"
@@ -1325,6 +1334,11 @@ def _table_column_count(table: Tag) -> int:
         max_columns = max(max_columns, columns)
     return max_columns
 
+
+def _table_row_count(table: Tag) -> int:
+    """Return the number of rendered rows for print-flow hints."""
+    return len(table.find_all("tr"))
+
 def postprocess_html(body_html: str, *, code_style: str = "github-dark", lang: str | None = None) -> str:
     soup = BeautifulSoup(body_html, "html.parser")
 
@@ -1355,16 +1369,21 @@ def postprocess_html(body_html: str, *, code_style: str = "github-dark", lang: s
         if table.parent and getattr(table.parent, "name", None) == "div" and "table-wrap" in table.parent.get("class", []):
             continue
         columns = _table_column_count(table)
+        rows = _table_row_count(table)
         classes = ["table-wrap"]
         if columns >= 8:
             classes.append("table-wrap--wide")
         if columns >= 12:
             classes.append("table-wrap--very-wide")
+        if rows >= 18:
+            classes.append("table-wrap--long")
         wrapper = soup.new_tag("div")
         wrapper["class"] = classes
         wrapper["dir"] = "auto"
         if columns:
             wrapper["data-md2pdf-columns"] = str(columns)
+        if rows:
+            wrapper["data-md2pdf-rows"] = str(rows)
         table.wrap(wrapper)
 
     # GitHub-style task lists.
