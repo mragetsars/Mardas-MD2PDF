@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from pypdf import PdfReader, PdfWriter
+from pypdf.generic import ArrayObject, DictionaryObject, FloatObject, NameObject, NumberObject
 
 from mardas_md2pdf.markdown import render_markdown
 from mardas_md2pdf.renderer import (
@@ -53,3 +54,38 @@ def test_metadata_copy_preserves_named_destinations_for_toc_links(tmp_path: Path
     assert "/intro" in reader.named_destinations
     assert reader.outline[0]["/Title"] == "Intro"
     assert reader.get_destination_page_number(reader.outline[0]) == 0
+
+
+def test_visible_toc_link_annotations_are_rewritten_to_explicit_destinations(tmp_path: Path) -> None:
+    source_pdf = tmp_path / "source-links.pdf"
+    output_pdf = tmp_path / "output-links.pdf"
+
+    writer = PdfWriter()
+    writer.add_blank_page(width=300, height=300)
+    writer.add_named_destination("/intro", 0)
+    link_annotation = DictionaryObject(
+        {
+            NameObject("/Type"): NameObject("/Annot"),
+            NameObject("/Subtype"): NameObject("/Link"),
+            NameObject("/Rect"): ArrayObject([FloatObject(20), FloatObject(20), FloatObject(200), FloatObject(42)]),
+            NameObject("/Border"): ArrayObject([NumberObject(0), NumberObject(0), NumberObject(0)]),
+            NameObject("/Dest"): NameObject("/intro"),
+        }
+    )
+    writer.pages[0][NameObject("/Annots")] = ArrayObject([writer._add_object(link_annotation)])
+    with source_pdf.open("wb") as handle:
+        writer.write(handle)
+
+    _copy_pdf_with_metadata(
+        source_pdf,
+        output_pdf,
+        {"/Title": "Visible TOC annotation test"},
+        outline_source_entries=[(1, "Intro", "intro")],
+    )
+
+    reader = PdfReader(str(output_pdf))
+    annotation = reader.pages[0]["/Annots"][0].get_object()
+    destination = annotation["/Dest"]
+    assert isinstance(destination, ArrayObject)
+    assert str(destination[1]) in {"/Fit", "/XYZ", "/FitH", "/FitBH"}
+    assert destination[0].get_object() == reader.pages[0]

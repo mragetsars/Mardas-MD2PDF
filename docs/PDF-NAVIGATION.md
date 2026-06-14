@@ -41,3 +41,19 @@ reader = PdfReader("output.pdf")
 print(reader.named_destinations.keys())
 print(reader.outline)
 ```
+
+## Visible TOC link annotations
+
+Visible TOC links are rendered by Chromium as PDF link annotations. After pypdf
+copies pages, writes metadata, merges cover/content PDFs, or adds outline items,
+those annotations are rewritten from named destinations into explicit destination
+arrays. This makes the printed TOC independent of viewer-specific named-destination
+resolution while still preserving the named destinations used for diagnostics and
+outline fallback behavior.
+
+When debugging a navigation issue, inspect both layers:
+
+- the link annotation on the visible TOC row should contain an explicit `/Dest`
+  array pointing at the target page;
+- the PDF outline item should point at the same heading coordinate.
+

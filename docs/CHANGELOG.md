@@ -2,6 +2,17 @@
 
 All notable changes to Mardas MD2PDF are tracked here.
 
+## 1.8.1 - 2026-06-14
+
+### Fixed
+
+- Rewrote visible PDF table-of-contents link annotations to explicit heading destinations so printed TOC entries keep working after pypdf metadata writes and cover/content merges.
+- Kept PDF viewer outline/bookmarks and visible TOC links bound to the same real heading coordinates instead of relying on viewer-specific named-destination resolution.
+
+### Tests
+
+- Added regression coverage that verifies copied visible TOC link annotations are converted from named destinations to explicit PDF destination arrays.
+
 ## 1.8.0 - 2026-06-14
 
 ### Fixed

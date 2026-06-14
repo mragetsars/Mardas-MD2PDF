@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 from importlib import resources
 from pathlib import Path
 from typing import Any, Callable
-from urllib.parse import quote
+from urllib.parse import quote, unquote
 
 from playwright.sync_api import Page, sync_playwright
 from pypdf import PdfReader, PdfWriter
@@ -1403,7 +1403,7 @@ def _pdf_metadata(result: MarkdownRenderResult, options: PdfOptions, title: str)
 
 OutlineSourceEntry = tuple[int, str, str]
 LocatedOutlineEntry = tuple[int, str, int, float | None]
-NamedDestinationMap = dict[str, tuple[int, float | None]]
+NamedDestinationMap = dict[str, tuple[int, float | None, ArrayObject]]
 
 
 def _outline_source_entries(result: MarkdownRenderResult) -> list[OutlineSourceEntry]:
@@ -1546,8 +1546,92 @@ def _copy_pdf_named_destinations(
             writer.add_named_destination_array(TextStringObject(name), copied_destination)
         except Exception:
             continue
-        copied[name] = (target_page_index, _destination_top(copied_destination))
+        copied[name] = (target_page_index, _destination_top(copied_destination), copied_destination)
     return copied
+
+
+def _annotation_destination_lookup_names(value: Any) -> list[str]:
+    """Return destination-name variants used by PDF link annotations."""
+    value = _destination_object(value)
+    if isinstance(value, ArrayObject):
+        return []
+    text = str(value or "").strip()
+    if not text:
+        return []
+    bare = text[1:] if text.startswith("/") else text
+    encoded = quote(bare, safe="-._~")
+    decoded = unquote(bare)
+    names = [text, bare, f"/{bare}", encoded, f"/{encoded}", decoded, f"/{decoded}"]
+    unique: list[str] = []
+    for name in names:
+        if name and name not in unique:
+            unique.append(name)
+    return unique
+
+
+def _clone_destination_array(destination: ArrayObject) -> ArrayObject:
+    """Return a shallow destination-array copy safe for annotations."""
+    clone = ArrayObject()
+    clone.extend(destination)
+    return clone
+
+
+def _resolve_named_destination_for_annotation(
+    destination: Any,
+    named_destinations: NamedDestinationMap,
+) -> ArrayObject | None:
+    """Resolve a PDF annotation destination name to an explicit array."""
+    for name in _annotation_destination_lookup_names(destination):
+        record = named_destinations.get(name)
+        if record is not None:
+            return _clone_destination_array(record[2])
+    return None
+
+
+def _rewrite_pdf_link_annotation_destinations(
+    writer: PdfWriter,
+    named_destinations: NamedDestinationMap,
+) -> None:
+    """Rewrite copied TOC link annotations from names to explicit arrays.
+
+    Chromium writes visible TOC links as ``/Dest /heading-id`` annotations.
+    After pypdf copies pages and rewrites the catalog, some viewers resolve the
+    preserved name tree for bookmarks but leave page annotations inert or point
+    them at the original source context.  Replacing annotation destinations with
+    explicit destination arrays makes visible TOC links independent of name-tree
+    lookup and keeps them aligned with the same real heading coordinates used by
+    PDF outline entries.
+    """
+    if not named_destinations:
+        return
+    for page in writer.pages:
+        annotations = page.get(NameObject("/Annots")) or page.get("/Annots")
+        if not annotations:
+            continue
+        for annotation_ref in annotations:
+            try:
+                annotation = annotation_ref.get_object()
+            except Exception:
+                continue
+            if str(annotation.get(NameObject("/Subtype")) or annotation.get("/Subtype") or "") != "/Link":
+                continue
+
+            direct_destination = annotation.get(NameObject("/Dest")) or annotation.get("/Dest")
+            resolved = _resolve_named_destination_for_annotation(direct_destination, named_destinations)
+            if resolved is not None:
+                annotation[NameObject("/Dest")] = resolved
+                continue
+
+            action = annotation.get(NameObject("/A")) or annotation.get("/A")
+            action = _destination_object(action)
+            if not isinstance(action, dict):
+                continue
+            if str(action.get(NameObject("/S")) or action.get("/S") or "") != "/GoTo":
+                continue
+            action_destination = action.get(NameObject("/D")) or action.get("/D")
+            resolved = _resolve_named_destination_for_annotation(action_destination, named_destinations)
+            if resolved is not None:
+                action[NameObject("/D")] = resolved
 
 
 def _heading_destination_names(heading_id: str) -> list[str]:
@@ -1608,7 +1692,7 @@ def _locate_outline_pages(
         destination_top: float | None = None
         for destination_name in _heading_destination_names(heading_id):
             if named_destinations and destination_name in named_destinations:
-                destination_page, destination_top = named_destinations[destination_name]
+                destination_page, destination_top, _destination = named_destinations[destination_name]
                 break
 
         needle = _normalize_pdf_search_text(title)
@@ -1674,6 +1758,7 @@ def _copy_pdf_with_metadata(
     for page in reader.pages:
         writer.add_page(page)
     named_destinations = _copy_pdf_named_destinations(writer, reader)
+    _rewrite_pdf_link_annotation_destinations(writer, named_destinations)
     writer.add_metadata(metadata)
     if outline_source_entries:
         _add_pdf_outline(
@@ -1715,6 +1800,7 @@ def _merge_pdfs(
         for page in reader.pages:
             writer.add_page(page)
         named_destinations.update(_copy_pdf_named_destinations(writer, reader, page_offset=page_offset))
+    _rewrite_pdf_link_annotation_destinations(writer, named_destinations)
     if metadata:
         writer.add_metadata(metadata)
     if outline_source_entries:
