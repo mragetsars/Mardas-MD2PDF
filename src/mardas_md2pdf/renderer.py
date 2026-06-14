@@ -18,7 +18,7 @@ from urllib.parse import quote, unquote
 
 from playwright.sync_api import Page, sync_playwright
 from pypdf import PdfReader, PdfWriter
-from pypdf.generic import ArrayObject, Fit, NameObject, TextStringObject
+from pypdf.generic import ArrayObject, DictionaryObject, Fit, NameObject, NumberObject, TextStringObject
 
 from .appearance import (
     Appearance,
@@ -238,6 +238,14 @@ class CoverBranding:
     footer: str
     logo: Path | None
     product: bool = False
+
+
+@dataclass(slots=True)
+class FooterContext:
+    title: str
+    metadata: str = ""
+    lang: str = "en"
+    document_direction: str = "ltr"
 
 
 def _resolve_cover_branding(metadata: dict[str, Any], options: PdfOptions, base_dir: Path) -> CoverBranding:
@@ -611,6 +619,34 @@ def _metadata_items(value: Any) -> list[str]:
         return [item for item in items if item]
     text = _stringify_metadata_value(value)
     return [text] if text else []
+
+
+def _footer_context(result: MarkdownRenderResult, options: PdfOptions, title: str) -> FooterContext:
+    """Build the small running metadata line used in page footers."""
+    metadata = result.metadata
+    raw_lang = _stringify_metadata_value(metadata.get("lang"))
+    document_direction = _resolved_document_direction(result, options, raw_lang)
+    lang = raw_lang or ("fa" if document_direction == "rtl" else "en")
+
+    pieces: list[str] = []
+    for key in ("version", "status", "date"):
+        value = _stringify_metadata_value(metadata.get(key)).strip()
+        if value and value not in pieces:
+            pieces.append(value)
+    course = _stringify_metadata_value(_first_metadata_value(metadata, "course", "institution")).strip()
+    if course and course not in pieces:
+        pieces.insert(0, course)
+    metadata_line = " · ".join(pieces[:3])
+    return FooterContext(
+        title=str(title or result.title or "Document"),
+        metadata=metadata_line,
+        lang=lang,
+        document_direction=document_direction,
+    )
+
+
+def _footer_page_label(lang: str | None) -> str:
+    return "صفحه" if normalize_language(lang).startswith(RTL_LANG_PREFIXES) else "Page"
 
 
 def _paragraph_block_html(value: Any, class_name: str) -> str:
@@ -1360,42 +1396,66 @@ def build_html(
 
 
 
-def _footer_template(title: str, style: str = "modern", mode: str = "light") -> str:
+def _footer_template(
+    context: FooterContext | str,
+    style: str = "modern",
+    mode: str = "light",
+) -> str:
+    if isinstance(context, FooterContext):
+        title = context.title
+        metadata = context.metadata
+        lang = context.lang
+        document_direction = context.document_direction
+    else:
+        title = str(context)
+        metadata = ""
+        lang = "en"
+        document_direction = "ltr"
+
     kind = footer_kind(style, mode)
+    color = "#64748b"
+    rule_color = "#dbe3ef"
+    font_family = "Vazirmatn, 'Noto Sans Arabic', Tahoma, Arial, sans-serif"
+    title_weight = "650"
+    page_weight = "700"
     if kind == "textbook-light":
-        return """
-    <div style="width:100%; font-size:9px; color:#374151; padding:0 18mm; font-family:Arial, sans-serif; direction:ltr; text-align:right;">
-      <span class="pageNumber"></span>
-    </div>
-    """
-    if kind == "textbook-dark":
-        return """
-    <div style="width:100%; font-size:9px; color:#cbd5e1; padding:0 18mm; font-family:Arial, sans-serif; direction:ltr; text-align:right;">
-      <span class="pageNumber"></span>
-    </div>
-    """
-    if kind == "academic":
-        return """
-    <div style="width:100%; font-size:8.5px; color:#4b5563; padding:0 18mm; font-family:Georgia, 'Times New Roman', serif; direction:ltr; text-align:center;">
-      <span class="pageNumber"></span>
-    </div>
-    """
+        color = "#374151"
+        rule_color = "#d1d5db"
+    elif kind == "textbook-dark":
+        color = "#cbd5e1"
+        rule_color = "#475569"
+    elif kind == "academic":
+        color = "#4b5563"
+        rule_color = "#9ca3af"
+        font_family = "Georgia, 'Times New Roman', Vazirmatn, serif"
+        title_weight = "600"
+        page_weight = "600"
+
     safe_title = html.escape(title)
-    # Header/footer templates do not inherit the article bidi helpers. Keep the
-    # footer slot LTR for stable left/right layout, but isolate the title so a
-    # mixed Persian/English title keeps its glyph order and does not leak into
-    # the page counter.
+    safe_meta = html.escape(metadata)
+    page_label = html.escape(_footer_page_label(lang))
+    title_align = "right" if document_direction == "rtl" else "left"
+    meta_html = (
+        f'<span dir="auto" style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:center; opacity:.78; font-weight:600;">{safe_meta}</span>'
+        if safe_meta
+        else '<span aria-hidden="true"></span>'
+    )
+    page_html = (
+        f'<span dir="ltr" style="direction:ltr; unicode-bidi:isolate; white-space:nowrap; text-align:right; font-weight:{page_weight}; font-family:Arial, sans-serif;">'
+        f'{page_label} <span class="pageNumber"></span>/<span class="totalPages"></span></span>'
+    )
     return f"""
-    <div style="width:100%; font-size:8px; color:#64748b; padding:0 16mm; font-family:Arial, sans-serif;">
-      <div style="border-top:1px solid #dbe3ef; padding-top:5px; display:flex; justify-content:space-between; align-items:center; gap:8mm; direction:ltr;">
-        <span dir="ltr" style="direction:ltr; unicode-bidi:isolate; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-family:Vazirmatn, 'Noto Sans Arabic', Tahoma, Arial, sans-serif;">{safe_title}</span>
-        <span dir="ltr" style="direction:ltr; unicode-bidi:isolate; white-space:nowrap; font-family:Arial, sans-serif;"><span class="pageNumber"></span>/<span class="totalPages"></span></span>
+    <div style="width:100%; font-size:8px; color:{color}; padding:0 16mm; font-family:{font_family};">
+      <div style="border-top:1px solid {rule_color}; padding-top:4.5px; display:grid; grid-template-columns:minmax(0,1.4fr) minmax(0,.9fr) minmax(22mm,.6fr); align-items:center; gap:5mm; direction:ltr;">
+        <span dir="auto" style="min-width:0; direction:{html.escape(document_direction)}; unicode-bidi:plaintext; text-align:{title_align}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:{title_weight};">{safe_title}</span>
+        {meta_html}
+        {page_html}
       </div>
     </div>
     """
 
 
-def _render_pdf(page: Page, html_text: str, options: PdfOptions, path: Path, *, display_footer: bool, title: str) -> None:
+def _render_pdf(page: Page, html_text: str, options: PdfOptions, path: Path, *, display_footer: bool, footer_context: FooterContext | str) -> None:
     page.set_content(html_text, wait_until="load")
     page.evaluate("() => document.fonts && document.fonts.ready")
     if not options.no_mathjax:
@@ -1429,7 +1489,7 @@ def _render_pdf(page: Page, html_text: str, options: PdfOptions, path: Path, *, 
             {
                 "display_header_footer": True,
                 "header_template": "<div></div>",
-                "footer_template": _footer_template(str(title), options.style, options.mode),
+                "footer_template": _footer_template(footer_context, options.style, options.mode),
             }
         )
     page.pdf(**pdf_kwargs)
@@ -1842,6 +1902,29 @@ def _chromium_launch_args(options: PdfOptions) -> list[str]:
     return args
 
 
+def _add_pdf_page_labels(writer: PdfWriter, *, content_start_page: int = 0) -> None:
+    """Add viewer page labels so content numbering restarts after a cover."""
+    page_count = len(writer.pages)
+    if page_count <= 0:
+        return
+    start = max(0, min(int(content_start_page or 0), page_count - 1))
+    nums = ArrayObject()
+    if start > 0:
+        nums.append(NumberObject(0))
+        nums.append(
+            DictionaryObject(
+                {
+                    NameObject("/S"): NameObject("/D"),
+                    NameObject("/St"): NumberObject(1),
+                    NameObject("/P"): TextStringObject("Cover "),
+                }
+            )
+        )
+    nums.append(NumberObject(start))
+    nums.append(DictionaryObject({NameObject("/S"): NameObject("/D"), NameObject("/St"): NumberObject(1)}))
+    writer._root_object[NameObject("/PageLabels")] = DictionaryObject({NameObject("/Nums"): nums})
+
+
 def _copy_pdf_with_metadata(
     input_path: Path,
     output_path: Path,
@@ -1857,6 +1940,7 @@ def _copy_pdf_with_metadata(
         writer.add_page(page)
     named_destinations = _copy_pdf_named_destinations(writer, reader)
     _rewrite_pdf_link_annotation_destinations(writer, named_destinations)
+    _add_pdf_page_labels(writer, content_start_page=outline_start_page)
     writer.add_metadata(metadata)
     if outline_source_entries:
         _add_pdf_outline(
@@ -1899,6 +1983,7 @@ def _merge_pdfs(
             writer.add_page(page)
         named_destinations.update(_copy_pdf_named_destinations(writer, reader, page_offset=page_offset))
     _rewrite_pdf_link_annotation_destinations(writer, named_destinations)
+    _add_pdf_page_labels(writer, content_start_page=outline_start_page)
     if metadata:
         writer.add_metadata(metadata)
     if outline_source_entries:
@@ -1934,6 +2019,7 @@ def convert(options: PdfOptions) -> Path:
 
     title = options.title or _stringify_metadata_value(result.metadata.get("title")) or result.title
     pdf_metadata = _pdf_metadata(result, options, str(title))
+    footer_context = _footer_context(result, options, str(title))
     outline_source_entries = _outline_source_entries(result)
 
     options.output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -1965,12 +2051,12 @@ def convert(options: PdfOptions) -> Path:
                     cover_pdf = tmp / "cover.pdf"
                     cover_html = build_html(result, options, include_cover=True, include_content=False, include_watermark=False, cover_full_bleed=True)
                     _report_progress(progress, "Rendering cover", 0.48)
-                    _render_pdf(page, cover_html, options, cover_pdf, display_footer=False, title=str(title))
+                    _render_pdf(page, cover_html, options, cover_pdf, display_footer=False, footer_context=footer_context)
 
                     content_pdf = tmp / "content.pdf"
                     content_html = build_html(result, options, include_cover=False, include_content=True, include_watermark=True)
                     _report_progress(progress, "Rendering content", 0.72)
-                    _render_pdf(page, content_html, options, content_pdf, display_footer=True, title=str(title))
+                    _render_pdf(page, content_html, options, content_pdf, display_footer=True, footer_context=footer_context)
 
                     _report_progress(progress, "Merging PDF parts", 0.91)
                     cover_page_count = len(PdfReader(str(cover_pdf)).pages)
@@ -1985,7 +2071,7 @@ def convert(options: PdfOptions) -> Path:
                     content_pdf = tmp / "content.pdf"
                     html_text = build_html(result, options, include_cover=False, include_content=True, include_watermark=True)
                     _report_progress(progress, "Rendering PDF", 0.72)
-                    _render_pdf(page, html_text, options, content_pdf, display_footer=True, title=str(title))
+                    _render_pdf(page, html_text, options, content_pdf, display_footer=True, footer_context=footer_context)
 
                     _report_progress(progress, "Writing metadata", 0.91)
                     _copy_pdf_with_metadata(

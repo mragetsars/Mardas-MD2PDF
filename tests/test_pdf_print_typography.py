@@ -1,7 +1,17 @@
 from pathlib import Path
 
+from pypdf import PdfWriter
+
 from mardas_md2pdf.markdown import render_markdown
-from mardas_md2pdf.renderer import PdfOptions, _layout_css, build_html
+from mardas_md2pdf.renderer import (
+    FooterContext,
+    PdfOptions,
+    _add_pdf_page_labels,
+    _footer_context,
+    _footer_template,
+    _layout_css,
+    build_html,
+)
 
 
 def test_long_code_blocks_get_print_flow_hints():
@@ -88,3 +98,61 @@ def test_layout_css_contains_semantic_caption_rules(tmp_path: Path):
     assert "caption-side: top" in css
     assert "md2pdf-caption--table" in css
     assert "table > caption.md2pdf-caption--table" in css
+
+
+def test_footer_context_collects_running_metadata(tmp_path: Path):
+    result = render_markdown(
+        '---\n'
+        'title: "Quarterly Report"\n'
+        'course: "Research Lab"\n'
+        'version: "1.8.4"\n'
+        'status: "Draft"\n'
+        'date: "2026-06-14"\n'
+        'lang: en\n'
+        '---\n\n'
+        '# Body\n'
+    )
+    options = PdfOptions(input_path=tmp_path / "input.md", output_path=tmp_path / "out.pdf")
+
+    context = _footer_context(result, options, "Quarterly Report")
+
+    assert context.title == "Quarterly Report"
+    assert context.lang == "en"
+    assert context.document_direction == "ltr"
+    assert "Research Lab" in context.metadata
+    assert "1.8.4" in context.metadata
+    assert "Draft" in context.metadata
+
+
+def test_footer_template_is_bidi_safe_and_contains_running_metadata():
+    template = _footer_template(
+        FooterContext(
+            title="گزارش Mardas MD2PDF",
+            metadata="Mardas Lab · 1.8.4 · Stable",
+            lang="fa",
+            document_direction="rtl",
+        ),
+        "modern",
+        "light",
+    )
+
+    assert "گزارش Mardas MD2PDF" in template
+    assert "Mardas Lab · 1.8.4 · Stable" in template
+    assert "صفحه" in template
+    assert "unicode-bidi:plaintext" in template
+    assert "grid-template-columns" in template
+
+
+def test_pdf_page_labels_restart_after_cover_page():
+    writer = PdfWriter()
+    writer.add_blank_page(width=200, height=200)
+    writer.add_blank_page(width=200, height=200)
+    writer.add_blank_page(width=200, height=200)
+
+    _add_pdf_page_labels(writer, content_start_page=1)
+
+    labels = writer._root_object["/PageLabels"]["/Nums"]
+    assert labels[0] == 0
+    assert labels[1]["/P"] == "Cover "
+    assert labels[2] == 1
+    assert labels[3]["/St"] == 1

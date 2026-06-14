@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.8.4 - 2026-06-14
+
+### Fixed
+
+- Polished Chromium PDF running footers with bidi-safe document titles, compact running metadata, localized page labels, and style-aware footer rules.
+- Added PDF page labels so viewer page numbering restarts cleanly after a cover page while preserving cover pages as separate front matter.
+
 All notable changes to Mardas MD2PDF are tracked here.
 
 ## 1.8.3 - 2026-06-14

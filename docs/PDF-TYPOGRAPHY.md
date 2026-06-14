@@ -105,3 +105,8 @@ English and Persian guides when they are present:
 - Mermaid fences with titles;
 - captions near a page boundary, so they do not separate from the visual block.
 
+## Running footers and page labels
+
+Mardas MD2PDF keeps the cover separate from numbered content pages, then adds a compact running footer to content pages only.  The footer is bidi-safe: mixed Persian/English titles are isolated from the page counter, and the page label is localized when the document language is Persian.
+
+The footer may include a short running metadata line from front matter, preferring course or institution plus version, status, and date.  PDF viewer page labels are also written so content numbering restarts after a cover page while the cover remains part of the PDF file.
