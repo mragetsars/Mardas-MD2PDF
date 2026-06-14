@@ -72,6 +72,20 @@ table-wrap--long       # 18+ rows
 Normal tables try to stay together. Wide and long tables may break across pages,
 but rows keep `break-inside: avoid` to prevent split cells.
 
+
+## Guide media samples
+
+The official English and Persian guides should render at least one real local
+image and one safe HTML image instead of only showing blocked placeholders. Guide
+image references stay inside `docs/guides/images/` so they exercise the same
+trusted document-local asset boundary used by ordinary Markdown files.
+
+When auditing a generated guide PDF, the Images and Safe HTML section should show
+an embedded architecture diagram with a figure caption, followed by a compact
+logo image rendered through safe HTML. Blocked placeholders are still tested in
+the automated suite, but the public guide examples should demonstrate the
+successful path first.
+
 ## Audit checklist
 
 When changing print typography, render the guides and inspect at least these
@@ -116,3 +130,7 @@ The footer may include a short running metadata line from front matter, preferri
 Footnote references are rendered as stable numeric markers instead of raw authoring identifiers. Repeated references to the same note receive distinct back-reference anchors, while the note itself remains a single endnote entry. Unresolved references stay visible as plain text instead of becoming broken PDF links.
 
 The print stylesheet aligns markers, note bodies, and back-reference arrows in a three-column grid. The footnote section avoids poor page splits where possible, while nested Markdown inside a note keeps its own direction and list spacing.
+
+## Version 1.8.6 guide media audit
+
+The English and Persian guide PDFs now exercise the successful document-local image path with `docs/guides/images/architecture.svg` and `docs/guides/images/logo.svg`. The blocked-image placeholder remains covered by tests and troubleshooting text, while the public examples show a real semantic figure and a safe HTML image.

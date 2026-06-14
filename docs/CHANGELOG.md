@@ -249,3 +249,11 @@ All notable changes to Mardas MD2PDF are tracked here.
 ### Notes
 
 - This entry summarizes the public baseline before the structured changelog began. Later entries are kept version-by-version.
+
+## 1.8.6 - 2026-06-14
+
+### Fixed
+
+- Replaced blocked guide image placeholders with document-local SVG assets so the official English and Persian PDF examples demonstrate the successful local-image path.
+- Cleaned guide media examples so semantic figure captions and safe HTML images are visible in generated guide PDFs without relying on parent-directory or root-level assets.
+

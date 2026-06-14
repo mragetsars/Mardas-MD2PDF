@@ -2,7 +2,7 @@ from pathlib import Path
 
 from pypdf import PdfWriter
 
-from mardas_md2pdf.markdown import render_markdown
+from mardas_md2pdf.markdown import render_markdown, render_markdown_file
 from mardas_md2pdf.renderer import (
     FooterContext,
     PdfOptions,
@@ -99,6 +99,41 @@ def test_layout_css_contains_semantic_caption_rules(tmp_path: Path):
     assert "md2pdf-caption--table" in css
     assert "table > caption.md2pdf-caption--table" in css
 
+
+
+def test_guide_image_references_use_document_local_assets():
+    guide_dir = Path("docs/guides")
+    en = (guide_dir / "GUIDE.en.md").read_text(encoding="utf-8")
+    fa = (guide_dir / "GUIDE.fa.md").read_text(encoding="utf-8")
+
+    assert "README.png" not in en
+    assert "README.png" not in fa
+    assert (guide_dir / "images/architecture.svg").exists()
+    assert (guide_dir / "images/logo.svg").exists()
+    assert "images/architecture.svg" in en
+    assert "images/logo.svg" in en
+    assert "images/architecture.svg" in fa
+    assert "images/logo.svg" in fa
+
+
+def test_local_svg_images_embed_and_keep_semantic_captions(tmp_path: Path):
+    images = tmp_path / "images"
+    images.mkdir()
+    (images / "architecture.svg").write_text(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="40"><text x="8" y="24">OK</text></svg>',
+        encoding="utf-8",
+    )
+    markdown = tmp_path / "sample.md"
+    markdown.write_text(
+        '![Architecture](images/architecture.svg)\n\n*Figure 1. Architecture overview.*\n',
+        encoding="utf-8",
+    )
+
+    result = render_markdown_file(markdown)
+
+    assert 'src="data:image/svg+xml;base64,' in result.body_html
+    assert 'md2pdf-caption--figure' in result.body_html
+    assert 'Image blocked or missing' not in result.body_html
 
 def test_footer_context_collects_running_metadata(tmp_path: Path):
     result = render_markdown(

@@ -12,7 +12,7 @@ summary: |
   This document also acts as a live rendering sample for cover pages, tables of contents, mixed RTL/LTR text, formulas, code, Mermaid flowcharts, images, tables, footnotes, page breaks, and safe HTML.
 institution: "Mardas Lab"
 course: "Markdown Publishing"
-version: "1.8.5"
+version: "1.8.6"
 status: "Stable"
 keywords:
   - Markdown
@@ -210,7 +210,7 @@ department: "Department name"
 course: "Course or project title"
 supervisor: "Supervisor name"
 date: "2026-05-20"
-version: "1.6.4"
+version: "1.8.6"
 status: "Draft"
 keywords: [Markdown, PDF, RTL, MathJax]
 cover_label: "Technical Report"
@@ -608,11 +608,13 @@ When the caption starts with `Figure`, `Fig.`, `شکل`, or `تصویر`, the re
 
 Images are resolved relative to the Markdown file. Local images are embedded into the generated HTML/PDF when they are small enough to embed safely.
 
-![Project preview image](README.png)
+![Architecture diagram](images/architecture.svg)
+
+*Figure 1. Architecture overview.*
 
 Safe raw HTML images can also be used when explicit sizing is needed:
 
-<img src="README.png" width="70%" alt="Project preview image with explicit width">
+<img src="images/logo.svg" width="240" alt="Project logo with explicit width">
 
 ## Image rules
 

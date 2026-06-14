@@ -12,7 +12,7 @@ summary: |
   همین سند به عنوان نمونه زنده رندر نیز استفاده می‌شود و جلد، فهرست مطالب، متن ترکیبی فارسی/English، فرمول، کد، نمودار Mermaid، تصویر، جدول، پانویس، شکست صفحه و HTML امن را نمایش می‌دهد.
 institution: "Mardas Lab"
 course: "انتشار حرفه‌ای Markdown"
-version: "1.8.5"
+version: "1.8.6"
 status: "Stable"
 keywords:
   - Markdown
@@ -208,7 +208,7 @@ department: "نام دانشکده یا دپارتمان"
 course: "نام درس یا پروژه"
 supervisor: "نام استاد یا راهنما"
 date: "۱۴۰۵-۰۲-۳۰"
-version: "1.6.4"
+version: "1.8.6"
 status: "Draft"
 keywords: [Markdown, PDF, RTL, MathJax]
 cover_label: "گزارش فنی"
@@ -530,11 +530,13 @@ flowchart LR
 
 مسیر تصویرها نسبت به فایل Markdown resolve می‌شود. تصویرهای محلی اگر حجم مناسبی داشته باشند داخل HTML/PDF نهایی embed می‌شوند.
 
-![تصویر معرفی پروژه](README.png)
+![نمودار معماری](images/architecture.svg)
+
+*شکل ۱. نمای کلی معماری.*
 
 وقتی اندازه‌دهی دقیق‌تر لازم است، می‌توان از HTML امن استفاده کرد:
 
-<img src="README.png" width="70%" alt="تصویر معرفی پروژه با اندازه مشخص">
+<img src="images/logo.svg" width="240" alt="لوگوی پروژه با اندازه مشخص">
 
 ## قواعد استفاده از تصویر
 
