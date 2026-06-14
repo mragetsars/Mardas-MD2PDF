@@ -97,6 +97,8 @@ GLOBAL_SAFE_ATTRS = {
     "title",
     "role",
     "aria-label",
+    "aria-describedby",
+    "aria-hidden",
     "data-lang",
     "data-line-start",
     "data-lines",
@@ -171,6 +173,8 @@ def ui_label(key: str, *, lang: str | None = None, text_hint: str = "") -> str:
             "callout_quote": "نقل‌قول",
             "callout_abstract": "خلاصه",
             "footnote": "پانویس",
+            "footnotes": "پانویس‌ها",
+            "footnote_backref": "بازگشت به ارجاع",
             "caption_figure": "شکل",
             "caption_table": "جدول",
             "caption_code": "کد",
@@ -194,6 +198,8 @@ def ui_label(key: str, *, lang: str | None = None, text_hint: str = "") -> str:
             "callout_quote": "Quote",
             "callout_abstract": "Abstract",
             "footnote": "Footnote",
+            "footnotes": "Footnotes",
+            "footnote_backref": "Back to reference",
             "caption_figure": "Figure",
             "caption_table": "Table",
             "caption_code": "Listing",
@@ -841,14 +847,82 @@ def extract_footnotes(markdown: str) -> tuple[str, list[tuple[str, str]]]:
     return "\n".join(body_lines), footnotes
 
 
-def replace_footnote_refs(markdown: str, *, lang: str | None = None, text_hint: str = "") -> str:
+@dataclass(slots=True)
+class FootnoteEntry:
+    fid: str
+    raw: str
+    index: int
+    anchor: str
+    ref_count: int = 0
+
+
+def _safe_footnote_anchor(value: str, used: set[str]) -> str:
+    """Return a deterministic, HTML-safe anchor for a footnote identifier."""
+    text = unicodedata.normalize("NFKC", str(value or "").strip())
+    text = re.sub(r"\s+", "-", text)
+    text = re.sub(r"[^\w\u0600-\u06FF:.\-]+", "-", text, flags=re.UNICODE).strip("-._:")
+    base = text or "note"
+    anchor = base
+    suffix = 2
+    while anchor in used:
+        anchor = f"{base}-{suffix}"
+        suffix += 1
+    used.add(anchor)
+    return anchor
+
+
+def _normalize_footnotes(footnotes: list[tuple[str, str]] | list[FootnoteEntry]) -> list[FootnoteEntry]:
+    if not footnotes:
+        return []
+    first = footnotes[0]
+    if isinstance(first, FootnoteEntry):
+        return list(footnotes)  # type: ignore[arg-type]
+
+    entries: list[FootnoteEntry] = []
+    seen_ids: set[str] = set()
+    used_anchors: set[str] = set()
+    for fid, raw in footnotes:  # type: ignore[assignment]
+        clean_id = str(fid or "").strip()
+        if not clean_id or clean_id in seen_ids:
+            continue
+        seen_ids.add(clean_id)
+        entries.append(
+            FootnoteEntry(
+                fid=clean_id,
+                raw=str(raw or "").strip(),
+                index=len(entries) + 1,
+                anchor=_safe_footnote_anchor(clean_id, used_anchors),
+            )
+        )
+    return entries
+
+
+def replace_footnote_refs(
+    markdown: str,
+    *,
+    footnotes: list[tuple[str, str]] | list[FootnoteEntry] | None = None,
+    lang: str | None = None,
+    text_hint: str = "",
+) -> str:
     label = ui_label("footnote", lang=lang, text_hint=text_hint)
+    entries = _normalize_footnotes(footnotes or [])
+    entry_by_id = {entry.fid: entry for entry in entries}
 
     def repl(match: re.Match[str]) -> str:
-        fid = html.escape(match.group(1).strip())
+        raw_id = match.group(1).strip()
+        entry = entry_by_id.get(raw_id)
+        if entry is None:
+            # Keep unresolved references visible instead of generating a broken link.
+            return html.escape(match.group(0))
+
+        entry.ref_count += 1
+        ref_suffix = "" if entry.ref_count == 1 else f"-{entry.ref_count}"
+        ref_id = f"fnref-{entry.anchor}{ref_suffix}"
+        safe_label = html.escape(f"{label} {entry.index}")
         return (
-            f'<sup class="footnote-ref" id="fnref-{fid}">'
-            f'<a href="#fn-{fid}" aria-label="{html.escape(label)} {fid}">{fid}</a></sup>'
+            f'<sup class="footnote-ref" id="{html.escape(ref_id)}">'
+            f'<a href="#fn-{html.escape(entry.anchor)}" aria-describedby="fn-{html.escape(entry.anchor)}" '
+            f'aria-label="{safe_label}">{entry.index}</a></sup>'
         )
 
     output: list[str] = []
@@ -875,20 +949,45 @@ def replace_footnote_refs(markdown: str, *, lang: str | None = None, text_hint: 
     return "".join(output)
 
 
-def append_footnotes(body_html: str, footnotes: list[tuple[str, str]], md: MarkdownIt) -> str:
-    if not footnotes:
+def append_footnotes(
+    body_html: str,
+    footnotes: list[tuple[str, str]] | list[FootnoteEntry],
+    md: MarkdownIt,
+    *,
+    lang: str | None = None,
+    text_hint: str = "",
+) -> str:
+    entries = _normalize_footnotes(footnotes)
+    if not entries:
         return body_html
+
+    label = ui_label("footnotes", lang=lang, text_hint=text_hint)
+    backref_label = ui_label("footnote_backref", lang=lang, text_hint=text_hint)
     items = []
-    for index, (fid, raw) in enumerate(footnotes, start=1):
-        safe_id = html.escape(fid)
-        rendered = md.render(raw).strip()
+    for entry in entries:
+        rendered = md.render(entry.raw).strip()
+        ref_count = max(1, entry.ref_count)
+        backrefs = []
+        for ref_index in range(1, ref_count + 1):
+            ref_suffix = "" if ref_index == 1 else f"-{ref_index}"
+            ref_id = f"fnref-{entry.anchor}{ref_suffix}"
+            ref_label = html.escape(f"{backref_label} {entry.index}")
+            backrefs.append(
+                f'<a class="footnote-backref" href="#{html.escape(ref_id)}" aria-label="{ref_label}">↩</a>'
+            )
         items.append(
-            f'<li class="footnote-item" id="fn-{safe_id}">'
-            f'<span class="footnote-marker" aria-hidden="true">{index}.</span>'
+            f'<li class="footnote-item" id="fn-{html.escape(entry.anchor)}">'
+            f'<span class="footnote-marker">{entry.index}.</span>'
             f'<div class="footnote-body" dir="auto">{rendered}</div> '
-            f'<a class="footnote-backref" href="#fnref-{safe_id}">↩</a></li>'
+            f'<span class="footnote-backrefs">{"".join(backrefs)}</span></li>'
         )
-    return body_html + '<section class="footnotes"><ol>' + "".join(items) + "</ol></section>"
+    return (
+        body_html
+        + '<section class="footnotes">'
+        + '<ol>'
+        + "".join(items)
+        + "</ol></section>"
+    )
 
 
 def slugify(value: str, used: set[str]) -> str:
@@ -1671,7 +1770,13 @@ def render_markdown(
 
     markdown_body = preprocess_pdf_directives(markdown_body)
     markdown_body, footnotes = extract_footnotes(markdown_body)
-    markdown_body = replace_footnote_refs(markdown_body, lang=lang, text_hint=markdown_body)
+    footnote_entries = _normalize_footnotes(footnotes)
+    markdown_body = replace_footnote_refs(
+        markdown_body,
+        footnotes=footnote_entries,
+        lang=lang,
+        text_hint=markdown_body,
+    )
     markdown_body = protect_and_transform_math(markdown_body)
 
     md = MarkdownIt(
@@ -1712,7 +1817,7 @@ def render_markdown(
     md.renderer.rules["fence"] = render_fence
 
     body_html = md.render(markdown_body)
-    body_html = append_footnotes(body_html, footnotes, md)
+    body_html = append_footnotes(body_html, footnote_entries, md, lang=lang, text_hint=markdown_body)
     if not unsafe_html:
         body_html = sanitize_html(body_html)
     body_html, toc_entries = add_heading_ids(body_html, toc_depth=toc_depth)

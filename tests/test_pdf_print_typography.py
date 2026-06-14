@@ -156,3 +156,42 @@ def test_pdf_page_labels_restart_after_cover_page():
     assert labels[1]["/P"] == "Cover "
     assert labels[2] == 1
     assert labels[3]["/St"] == 1
+
+
+def test_footnote_references_use_stable_numeric_markers():
+    result = render_markdown(
+        'First reference[^long-note] and the same note again[^long-note].\n\n'
+        '[^long-note]: A detailed note with **Markdown** content.\n'
+    )
+
+    assert 'id="fnref-long-note"' in result.body_html
+    assert 'id="fnref-long-note-2"' in result.body_html
+    assert 'href="#fn-long-note"' in result.body_html
+    assert '>1</a></sup>' in result.body_html
+    assert (
+        '<section class="footnotes"><ol><li class="footnote-item" id="fn-long-note">'
+        in result.body_html
+    )
+    assert 'class="footnote-backrefs"' in result.body_html
+    assert 'href="#fnref-long-note-2"' in result.body_html
+
+
+def test_unresolved_footnote_references_stay_visible_without_broken_links():
+    result = render_markdown('Missing note stays readable[^missing].\n')
+
+    assert '[^missing]' in result.body_html
+    assert 'href="#fn-missing"' not in result.body_html
+    assert 'class="footnotes"' not in result.body_html
+
+
+def test_build_html_contains_footnote_print_polish(tmp_path: Path):
+    result = render_markdown('Reference[^note].\n\n[^note]: Body.\n')
+    options = PdfOptions(input_path=tmp_path / "input.md", output_path=tmp_path / "out.pdf")
+
+    html = build_html(result, options, include_cover=False)
+
+    assert '.footnotes' in html
+    assert 'break-inside: avoid-page' in html
+    assert 'grid-template-columns: max-content minmax(0, 1fr) max-content' in html
+    assert '.footnote-backrefs' in html
+    assert '<section class="footnotes"><ol><li class="footnote-item"' in html

@@ -818,24 +818,50 @@ body.md2pdf-dir-rtl .footnotes,
 body.md2pdf-dir-rtl .footnotes ol { direction: rtl; }
 body.md2pdf-dir-ltr .footnotes,
 body.md2pdf-dir-ltr .footnotes ol { direction: ltr; }
+.footnotes {
+  break-inside: avoid-page;
+  page-break-inside: avoid;
+}
 .footnotes ol {
   list-style: none;
   padding-inline-start: 0;
   padding-inline-end: 0;
+  margin-block: 0;
+}
+.footnote-ref {
+  vertical-align: super;
+  line-height: 0;
+  font-size: 0.72em;
+  font-weight: 800;
+}
+.footnote-ref a {
+  border: 0;
+  color: var(--accent);
+  text-decoration: none;
+  padding-inline: 0.08em;
 }
 .footnote-item {
-  display: flex;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
   gap: 0.55em;
-  align-items: flex-start;
-  margin: 0.45em 0;
+  align-items: start;
+  margin: 0.48em 0;
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 .footnote-marker {
   flex: 0 0 auto;
   color: var(--accent);
   font-family: var(--font-en);
   font-weight: 800;
+  line-height: 1.45;
 }
-.footnote-body { flex: 1 1 auto; min-width: 0; }
+.footnote-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  line-height: 1.55;
+}
+.footnote-body > :first-child { margin-top: 0; }
 .footnote-body > :last-child { margin-bottom: 0; }
 .footnote-body ul,
 .footnote-body ol {
@@ -850,4 +876,21 @@ body.md2pdf-dir-rtl .footnote-body ol {
   padding-inline-end: 1.45em;
 }
 .footnote-body li::marker { content: "• "; }
+.footnote-backrefs {
+  display: inline-flex;
+  gap: 0.25em;
+  align-items: center;
+  line-height: 1.35;
+}
+.footnote-backref {
+  border: 0;
+  color: var(--muted);
+  text-decoration: none;
+  font-family: var(--font-en);
+  font-weight: 800;
+}
+.footnote-backref:hover { color: var(--accent); }
+body.md2pdf-dir-rtl .footnote-item {
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
+}
 

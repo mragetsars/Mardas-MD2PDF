@@ -110,3 +110,9 @@ English and Persian guides when they are present:
 Mardas MD2PDF keeps the cover separate from numbered content pages, then adds a compact running footer to content pages only.  The footer is bidi-safe: mixed Persian/English titles are isolated from the page counter, and the page label is localized when the document language is Persian.
 
 The footer may include a short running metadata line from front matter, preferring course or institution plus version, status, and date.  PDF viewer page labels are also written so content numbering restarts after a cover page while the cover remains part of the PDF file.
+
+## Footnotes and reference polish
+
+Footnote references are rendered as stable numeric markers instead of raw authoring identifiers. Repeated references to the same note receive distinct back-reference anchors, while the note itself remains a single endnote entry. Unresolved references stay visible as plain text instead of becoming broken PDF links.
+
+The print stylesheet aligns markers, note bodies, and back-reference arrows in a three-column grid. The footnote section avoids poor page splits where possible, while nested Markdown inside a note keeps its own direction and list spacing.

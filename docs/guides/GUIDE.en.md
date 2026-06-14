@@ -12,7 +12,7 @@ summary: |
   This document also acts as a live rendering sample for cover pages, tables of contents, mixed RTL/LTR text, formulas, code, Mermaid flowcharts, images, tables, footnotes, page breaks, and safe HTML.
 institution: "Mardas Lab"
 course: "Markdown Publishing"
-version: "1.8.4"
+version: "1.8.5"
 status: "Stable"
 keywords:
   - Markdown
@@ -64,7 +64,7 @@ Captioned images, tables, code listings, and Mermaid diagrams are now normalized
 | Code blocks | Fenced, indented, and language-less code blocks render without corrupting content. |
 | Mermaid | A `flowchart` code fence becomes an SVG diagram instead of a plain code block. |
 | Images and HTML | Local Markdown images and safe HTML image tags appear in the PDF. |
-| Footnotes and page flow | Multiline footnotes, manual page breaks, margins, and footer numbering remain stable. |
+| Footnotes and page flow | Numeric footnote references, repeated-reference back-links, multiline footnotes, manual page breaks, margins, and footer numbering remain stable. |
 
 ## Main capabilities
 
