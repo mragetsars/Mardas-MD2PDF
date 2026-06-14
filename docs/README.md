@@ -23,3 +23,4 @@ docs live in their own directories.
 - [Cover branding](./BRANDING.md)
 - [Studio workflow](./STUDIO.md)
 - [Markdown fidelity](./MARKDOWN-FIDELITY.md)
+- [PDF navigation](./PDF-NAVIGATION.md)

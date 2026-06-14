@@ -2,6 +2,18 @@
 
 All notable changes to Mardas MD2PDF are tracked here.
 
+## 1.8.0 - 2026-06-14
+
+### Fixed
+
+- Preserved Chromium named destinations when pypdf writes metadata or merges cover/content PDFs, restoring clickable table-of-contents links in final PDFs.
+- Rebuilt PDF viewer outlines from the same heading IDs used by visible TOC links, so bookmarks jump to real content headings instead of matching TOC rows.
+- Added regression coverage for duplicate headings, Persian heading anchors, named destinations, and generated PDF outlines.
+
+### Documentation
+
+- Added `docs/PDF-NAVIGATION.md` and refreshed guide metadata for the PDF navigation fix.
+
 ## 1.7.0 - 2026-06-13
 
 ### Added

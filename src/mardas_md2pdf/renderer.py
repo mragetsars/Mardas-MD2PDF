@@ -14,9 +14,11 @@ from datetime import datetime, timezone
 from importlib import resources
 from pathlib import Path
 from typing import Any, Callable
+from urllib.parse import quote
 
 from playwright.sync_api import Page, sync_playwright
 from pypdf import PdfReader, PdfWriter
+from pypdf.generic import ArrayObject, Fit, NameObject, TextStringObject
 
 from .appearance import (
     Appearance,
@@ -1399,17 +1401,167 @@ def _pdf_metadata(result: MarkdownRenderResult, options: PdfOptions, title: str)
     return data
 
 
-def _outline_source_entries(result: MarkdownRenderResult) -> list[tuple[int, str]]:
+OutlineSourceEntry = tuple[int, str, str]
+LocatedOutlineEntry = tuple[int, str, int, float | None]
+NamedDestinationMap = dict[str, tuple[int, float | None]]
+
+
+def _outline_source_entries(result: MarkdownRenderResult) -> list[OutlineSourceEntry]:
     """Return clean heading entries for PDF outline creation."""
-    entries: list[tuple[int, str]] = []
+    entries: list[OutlineSourceEntry] = []
     for entry in result.toc_entries:
-        if len(entry) < 2:
+        if len(entry) < 3:
             continue
         level = max(1, min(int(entry[0]), 6))
         title = _stringify_metadata_value(entry[1]).strip()
-        if title:
-            entries.append((level, title))
+        heading_id = str(entry[2] or "").strip()
+        if title and heading_id:
+            entries.append((level, title, heading_id))
     return entries
+
+
+def _destination_object(value: Any) -> Any:
+    return value.get_object() if hasattr(value, "get_object") else value
+
+
+def _destination_array(value: Any) -> ArrayObject | None:
+    """Resolve a PDF named-destination value to a destination array."""
+    value = _destination_object(value)
+    if isinstance(value, ArrayObject):
+        return value
+    if isinstance(value, dict):
+        destination = value.get(NameObject("/D")) or value.get("/D")
+        destination = _destination_object(destination)
+        if isinstance(destination, ArrayObject):
+            return destination
+    return None
+
+
+def _walk_destination_name_tree(node: Any) -> list[tuple[str, ArrayObject]]:
+    """Return named destinations from a PDF /Names tree."""
+    node = _destination_object(node)
+    if not isinstance(node, dict):
+        return []
+    results: list[tuple[str, ArrayObject]] = []
+    names = node.get(NameObject("/Names")) or node.get("/Names")
+    if isinstance(names, list):
+        for index in range(0, len(names), 2):
+            try:
+                name = str(names[index])
+                destination = _destination_array(names[index + 1])
+            except Exception:
+                continue
+            if destination is not None:
+                results.append((name, destination))
+    kids = node.get(NameObject("/Kids")) or node.get("/Kids")
+    if isinstance(kids, list):
+        for kid in kids:
+            results.extend(_walk_destination_name_tree(kid))
+    return results
+
+
+def _iter_pdf_named_destinations(reader: PdfReader) -> list[tuple[str, ArrayObject]]:
+    """Collect Chromium/PDF named destinations from /Dests and /Names."""
+    root = reader.trailer.get("/Root", {})
+    destinations: list[tuple[str, ArrayObject]] = []
+
+    legacy_dests = _destination_object(root.get(NameObject("/Dests")) or root.get("/Dests"))
+    if isinstance(legacy_dests, dict):
+        for name, value in legacy_dests.items():
+            destination = _destination_array(value)
+            if destination is not None:
+                destinations.append((str(name), destination))
+
+    names_root = _destination_object(root.get(NameObject("/Names")) or root.get("/Names"))
+    if isinstance(names_root, dict):
+        dest_tree = names_root.get(NameObject("/Dests")) or names_root.get("/Dests")
+        destinations.extend(_walk_destination_name_tree(dest_tree))
+
+    return destinations
+
+
+def _reader_page_index(reader: PdfReader, page_reference: Any) -> int | None:
+    """Map a source page indirect reference back to its page index."""
+    ref_id = getattr(page_reference, "idnum", None)
+    ref_generation = getattr(page_reference, "generation", None)
+    for index, page in enumerate(reader.pages):
+        reference = getattr(page, "indirect_reference", None)
+        if reference is None:
+            continue
+        if getattr(reference, "idnum", None) == ref_id and getattr(reference, "generation", None) == ref_generation:
+            return index
+        if ref_id is None and _destination_object(page_reference) == page:
+            return index
+    return None
+
+
+def _destination_top(destination: ArrayObject) -> float | None:
+    """Extract the top coordinate from common PDF destination arrays."""
+    if len(destination) < 2:
+        return None
+    fit = str(destination[1])
+    coordinate_index = 3 if fit == "/XYZ" else 2 if fit in {"/FitH", "/FitBH"} else None
+    if coordinate_index is None or coordinate_index >= len(destination):
+        return None
+    try:
+        return float(destination[coordinate_index])
+    except Exception:
+        return None
+
+
+def _copy_pdf_named_destinations(
+    writer: PdfWriter,
+    reader: PdfReader,
+    *,
+    page_offset: int = 0,
+) -> NamedDestinationMap:
+    """Preserve internal PDF destinations while copying/merging pages.
+
+    Chromium emits TOC links as link annotations that point at named
+    destinations in the source PDF catalog.  pypdf does not automatically clone
+    those catalog-level destinations when pages are copied, leaving the visible
+    TOC links present but inert.  This helper recreates the destination name tree
+    against the writer's page references and returns a map used by outline
+    creation, so viewer bookmarks land on real headings instead of TOC rows.
+    """
+    copied: NamedDestinationMap = {}
+    destinations = _iter_pdf_named_destinations(reader)
+    if not destinations:
+        return copied
+
+    page_refs = writer.get_object(writer._pages)[NameObject("/Kids")]  # type: ignore[index]
+    page_count = len(page_refs)
+    for name, destination in destinations:
+        if not destination:
+            continue
+        source_page_index = _reader_page_index(reader, destination[0])
+        if source_page_index is None:
+            continue
+        target_page_index = page_offset + source_page_index
+        if target_page_index < 0 or target_page_index >= page_count:
+            continue
+        copied_destination = ArrayObject([page_refs[target_page_index]])
+        copied_destination.extend(destination[1:])
+        try:
+            writer.add_named_destination_array(TextStringObject(name), copied_destination)
+        except Exception:
+            continue
+        copied[name] = (target_page_index, _destination_top(copied_destination))
+    return copied
+
+
+def _heading_destination_names(heading_id: str) -> list[str]:
+    """Return destination-name variants emitted by Chromium for a heading id."""
+    heading_id = str(heading_id or "").strip()
+    if not heading_id:
+        return []
+    encoded = quote(heading_id, safe="-._~")
+    names = [f"/{encoded}", f"/{heading_id}", encoded, heading_id]
+    unique: list[str] = []
+    for name in names:
+        if name not in unique:
+            unique.append(name)
+    return unique
 
 
 def _normalize_pdf_search_text(value: str) -> str:
@@ -1433,45 +1585,54 @@ def _pdf_page_texts(reader: PdfReader) -> list[str]:
 
 def _locate_outline_pages(
     page_texts: list[str],
-    outline_entries: list[tuple[int, str]],
+    outline_entries: list[OutlineSourceEntry],
     *,
+    named_destinations: NamedDestinationMap | None = None,
     start_page: int = 0,
-) -> list[tuple[int, str, int]]:
+) -> list[LocatedOutlineEntry]:
     """Map outline headings to best-effort PDF page indexes.
 
-    Chromium does not expose named destinations after ``page.pdf``. pypdf text
-    extraction gives a stable enough fallback for generated documents; when a
-    heading cannot be found, the bookmark keeps the previous page so the outline
-    remains usable instead of disappearing entirely.
+    Prefer Chromium named destinations because they are the same anchors used by
+    the visible TOC links.  Text extraction remains as a fallback for older PDFs
+    or unusual readers, but it intentionally comes after destination lookup so
+    PDF bookmarks do not accidentally resolve to matching text inside the TOC.
     """
-    if not page_texts:
+    if not page_texts and not named_destinations:
         return []
     page_count = len(page_texts)
-    current_page = max(0, min(start_page, page_count - 1))
-    located: list[tuple[int, str, int]] = []
+    current_page = max(0, min(start_page, page_count - 1)) if page_count else max(0, start_page)
+    located: list[LocatedOutlineEntry] = []
 
-    for level, title in outline_entries:
+    for level, title, heading_id in outline_entries:
+        destination_page: int | None = None
+        destination_top: float | None = None
+        for destination_name in _heading_destination_names(heading_id):
+            if named_destinations and destination_name in named_destinations:
+                destination_page, destination_top = named_destinations[destination_name]
+                break
+
         needle = _normalize_pdf_search_text(title)
-        page_index = current_page
-        if needle:
+        page_index = destination_page if destination_page is not None else current_page
+        if destination_page is None and needle and page_texts:
             for index in range(current_page, page_count):
                 if needle in page_texts[index]:
                     page_index = index
                     break
         current_page = page_index
-        located.append((max(1, min(level, 6)), title, page_index))
+        located.append((max(1, min(level, 6)), title, page_index, destination_top))
     return located
 
 
-def _add_pdf_outline(writer: PdfWriter, outline_entries: list[tuple[int, str, int]]) -> None:
+def _add_pdf_outline(writer: PdfWriter, outline_entries: list[LocatedOutlineEntry]) -> None:
     """Attach a nested PDF outline to ``writer`` from located heading entries."""
     parents: dict[int, Any] = {}
     page_count = len(writer.pages)
-    for level, title, page_index in outline_entries:
+    for level, title, page_index, top in outline_entries:
         if not title or page_index < 0 or page_index >= page_count:
             continue
         parent = parents.get(level - 1)
-        item = writer.add_outline_item(title, page_index, parent=parent)
+        fit = Fit.xyz(left=0, top=top, zoom=None) if top is not None else Fit.fit()
+        item = writer.add_outline_item(title, page_index, parent=parent, fit=fit)
         parents[level] = item
         for child_level in [key for key in parents if key > level]:
             del parents[child_level]
@@ -1503,7 +1664,7 @@ def _copy_pdf_with_metadata(
     input_path: Path,
     output_path: Path,
     metadata: dict[str, str],
-    outline_source_entries: list[tuple[int, str]] | None = None,
+    outline_source_entries: list[OutlineSourceEntry] | None = None,
     *,
     outline_start_page: int = 0,
 ) -> None:
@@ -1512,6 +1673,7 @@ def _copy_pdf_with_metadata(
     writer = PdfWriter()
     for page in reader.pages:
         writer.add_page(page)
+    named_destinations = _copy_pdf_named_destinations(writer, reader)
     writer.add_metadata(metadata)
     if outline_source_entries:
         _add_pdf_outline(
@@ -1519,6 +1681,7 @@ def _copy_pdf_with_metadata(
             _locate_outline_pages(
                 page_texts,
                 outline_source_entries,
+                named_destinations=named_destinations,
                 start_page=outline_start_page,
             ),
         )
@@ -1537,18 +1700,21 @@ def _merge_pdfs(
     parts: list[Path],
     output_path: Path,
     metadata: dict[str, str] | None = None,
-    outline_source_entries: list[tuple[int, str]] | None = None,
+    outline_source_entries: list[OutlineSourceEntry] | None = None,
     *,
     outline_start_page: int = 0,
 ) -> None:
     writer = PdfWriter()
     page_texts: list[str] = []
+    named_destinations: NamedDestinationMap = {}
     for part in parts:
         reader = PdfReader(str(part))
+        page_offset = len(writer.pages)
         if outline_source_entries:
             page_texts.extend(_pdf_page_texts(reader))
         for page in reader.pages:
             writer.add_page(page)
+        named_destinations.update(_copy_pdf_named_destinations(writer, reader, page_offset=page_offset))
     if metadata:
         writer.add_metadata(metadata)
     if outline_source_entries:
@@ -1557,6 +1723,7 @@ def _merge_pdfs(
             _locate_outline_pages(
                 page_texts,
                 outline_source_entries,
+                named_destinations=named_destinations,
                 start_page=outline_start_page,
             ),
         )

@@ -12,7 +12,7 @@ summary: |
   This document also acts as a live rendering sample for cover pages, tables of contents, mixed RTL/LTR text, formulas, code, Mermaid flowcharts, images, tables, footnotes, page breaks, and safe HTML.
 institution: "Mardas Lab"
 course: "Markdown Publishing"
-version: "1.7.0"
+version: "1.8.0"
 status: "Stable"
 keywords:
   - Markdown
@@ -329,6 +329,8 @@ mrs-md2pdf input.md -o output.pdf --h1-page-break
 ```
 
 The TOC is generated from Markdown headings and preserves readable inline math in headings such as $E = mc^2$ and $\epsilon$.
+
+The visible TOC links and the PDF viewer outline use the same preserved heading destinations, so both should jump to the actual content heading rather than to a matching row inside the TOC.
 
 # Markdown Feature Reference
 
