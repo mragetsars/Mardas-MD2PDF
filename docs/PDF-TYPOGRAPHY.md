@@ -151,3 +151,14 @@ The print stylesheet aligns markers, note bodies, and back-reference arrows in a
 ## Version 1.8.6 guide media audit
 
 The English and Persian guide PDFs now exercise the successful document-local image path with `docs/guides/images/architecture.svg` and `docs/guides/images/logo.svg`. The blocked-image placeholder remains covered by tests and troubleshooting text, while the public examples show a real semantic figure and a safe HTML image.
+
+## Phase 11 visual audit closure
+
+The Phase 11 guide PDFs should be reviewed as release-facing samples, not just as generated artifacts. The final visual pass checks these areas:
+
+- Mermaid edge labels should be visually readable and should not duplicate characters when text is extracted from the PDF.
+- Guide media examples should render document-local SVG assets instead of blocked placeholders.
+- RTL documents should keep code, CLI flags, file names, and inline technical identifiers isolated from surrounding Persian text.
+- Captions, footnotes, running footers, TOC links, and PDF outline entries should stay synchronized after regenerated examples are committed.
+
+Audit artifacts may be built in `build/` during release checks, but the project should not gain permanent sample files solely for one-off visual audits.

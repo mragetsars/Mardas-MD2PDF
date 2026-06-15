@@ -916,6 +916,8 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
         margin-inline: auto;
         object-fit: contain;
         font-family: var(--font-en), var(--font-fa), sans-serif;
+        shape-rendering: geometricPrecision;
+        text-rendering: geometricPrecision;
       }}
       .mermaid-diagram--tall .md2pdf-mermaid-svg {{
         width: auto;
@@ -962,14 +964,19 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
       .md2pdf-mermaid-arrow-head {{
         fill: var(--md2pdf-mermaid-stroke, var(--accent, var(--blue, var(--line-strong, #2563eb))));
       }}
+      .md2pdf-mermaid-edge-label-group {{
+        pointer-events: none;
+      }}
+      .md2pdf-mermaid-edge-label-bg {{
+        fill: var(--md2pdf-mermaid-label-bg, color-mix(in srgb, var(--paper, #ffffff) 92%, transparent));
+        stroke: var(--md2pdf-mermaid-label-border, color-mix(in srgb, var(--md2pdf-mermaid-stroke, var(--accent, #2563eb)) 22%, transparent));
+        stroke-width: 0.8;
+      }}
       .md2pdf-mermaid-edge-label {{
         fill: var(--md2pdf-mermaid-edge-ink, var(--muted, #64748b));
         font-size: 11px;
-        font-weight: 700;
-        paint-order: stroke;
-        stroke: var(--md2pdf-mermaid-label-halo, #ffffff);
-        stroke-width: 4px;
-        stroke-linejoin: round;
+        font-weight: 750;
+        dominant-baseline: middle;
         unicode-bidi: plaintext;
       }}
       .md2pdf-page-break {{
@@ -985,6 +992,31 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
         break-after: page;
         page-break-after: always;
       }}
+
+      code,
+      pre,
+      kbd,
+      samp,
+      .code-block,
+      .code-caption,
+      .code-table,
+      .highlight,
+      .md2pdf-caption--code {{
+        unicode-bidi: isolate;
+      }}
+      body.md2pdf-dir-rtl code,
+      body.md2pdf-dir-rtl pre,
+      body.md2pdf-dir-rtl kbd,
+      body.md2pdf-dir-rtl samp,
+      body.md2pdf-dir-rtl .code-block,
+      body.md2pdf-dir-rtl .code-caption,
+      body.md2pdf-dir-rtl .code-table,
+      body.md2pdf-dir-rtl .highlight,
+      body.md2pdf-dir-rtl .md2pdf-caption--code {{
+        direction: ltr;
+        text-align: left;
+      }}
+
       .heading-anchor {{
         opacity: 0.34;
         margin-inline-start: 0.35em;

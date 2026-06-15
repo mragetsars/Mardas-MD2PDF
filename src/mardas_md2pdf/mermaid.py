@@ -477,9 +477,40 @@ def _edge_svg(edge: MermaidEdge, nodes: dict[str, MermaidNode], *, horizontal: b
     if edge.label:
         safe_label = html.escape(edge.label)
         direction = _text_direction(edge.label)
+        label_w = _estimate_text_width(edge.label, font_size=11, padding=14)
+        label_h = 18
+        label_x0 = label_x - label_w / 2
+        label_y0 = label_y - 13
         label = (
+            f'<g class="md2pdf-mermaid-edge-label-group">'
+            f'<rect class="md2pdf-mermaid-edge-label-bg" x="{label_x0:.1f}" y="{label_y0:.1f}" '
+            f'width="{label_w:.1f}" height="{label_h:.1f}" rx="9" />'
             f'<text class="md2pdf-mermaid-edge-label" x="{label_x:.1f}" y="{label_y:.1f}" '
             f'text-anchor="middle" direction="{direction}" unicode-bidi="plaintext">'
             f'{safe_label}</text>'
+            f'</g>'
         )
     return f'<g class="{" ".join(classes)}"><path d="{path}"{marker} />{label}</g>'
+
+
+def _estimate_text_width(value: str, *, font_size: float, padding: float) -> float:
+    """Estimate an SVG text label background width without a browser.
+
+    The offline Mermaid renderer cannot ask Chromium for text metrics while it is
+    building SVG. A deterministic estimate is sufficient for compact edge-label
+    chips and avoids the older stroked-text halo, which looked good visually but
+    produced duplicated glyph extraction in some PDF viewers.
+    """
+    width = 0.0
+    for char in value:
+        if char.isspace():
+            width += font_size * 0.34
+        elif ord(char) > 0x2FF:
+            width += font_size * 0.72
+        elif char in "ilI.,'`|!":
+            width += font_size * 0.32
+        elif char in "mwMW@#%&":
+            width += font_size * 0.82
+        else:
+            width += font_size * 0.58
+    return max(28.0, width + padding)

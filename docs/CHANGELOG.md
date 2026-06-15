@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.8.8 - 2026-06-15
+
+### Fixed
+
+- Completed the Phase 11 visual audit pass for Mermaid label extraction, guide media consistency, and RTL/LTR code isolation.
+- Replaced stroked Mermaid edge-label halos with background label chips so PDF text extraction no longer duplicates edge-label glyphs.
+- Ensured the public guide Markdown points to document-local SVG assets instead of blocked `README.png` placeholders.
+
 ## 1.8.7 - 2026-06-14
 
 ### Fixed
