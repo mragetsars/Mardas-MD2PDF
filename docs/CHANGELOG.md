@@ -4,6 +4,21 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.10.0 - 2026-06-19
+
+### Fixed
+
+- Improved print-flow density for medium and long technical blocks so moderately large tables, code listings, and Mermaid diagrams consume less vertical space without clipping content.
+- Added medium-size print-flow classes for code blocks and tables, allowing semi-large tables to split at row boundaries instead of moving as one sparse page block.
+
+### Documentation
+
+- Updated the PDF typography guide, public README badge, and guide metadata for version 1.10.0.
+
+### Tests
+
+- Added regression coverage for medium code/table flow hints and the corresponding print-density CSS contracts.
+
 ## 1.9.9 - 2026-06-19
 
 ### Fixed

@@ -1147,6 +1147,20 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
       .md2pdf-image-placeholder span {{
         display: block;
       }}
+      .table-wrap--compact {{
+        margin-block: 0.95em 1.05em;
+      }}
+      .table-wrap--compact table {{
+        font-size: min(9pt, 0.9em);
+        line-height: 1.48;
+      }}
+      .table-wrap--compact th,
+      .table-wrap--compact td {{
+        padding: 1.9mm 2.2mm;
+      }}
+      .table-wrap--medium {{
+        margin-block: 0.85em 1em;
+      }}
       .table-wrap--wide table {{
         table-layout: fixed;
         width: 100%;
@@ -1160,6 +1174,17 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
         word-break: normal;
         hyphens: auto;
       }}
+      .table-wrap--long {{
+        margin-block: 0.75em 0.9em;
+      }}
+      .table-wrap--long table {{
+        font-size: min(8.4pt, 0.84em);
+        line-height: 1.38;
+      }}
+      .table-wrap--long th,
+      .table-wrap--long td {{
+        padding-block: 1.25mm;
+      }}
       .table-wrap--very-wide table {{
         font-size: min(6.8pt, 0.68em);
         line-height: 1.32;
@@ -1167,6 +1192,34 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
       .table-wrap--very-wide th,
       .table-wrap--very-wide td {{
         padding: 1mm 1.1mm;
+      }}
+      .code-block--medium {{
+        margin-block: 1em 1.1em;
+      }}
+      .code-block--medium .codehilite pre,
+      .code-block--medium .highlight pre,
+      .code-block--medium pre {{
+        padding-block: 3.4mm;
+        line-height: 1.55;
+      }}
+      .code-block--long {{
+        margin-block: 0.85em 1em;
+      }}
+      .code-block--long .codehilite pre,
+      .code-block--long .highlight pre,
+      .code-block--long pre {{
+        padding-block: 3mm;
+        line-height: 1.48;
+      }}
+      .code-block--very-long .codehilite pre,
+      .code-block--very-long .highlight pre,
+      .code-block--very-long pre {{
+        padding-block: 2.6mm;
+        line-height: 1.42;
+      }}
+      .code-block--long figcaption,
+      .code-block--very-long figcaption {{
+        padding-block: 1.6mm;
       }}
       .mermaid-diagram {{
         margin: 1.35em auto;
@@ -1199,14 +1252,23 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
         shape-rendering: geometricPrecision;
         text-rendering: geometricPrecision;
       }}
+      .mermaid-diagram--tall,
+      .mermaid-diagram--wide {{
+        margin-block: 1em 1.1em;
+        padding: 3mm;
+      }}
+      .mermaid-diagram--tall figcaption,
+      .mermaid-diagram--wide figcaption {{
+        margin-bottom: 2.2mm;
+      }}
       .mermaid-diagram--tall .md2pdf-mermaid-svg {{
         width: auto;
         max-width: 100%;
-        max-height: var(--md2pdf-mermaid-tall-max-height, 185mm);
+        max-height: var(--md2pdf-mermaid-tall-max-height, 165mm);
       }}
       .mermaid-diagram--wide .md2pdf-mermaid-svg {{
         width: 100%;
-        max-height: var(--md2pdf-mermaid-wide-max-height, 120mm);
+        max-height: var(--md2pdf-mermaid-wide-max-height, 108mm);
       }}
       .md2pdf-mermaid-bg {{
         fill: var(--md2pdf-mermaid-bg, color-mix(in srgb, var(--soft, #f4f7fb) 74%, #ffffff));
@@ -1397,6 +1459,10 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
           break-inside: avoid;
           page-break-inside: avoid;
         }}
+        .code-block--medium {{
+          break-inside: avoid-page;
+          page-break-inside: avoid;
+        }}
         .code-block--long, .code-block--very-long {{
           break-inside: auto;
           page-break-inside: auto;
@@ -1425,13 +1491,18 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
           break-after: avoid-page;
           page-break-after: avoid;
         }}
-        .table-wrap--long, .table-wrap--wide, .table-wrap--very-wide {{
+        .table-wrap--medium, .table-wrap--long, .table-wrap--wide, .table-wrap--very-wide {{
           break-inside: auto;
           page-break-inside: auto;
         }}
-        .table-wrap--long table, .table-wrap--wide table, .table-wrap--very-wide table {{
+        .table-wrap--medium table, .table-wrap--long table,
+        .table-wrap--wide table, .table-wrap--very-wide table {{
           break-inside: auto;
           page-break-inside: auto;
+        }}
+        .mermaid-diagram--wide, .mermaid-diagram--tall {{
+          padding: 2.8mm;
+          margin-block: 0.85em 1em;
         }}
         thead {{
           display: table-header-group;

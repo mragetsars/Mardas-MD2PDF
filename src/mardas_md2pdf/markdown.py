@@ -817,6 +817,8 @@ def highlight_code(
         classes += " code-block--numbered"
     if highlight_lines:
         classes += " code-block--highlighted"
+    if line_count >= 18:
+        classes += " code-block--medium"
     if line_count >= 36:
         classes += " code-block--long"
     if line_count >= 90:
@@ -1926,6 +1928,10 @@ def postprocess_html(body_html: str, *, code_style: str = "github-dark", lang: s
         table_number_profile = numeral_profile(table_text)
         classes = ["table-wrap", "table-wrap--profiled", f"table-wrap--{table_profile}"]
         classes.extend(text_quality_classes(table_text))
+        if columns >= 6 or rows >= 12:
+            classes.append("table-wrap--compact")
+        if rows >= 10:
+            classes.append("table-wrap--medium")
         if columns >= 8:
             classes.append("table-wrap--wide")
         if columns >= 12:

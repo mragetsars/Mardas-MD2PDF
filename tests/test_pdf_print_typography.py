@@ -14,13 +14,36 @@ from mardas_md2pdf.renderer import (
 )
 
 
+def test_medium_code_blocks_get_density_hints_without_forcing_long_flow():
+    code = "\n".join(f"print({i})" for i in range(20))
+    result = render_markdown(f'```python title="medium.py" linenos\n{code}\n```\n')
+
+    assert 'data-lines="20"' in result.body_html
+    assert 'code-block--medium' in result.body_html
+    assert 'code-block--long' not in result.body_html
+    assert 'code-block--very-long' not in result.body_html
+
+
 def test_long_code_blocks_get_print_flow_hints():
     code = "\n".join(f"print({i})" for i in range(40))
     result = render_markdown(f'```python title="long.py" linenos\n{code}\n```\n')
 
     assert 'data-lines="40"' in result.body_html
+    assert 'code-block--medium' in result.body_html
     assert 'code-block--long' in result.body_html
     assert 'code-block--very-long' not in result.body_html
+
+
+def test_medium_tables_get_density_hints_before_long_threshold():
+    rows = ["| A | B | C |", "|---|---|---|"]
+    rows.extend(f"| {i} | value {i} | note {i} |" for i in range(11))
+    result = render_markdown("\n".join(rows))
+
+    assert 'table-wrap--medium' in result.body_html
+    assert 'table-wrap--compact' in result.body_html
+    assert 'table-wrap--long' not in result.body_html
+    assert 'data-md2pdf-rows="12"' in result.body_html
+    assert 'data-md2pdf-columns="3"' in result.body_html
 
 
 def test_long_tables_get_print_flow_hints():
@@ -28,6 +51,8 @@ def test_long_tables_get_print_flow_hints():
     rows.extend(f"| {i} | value {i} |" for i in range(20))
     result = render_markdown("\n".join(rows))
 
+    assert 'table-wrap--medium' in result.body_html
+    assert 'table-wrap--compact' in result.body_html
     assert 'table-wrap--long' in result.body_html
     assert 'data-md2pdf-rows="21"' in result.body_html
     assert 'data-md2pdf-columns="2"' in result.body_html
@@ -41,8 +66,11 @@ def test_layout_css_contains_print_typography_rules(tmp_path: Path):
     assert "widows: 3" in css
     assert "h1, h2, h3, h4, h5, h6" in css
     assert "break-after: avoid-page" in css
+    assert ".code-block--medium" in css
     assert ".code-block--long, .code-block--very-long" in css
-    assert ".table-wrap--long, .table-wrap--wide, .table-wrap--very-wide" in css
+    assert ".table-wrap--compact" in css
+    assert ".table-wrap--medium, .table-wrap--long, .table-wrap--wide, .table-wrap--very-wide" in css
+    assert ".mermaid-diagram--wide, .mermaid-diagram--tall" in css
     assert "thead" in css and "display: table-header-group" in css
 
 
@@ -54,7 +82,8 @@ def test_build_html_includes_print_flow_css(tmp_path: Path):
 
     assert "@media print" in html
     assert "break-before: avoid-page" in html
-    assert "code-block--long" in html
+    assert "code-block--medium" in html
+    assert "table-wrap--medium" in html
 
 
 def test_image_caption_pair_becomes_semantic_figure_caption():

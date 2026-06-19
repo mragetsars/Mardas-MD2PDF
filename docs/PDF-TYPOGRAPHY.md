@@ -46,31 +46,42 @@ engines can keep the caption inside the table flow.
 
 Code blocks are semantic `<figure class="code-block">` elements. During Markdown
 post-processing, Mardas records the number of source lines as `data-lines` and
-adds print-flow classes for long snippets:
+adds print-flow classes for medium and long snippets.
+
+Short code blocks use `break-inside: avoid`; medium code blocks become denser
+without forcing a page split; long code blocks use `break-inside: auto` so they
+can continue on the next page. Captions still use `break-after: avoid` so the
+caption is not orphaned from the code that follows.
+
+The print-density classes are intentionally tiered:
 
 ```text
-code-block--long       # 36+ source lines
-code-block--very-long  # 90+ source lines
+code-block--medium    # 18+ source lines; compact spacing, still kept together where practical
+code-block--long      # 36+ source lines; may split to avoid sparse pages
+code-block--very-long # 90+ source lines; densest listing treatment
 ```
-
-Short code blocks use `break-inside: avoid`; long code blocks use `break-inside:
-auto` so they can continue on the next page. Captions still use `break-after:
-avoid` so the caption is not orphaned from the code that follows.
 
 ## Tables
 
 Tables are wrapped in `.table-wrap`. The wrapper records column and row counts
 as `data-md2pdf-columns` and `data-md2pdf-rows` so print rules can distinguish
-ordinary tables from wide or long ones:
+ordinary tables from compact, medium, wide, or long ones.
+
+Normal tables try to stay together. Medium, wide, and long tables may break
+across pages at row boundaries, but rows keep `break-inside: avoid` to prevent
+split cells. The medium tier exists to avoid moving a moderately tall table to a
+mostly empty page.
 
 ```text
+table-wrap--compact    # 6+ columns or 12+ rendered rows; tighter cell spacing
+table-wrap--medium     # 10+ rendered rows; may split at row boundaries
 table-wrap--wide       # 8+ columns
 table-wrap--very-wide  # 12+ columns
-table-wrap--long       # 18+ rows
+table-wrap--long       # 18+ rendered rows
 ```
 
-Normal tables try to stay together. Wide and long tables may break across pages,
-but rows keep `break-inside: avoid` to prevent split cells.
+Wide or tall Mermaid diagrams also receive compact print spacing and smaller
+maximum heights so diagram-heavy pages remain dense without clipping the SVG.
 
 
 ## Guide media samples
