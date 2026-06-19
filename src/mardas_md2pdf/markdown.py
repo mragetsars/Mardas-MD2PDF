@@ -298,6 +298,58 @@ def dominant_direction(text: str) -> str:
 
 
 
+ASCII_DIGIT_RE = re.compile(r"[0-9]")
+ARABIC_DIGIT_RE = re.compile(r"[\u0660-\u0669\u06F0-\u06F9]")
+
+
+def strong_direction_counts(text: str) -> tuple[int, int]:
+    """Return ``(rtl, ltr)`` strong-character counts for bidi-sensitive text.
+
+    ``dir=auto`` is useful for paragraphs, but tables, captions, and mixed
+    Persian/English technical prose need more stable CSS hooks. Counting strong
+    directional characters gives the renderer a deterministic profile without
+    rewriting the author's text.
+    """
+    rtl = 0
+    ltr = 0
+    for char in text or "":
+        direction = unicodedata.bidirectional(char)
+        if direction in {"R", "AL"}:
+            rtl += 1
+        elif direction == "L":
+            ltr += 1
+    return rtl, ltr
+
+
+def direction_profile(text: str) -> str:
+    """Classify text as ``rtl``, ``ltr``, ``mixed``, or ``neutral``."""
+    rtl, ltr = strong_direction_counts(text)
+    if rtl and ltr:
+        return "mixed"
+    if rtl:
+        return "rtl"
+    if ltr:
+        return "ltr"
+    return "neutral"
+
+
+def has_mixed_numerals(text: str) -> bool:
+    """Return whether Persian/Arabic and ASCII digits appear together."""
+    return bool(ASCII_DIGIT_RE.search(text or "") and ARABIC_DIGIT_RE.search(text or ""))
+
+
+def _add_classes(tag: Tag, *classes: str) -> None:
+    existing = set(tag.get("class", []))
+    existing.update(item for item in classes if item)
+    if existing:
+        tag["class"] = sorted(existing)
+
+
+def _dir_for_profile(profile: str) -> str:
+    return profile if profile in {"rtl", "ltr"} else "auto"
+
+
+
 CODE_FENCE_TITLE_RE = re.compile(r"(?:^|\s)(?:title|filename|file)=(?P<quote>[\"\'])(?P<value>.*?)(?P=quote)")
 CODE_FENCE_BRACE_RE = re.compile(r"\{(?P<spec>[^}]*)\}")
 CODE_FENCE_KV_RE = re.compile(
@@ -1540,23 +1592,32 @@ def postprocess_html(body_html: str, *, code_style: str = "github-dark", lang: s
     normalize_semantic_captions(soup)
 
     # Direction-aware blocks and inline content.
-    for tag in soup.find_all(["p", "li", "td", "th", "h1", "h2", "h3", "h4", "h5", "h6", "figcaption"]):
-        if tag.get("dir"):
-            continue
+    for tag in soup.find_all(["p", "li", "td", "th", "h1", "h2", "h3", "h4", "h5", "h6", "figcaption", "caption"]):
         if "footnote-item" in tag.get("class", []):
             continue
         text = tag.get_text(" ", strip=True)
         if not text:
             continue
-        tag["dir"] = "auto"
+        profile = direction_profile(text)
+        if not tag.get("dir"):
+            tag["dir"] = _dir_for_profile(profile)
+        direction_class = {
+            "rtl": "md2pdf-rtl-text",
+            "ltr": "md2pdf-ltr-text",
+            "mixed": "mixed-script",
+        }.get(profile, "")
+        classes = [direction_class]
         if has_persian(text) and has_latin(text):
-            tag["class"] = list(set(tag.get("class", []) + ["mixed-script"]))
+            classes.append("mixed-script")
+        if has_mixed_numerals(text):
+            classes.append("mixed-numeral")
+        _add_classes(tag, *classes)
 
     # Make code and pre blocks strictly LTR.
     for tag in soup.find_all(["pre", "code"]):
         tag["dir"] = "ltr"
 
-    # Wrap tables for visual polish and safe overflow.
+    # Wrap tables for visual polish, safe overflow, and stable RTL/LTR behavior.
     for table in soup.find_all("table"):
         if table.parent and getattr(table.parent, "name", None) == "div" and "table-wrap" in table.parent.get("class", []):
             continue
@@ -1569,9 +1630,49 @@ def postprocess_html(body_html: str, *, code_style: str = "github-dark", lang: s
             classes.append("table-wrap--very-wide")
         if rows >= 18:
             classes.append("table-wrap--long")
+
+        rtl_cells = 0
+        ltr_cells = 0
+        mixed_cells = 0
+        numeric_cells = 0
+        for cell in table.find_all(["th", "td"]):
+            cell_text = cell.get_text(" ", strip=True)
+            cell_profile = direction_profile(cell_text)
+            if cell_profile == "rtl":
+                rtl_cells += 1
+                _add_classes(cell, "table-cell--rtl")
+                if not cell.get("dir"):
+                    cell["dir"] = "rtl"
+            elif cell_profile == "ltr":
+                ltr_cells += 1
+                _add_classes(cell, "table-cell--ltr")
+                if not cell.get("dir"):
+                    cell["dir"] = "ltr"
+            elif cell_profile == "mixed":
+                mixed_cells += 1
+                _add_classes(cell, "table-cell--mixed", "mixed-script")
+                if not cell.get("dir"):
+                    cell["dir"] = "auto"
+            if has_mixed_numerals(cell_text):
+                numeric_cells += 1
+                _add_classes(cell, "mixed-numeral")
+
+        if rtl_cells > ltr_cells:
+            classes.append("table-wrap--rtl")
+            table["dir"] = table.get("dir") or "rtl"
+        elif ltr_cells > rtl_cells:
+            classes.append("table-wrap--ltr")
+            table["dir"] = table.get("dir") or "ltr"
+        else:
+            table["dir"] = table.get("dir") or "auto"
+        if mixed_cells or (rtl_cells and ltr_cells):
+            classes.append("table-wrap--mixed-direction")
+        if numeric_cells:
+            classes.append("table-wrap--mixed-numerals")
+
         wrapper = soup.new_tag("div")
         wrapper["class"] = classes
-        wrapper["dir"] = "auto"
+        wrapper["dir"] = table.get("dir") or "auto"
         if columns:
             wrapper["data-md2pdf-columns"] = str(columns)
         if rows:

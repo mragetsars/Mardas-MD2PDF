@@ -29,7 +29,7 @@ def test_guides_start_with_valid_front_matter():
         metadata = _front_matter(guide)
         assert metadata.get("title")
         assert metadata.get("summary")
-        assert metadata.get("version") == "1.8.9"
+        assert metadata.get("version") == "1.9.0"
         assert metadata.get("branding", {}).get("mode") == "full"
 
 
@@ -51,9 +51,17 @@ def test_changelog_is_descending_and_has_single_intro():
     versions = [tuple(map(int, match.groups())) for match in VERSION_RE.finditer(changelog)]
     assert versions == sorted(versions, reverse=True)
     assert len(versions) == len(set(versions))
-    assert versions[0] == (1, 8, 9)
+    assert versions[0] == (1, 9, 0)
     assert (1, 8, 6) in versions
     assert (1, 8, 5) in versions
+    assert (1, 5, 0) in versions
+    assert (1, 4, 0) in versions
+    assert (1, 3, 0) in versions
+    assert (1, 2, 0) in versions
+    assert (1, 1, 0) in versions
+    assert (1, 0, 0) in versions
+    assert "## 0.x - 2026-05-26" in changelog
+    assert "docs/ROADMAP.md" not in changelog
 
 
 def test_documentation_map_exists_and_mentions_guides():
@@ -63,3 +71,15 @@ def test_documentation_map_exists_and_mentions_guides():
     assert "docs/guides/GUIDE.en.md" in docs
     assert "docs/guides/GUIDE.fa.md" in docs
     assert "Changelog policy" in docs
+    assert "Historical changelog reconstruction" in docs
+    assert "docs/PERSIAN-RTL.md" in docs
+    assert "docs/ROADMAP.md" not in docs
+
+
+def test_persian_rtl_reference_document_exists():
+    docs = (ROOT / "docs/PERSIAN-RTL.md").read_text(encoding="utf-8")
+
+    assert "Persian and RTL Quality" in docs
+    assert "mixed-script" in docs
+    assert "mixed-numeral" in docs
+    assert "table-wrap--rtl" in docs

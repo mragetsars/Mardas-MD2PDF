@@ -12,7 +12,7 @@ summary: |
   This document also acts as a live rendering sample for cover pages, tables of contents, mixed RTL/LTR text, formulas, code, Mermaid flowcharts, images, tables, footnotes, page breaks, and safe HTML.
 institution: "Mardas Lab"
 course: "Markdown Publishing"
-version: "1.8.9"
+version: "1.9.0"
 status: "Stable"
 keywords:
   - Markdown
@@ -210,7 +210,7 @@ department: "Department name"
 course: "Course or project title"
 supervisor: "Supervisor name"
 date: "2026-05-20"
-version: "1.8.9"
+version: "1.9.0"
 status: "Draft"
 keywords: [Markdown, PDF, RTL, MathJax]
 cover_label: "Technical Report"
@@ -305,6 +305,8 @@ English writing can include Persian terms such as راست به چپ, فونت �
 Persian writing can include English identifiers such as `Playwright`, `MathJax`, `GitHub Actions`, `PDF`, and `RTL/LTR` inside the same paragraph.
 
 Inline code remains stable: `mrs-md2pdf input.md -o output.pdf --toc`.
+
+For a focused Persian/RTL checklist covering mixed identifiers, numeric styles, RTL tables, and captions, see `docs/PERSIAN-RTL.md`.
 
 # Table of Contents
 

@@ -803,6 +803,49 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
       body.md2pdf-dir-ltr .callout p {{ text-align: left; }}
       body.md2pdf-dir-rtl .callout-title,
       body.md2pdf-dir-rtl .callout p {{ text-align: right; }}
+      .md2pdf-rtl-text {{
+        direction: rtl;
+        text-align: start;
+        unicode-bidi: plaintext;
+      }}
+      .md2pdf-ltr-text {{
+        direction: ltr;
+        text-align: start;
+        unicode-bidi: plaintext;
+      }}
+      .mixed-script {{
+        unicode-bidi: plaintext;
+      }}
+      .mixed-numeral {{
+        font-variant-numeric: tabular-nums;
+        unicode-bidi: plaintext;
+      }}
+      .table-wrap--rtl table {{ direction: rtl; }}
+      .table-wrap--ltr table {{ direction: ltr; }}
+      .table-wrap--mixed-direction table {{ unicode-bidi: plaintext; }}
+      .table-wrap--rtl th,
+      .table-wrap--rtl td,
+      .table-cell--rtl {{
+        direction: rtl;
+        text-align: right;
+        unicode-bidi: plaintext;
+      }}
+      .table-wrap--ltr th,
+      .table-wrap--ltr td,
+      .table-cell--ltr {{
+        direction: ltr;
+        text-align: left;
+        unicode-bidi: plaintext;
+      }}
+      .table-cell--mixed {{
+        direction: auto;
+        unicode-bidi: plaintext;
+      }}
+      body.md2pdf-dir-rtl .md2pdf-caption,
+      body.md2pdf-dir-rtl figcaption,
+      body.md2pdf-dir-rtl caption {{
+        unicode-bidi: plaintext;
+      }}
       body.md2pdf-dir-ltr .md2pdf-details {{ direction: ltr; text-align: left; }}
       body.md2pdf-dir-rtl .md2pdf-details {{ direction: rtl; text-align: right; }}
       .math,

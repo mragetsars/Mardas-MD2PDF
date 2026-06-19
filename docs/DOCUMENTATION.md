@@ -30,6 +30,7 @@ Because the English and Persian guides are both user guides and live rendering s
 | `docs/MARKDOWN-FIDELITY.md` | Markdown feature support and edge-case behavior. | Update when parser/renderer fidelity changes. |
 | `docs/PDF-NAVIGATION.md` | Visible TOC, PDF outline, destinations, and metadata. | Update when TOC/bookmark behavior changes. |
 | `docs/PDF-TYPOGRAPHY.md` | Print flow, captions, footnotes, media samples, and visual audit rules. | Update when PDF layout behavior changes. |
+| `docs/PERSIAN-RTL.md` | Persian/RTL authoring rules, mixed text, numbers, captions, and RTL tables. | Update when bidi, Persian, table, caption, or numeric behavior changes. |
 
 ## Guide policy
 
@@ -69,6 +70,15 @@ Rules:
 - generated guide PDF refreshes belong in the same release patch as the source change;
 - development/audit artifacts should not be committed unless they are intended as permanent tooling;
 - when a release patch changes user-facing behavior, bump version metadata and refresh the guide PDFs through `scripts/build_examples.sh`.
+
+## Historical changelog reconstruction
+
+The detailed pre-`1.5.0` changelog entries are reconstructed from the public baseline, early project documentation, and the feature set that existed before structured release notes began. They are not intended to imply that every older milestone was tagged as a published GitHub release. Keep the reconstruction conservative:
+
+- describe capabilities that are visible in the baseline code or documentation;
+- avoid inventing external release dates, distribution channels, or user counts;
+- keep uncertain history under `Notes` rather than `Added` or `Fixed`;
+- prefer broad version-shaped milestones such as `1.4.0` GUI baseline or `1.3.0` Markdown feature expansion when exact early patch tags are unavailable.
 
 ## Local verification
 

@@ -4,6 +4,22 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.9.0 - 2026-06-15
+
+### Added
+
+- Started Phase 12 RTL/Persian deep quality work with deterministic direction classes for Persian, English, and mixed-script blocks.
+- Added table-level RTL/LTR profiling so Persian-heavy tables, English-heavy cells, mixed-direction cells, and mixed Persian/Latin numerals get explicit print CSS hooks.
+- Added `docs/PERSIAN-RTL.md` as the focused reference for Persian/RTL authoring, mixed identifiers, numbers, tables, captions, and verification.
+
+### Fixed
+
+- Improved bidi isolation for mixed Persian/English prose, captions, and tables so generated PDFs keep technical identifiers and numbers readable in RTL documents.
+
+### Tests
+
+- Added regression coverage for Persian RTL block classification, mixed numeral detection, RTL table profiling, and the injected CSS rules.
+
 ## 1.8.9 - 2026-06-15
 
 ### Fixed
@@ -283,20 +299,81 @@ The project follows semantic versioning for user-visible behavior. Patch release
 - Bumped the project to version 1.5.1 after progress feedback and Mermaid print-safety work.
 - Refreshed the generated guide PDF examples.
 
-## 1.5.0 and earlier - 2026-05-26
+## 1.5.0 - 2026-05-26
 
 ### Added
 
-- Established the core Markdown-to-PDF pipeline: Markdown parsing, structured HTML assembly, print CSS, Playwright/Chromium PDF export, and local CLI usage.
-- Added Persian, English, and mixed RTL/LTR document support with direction-aware cover pages, content flow, tables, code blocks, and metadata labels.
-- Added professional cover pages, tables of contents, page numbers, local image embedding, GitHub-style task lists and alerts, footnotes, raw HTML sanitization, MathJax formulas, and offline Mermaid flowchart rendering.
-- Added the first visual system with GitHub, modern, textbook, and academic output looks, plus Persian-friendly typography and generated PDF guide examples.
-- Added the local Studio GUI for browser-based editing, preview-oriented option selection, asset attachment, and PDF export.
+- Established the stable public baseline for the Markdown-to-PDF pipeline: Markdown parsing, structured HTML assembly, print CSS, Playwright/Chromium PDF export, and local CLI usage.
+- Shipped the baseline English and Persian guide PDFs as real generated examples rather than static screenshots or hand-authored PDFs.
+- Consolidated the first complete user-facing workflow around CLI rendering, front matter, cover pages, table of contents, code blocks, math, Mermaid diagrams, images, footnotes, and local Studio export.
 
 ### Changed
 
-- Iteratively refined print layout, code block rendering, table behavior, cover metadata, Mermaid sizing, and guide documentation before the structured changelog was introduced.
+- Iteratively refined print layout, code block rendering, table behavior, cover metadata, Mermaid sizing, and guide documentation before the structured changelog began.
 
 ### Notes
 
-- This entry summarizes the public baseline before the structured changelog began. Later entries are kept version-by-version.
+- This is the first structured baseline. The older entries below are reconstructed from the pre-structured project history, baseline documentation, and the capabilities that existed before the 1.5.x hardening and release-process work.
+
+## 1.4.0 - 2026-05-26
+
+### Added
+
+- Added the first local Studio GUI for browser-based Markdown editing, approximate preview, option selection, asset attachment, and PDF export.
+- Added GUI routes and assets for a local single-user publishing workflow while keeping the CLI as the automation-friendly interface.
+- Added browser-side controls for core document options such as title, author, TOC, cover, page size, direction, and output filename.
+
+### Changed
+
+- Brought the documentation guides closer to live samples by covering the GUI workflow as well as the command-line workflow.
+
+## 1.3.0 - 2026-05-26
+
+### Added
+
+- Added advanced Markdown features needed for technical publishing: GitHub-style task lists and alerts, footnotes, raw HTML sanitization, heading anchors, local image embedding, and manual page breaks.
+- Added MathJax support for inline and display equations, with a bundled/offline MathJax asset for reproducible local rendering.
+- Added the offline Mermaid flowchart renderer for practical project-documentation diagrams without relying on a CDN or external Mermaid service.
+
+### Changed
+
+- Improved the Markdown-to-HTML normalization layer so code, math, Mermaid, footnotes, and safe HTML could coexist in the same document without corrupting each other.
+
+## 1.2.0 - 2026-05-26
+
+### Added
+
+- Added Persian, English, and mixed RTL/LTR document support with direction-aware body flow, cover labels, table cells, code blocks, metadata labels, and UI strings.
+- Added Persian-friendly typography assumptions and font fallback behavior so generated PDFs remained readable when documents mixed Persian prose with English identifiers.
+- Added professional cover-page metadata fields such as title, subtitle, authors, date, institution, course, status, version, and keywords.
+
+### Changed
+
+- Refined page flow, cover structure, and content direction handling for reports, guides, and university-style documents.
+
+## 1.1.0 - 2026-05-26
+
+### Added
+
+- Added the first complete CLI rendering surface with input/output paths, metadata overrides, TOC controls, cover toggles, page size/margin options, progress output, and debug HTML export.
+- Added table-of-contents generation from Markdown headings and baseline page-number/footer rendering for printable PDFs.
+- Added local-image handling for document assets referenced from Markdown.
+
+### Changed
+
+- Moved the renderer toward a browser-first model where Chromium performs the final print layout from structured HTML and CSS.
+
+## 1.0.0 - 2026-05-26
+
+### Added
+
+- Introduced the core `Markdown -> Structured HTML -> Chromium PDF` architecture.
+- Added the initial Python package, renderer entry point, Markdown parsing layer, bundled CSS assets, and Playwright/Chromium PDF export path.
+- Added the first documentation skeleton and generated examples that established the project as a local Markdown publishing tool rather than a one-off converter script.
+
+## 0.x - 2026-05-26
+
+### Notes
+
+- Prototype phase for validating the feasibility of using Markdown, HTML/CSS print rules, and Chromium to generate Persian/English technical PDFs.
+- Experiments from this period were folded into the `1.0.0` baseline once the converter became a usable project.

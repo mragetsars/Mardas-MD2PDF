@@ -12,7 +12,7 @@ summary: |
   همین سند به عنوان نمونه زنده رندر نیز استفاده می‌شود و جلد، فهرست مطالب، متن ترکیبی فارسی/English، فرمول، کد، نمودار Mermaid، تصویر، جدول، پانویس، شکست صفحه و HTML امن را نمایش می‌دهد.
 institution: "Mardas Lab"
 course: "انتشار حرفه‌ای Markdown"
-version: "1.8.9"
+version: "1.9.0"
 status: "Stable"
 keywords:
   - Markdown
@@ -208,7 +208,7 @@ department: "نام دانشکده یا دپارتمان"
 course: "نام درس یا پروژه"
 supervisor: "نام استاد یا راهنما"
 date: "۱۴۰۵-۰۲-۳۰"
-version: "1.8.9"
+version: "1.9.0"
 status: "Draft"
 keywords: [Markdown, PDF, RTL, MathJax]
 cover_label: "گزارش فنی"
@@ -303,6 +303,8 @@ mrs-md2pdf input.md -o output.pdf --no-cover-logo
 در متن فارسی نیز می‌توان شناسه‌های English مثل `Playwright`، `MathJax`، `GitHub Actions`، `PDF` و `RTL/LTR` را داخل همان پاراگراف استفاده کرد.
 
 همچنین Inline code هم پایدار می‌ماند: `mrs-md2pdf input.md -o output.pdf --toc`.
+
+برای چک‌لیست اختصاصی فارسی/RTL درباره شناسه‌های ترکیبی، سبک عددها، جدول‌های RTL و captionها، فایل `docs/PERSIAN-RTL.md` را ببینید.
 
 # فهرست مطالب
 
