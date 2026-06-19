@@ -113,7 +113,7 @@ Useful table wrapper classes include `table-wrap--profiled`, `table-wrap--rtl`, 
 
 The printed table of contents also exposes audit metadata. The TOC root receives `md2pdf-toc--profiled`, `data-md2pdf-number-locale`, and direction metadata. Individual TOC items receive title profile attributes and classes such as `toc-item--rtl`, `toc-item--ltr`, `toc-item--mixed`, `toc-item--persian`, and `toc-item--persian-number`. Generated section numbers can be localized for Persian output while the underlying heading IDs and PDF destinations remain stable.
 
-Nested Persian TOC lists must keep their tree shape in the opposite inline direction from English. For RTL output, nested `toc-list--nested` lists indent toward the right edge with `margin-inline-end` and `border-inline-end`; for LTR output, the same structure indents toward the left edge with `margin-inline-start` and `border-inline-start`. This keeps the visible TOC hierarchy readable without changing heading IDs, TOC links, or PDF outline destinations.
+Nested Persian TOC lists must keep the same compact tree shape as English TOCs, mirrored for RTL reading. For RTL output, nested `toc-list--nested` lists indent inward from the right edge with `margin-inline-start` and `border-inline-start`, while the generated number and title stay next to each other in a compact inline row. For LTR output, the same structure indents inward from the left edge with `margin-inline-start` and `border-inline-start`. This keeps the visible TOC hierarchy readable without creating a wide gap between section numbers and titles, and without changing heading IDs, TOC links, or PDF outline destinations.
 
 ## Guide live-sample coverage
 

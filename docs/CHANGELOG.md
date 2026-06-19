@@ -4,17 +4,32 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.9.7 - 2026-06-15
+
+### Fixed
+
+- Restored the Persian printed table of contents to the compact English-like tree layout, keeping section numbers adjacent to titles instead of spreading them across the page.
+- Mirrored nested TOC indentation inward from the RTL edge with start-side tree rules, while preserving heading IDs, visible TOC links, and PDF outline destinations.
+
+### Documentation
+
+- Updated the Persian/RTL documentation to describe compact RTL TOC tree behavior and guide smoke references for version 1.9.7.
+
+### Tests
+
+- Updated regression coverage so Persian TOC CSS must use compact inline rows and must not reintroduce the wide number/title grid split.
+
 ## 1.9.6 - 2026-06-15
 
 ### Fixed
 
-- Restored professional tree indentation for Persian/RTL printed tables of contents so nested heading levels indent toward the right edge, matching the structural clarity of English/LTR TOCs.
-- Added explicit TOC depth metadata and nested-list classes so RTL/LTR TOC tree layout can be regression-tested without changing heading IDs, link targets, or PDF destinations.
+- Added first-pass nested-list depth metadata and classes for Persian/RTL printed tables of contents so the hierarchy could be regression-tested without changing heading IDs, link targets, or PDF destinations.
+- Introduced bidirectional TOC tree CSS hooks; the compact visual layout was refined in 1.9.7 after PDF review.
 
 ### Documentation
 
-- Refreshed guide metadata and Persian/RTL smoke references for the 1.9.6 TOC tree indentation polish.
-- Expanded `docs/PERSIAN-RTL.md` with RTL TOC tree indentation rules.
+- Refreshed guide metadata and Persian/RTL smoke references for the 1.9.6 TOC tree hook pass.
+- Expanded `docs/PERSIAN-RTL.md` with RTL TOC tree indentation concepts.
 
 ### Tests
 

@@ -956,26 +956,34 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
         padding-inline-end: 0;
       }}
       .md2pdf-toc--rtl .toc-list--nested {{
-        margin-inline-start: 0;
-        margin-inline-end: 1.35em;
-        padding-inline-start: 0;
-        padding-inline-end: 0.8em;
-        border-inline-start: 0;
-        border-inline-end: 1px solid color-mix(in srgb, var(--line, #dbe3ef) 76%, transparent);
+        margin-inline-start: 1.35em;
+        margin-inline-end: 0;
+        padding-inline-start: 0.8em;
+        padding-inline-end: 0;
+        border-inline-start: 1px solid color-mix(in srgb, var(--line, #dbe3ef) 76%, transparent);
+        border-inline-end: 0;
+      }}
+      .md2pdf-toc--rtl .toc-item {{
+        text-align: right;
       }}
       .md2pdf-toc--rtl .toc-item > a {{
-        grid-template-columns: minmax(0, 1fr) max-content;
+        display: inline-flex;
+        flex-direction: row;
+        align-items: baseline;
+        justify-content: flex-start;
+        max-width: 100%;
         direction: rtl;
       }}
       .md2pdf-toc--rtl .toc-number {{
-        grid-column: 2;
         min-width: 2.4em;
+        flex: 0 0 auto;
         text-align: left;
         direction: ltr;
         unicode-bidi: isolate;
       }}
       .md2pdf-toc--rtl .toc-title {{
-        grid-column: 1;
+        min-width: 0;
+        flex: 0 1 auto;
         direction: auto;
         unicode-bidi: plaintext;
       }}

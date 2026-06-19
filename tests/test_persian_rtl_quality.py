@@ -320,9 +320,12 @@ def test_layout_css_contains_bidirectional_toc_tree_indentation_rules(tmp_path: 
     css, _classes = _layout_css(options, document_direction="rtl")
 
     assert ".md2pdf-toc--rtl .toc-list--nested" in css
-    assert "margin-inline-end: 1.35em" in css
-    assert "border-inline-end" in css
-    assert "border-inline-start: 0" in css
-    assert "grid-template-columns: minmax(0, 1fr) max-content" in css
-    assert ".md2pdf-toc--ltr .toc-list--nested" in css
     assert "margin-inline-start: 1.35em" in css
+    assert "border-inline-start: 1px solid" in css
+    assert "border-inline-end: 0" in css
+    assert ".md2pdf-toc--rtl .toc-item > a" in css
+    assert "display: inline-flex" in css
+    assert "flex-direction: row" in css
+    assert "grid-template-columns: minmax(0, 1fr) max-content" not in css
+    assert ".md2pdf-toc--ltr .toc-list--nested" in css
+    assert "grid-template-columns: max-content minmax(0, 1fr)" in css
