@@ -62,7 +62,14 @@ def test_render_pdf_warns_when_mathjax_evaluation_fails(tmp_path):
     page = FakePage()
     options = PdfOptions(input_path=tmp_path / "in.md", output_path=tmp_path / "out.pdf")
     with pytest.warns(RuntimeWarning, match="MathJax rendering failed"):
-        _render_pdf(page, "<html></html>", options, tmp_path / "out.pdf", display_footer=False, title="T")
+        _render_pdf(
+            page,
+            "<html></html>",
+            options,
+            tmp_path / "out.pdf",
+            display_footer=False,
+            footer_context="T",
+        )
     assert page.pdf_kwargs["format"] == "A4"
 
 
@@ -198,9 +205,9 @@ def test_outline_source_entries_follow_markdown_headings():
     result = render_markdown("# Intro\n\n## Details\n\n### Deep dive\n")
 
     assert _outline_source_entries(result) == [
-        (1, "Intro"),
-        (2, "Details"),
-        (3, "Deep dive"),
+        (1, "Intro", "intro"),
+        (2, "Details", "details"),
+        (3, "Deep dive", "deep-dive"),
     ]
 
 
@@ -213,13 +220,18 @@ def test_locate_outline_pages_uses_start_page_and_monotonic_lookup():
         "detailsmoretext",
         "deepdiveappendix",
     ]
-    entries = [(1, "Intro"), (2, "Details"), (3, "Deep dive"), (2, "Missing")]
+    entries = [
+        (1, "Intro", "intro"),
+        (2, "Details", "details"),
+        (3, "Deep dive", "deep-dive"),
+        (2, "Missing", "missing"),
+    ]
 
     assert _locate_outline_pages(page_texts, entries, start_page=1) == [
-        (1, "Intro", 1),
-        (2, "Details", 2),
-        (3, "Deep dive", 3),
-        (2, "Missing", 3),
+        (1, "Intro", 1, None),
+        (2, "Details", 2, None),
+        (3, "Deep dive", 3, None),
+        (2, "Missing", 3, None),
     ]
 
 
@@ -232,7 +244,7 @@ def test_add_pdf_outline_writes_nested_bookmarks(tmp_path):
     writer = PdfWriter()
     writer.add_blank_page(width=200, height=200)
     writer.add_blank_page(width=200, height=200)
-    _add_pdf_outline(writer, [(1, "Intro", 0), (2, "Details", 1)])
+    _add_pdf_outline(writer, [(1, "Intro", 0, None), (2, "Details", 1, None)])
     with output_path.open("wb") as fh:
         writer.write(fh)
     writer.close()

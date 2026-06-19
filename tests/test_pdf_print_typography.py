@@ -73,9 +73,11 @@ def test_table_caption_pair_becomes_semantic_table_caption():
         'Table 1. Rendering pipeline components.\n'
     )
 
-    assert '<caption class="md2pdf-caption md2pdf-caption--table" dir="auto">' in result.body_html
+    assert '<caption class="' in result.body_html
+    assert 'md2pdf-caption--table' in result.body_html
+    assert 'data-md2pdf-direction-profile="ltr"' in result.body_html
     assert 'Table 1. Rendering pipeline components.' in result.body_html
-    assert 'class="table-wrap"' in result.body_html
+    assert 'table-wrap--captioned' in result.body_html
 
 
 def test_code_and_mermaid_captions_get_semantic_caption_classes():
@@ -237,10 +239,8 @@ def test_footnote_references_use_stable_numeric_markers():
     assert 'id="fnref-long-note-2"' in result.body_html
     assert 'href="#fn-long-note"' in result.body_html
     assert '>1</a></sup>' in result.body_html
-    assert (
-        '<section class="footnotes"><ol><li class="footnote-item" id="fn-long-note">'
-        in result.body_html
-    )
+    assert '<section aria-label="Footnotes" class="footnotes footnotes--ltr" dir="ltr">' in result.body_html
+    assert 'class="footnote-item footnote-item--latin footnote-item--ltr" id="fn-long-note"' in result.body_html
     assert 'class="footnote-backrefs"' in result.body_html
     assert 'href="#fnref-long-note-2"' in result.body_html
 
@@ -263,4 +263,5 @@ def test_build_html_contains_footnote_print_polish(tmp_path: Path):
     assert 'break-inside: avoid-page' in html
     assert 'grid-template-columns: max-content minmax(0, 1fr) max-content' in html
     assert '.footnote-backrefs' in html
-    assert '<section class="footnotes"><ol><li class="footnote-item"' in html
+    assert '<section aria-label="Footnotes" class="footnotes footnotes--ltr" dir="ltr">' in html
+    assert 'class="footnote-item footnote-item--latin footnote-item--ltr"' in html

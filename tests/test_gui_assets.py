@@ -200,7 +200,7 @@ def test_gui_groups_export_settings_into_user_facing_sections():
     assert "Appearance<small>Shape, color, and light/dark output</small>" in html
     assert "Branding<small>Keep output owned by the document</small>" in html
     assert "Layout<small>TOC, cover, and page flow</small>" in html
-    assert "summary-title" in html
+    assert 'class="choice-title"' in html
     assert "#icon-settings" in html
 
 
@@ -301,11 +301,11 @@ def test_gui_uses_chatgpt_like_scrollbars_and_pure_interface_surfaces():
 
     assert '*::-webkit-scrollbar' in html
     assert '--scroll-thumb:#4a4a4a' in html
-    assert '--scroll-thumb:#c7c7c7' in html
+    assert '--scroll-thumb:#cbd5e1' in html
     assert '--bg:#000000' in html
     assert '--panel-2:#212121' in html
-    assert '--bg:#ffffff' in html
-    assert '--preview:#f7f7f8' in html
+    assert '--panel:#ffffff' in html
+    assert '--preview:#ffffff' in html
 
 
 def test_gui_export_button_keeps_contrast_on_hover_and_active():
@@ -323,7 +323,8 @@ def test_gui_settings_are_accordion_sections_with_switches():
     assert '#icon-palette' in html
     assert '#icon-badge' in html
     assert '#icon-compass' in html
-    assert 'function attachSettingsAccordion' in html
+    assert '<details class="card settings-section" open><summary>' in html
+    assert 'interpolate-size:allow-keywords' in html
     assert 'class="switch"><span>Generate table of contents</span>' in html
     assert 'class="switch"><span>Hide footer/page number</span>' in html
 
@@ -354,8 +355,8 @@ def test_gui_preview_exposes_render_status_and_footer_save_state():
 def test_gui_sidebar_scrolls_and_palette_uses_compact_swatches():
     html = GUI_HTML.read_text(encoding="utf-8")
 
-    assert '.sidebar{border-radius:22px 0 0 22px;border-right:0;display:flex;flex-direction:column;' in html
-    assert '.sidebar-body{padding:18px;display:flex;flex-direction:column;gap:16px;flex:1;min-height:0;overflow-y:auto;overflow-x:hidden}' in html
+    assert '.sidebar{height:100%;display:flex;flex-direction:column;overflow:hidden' in html
+    assert '.sidebar-body{display:block;flex:1 1 auto;min-height:0;padding:16px;overflow-y:auto;overflow-x:hidden' in html
     assert '.palette-grid{display:flex;align-items:center;gap:8px;flex-wrap:wrap' in html
     assert '.palette-card{position:relative;display:inline-grid;place-items:center;width:34px;height:34px' in html
     assert 'title="Blue palette" aria-label="Blue palette"' in html
@@ -365,6 +366,6 @@ def test_gui_sidebar_scrolls_and_palette_uses_compact_swatches():
 def test_gui_logo_uses_contain_fit_with_breathing_room():
     html = GUI_HTML.read_text(encoding="utf-8")
 
-    assert '.brand-mark{overflow:hidden;background:transparent' in html
-    assert 'padding:4px' in html
+    assert '.brand-mark{overflow:visible;background:transparent' in html
     assert '.brand-mark img{width:100%;height:100%;object-fit:contain;display:block}' in html
+    assert 'body.light-mode .brand-mark img{filter:invert(1)' in html

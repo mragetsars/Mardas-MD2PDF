@@ -34,11 +34,15 @@ def test_hierarchical_toc_numbers_and_nesting():
     markdown = "# فصل اول\n\n## بخش اول\n\n## بخش دوم\n\n### زیر بخش\n\n# فصل دوم\n"
     result = render_markdown(markdown, toc=True)
     assert "md2pdf-toc" in result.toc_html
-    assert '<span class="toc-number">1</span>' in result.toc_html
-    assert '<span class="toc-number">1-1</span>' in result.toc_html
-    assert '<span class="toc-number">1-2</span>' in result.toc_html
-    assert '<span class="toc-number">1-2-1</span>' in result.toc_html
-    assert '<span class="toc-number">2</span>' in result.toc_html
+    assert '<span class="toc-number persian-generated-number">۱</span>' in result.toc_html
+    assert 'data-md2pdf-number="1-1"' in result.toc_html
+    assert '<span class="toc-number persian-generated-number">۱-۱</span>' in result.toc_html
+    assert 'data-md2pdf-number="1-2"' in result.toc_html
+    assert '<span class="toc-number persian-generated-number">۱-۲</span>' in result.toc_html
+    assert 'data-md2pdf-number="1-2-1"' in result.toc_html
+    assert '<span class="toc-number persian-generated-number">۱-۲-۱</span>' in result.toc_html
+    assert 'data-md2pdf-number="2"' in result.toc_html
+    assert '<span class="toc-number persian-generated-number">۲</span>' in result.toc_html
     assert 'toc-depth-2' in result.toc_html
 
 
@@ -252,7 +256,7 @@ def test_inline_math_keeps_mathjax_delimiters_after_markdown_parsing():
 
 def test_toc_preserves_inline_math_for_mathjax_rendering():
     result = render_markdown("## استنتاج\n\n### اثر $T$ و $\\epsilon$ روی دقت\n", toc=True)
-    assert '<span class="toc-title">اثر <span class="math inline">\\(T\\)</span> و <span class="math inline">\\(\\epsilon\\)</span> روی دقت</span>' in result.toc_html
+    assert '<span class="toc-title toc-title--mixed mixed-script" dir="auto">اثر <span class="math inline">\\(T\\)</span> و <span class="math inline">\\(\\epsilon\\)</span> روی دقت</span>' in result.toc_html
     assert '(\\epsilon)' not in result.toc_html
 
 
@@ -264,11 +268,14 @@ def test_multiline_footnotes_render_as_markdown_blocks():
         "    - مورد اول\n"
         "    - مورد دوم\n"
     )
-    assert 'class="footnote-body"' in result.body_html
+    assert 'footnote-body' in result.body_html
+    assert 'data-md2pdf-direction-profile="rtl"' in result.body_html
     assert "خط دوم همان پانویس" in result.body_html
     assert "<strong>تاکید</strong>" in result.body_html
-    assert '<li dir="auto">مورد اول</li>' in result.body_html
-    assert '<section class="footnotes"><ol><li class="footnote-item" id="fn-n"><span class="footnote-marker"' in result.body_html
+    assert '<li class="md2pdf-rtl-text" dir="rtl">مورد اول</li>' in result.body_html
+    assert '<section aria-label="پانویس‌ها" class="footnotes footnotes--rtl" dir="rtl">' in result.body_html
+    assert 'class="footnote-item footnote-item--persian footnote-item--rtl" id="fn-n"' in result.body_html
+    assert '<span class="footnote-marker persian-generated-number">۱.</span>' in result.body_html
 
 
 def test_raw_html_is_sanitized_by_default():
@@ -400,8 +407,9 @@ lang: en
 
 def test_fenced_code_without_language_renders_as_text_block():
     result = render_markdown("````\nplain $x$ and [^n]\n````\n\n[^n]: footnote\n")
-    assert '<figure class="code-block" dir="ltr">' in result.body_html
-    assert '<figcaption dir="auto">TEXT</figcaption>' in result.body_html
+    assert '<figure class="code-block" data-lines="1" dir="ltr">' in result.body_html
+    assert '>TEXT</figcaption>' in result.body_html
+    assert 'md2pdf-caption--code' in result.body_html
     assert "plain $x$ and [^n]" in result.body_html
 
 
@@ -412,7 +420,7 @@ def test_math_and_footnotes_are_not_expanded_inside_inline_code():
     assert '<code dir="ltr">$x$</code>' in result.body_html
     assert '<code dir="ltr">[^note]</code>' in result.body_html
     assert '<span class="math inline">\\(y\\)</span>' in result.body_html
-    assert '<sup class="footnote-ref" id="fnref-note">' in result.body_html
+    assert '<sup class="footnote-ref latin-generated-number" id="fnref-note">' in result.body_html
 
 
 def test_footnote_refs_are_not_expanded_inside_fenced_code():
@@ -513,7 +521,7 @@ def test_code_fence_titles_line_numbers_and_highlight_lines():
     result = render_markdown('```python title="main.py" {2} linenos\nprint(1)\nprint(2)\n```\n')
     assert 'code-block--numbered' in result.body_html
     assert 'code-block--highlighted' in result.body_html
-    assert '<figcaption dir="auto">main.py</figcaption>' in result.body_html
+    assert '<figcaption class="md2pdf-caption md2pdf-caption--code md2pdf-caption--ltr md2pdf-caption--profiled md2pdf-ltr-text" data-md2pdf-direction-profile="ltr" data-md2pdf-number-profile="none" dir="ltr">main.py</figcaption>' in result.body_html
     assert 'codehilitetable' in result.body_html
     assert 'class="hll"' in result.body_html
 

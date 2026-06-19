@@ -15,6 +15,10 @@ The project follows semantic versioning for user-visible behavior. Patch release
 
 - Updated the Persian/RTL documentation to describe compact RTL TOC tree behavior and guide smoke references for version 1.9.7.
 
+### Notes
+
+- Synced packaged release metadata and regression contracts with the documented 1.9.7 baseline after archive drift.
+
 ### Tests
 
 - Updated regression coverage so Persian TOC CSS must use compact inline rows and must not reintroduce the wide number/title grid split.

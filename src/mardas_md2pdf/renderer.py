@@ -1223,7 +1223,7 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
         pointer-events: none;
       }}
       .md2pdf-mermaid-edge-label-bg {{
-        fill: var(--md2pdf-mermaid-label-bg, color-mix(in srgb, var(--paper, #ffffff) 92%, transparent));
+        fill: var(--md2pdf-mermaid-label-bg, var(--md2pdf-mermaid-label-halo, color-mix(in srgb, var(--paper, #ffffff) 92%, transparent)));
         stroke: var(--md2pdf-mermaid-label-border, color-mix(in srgb, var(--md2pdf-mermaid-stroke, var(--accent, #2563eb)) 22%, transparent));
         stroke-width: 0.8;
       }}
@@ -1568,7 +1568,10 @@ def build_html(
     include_content: bool = True,
     include_watermark: bool = True,
     cover_full_bleed: bool = False,
+    include_mathjax: bool | None = None,
 ) -> str:
+    if include_mathjax is not None:
+        options = replace(options, no_mathjax=not include_mathjax)
     appearance = _resolved_appearance(result.metadata, options)
     options = replace(options, style=appearance.style, palette=appearance.palette, mode=appearance.mode)
     style_css = _style_css(appearance)
