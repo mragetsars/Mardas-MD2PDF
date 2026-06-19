@@ -60,3 +60,10 @@ def test_example_builds_set_deterministic_pdf_dates() -> None:
 
     assert "SOURCE_DATE_EPOCH" in script
     assert "1735689600" in script
+
+
+def test_build_dist_supports_no_isolation_mode() -> None:
+    script = ROOT.joinpath("scripts", "build_dist.sh").read_text(encoding="utf-8")
+
+    assert "MARDAS_BUILD_NO_ISOLATION" in script
+    assert "python -m build --no-isolation" in script

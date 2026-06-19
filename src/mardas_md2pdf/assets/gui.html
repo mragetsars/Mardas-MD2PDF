@@ -859,7 +859,10 @@ function scheduleStudioStateSave(){
 function loadStudioState(){
   try {
     const raw = localStorage.getItem(MARDAS_STUDIO_STATE_KEY);
-    if (!raw) return false;
+    if (!raw) {
+      $('savedState').textContent = 'Ready';
+      return false;
+    }
     const state = JSON.parse(raw);
     if (!state || typeof state !== 'object') return false;
     if (typeof state.markdown === 'string') editor.value = state.markdown;
@@ -888,7 +891,7 @@ function loadStudioState(){
     $('savedState').textContent = 'Restored local draft';
     return true;
   } catch (error) {
-    $('savedState').textContent = 'Could not restore state';
+    $('savedState').textContent = 'Saved state ignored';
     return false;
   }
 }

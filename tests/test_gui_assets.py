@@ -453,3 +453,11 @@ def test_studio_exposes_command_palette_and_professional_shortcuts():
     assert "command-palette-open" in html
     assert "Use accurate preview" in html
     assert "Open Studio project" in html
+
+
+def test_studio_first_run_state_is_not_reported_as_error():
+    html = GUI_HTML.read_text(encoding="utf-8")
+
+    assert "$('savedState').textContent = 'Ready';" in html
+    assert "Could not restore state" not in html
+    assert "Saved state ignored" in html

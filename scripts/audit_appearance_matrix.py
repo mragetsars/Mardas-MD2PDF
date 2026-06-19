@@ -3,13 +3,15 @@
 
 The default matrix covers every registered style, palette, and mode.  For CI or
 fast local checks, pass comma-separated filters such as ``--styles modern,github``
-and ``--palettes blue,slate``.
+and ``--palettes blue,slate``.  Long-running audits are resumable: partial
+artifacts and the manifest are updated after every rendered case.
 """
 
 from __future__ import annotations
 
 import argparse
 import dataclasses
+import json
 from pathlib import Path
 from typing import Iterable
 
@@ -37,7 +39,7 @@ summary: |
   appearance combination can be checked visually.
 institution: "Mardas Lab"
 course: "Appearance QA"
-version: "1.12.1"
+version: "1.12.2"
 status: "Audit"
 keywords:
   - appearance
@@ -129,6 +131,76 @@ def _write_sample(path: Path) -> None:
     path.write_text(SAMPLE_MARKDOWN, encoding="utf-8")
 
 
+def _load_existing_records(manifest_path: Path) -> dict[str, dict[str, object]]:
+    if not manifest_path.is_file():
+        return {}
+    try:
+        payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return {}
+    records = payload.get("records", [])
+    if not isinstance(records, list):
+        return {}
+    return {str(record.get("name")): record for record in records if isinstance(record, dict) and record.get("name")}
+
+
+def _record_complete(record: dict[str, object], output_dir: Path, *, render_png: bool) -> bool:
+    pdf = record.get("pdf")
+    if not isinstance(pdf, str) or not (output_dir / pdf).is_file():
+        return False
+    if not render_png:
+        return True
+    cover = record.get("cover_png")
+    content = record.get("content_png")
+    return isinstance(cover, str) and isinstance(content, str) and (output_dir / cover).is_file() and (output_dir / content).is_file()
+
+
+def _write_manifest(
+    path: Path,
+    *,
+    styles: tuple[str, ...],
+    palettes: tuple[str, ...],
+    modes: tuple[str, ...],
+    source: Path,
+    output_dir: Path,
+    records: dict[str, dict[str, object]],
+    failures: list[str],
+) -> None:
+    ordered_records = [records[name] for name in sorted(records)]
+    write_json(
+        path,
+        {
+            "matrix": {
+                "styles": styles,
+                "palettes": palettes,
+                "modes": modes,
+                "count": len(styles) * len(palettes) * len(modes),
+                "completed": len(ordered_records),
+                "failed": len(failures),
+            },
+            "source": relative_to(source, output_dir),
+            "records": ordered_records,
+            "failures": failures,
+        },
+    )
+
+
+def _write_galleries(output_dir: Path, records: dict[str, dict[str, object]]) -> None:
+    ordered_records = [records[name] for name in sorted(records)]
+    cover_items = [
+        {"label": str(record["name"]), "image": str(record["cover_png"]), "meta": "cover"}
+        for record in ordered_records
+        if "cover_png" in record
+    ]
+    content_items = [
+        {"label": str(record["name"]), "image": str(record["content_png"]), "meta": "content"}
+        for record in ordered_records
+        if "content_png" in record
+    ]
+    write_html_gallery(output_dir / "cover-gallery.html", title="Appearance cover matrix", items=cover_items)
+    write_html_gallery(output_dir / "content-gallery.html", title="Appearance content matrix", items=content_items)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output-dir", type=Path, default=Path("build/visual-qa/appearance"))
@@ -137,12 +209,18 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--palettes", help="Comma-separated palette filter")
     parser.add_argument("--modes", help="Comma-separated mode filter")
     parser.add_argument("--clean", action="store_true", help="Delete output directory before rendering")
+    parser.add_argument("--resume", action="store_true", help="Reuse completed records from an existing manifest")
+    parser.add_argument("--fail-fast", action="store_true", help="Stop after the first render or rasterization failure")
+    parser.add_argument("--max-cases", type=int, help="Limit the number of matrix cases for quick smoke runs")
     parser.add_argument("--render-png", action="store_true", help="Render cover/content PNGs with pdftoppm")
     parser.add_argument("--png-dpi", type=int, default=72)
     parser.add_argument("--timeout", type=int, default=90, help="Seconds per PDF render")
     parser.add_argument("--timeout-ms", type=int, default=180_000, help="Chromium timeout in milliseconds")
+    parser.add_argument("--raster-timeout", type=int, default=60, help="Seconds per pdftoppm page render")
     args = parser.parse_args(argv)
 
+    if args.max_cases is not None and args.max_cases < 1:
+        raise SystemExit("--max-cases must be at least 1")
     if args.clean:
         ensure_clean_dir(args.output_dir)
     else:
@@ -160,80 +238,87 @@ def main(argv: list[str] | None = None) -> int:
     content_dir = args.output_dir / "content_png"
     pdf_dir.mkdir(parents=True, exist_ok=True)
 
-    failures: list[str] = []
-    records: list[dict[str, object]] = []
-    for style in styles:
-        for palette in palettes:
-            for mode in modes:
-                item = RenderItem(style=style, palette=palette, mode=mode)
-                output_pdf = pdf_dir / f"{item.name}.pdf"
-                record: dict[str, object] = {
-                    "name": item.name,
-                    "style": style,
-                    "palette": palette,
-                    "mode": mode,
-                    "pdf": relative_to(output_pdf, args.output_dir),
-                }
-                print(f"render {item.name}")
-                try:
-                    run_mardas_cli(
-                        source,
-                        output_pdf,
-                        style=style,
-                        palette=palette,
-                        mode=mode,
-                        command_timeout=args.timeout,
-                        timeout_ms=args.timeout_ms,
-                    )
-                    if args.render_png:
-                        cover_png = render_pdf_pages(
-                            output_pdf,
-                            cover_dir,
-                            pages=(1,),
-                            dpi=args.png_dpi,
-                            prefix=item.name,
-                        )[0]
-                        content_png = render_pdf_pages(
-                            output_pdf,
-                            content_dir,
-                            pages=(2,),
-                            dpi=args.png_dpi,
-                            prefix=item.name,
-                        )[0]
-                        record["cover_png"] = relative_to(cover_png, args.output_dir)
-                        record["content_png"] = relative_to(content_png, args.output_dir)
-                        record["cover_stats"] = dataclasses.asdict(png_stats(cover_png))
-                        record["content_stats"] = dataclasses.asdict(png_stats(content_png))
-                    records.append(record)
-                except Exception as exc:  # noqa: BLE001 - audit should keep collecting failures.
-                    failures.append(f"{item.name}: {exc}")
+    cases = [RenderItem(style, palette, mode) for style in styles for palette in palettes for mode in modes]
+    if args.max_cases is not None:
+        cases = cases[: args.max_cases]
 
-    payload = {
-        "matrix": {
-            "styles": styles,
-            "palettes": palettes,
-            "modes": modes,
-            "count": len(styles) * len(palettes) * len(modes),
-        },
-        "source": relative_to(source, args.output_dir),
-        "records": records,
-        "failures": failures,
-    }
-    write_json(args.output_dir / "manifest.json", payload)
+    manifest_path = args.output_dir / "manifest.json"
+    records = _load_existing_records(manifest_path) if args.resume else {}
+    failures: list[str] = []
+
+    for item in cases:
+        existing = records.get(item.name)
+        if args.resume and existing and _record_complete(existing, args.output_dir, render_png=args.render_png):
+            print(f"skip {item.name}")
+            continue
+        output_pdf = pdf_dir / f"{item.name}.pdf"
+        record: dict[str, object] = {
+            "name": item.name,
+            "style": item.style,
+            "palette": item.palette,
+            "mode": item.mode,
+            "pdf": relative_to(output_pdf, args.output_dir),
+        }
+        print(f"render {item.name}")
+        try:
+            run_mardas_cli(
+                source,
+                output_pdf,
+                style=item.style,
+                palette=item.palette,
+                mode=item.mode,
+                command_timeout=args.timeout,
+                timeout_ms=args.timeout_ms,
+            )
+            if args.render_png:
+                cover_png = render_pdf_pages(
+                    output_pdf,
+                    cover_dir,
+                    pages=(1,),
+                    dpi=args.png_dpi,
+                    prefix=item.name,
+                    raster_timeout=args.raster_timeout,
+                )[0]
+                content_png = render_pdf_pages(
+                    output_pdf,
+                    content_dir,
+                    pages=(2,),
+                    dpi=args.png_dpi,
+                    prefix=item.name,
+                    raster_timeout=args.raster_timeout,
+                )[0]
+                record["cover_png"] = relative_to(cover_png, args.output_dir)
+                record["content_png"] = relative_to(content_png, args.output_dir)
+                record["cover_stats"] = dataclasses.asdict(png_stats(cover_png))
+                record["content_stats"] = dataclasses.asdict(png_stats(content_png))
+            records[item.name] = record
+        except Exception as exc:  # noqa: BLE001 - audit should keep collecting failures.
+            failures.append(f"{item.name}: {exc}")
+            if args.fail_fast:
+                _write_manifest(
+                    manifest_path,
+                    styles=styles,
+                    palettes=palettes,
+                    modes=modes,
+                    source=source,
+                    output_dir=args.output_dir,
+                    records=records,
+                    failures=failures,
+                )
+                return 1
+        _write_manifest(
+            manifest_path,
+            styles=styles,
+            palettes=palettes,
+            modes=modes,
+            source=source,
+            output_dir=args.output_dir,
+            records=records,
+            failures=failures,
+        )
 
     if args.render_png:
-        cover_items = [
-            {"label": str(record["name"]), "image": str(record["cover_png"]), "meta": "cover"}
-            for record in records
-            if "cover_png" in record
-        ]
-        content_items = [
-            {"label": str(record["name"]), "image": str(record["content_png"]), "meta": "content"}
-            for record in records
-            if "content_png" in record
-        ]
-        write_html_gallery(args.output_dir / "cover-gallery.html", title="Appearance cover matrix", items=cover_items)
-        write_html_gallery(args.output_dir / "content-gallery.html", title="Appearance content matrix", items=content_items)
+        _write_galleries(args.output_dir, records)
 
     if failures:
         (args.output_dir / "failures.txt").write_text("\n".join(failures) + "\n", encoding="utf-8")

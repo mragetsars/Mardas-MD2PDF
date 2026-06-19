@@ -13,10 +13,13 @@ import dataclasses
 import hashlib
 import html
 import json
+import os
 import shutil
+import signal
 import struct
 import subprocess
 import sys
+import tempfile
 import zlib
 from pathlib import Path
 from typing import Any, Iterable, Sequence
@@ -226,6 +229,98 @@ def compare_pngs(baseline: Path, candidate: Path) -> PngDiff:
     )
 
 
+
+
+def _process_group_kwargs() -> dict[str, object]:
+    """Return subprocess kwargs that make timeout cleanup kill child processes too."""
+    if os.name == "nt":
+        return {"creationflags": getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)}
+    return {"start_new_session": True}
+
+
+def _terminate_process_tree(process: subprocess.Popen[str]) -> None:
+    """Terminate a process and its children as aggressively as the platform allows."""
+    if process.poll() is not None:
+        return
+    if os.name != "nt":
+        try:
+            os.killpg(process.pid, signal.SIGTERM)
+        except ProcessLookupError:
+            return
+        except Exception:
+            process.terminate()
+    else:  # pragma: no cover - Windows-specific fallback.
+        process.terminate()
+    try:
+        process.wait(timeout=3)
+        return
+    except subprocess.TimeoutExpired:
+        pass
+    if os.name != "nt":
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            return
+        except Exception:
+            process.kill()
+    else:  # pragma: no cover - Windows-specific fallback.
+        process.kill()
+    try:
+        process.wait(timeout=3)
+    except subprocess.TimeoutExpired:  # pragma: no cover - defensive; kill should finish.
+        pass
+
+
+def run_command(
+    command: Sequence[str],
+    *,
+    timeout: float,
+    description: str,
+) -> subprocess.CompletedProcess[str]:
+    """Run a command with process-tree cleanup and captured output.
+
+    ``subprocess.run(timeout=...)`` only kills the direct child.  The visual QA
+    scripts frequently launch Python, Playwright, Chromium, and Poppler helpers;
+    if any grandchild remains alive, the audit matrix can hang indefinitely.
+    This helper starts a process group/session and terminates the whole tree on
+    timeout so a single broken render becomes a reported failure instead of a
+    blocked batch job.
+    """
+    with tempfile.TemporaryFile(mode="w+t", encoding="utf-8") as stdout_file, tempfile.TemporaryFile(
+        mode="w+t", encoding="utf-8"
+    ) as stderr_file:
+        process = subprocess.Popen(
+            list(command),
+            stdout=stdout_file,
+            stderr=stderr_file,
+            text=True,
+            **_process_group_kwargs(),
+        )
+        try:
+            process.wait(timeout=timeout)
+        except subprocess.TimeoutExpired as exc:
+            _terminate_process_tree(process)
+            stdout_file.seek(0)
+            stderr_file.seek(0)
+            stdout = stdout_file.read()
+            stderr = stderr_file.read()
+            output = "\n".join(part for part in [stdout, stderr] if part).strip()
+            if output:
+                output = "\n" + output
+            raise RuntimeError(f"{description} timed out after {timeout:g}s{output}") from exc
+        stdout_file.seek(0)
+        stderr_file.seek(0)
+        stdout = stdout_file.read()
+        stderr = stderr_file.read()
+    completed = subprocess.CompletedProcess(command, process.returncode, stdout, stderr)
+    if completed.returncode != 0:
+        output = "\n".join(part for part in [completed.stdout, completed.stderr] if part).strip()
+        if output:
+            output = "\n" + output
+        raise RuntimeError(f"{description} failed with exit code {completed.returncode}{output}")
+    return completed
+
+
 def render_pdf_pages(
     pdf_path: Path,
     output_dir: Path,
@@ -233,6 +328,7 @@ def render_pdf_pages(
     pages: Sequence[int] = (1,),
     dpi: int = 72,
     prefix: str | None = None,
+    raster_timeout: int = 60,
 ) -> list[Path]:
     if shutil.which("pdftoppm") is None:
         raise RuntimeError("pdftoppm is required for PNG visual QA renders")
@@ -252,7 +348,7 @@ def render_pdf_pages(
             str(pdf_path),
             str(output_prefix),
         ]
-        subprocess.run(command, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        run_command(command, timeout=raster_timeout, description=f"pdftoppm render for {pdf_path} page {page}")
         png_path = output_prefix.with_suffix(".png")
         if not png_path.is_file():
             raise RuntimeError(f"pdftoppm did not create {png_path}")
@@ -295,24 +391,19 @@ def run_mardas_cli(
     if toc:
         command.append("--toc")
     try:
-        subprocess.run(
+        run_command(
             command,
-            check=True,
             timeout=command_timeout,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
+            description=f"mrs-md2pdf render for {output_pdf}",
         )
-    except subprocess.CalledProcessError as exc:
-        output = "\n".join(part for part in [exc.stdout, exc.stderr] if part)
-        raise RuntimeError(f"mrs-md2pdf failed for {output_pdf}:\n{output}") from exc
-    except subprocess.TimeoutExpired as exc:
-        output = "\n".join(
-            part.decode("utf-8", errors="replace") if isinstance(part, bytes) else part
-            for part in [exc.stdout, exc.stderr]
-            if part
-        )
-        raise RuntimeError(f"mrs-md2pdf timed out for {output_pdf}:\n{output}") from exc
+    except RuntimeError as exc:
+        if output_pdf.is_file() and output_pdf.stat().st_size > 0:
+            raise RuntimeError(
+                f"mrs-md2pdf did not finish cleanly for {output_pdf}; "
+                "a PDF was created but the render process did not exit cleanly.\n"
+                f"{exc}"
+            ) from exc
+        raise
     if not output_pdf.is_file() or output_pdf.stat().st_size == 0:
         raise RuntimeError(f"expected non-empty PDF output at {output_pdf}")
 

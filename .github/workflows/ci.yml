@@ -58,7 +58,7 @@ jobs:
 
       - name: Render guide sample
         run: |
-          mrs-md2pdf docs/guides/GUIDE.en.md -o /tmp/GUIDE.en.pdf --toc --style github --palette blue --mode light --timeout-ms 180000
+          python -m mardas_md2pdf.cli docs/guides/GUIDE.en.md -o /tmp/GUIDE.en.pdf --toc --style github --palette blue --mode light --timeout-ms 180000 --progress off
           test -s /tmp/GUIDE.en.pdf
 
   visual-qa:
@@ -93,6 +93,8 @@ jobs:
             --render-png \
             --png-dpi 48 \
             --timeout 90 \
+            --raster-timeout 60 \
+            --fail-fast \
             --clean
 
       - name: Build feature visual artifacts
@@ -103,6 +105,8 @@ jobs:
             --render-png \
             --png-dpi 48 \
             --timeout 90 \
+            --raster-timeout 60 \
+            --fail-fast \
             --clean
 
       - name: Capture Studio visual artifact

@@ -4,6 +4,24 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.12.2 - 2026-06-20
+
+### Fixed
+
+- Stabilized Visual QA subprocess handling so batch renders terminate full process groups on timeout instead of allowing orphaned Chromium or Poppler helpers to hang the matrix.
+- Added explicit pdftoppm raster timeouts and clearer failure messages for PDF cases that create a file but do not exit cleanly.
+- Polished Studio first-run state messaging so a missing local draft is treated as a clean ready state instead of an error.
+
+### Added
+
+- Added resumable and bounded Visual QA options: `--resume`, `--fail-fast`, `--max-cases`, and `--raster-timeout`.
+- Added `--all-appearances` for feature-heavy PDF smoke audits so table, code, Mermaid, MathJax, callout, footnote, caption, and mixed-script coverage can be rendered across the full appearance matrix.
+- Added `MARDAS_BUILD_NO_ISOLATION=1` support to `scripts/build_dist.sh` for offline or already-prepared release environments.
+
+### Tests
+
+- Added regression coverage for process-tree timeout handling, bounded all-appearance feature audits, reliable Visual QA CLI controls, Studio first-run status messaging, and the no-isolation build mode.
+
 ## 1.12.1 - 2026-06-20
 
 ### Fixed

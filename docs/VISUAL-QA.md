@@ -14,6 +14,8 @@ or dark-mode behavior:
 python scripts/audit_appearance_matrix.py \
   --output-dir build/visual-qa/appearance \
   --render-png \
+  --raster-timeout 60 \
+  --resume \
   --clean
 ```
 
@@ -26,11 +28,15 @@ python scripts/audit_appearance_matrix.py \
   --palettes blue,slate \
   --modes light,dark \
   --render-png \
+  --max-cases 8 \
+  --fail-fast \
   --clean
 ```
 
 The script writes PDFs, optional PNG page renders, `manifest.json`, and HTML
-galleries for cover and content review.
+galleries for cover and content review. Long runs update the manifest after
+every case, so failed or interrupted audits can be resumed with `--resume`.
+Use `--fail-fast` for CI gates and `--max-cases` for bounded smoke checks.
 
 ## PDF feature smoke audit
 
@@ -40,12 +46,17 @@ code block rendering, Mermaid, MathJax, captions, or mixed RTL/LTR prose:
 ```bash
 python scripts/audit_pdf_features.py \
   --output-dir build/visual-qa/features \
+  --all-appearances \
   --render-png \
+  --raster-timeout 60 \
+  --resume \
   --clean
 ```
 
 The default feature document includes code metadata, table captions, display
-math, Mermaid, footnotes, callouts, and Persian mixed-script punctuation.
+math, Mermaid, footnotes, callouts, and Persian mixed-script punctuation. The
+default appearance set stays small for quick local checks; add `--all-appearances`
+when a change must be validated across every style, palette, and mode.
 
 ## Snapshot comparison
 
@@ -80,10 +91,11 @@ writes `studio-default.png` plus a JSON manifest.
 
 ## CI artifacts
 
-The CI visual QA job intentionally runs a reduced matrix. It uploads
-`build/visual-qa/` as an artifact so reviewers can download the rendered PDFs,
-PNG pages, manifests, and HTML galleries. Full local audits can still render all
-appearance combinations when deeper review is needed.
+The CI visual QA job intentionally runs a reduced matrix with fail-fast and
+raster timeouts. It uploads `build/visual-qa/` as an artifact so reviewers can
+download the rendered PDFs, PNG pages, manifests, and HTML galleries. Full local
+audits can still render all appearance combinations when deeper review is needed,
+and interrupted local runs can be resumed with `--resume`.
 
 ## Repository hygiene
 

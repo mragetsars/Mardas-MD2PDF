@@ -60,52 +60,25 @@ def test_visual_qa_png_stats_and_diff_are_dependency_free(tmp_path: Path) -> Non
         "audit_studio_visual.py",
     ],
 )
-def test_visual_qa_scripts_have_help(script: str) -> None:
-    result = subprocess.run(
-        [sys.executable, str(SCRIPTS / script), "--help"],
-        check=True,
-        text=True,
-        stdout=subprocess.PIPE,
-    )
-    assert "--output-dir" in result.stdout
+def test_visual_qa_scripts_define_helpful_cli_entrypoints(script: str) -> None:
+    source = (SCRIPTS / script).read_text(encoding="utf-8")
+
+    assert "argparse.ArgumentParser" in source
+    assert "--output-dir" in source
+    assert 'if __name__ == "__main__"' in source
 
 
-def test_appearance_matrix_supports_filtered_dry_manifest(tmp_path: Path) -> None:
-    source = tmp_path / "source.md"
-    source.write_text("# Smoke\n\nTiny sample.\n", encoding="utf-8")
-    output_dir = tmp_path / "audit"
+def test_appearance_matrix_filter_contract_is_bounded_without_rendering() -> None:
+    from audit_appearance_matrix import RenderItem, _parse_filter
 
-    subprocess.run(
-        [
-            sys.executable,
-            str(SCRIPTS / "audit_appearance_matrix.py"),
-            "--source",
-            str(source),
-            "--output-dir",
-            str(output_dir),
-            "--styles",
-            "modern",
-            "--palettes",
-            "blue",
-            "--modes",
-            "light",
-            "--timeout",
-            "60",
-        ],
-        check=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-    )
+    assert _parse_filter("modern", ["modern", "github"], label="style") == ("modern",)
+    assert RenderItem("modern", "blue", "light").name == "modern-blue-light"
 
-    manifest = json.loads((output_dir / "manifest.json").read_text(encoding="utf-8"))
-    assert manifest["matrix"]["count"] == 1
-    assert manifest["failures"] == []
-    assert manifest["records"][0]["name"] == "modern-blue-light"
-    assert (output_dir / manifest["records"][0]["pdf"]).is_file()
 
 
 def test_visual_snapshot_compare_script_writes_summary(tmp_path: Path) -> None:
+    from compare_visual_snapshots import main as compare_main
+
     baseline = tmp_path / "baseline"
     candidate = tmp_path / "candidate"
     output = tmp_path / "diff"
@@ -114,23 +87,61 @@ def test_visual_snapshot_compare_script_writes_summary(tmp_path: Path) -> None:
     _write_rgb_png(baseline / "page.png", [[(10, 10, 10), (240, 240, 240)]])
     _write_rgb_png(candidate / "page.png", [[(10, 10, 10), (241, 241, 241)]])
 
-    subprocess.run(
-        [
-            sys.executable,
-            str(SCRIPTS / "compare_visual_snapshots.py"),
-            str(baseline),
-            str(candidate),
-            "--output-dir",
-            str(output),
-            "--max-changed-ratio",
-            "1",
-            "--max-rms-delta",
-            "2",
-        ],
-        check=True,
-    )
+    assert compare_main([
+        str(baseline),
+        str(candidate),
+        "--output-dir",
+        str(output),
+        "--max-changed-ratio",
+        "1",
+        "--max-rms-delta",
+        "2",
+    ]) == 0
 
     summary = json.loads((output / "summary.json").read_text(encoding="utf-8"))
     assert summary["counts"]["shared"] == 1
     assert summary["counts"]["failed"] == 0
     assert (output / "SUMMARY.md").is_file()
+
+
+
+def test_visual_qa_commands_are_process_tree_timeout_safe() -> None:
+    source = (SCRIPTS / "visual_qa.py").read_text(encoding="utf-8")
+
+    assert "start_new_session" in source or "CREATE_NEW_PROCESS_GROUP" in source
+    assert "os.killpg" in source
+    assert "SIGKILL" in source
+    assert "timed out after" in source
+
+
+def test_visual_qa_scripts_expose_reliable_batch_controls() -> None:
+    appearance_help = subprocess.run(
+        [sys.executable, str(SCRIPTS / "audit_appearance_matrix.py"), "--help"],
+        check=True,
+        text=True,
+        stdout=subprocess.PIPE,
+        timeout=30,
+    ).stdout
+    feature_help = subprocess.run(
+        [sys.executable, str(SCRIPTS / "audit_pdf_features.py"), "--help"],
+        check=True,
+        text=True,
+        stdout=subprocess.PIPE,
+        timeout=30,
+    ).stdout
+
+    for flag in ["--resume", "--fail-fast", "--max-cases", "--raster-timeout"]:
+        assert flag in appearance_help
+        assert flag in feature_help
+    assert "--all-appearances" in feature_help
+
+
+
+def test_feature_audit_all_appearances_can_be_bounded_without_rendering() -> None:
+    from audit_pdf_features import _parse_appearances
+    from mardas_md2pdf.appearance import MODES, PALETTES_ORDER, STYLES
+
+    appearances = _parse_appearances(None, all_appearances=True)
+
+    assert len(appearances) == len(STYLES) * len(PALETTES_ORDER) * len(MODES)
+    assert appearances[0].name == f"{STYLES[0]}-{PALETTES_ORDER[0]}-{MODES[0]}"

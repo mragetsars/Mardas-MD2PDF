@@ -37,7 +37,7 @@ When changing `src/mardas_md2pdf/appearance.py` or any `src/mardas_md2pdf/assets
 every built-in style, palette, and mode combination before shipping the patch:
 
 ```bash
-python scripts/audit_appearance_matrix.py --output-dir build/appearance-audit --render-png
+python scripts/audit_appearance_matrix.py --output-dir build/appearance-audit --render-png --resume
 ```
 
 Review the cover and content PNGs for contrast, palette accents, code blocks,
