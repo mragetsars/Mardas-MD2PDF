@@ -63,6 +63,42 @@ def test_persian_digits_and_punctuation_get_stable_quality_classes():
     assert 'rtl-ascii-punctuation' in result.body_html
 
 
+
+def test_persian_mixed_script_latin_runs_are_isolated_with_trailing_punctuation():
+    result = render_markdown(
+        "---\nlang: fa\n---\n\n"
+        "این متن فارسی با renderer. و GitHub Actions. و PDF navigation? باید در PDF خوانا بماند.\n"
+    )
+
+    assert 'md2pdf-ltr-isolate md2pdf-ltr-isolate--punct' in result.body_html
+    assert 'dir="ltr" lang="en">renderer.</span>' in result.body_html
+    assert 'dir="ltr" lang="en">GitHub Actions.</span>' in result.body_html
+    assert 'dir="ltr" lang="en">PDF navigation?</span>' in result.body_html
+    assert 'mixed-script' in result.body_html
+
+
+def test_persian_mixed_script_isolation_skips_inline_code():
+    result = render_markdown(
+        "---\nlang: fa\n---\n\n"
+        "در متن فارسی `renderer.py` باید inline code بماند، اما renderer. باید isolate شود.\n"
+    )
+
+    assert '<code dir="ltr">renderer.py</code>' in result.body_html
+    assert 'dir="ltr" lang="en">renderer.</span>' in result.body_html
+    assert '<span class="md2pdf-ltr-isolate' not in result.body_html.split('<code dir="ltr">renderer.py</code>', 1)[0]
+
+
+def test_persian_mixed_script_latin_run_keeps_following_footnote_reference_grouped():
+    result = render_markdown(
+        "---\nlang: fa\n---\n\n"
+        "این نمونه زنده renderer.[^pipeline] باید footnote را کنار token نگه دارد.\n\n"
+        "[^pipeline]: توضیح فارسی.\n"
+    )
+
+    assert 'md2pdf-ltr-isolate-group md2pdf-ltr-isolate-group--footnote' in result.body_html
+    assert 'dir="ltr" lang="en"><span class="md2pdf-ltr-isolate md2pdf-ltr-isolate--punct" dir="ltr" lang="en">renderer.</span><sup class="footnote-ref persian-generated-number footnote-ref--rtl"' in result.body_html
+
+
 def test_single_script_numeral_profiles_are_distinguished():
     result = render_markdown(
         "---\nlang: fa\n---\n\n"
@@ -114,6 +150,9 @@ def test_layout_css_contains_persian_numeral_and_caption_rules(tmp_path: Path):
     assert ".rtl-ascii-punctuation" in css
     assert ".md2pdf-caption--persian" in css
     assert ".md2pdf-caption--numbered" in css
+    assert ".md2pdf-ltr-isolate" in css
+    assert ".md2pdf-ltr-isolate-group" in css
+    assert "unicode-bidi: isolate" in css
 
 
 def test_persian_toc_uses_rtl_nav_and_localized_section_numbers():

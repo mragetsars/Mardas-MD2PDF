@@ -12,7 +12,7 @@ summary: |
   همین سند به عنوان نمونه زنده رندر نیز استفاده می‌شود و جلد، فهرست مطالب، متن ترکیبی فارسی/English، فرمول، کد، نمودار Mermaid، تصویر، جدول، پانویس، شکست صفحه و HTML امن را نمایش می‌دهد.
 institution: "Mardas Lab"
 course: "انتشار حرفه‌ای Markdown"
-version: "1.9.7"
+version: "1.9.8"
 status: "Stable"
 keywords:
   - Markdown
@@ -209,7 +209,7 @@ department: "نام دانشکده یا دپارتمان"
 course: "نام درس یا پروژه"
 supervisor: "نام استاد یا راهنما"
 date: "۱۴۰۵-۰۲-۳۰"
-version: "1.9.7"
+version: "1.9.8"
 status: "Draft"
 keywords: [Markdown, PDF, RTL, MathJax]
 cover_label: "گزارش فنی"
@@ -309,12 +309,12 @@ mrs-md2pdf input.md -o output.pdf --no-cover-logo
 
 این نمونه کوچک عمداً داخل guide مانده است، چون guide هم راهنمای کاربر است و هم test case زنده renderer.[^pipeline] این بخش نشانه‌گذاری فارسی، نام‌های لاتین، عدد فارسی، caption جدول، و سلول‌های mixed-direction را در PDF رسمی نگه می‌دارد.
 
-آیا خروجی PDF برای `version 1.9.7` و شماره ۱۴۰۵ پایدار است؟ پاسخ: بله؛ جدول زیر باید hookهای RTL، mixed-script و mixed-number را فعال کند.
+آیا خروجی PDF برای `version 1.9.8` و شماره ۱۴۰۵ پایدار است؟ پاسخ: بله؛ جدول زیر باید hookهای RTL، mixed-script و mixed-number را فعال کند.
 
 | بخش نمونه | مقدار | انتظار در PDF |
 | :--- | :--- | :--- |
 | شماره فارسی | ۱۴۰۵ | عدد فارسی کنار متن RTL پایدار بماند. |
-| نسخه فنی | version 1.9.7 و ۱.۹.۶ | عددهای Latin/Persian در یک سلول خوانا بمانند. |
+| نسخه فنی | version 1.9.8 و ۱.۹.۸ | عددهای Latin/Persian در یک سلول خوانا بمانند. |
 | شناسه انگلیسی | `PDF`, `TOC`, `MathJax` | identifierهای English داخل جدول فارسی جابه‌جا نشوند. |
 
 جدول ۱۲. نمونه جدول فارسی/RTL با عددهای ترکیبی.

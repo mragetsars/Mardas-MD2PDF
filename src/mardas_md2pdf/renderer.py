@@ -816,6 +816,31 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
       .mixed-script {{
         unicode-bidi: plaintext;
       }}
+      .md2pdf-ltr-isolate {{
+        direction: ltr;
+        unicode-bidi: isolate;
+        display: inline;
+        font-family: var(--font-en), var(--font-fa), sans-serif;
+      }}
+      .md2pdf-ltr-isolate--punct {{
+        white-space: nowrap;
+      }}
+      .md2pdf-ltr-isolate-group {{
+        direction: ltr;
+        unicode-bidi: isolate;
+        display: inline;
+        white-space: nowrap;
+      }}
+      .md2pdf-ltr-isolate-group .footnote-ref {{
+        direction: rtl;
+        unicode-bidi: isolate;
+      }}
+      body.md2pdf-dir-rtl .md2pdf-article a[href^="http"],
+      body.md2pdf-dir-rtl .md2pdf-article a[href^="mailto"],
+      body.md2pdf-dir-rtl .md2pdf-article a[href^="www."] {{
+        direction: ltr;
+        unicode-bidi: isolate;
+      }}
       .mixed-numeral,
       .persian-numeral,
       .latin-numeral {{

@@ -4,6 +4,21 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.9.8 - 2026-06-19
+
+### Fixed
+
+- Isolated Latin technical runs inside Persian mixed-script prose so trailing ASCII punctuation such as `renderer.`, `GitHub Actions.`, and `PDF navigation?` stays attached to the Latin token during PDF rendering.
+- Added print CSS for inline LTR isolation spans and external links inside RTL article content without rewriting author text or inline code.
+
+### Documentation
+
+- Updated the Persian/RTL quality reference and guide smoke metadata for version 1.9.8.
+
+### Tests
+
+- Added regression coverage for Persian mixed-script punctuation isolation and verified that inline code remains semantically unchanged.
+
 ## 1.9.7 - 2026-06-15
 
 ### Fixed

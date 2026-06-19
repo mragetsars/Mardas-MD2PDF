@@ -25,10 +25,13 @@ These classes do not rewrite the author's text. They provide stable CSS hooks fo
 
 Persian documents commonly contain English identifiers such as `Playwright`, `MathJax`, `GitHub Actions`, `PDF`, `HTML`, `CSS`, and version numbers such as `1.9.0`. Keep those identifiers in normal text or inline code. The renderer isolates mixed-script blocks with `unicode-bidi: plaintext` so the visual order stays closer to the author's intent.
 
+For author prose, the HTML post-processor also wraps Latin technical runs inside Persian paragraphs with `md2pdf-ltr-isolate`. This is a visual isolation boundary only: the visible text remains unchanged, but punctuation attached to short Latin runs stays with that run in PDF viewers. Examples include `renderer.`, `GitHub Actions.`, `PDF navigation?`, and version-like tokens. Inline code, code blocks, and links keep their original Markdown semantics.
+
 Recommended:
 
 ```md
 در خروجی PDF مقدار `version` و شناسه `MathJax` باید خوانا بمانند.
+خروجی renderer. و GitHub Actions. نیز باید punctuation پایدار داشته باشد.
 ```
 
 Avoid manually inserting invisible bidi control characters unless you are debugging a very specific viewer issue.
@@ -129,6 +132,7 @@ When changing RTL or Persian output, check these areas in both generated HTML an
 - inline code inside Persian paragraphs;
 - version numbers and Persian/Latin digits;
 - Persian punctuation and ASCII punctuation inside RTL text;
+- Latin technical runs with trailing punctuation inside Persian prose;
 - RTL tables with English identifiers;
 - Persian captions for images, tables, code, and Mermaid diagrams;
 - printed TOC labels and PDF viewer outline labels;

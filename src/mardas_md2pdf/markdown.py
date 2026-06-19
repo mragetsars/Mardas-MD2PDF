@@ -306,6 +306,19 @@ PERSIAN_PUNCTUATION_RE = re.compile(r"[،؛؟]")
 ASCII_RTL_PUNCTUATION_RE = re.compile(r"[?,;](?=\s|$)")
 PERSIAN_CAPTION_PREFIX_RE = re.compile(r"^(?:شکل|تصویر|جدول|کد|نمودار)\b")
 PERSIAN_DIGIT_TRANSLATION = str.maketrans("0123456789", "۰۱۲۳۴۵۶۷۸۹")
+LTR_ISOLATE_RUN_RE = re.compile(
+    r"(?<![\w@])"
+    r"(?P<run>"
+    r"(?:[A-Za-z][A-Za-z0-9]*(?:[._:/-][A-Za-z0-9]+)*"
+    r"|[0-9]+(?:[._:/-][A-Za-z0-9]+)+)"
+    r"(?:\s+(?:[A-Za-z][A-Za-z0-9]*(?:[._:/-][A-Za-z0-9]+)*"
+    r"|[0-9]+(?:[._:/-][A-Za-z0-9]+)+))*"
+    r")"
+    r"(?P<punct>[.,:;!?])?"
+)
+LTR_ISOLATE_SKIP_TAGS = {"a", "code", "kbd", "pre", "samp", "script", "style", "textarea"}
+LTR_ISOLATE_SKIP_CLASSES = {"math", "math-inline", "math-display", "mjx-container"}
+LTR_ISOLATE_CONTEXT_TAGS = {"p", "li", "td", "th", "caption", "figcaption", "blockquote", "h1", "h2", "h3", "h4", "h5", "h6"}
 
 
 def strong_direction_counts(text: str) -> tuple[int, int]:
@@ -422,6 +435,133 @@ def _add_classes(tag: Tag, *classes: str) -> None:
     existing.update(item for item in classes if item)
     if existing:
         tag["class"] = sorted(existing)
+
+
+def _parent_chain(tag: Tag | None) -> list[Tag]:
+    chain: list[Tag] = []
+    current = tag
+    while isinstance(current, Tag):
+        chain.append(current)
+        current = current.parent if isinstance(current.parent, Tag) else None
+    return chain
+
+
+def _inside_tag(tag: Tag | None, names: set[str]) -> bool:
+    return any((ancestor.name or "").lower() in names for ancestor in _parent_chain(tag))
+
+
+def _inside_class(tag: Tag | None, classes: set[str]) -> bool:
+    for ancestor in _parent_chain(tag):
+        ancestor_classes = {str(item) for item in ancestor.get("class", [])}
+        if ancestor_classes & classes:
+            return True
+    return False
+
+
+def _mixed_script_context(tag: Tag | None) -> bool:
+    for ancestor in _parent_chain(tag):
+        name = (ancestor.name or "").lower()
+        if name in LTR_ISOLATE_CONTEXT_TAGS:
+            text = ancestor.get_text(" ", strip=True)
+            if has_persian(text) and has_latin(text):
+                return True
+            classes = set(ancestor.get("class", []))
+            if "md2pdf-rtl-text" in classes or "mixed-script" in classes:
+                return True
+            direction = str(ancestor.get("dir") or "").lower()
+            if direction == "rtl" and has_latin(text):
+                return True
+            return False
+    return False
+
+
+def _new_ltr_isolate_span(soup: BeautifulSoup, text: str, *, has_trailing_punctuation: bool = False) -> Tag:
+    span = soup.new_tag("span")
+    classes = ["md2pdf-ltr-isolate"]
+    if has_trailing_punctuation:
+        classes.append("md2pdf-ltr-isolate--punct")
+    span["class"] = classes
+    span["dir"] = "ltr"
+    span["lang"] = "en"
+    span.string = text
+    return span
+
+
+def _next_meaningful_sibling(tag: Tag) -> Tag | None:
+    sibling = tag.next_sibling
+    while isinstance(sibling, NavigableString) and not str(sibling).strip():
+        sibling = sibling.next_sibling
+    return sibling if isinstance(sibling, Tag) else None
+
+
+def _group_ltr_isolate_footnote_refs(soup: BeautifulSoup) -> None:
+    for span in list(soup.find_all("span", class_=lambda c: c and "md2pdf-ltr-isolate--punct" in c)):
+        if span.parent and "md2pdf-ltr-isolate-group" in span.parent.get("class", []):
+            continue
+        sibling = _next_meaningful_sibling(span)
+        if not sibling or sibling.name != "sup" or "footnote-ref" not in sibling.get("class", []):
+            continue
+        wrapper = soup.new_tag("span")
+        wrapper["class"] = ["md2pdf-ltr-isolate-group", "md2pdf-ltr-isolate-group--footnote"]
+        wrapper["dir"] = "ltr"
+        wrapper["lang"] = "en"
+        span.wrap(wrapper)
+        wrapper.append(sibling.extract())
+
+
+def isolate_ltr_runs_in_mixed_persian_text(soup: BeautifulSoup) -> None:
+    """Wrap Latin technical runs inside Persian prose with bidi isolation spans.
+
+    Chromium's bidi handling is generally reliable for full blocks, but short
+    Latin identifiers followed by neutral punctuation can still drift visually in
+    Persian paragraphs. This pass keeps author text unchanged while adding an
+    inline isolation boundary around Latin/version-like runs and their immediate
+    ASCII punctuation. Code, math, preformatted content, and links are skipped so
+    semantic Markdown constructs keep their original structure.
+    """
+    for node in list(soup.find_all(string=True)):
+        parent = node.parent if isinstance(node.parent, Tag) else None
+        if (
+            parent is None
+            or _inside_tag(parent, LTR_ISOLATE_SKIP_TAGS)
+            or _inside_class(parent, LTR_ISOLATE_SKIP_CLASSES)
+        ):
+            continue
+        text = str(node)
+        if not text.strip() or not has_latin(text):
+            continue
+        if not _mixed_script_context(parent):
+            continue
+
+        parts: list[str | Tag] = []
+        pos = 0
+        changed = False
+        for match in LTR_ISOLATE_RUN_RE.finditer(text):
+            run = match.group("run") or ""
+            punct = match.group("punct") or ""
+            if not has_latin(run):
+                continue
+            start, end = match.span()
+            if start > pos:
+                parts.append(text[pos:start])
+            isolated = run + punct
+            parts.append(_new_ltr_isolate_span(soup, isolated, has_trailing_punctuation=bool(punct)))
+            pos = end
+            changed = True
+        if not changed:
+            continue
+        if pos < len(text):
+            parts.append(text[pos:])
+
+        for fragment in reversed(parts):
+            if isinstance(fragment, str):
+                if fragment:
+                    node.insert_after(NavigableString(fragment))
+            else:
+                node.insert_after(fragment)
+        node.extract()
+
+    _group_ltr_isolate_footnote_refs(soup)
 
 
 def _dir_for_profile(profile: str) -> str:
@@ -1757,6 +1897,7 @@ def postprocess_html(body_html: str, *, code_style: str = "github-dark", lang: s
     apply_literal_autolinks(soup)
     normalize_raw_code_blocks(soup, code_style=code_style)
     normalize_semantic_captions(soup)
+    isolate_ltr_runs_in_mixed_persian_text(soup)
 
     # Direction-aware blocks and inline content.
     for tag in soup.find_all(["p", "li", "td", "th", "h1", "h2", "h3", "h4", "h5", "h6", "figcaption", "caption"]):
