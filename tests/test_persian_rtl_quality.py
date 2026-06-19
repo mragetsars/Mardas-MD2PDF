@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from mardas_md2pdf.markdown import render_markdown
-from mardas_md2pdf.renderer import PdfOptions, _layout_css
+from mardas_md2pdf.renderer import FooterContext, PdfOptions, _footer_template, _layout_css
 
 
 def test_persian_blocks_get_explicit_rtl_direction_classes():
@@ -168,3 +168,63 @@ def test_layout_css_contains_persian_navigation_and_footnote_rules(tmp_path: Pat
     assert ".footnotes--rtl" in css
     assert ".footnote-ref--rtl" in css
     assert ".md2pdf-caption--persian-number" in css
+
+
+def test_persian_footnote_body_gets_direction_and_number_profiles():
+    result = render_markdown(
+        "---\nlang: fa\n---\n\n"
+        "ارجاع فارسی[^audit].\n\n"
+        "[^audit]: متن پانویس با version 1.9.3 و شماره ۱۴۰۵؟\n"
+    )
+
+    assert 'footnote-item--persian' in result.body_html
+    assert 'footnote-item--mixed-number' in result.body_html
+    assert 'class="footnote-body' in result.body_html
+    assert 'footnote-body--mixed' in result.body_html
+    assert 'data-md2pdf-direction-profile="mixed"' in result.body_html
+    assert 'data-md2pdf-number-profile="mixed"' in result.body_html
+    assert 'mixed-numeral' in result.body_html
+    assert 'persian-punctuation' in result.body_html
+
+
+def test_persian_caption_profiles_expose_visual_audit_metadata():
+    result = render_markdown(
+        "---\nlang: fa\n---\n\n"
+        "![نمودار](diagram.svg)\n\n"
+        "*شکل ۱۲. نمودار PDF version 1.9.3 و ۱۴۰۵؟*\n"
+    )
+
+    assert 'md2pdf-caption--profiled' in result.body_html
+    assert 'md2pdf-caption--persian' in result.body_html
+    assert 'data-md2pdf-direction-profile="mixed"' in result.body_html
+    assert 'data-md2pdf-number-profile="mixed"' in result.body_html
+    assert 'dir="auto"' in result.body_html
+
+
+def test_persian_footer_template_uses_readable_page_total_phrase():
+    template = _footer_template(
+        FooterContext(
+            title="راهنمای Mardas MD2PDF",
+            metadata="انتشار حرفه‌ای Markdown · 1.9.3 · Stable",
+            lang="fa",
+            document_direction="rtl",
+        ),
+        "modern",
+        "light",
+    )
+
+    assert "صفحه" in template
+    assert " از " in template
+    assert 'dir="rtl"' in template
+    assert 'class="pageNumber"' in template
+    assert 'class="totalPages"' in template
+
+
+def test_layout_css_contains_persian_footnote_caption_audit_rules(tmp_path: Path):
+    options = PdfOptions(input_path=tmp_path / "input.md", output_path=tmp_path / "out.pdf")
+    css, _classes = _layout_css(options, document_direction="rtl")
+
+    assert ".footnote-body--rtl" in css
+    assert ".footnote-body--mixed" in css
+    assert ".footnote-item--persian" in css
+    assert ".md2pdf-caption--profiled" in css

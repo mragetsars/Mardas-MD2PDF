@@ -94,7 +94,15 @@ Generated navigation labels are owned by the renderer, so Persian documents can 
 
 Footnote references and footnote markers also use localized generated numbers in Persian documents. The footnote section receives `footnotes--rtl`, while the backlink IDs remain ASCII-safe and deterministic. PDF viewer page labels keep content numbering restarted after the cover page and use a localized cover prefix such as `جلد ` for Persian output.
 
-These rules affect generated labels only. Version strings, command output, code, filenames, and author-written prose are preserved exactly as written.
+## Persian footnotes, captions, and footer audit hooks
+
+Persian footnote bodies are profiled independently from the surrounding paragraph. A footnote can therefore carry `footnote-body--rtl`, `footnote-body--ltr`, or `footnote-body--mixed` together with numeral and punctuation classes such as `mixed-numeral` or `persian-punctuation`. This keeps Persian notes readable while preserving English package names, version numbers, and command fragments.
+
+Caption elements now expose `data-md2pdf-direction-profile` and `data-md2pdf-number-profile` attributes. These attributes are intended for visual-regression checks and PDF audit scripts; they should not be used to rewrite the author's prose. A caption such as `شکل ۱۲. نمودار PDF version 1.9.3 و ۱۴۰۵؟` remains unchanged, but it is marked as mixed direction and mixed number content.
+
+Printed footers in Persian documents use a localized total-page phrase: `صفحه N از M`. The numeric spans are still produced by Chromium, but the surrounding phrase and direction are RTL-aware so the footer reads naturally in Persian reports.
+
+These rules affect generated labels and audit metadata only. Version strings, command output, code, filenames, and author-written prose are preserved exactly as written.
 
 ## Verification checklist
 

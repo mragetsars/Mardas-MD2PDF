@@ -899,6 +899,13 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
         direction: auto;
         unicode-bidi: plaintext;
       }}
+      .md2pdf-caption--profiled {{
+        isolation: isolate;
+      }}
+      .md2pdf-caption--persian.md2pdf-caption--figure,
+      .md2pdf-caption--persian.md2pdf-caption--diagram {{
+        text-align: center;
+      }}
       .md2pdf-toc--rtl {{
         direction: rtl;
         text-align: right;
@@ -925,8 +932,25 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
         direction: rtl;
       }}
       .footnotes--rtl .footnote-body {{
+        unicode-bidi: plaintext;
+      }}
+      .footnote-body--rtl {{
+        direction: rtl;
+        text-align: right;
+        unicode-bidi: plaintext;
+      }}
+      .footnote-body--ltr {{
+        direction: ltr;
+        text-align: left;
+        unicode-bidi: plaintext;
+      }}
+      .footnote-body--mixed {{
         direction: auto;
         unicode-bidi: plaintext;
+      }}
+      .footnote-item--persian .footnote-backrefs {{
+        direction: ltr;
+        unicode-bidi: isolate;
       }}
       .footnote-ref--rtl {{
         direction: rtl;
@@ -1601,10 +1625,16 @@ def _footer_template(
         if safe_meta
         else '<span aria-hidden="true"></span>'
     )
-    page_html = (
-        f'<span dir="ltr" style="direction:ltr; unicode-bidi:isolate; white-space:nowrap; text-align:right; font-weight:{page_weight}; font-family:Arial, sans-serif;">'
-        f'{page_label} <span class="pageNumber"></span>/<span class="totalPages"></span></span>'
-    )
+    if normalize_language(lang).startswith(RTL_LANG_PREFIXES):
+        page_html = (
+            f'<span dir="rtl" style="direction:rtl; unicode-bidi:plaintext; white-space:nowrap; text-align:left; font-weight:{page_weight}; font-family:Vazirmatn, Arial, sans-serif;">'
+            f'{page_label} <span class="pageNumber"></span> از <span class="totalPages"></span></span>'
+        )
+    else:
+        page_html = (
+            f'<span dir="ltr" style="direction:ltr; unicode-bidi:isolate; white-space:nowrap; text-align:right; font-weight:{page_weight}; font-family:Arial, sans-serif;">'
+            f'{page_label} <span class="pageNumber"></span>/<span class="totalPages"></span></span>'
+        )
     return f"""
     <div style="width:100%; font-size:8px; color:{color}; padding:0 16mm; font-family:{font_family};">
       <div style="border-top:1px solid {rule_color}; padding-top:4.5px; display:grid; grid-template-columns:minmax(0,1.4fr) minmax(0,.9fr) minmax(22mm,.6fr); align-items:center; gap:5mm; direction:ltr;">

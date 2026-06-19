@@ -103,6 +103,8 @@ GLOBAL_SAFE_ATTRS = {
     "data-line-start",
     "data-lines",
     "data-md2pdf-columns",
+    "data-md2pdf-direction-profile",
+    "data-md2pdf-number-profile",
     "data-md2pdf-rows",
 }
 TAG_SAFE_ATTRS = {
@@ -1103,6 +1105,18 @@ def append_footnotes(
     items = []
     for entry in entries:
         rendered = md.render(entry.raw).strip()
+        footnote_text = BeautifulSoup(rendered, "html.parser").get_text(" ", strip=True) or entry.raw
+        body_profile = direction_profile(footnote_text)
+        body_dir = _dir_for_profile(body_profile)
+        body_classes = ["footnote-body", f"footnote-body--{body_profile}"]
+        body_classes.extend(text_quality_classes(footnote_text))
+        item_classes = ["footnote-item", f"footnote-item--{body_profile}"]
+        if has_persian(footnote_text):
+            item_classes.append("footnote-item--persian")
+        if has_latin(footnote_text):
+            item_classes.append("footnote-item--latin")
+        if numeral_profile(footnote_text) != "none":
+            item_classes.append(f"footnote-item--{numeral_profile(footnote_text)}-number")
         ref_count = max(1, entry.ref_count)
         backrefs = []
         display_index = localize_digits(entry.index, lang=lang, text_hint=text_hint)
@@ -1114,9 +1128,9 @@ def append_footnotes(
                 f'<a class="footnote-backref" href="#{html.escape(ref_id)}" aria-label="{ref_label}">↩</a>'
             )
         items.append(
-            f'<li class="footnote-item" id="fn-{html.escape(entry.anchor)}">'
+            f'<li class="{html.escape(" ".join(sorted(set(item_classes))))}" id="fn-{html.escape(entry.anchor)}">'
             f'<span class="footnote-marker {number_class}">{html.escape(display_index)}.</span>'
-            f'<div class="footnote-body" dir="auto">{rendered}</div> '
+            f'<div class="{html.escape(" ".join(sorted(set(body_classes))))}" dir="{body_dir}" data-md2pdf-direction-profile="{body_profile}" data-md2pdf-number-profile="{numeral_profile(footnote_text)}">{rendered}</div> '
             f'<span class="footnote-backrefs">{"".join(backrefs)}</span></li>'
         )
     return (
@@ -1594,7 +1608,20 @@ def _caption_profile_classes(caption: Tag) -> list[str]:
     if number_profile != "none":
         classes.append("md2pdf-caption--numbered")
         classes.append(f"md2pdf-caption--{number_profile}-number")
+    classes.append("md2pdf-caption--profiled")
     return sorted(set(classes))
+
+
+def _apply_caption_profile(caption: Tag) -> None:
+    """Apply explicit direction and audit metadata to a semantic caption."""
+    text = caption.get_text(" ", strip=True)
+    caption_classes = set(caption.get("class", []))
+    caption_classes.update(_caption_profile_classes(caption))
+    caption["class"] = sorted(caption_classes)
+    profile = direction_profile(text)
+    caption["dir"] = _dir_for_profile(profile)
+    caption["data-md2pdf-direction-profile"] = profile
+    caption["data-md2pdf-number-profile"] = numeral_profile(text)
 
 
 def normalize_semantic_captions(soup: BeautifulSoup) -> None:
@@ -1607,18 +1634,12 @@ def normalize_semantic_captions(soup: BeautifulSoup) -> None:
         elif "mermaid-diagram" in classes:
             kind = "diagram"
         for caption in figure.find_all("figcaption", recursive=False):
-            caption_classes = set(caption.get("class", []))
-            caption_classes.update({"md2pdf-caption", f"md2pdf-caption--{kind}"})
-            caption_classes.update(_caption_profile_classes(caption))
-            caption["class"] = sorted(caption_classes)
-            caption["dir"] = caption.get("dir") or "auto"
+            _add_classes(caption, "md2pdf-caption", f"md2pdf-caption--{kind}")
+            _apply_caption_profile(caption)
     for table in soup.find_all("table"):
         for caption in table.find_all("caption", recursive=False):
-            caption_classes = set(caption.get("class", []))
-            caption_classes.update({"md2pdf-caption", "md2pdf-caption--table"})
-            caption_classes.update(_caption_profile_classes(caption))
-            caption["class"] = sorted(caption_classes)
-            caption["dir"] = caption.get("dir") or "auto"
+            _add_classes(caption, "md2pdf-caption", "md2pdf-caption--table")
+            _apply_caption_profile(caption)
 
 
 def promote_image_caption_pairs(soup: BeautifulSoup) -> None:

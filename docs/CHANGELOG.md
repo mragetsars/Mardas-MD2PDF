@@ -4,6 +4,22 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.9.3 - 2026-06-15
+
+### Fixed
+
+- Polished Persian footnote body profiling so RTL, LTR, mixed-script, and mixed-number footnote content receive stable visual-audit hooks.
+- Added explicit caption direction and number-profile metadata for Persian, Latin, and mixed captions without rewriting author text.
+- Improved Persian printed footer wording from slash-separated page totals to a more readable localized `صفحه N از M` phrase.
+
+### Documentation
+
+- Expanded `docs/PERSIAN-RTL.md` with Persian footnote, caption, and footer visual-audit guidance.
+
+### Tests
+
+- Added regression coverage for Persian footnote body profiles, caption audit metadata, and localized footer templates.
+
 ## 1.9.2 - 2026-06-15
 
 ### Fixed
