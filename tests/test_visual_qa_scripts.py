@@ -56,6 +56,7 @@ def test_visual_qa_png_stats_and_diff_are_dependency_free(tmp_path: Path) -> Non
     [
         "audit_appearance_matrix.py",
         "audit_pdf_features.py",
+        "compare_visual_snapshots.py",
     ],
 )
 def test_visual_qa_scripts_have_help(script: str) -> None:
@@ -98,3 +99,34 @@ def test_appearance_matrix_supports_filtered_dry_manifest(tmp_path: Path) -> Non
     assert manifest["failures"] == []
     assert manifest["records"][0]["name"] == "modern-blue-light"
     assert (output_dir / manifest["records"][0]["pdf"]).is_file()
+
+
+def test_visual_snapshot_compare_script_writes_summary(tmp_path: Path) -> None:
+    baseline = tmp_path / "baseline"
+    candidate = tmp_path / "candidate"
+    output = tmp_path / "diff"
+    baseline.mkdir()
+    candidate.mkdir()
+    _write_rgb_png(baseline / "page.png", [[(10, 10, 10), (240, 240, 240)]])
+    _write_rgb_png(candidate / "page.png", [[(10, 10, 10), (241, 241, 241)]])
+
+    subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPTS / "compare_visual_snapshots.py"),
+            str(baseline),
+            str(candidate),
+            "--output-dir",
+            str(output),
+            "--max-changed-ratio",
+            "1",
+            "--max-rms-delta",
+            "2",
+        ],
+        check=True,
+    )
+
+    summary = json.loads((output / "summary.json").read_text(encoding="utf-8"))
+    assert summary["counts"]["shared"] == 1
+    assert summary["counts"]["failed"] == 0
+    assert (output / "SUMMARY.md").is_file()
