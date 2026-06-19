@@ -31,7 +31,7 @@ def test_guides_start_with_valid_front_matter():
         metadata = _front_matter(guide)
         assert metadata.get("title")
         assert metadata.get("summary")
-        assert metadata.get("version") == "1.11.0"
+        assert metadata.get("version") == "1.12.0"
         assert metadata.get("branding", {}).get("mode") == "full"
 
 
@@ -53,7 +53,7 @@ def test_changelog_is_descending_and_has_single_intro():
     versions = [tuple(map(int, match.groups())) for match in VERSION_RE.finditer(changelog)]
     assert versions == sorted(versions, reverse=True)
     assert len(versions) == len(set(versions))
-    assert versions[0] == (1, 11, 0)
+    assert versions[0] == (1, 12, 0)
     assert (1, 8, 6) in versions
     assert (1, 8, 5) in versions
     assert (1, 5, 0) in versions
@@ -113,8 +113,8 @@ def test_guides_include_persian_rtl_live_smoke_samples():
 
     assert "Persian/RTL visual smoke sample" in en
     assert "نمونه smoke تصویری فارسی/RTL" in fa
-    assert "version 1.11.0" in en
-    assert "version 1.11.0" in fa
+    assert "version 1.12.0" in en
+    assert "version 1.12.0" in fa
     assert "۱۴۰۵" in en
     assert "۱۴۰۵" in fa
     assert "جدول ۱۲. نمونه جدول فارسی/RTL با عددهای ترکیبی." in en
@@ -183,3 +183,18 @@ def test_ci_uploads_visual_qa_artifacts():
     assert "scripts/audit_studio_visual.py" in workflow
     assert "actions/upload-artifact@v4" in workflow
     assert "build/visual-qa/" in workflow
+
+
+def test_studio_reference_documents_professional_workflow_features():
+    docs = (ROOT / "docs/STUDIO.md").read_text(encoding="utf-8")
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+
+    assert ".mardas.json" in docs
+    assert "Project files" in docs
+    assert "Save Project" in docs
+    assert "Open Project" in docs
+    assert "command palette" in docs
+    assert "Ctrl/Cmd+K" in docs
+    assert "Accurate" in docs
+    assert "Export debug HTML" in docs
+    assert "drag-and-drop asset" in readme or "drag-and-drop asset management" in readme

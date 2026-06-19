@@ -55,6 +55,17 @@ Preview updates are debounced. When Studio is waiting for the next preview pass,
 the preview header shows a small rendering indicator instead of leaving the user
 wondering whether the document is stuck.
 
+## Project files
+
+Use **Save Project** to download a `.mardas.json` Studio project bundle. The
+bundle stores the current Markdown source, export options, and attached asset
+payloads. Use **Open Project** to restore that workspace later without requiring a
+server-side project store.
+
+Project files are intended for local trusted work. They can contain embedded
+asset data, so do not commit them or share them publicly unless the document and
+all attached files are safe to share.
+
 ## Workspace layout
 
 Studio uses draggable panes instead of static view-mode buttons. Drag the
@@ -86,9 +97,19 @@ remains the primary call to action.
 
 Keyboard shortcuts:
 
+- **Ctrl/Cmd+K** opens the command palette.
 - **Ctrl/Cmd+S** saves the Markdown file.
+- **Ctrl/Cmd+Shift+S** saves a `.mardas.json` Studio project bundle.
+- **Ctrl/Cmd+O** opens a Markdown file.
+- **Ctrl/Cmd+Shift+O** opens a Studio project bundle.
+- **Ctrl/Cmd+E** exports debug HTML.
 - **Ctrl/Cmd+Enter** exports the PDF.
 - **Ctrl/Cmd+,** toggles the settings sidebar.
+
+The command palette exposes the same actions without requiring users to memorize
+shortcuts: export PDF, export debug HTML, save/open Markdown, save/open project,
+attach or clear assets, copy CLI command, switch preview mode, and toggle the
+settings panel.
 
 ## Attached assets
 
@@ -96,9 +117,22 @@ Attached assets are written into a temporary render directory before export. Use
 this for Markdown images and optional brand logos such as `images/logo.png`.
 Studio accepts up to 250 assets, 12 MB per asset, and 32 MB total.
 
+Assets can be selected with the **Attach** button or dropped into the workspace.
+The asset manager appends new files, skips duplicates and files over the configured
+limits, shows total size, allows individual removal, and can set an attached file
+as the brand logo path.
+
 ## Preview boundary
 
-The browser preview is intentionally approximate. It is useful for quick reading
-and structure checks, but the exported PDF is the source of truth because it uses
-the full Markdown processor, safe asset handling, MathJax, cover renderer, PDF
-outline builder, and Chromium print rules.
+Studio has two preview modes:
+
+- **Fast** uses the browser-local Markdown preview for instant structural checks.
+- **Accurate** asks the Python backend for renderer HTML and loads it into an
+  isolated preview frame. This mode is closer to final output and can reveal
+  renderer-specific CSS, MathJax, TOC, cover, and asset behavior without starting
+  Chromium.
+
+Use **Export debug HTML** when you need to inspect the exact HTML handed to the
+PDF renderer. The exported PDF is still the source of truth because it uses the
+full Markdown processor, safe asset handling, MathJax, cover renderer, PDF outline
+builder, and Chromium print rules.

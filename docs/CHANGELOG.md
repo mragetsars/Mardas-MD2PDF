@@ -4,6 +4,23 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.12.0 - 2026-06-20
+
+### Added
+
+- Added Studio project files (`.mardas.json`) that preserve Markdown, export options, and attached asset data for repeatable local workspaces.
+- Added a browser-side asset manager with append-only attachment handling, duplicate/limit checks, drag-and-drop support, per-asset removal, and one-click brand-logo assignment.
+- Added accurate Studio preview mode and debug HTML export using the Python renderer HTML endpoint without starting Chromium.
+- Added a command palette with professional workflow shortcuts for export, debug HTML, project save/open, asset actions, preview mode switching, and sidebar control.
+
+### Documentation
+
+- Expanded Studio workflow documentation and refreshed public version metadata for version 1.12.0.
+
+### Tests
+
+- Added regression coverage for Studio project bundles, asset manager actions, accurate preview/debug HTML hooks, command palette wiring, and keyboard shortcuts.
+
 ## 1.11.0 - 2026-06-19
 
 ### Added
