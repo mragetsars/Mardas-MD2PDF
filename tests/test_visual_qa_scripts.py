@@ -55,6 +55,7 @@ def test_visual_qa_png_stats_and_diff_are_dependency_free(tmp_path: Path) -> Non
     "script",
     [
         "audit_appearance_matrix.py",
+        "audit_pdf_features.py",
     ],
 )
 def test_visual_qa_scripts_have_help(script: str) -> None:
