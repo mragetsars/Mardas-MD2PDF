@@ -1,5 +1,4 @@
 ---
-Visible TOC links and PDF viewer bookmarks use the same preserved heading destinations, so both navigation surfaces jump to the actual content heading rather than to a matching row inside the table of contents.
 title: "Mardas MD2PDF Guide"
 subtitle: "Complete user manual and feature reference"
 authors:
@@ -13,7 +12,7 @@ summary: |
   This document also acts as a live rendering sample for cover pages, tables of contents, mixed RTL/LTR text, formulas, code, Mermaid flowcharts, images, tables, footnotes, page breaks, and safe HTML.
 institution: "Mardas Lab"
 course: "Markdown Publishing"
-version: "1.8.8"
+version: "1.8.9"
 status: "Stable"
 keywords:
   - Markdown
@@ -211,7 +210,7 @@ department: "Department name"
 course: "Course or project title"
 supervisor: "Supervisor name"
 date: "2026-05-20"
-version: "1.8.8"
+version: "1.8.9"
 status: "Draft"
 keywords: [Markdown, PDF, RTL, MathJax]
 cover_label: "Technical Report"
@@ -335,9 +334,7 @@ mrs-md2pdf input.md -o output.pdf --h1-page-break
 
 The TOC is generated from Markdown headings and preserves readable inline math in headings such as $E = mc^2$ and $\epsilon$.
 
-Visible TOC links and PDF viewer bookmarks are both bound to the same heading destinations, so clicking either navigation layer jumps to the real content heading rather than a matching row inside the TOC.
-
-The visible TOC links and the PDF viewer outline use the same preserved heading destinations, so both should jump to the actual content heading rather than to a matching row inside the TOC.
+Visible TOC links and PDF viewer bookmarks use the same preserved heading destinations, so clicking either navigation layer jumps to the actual content heading rather than to a matching row inside the table of contents.
 
 # Markdown Feature Reference
 

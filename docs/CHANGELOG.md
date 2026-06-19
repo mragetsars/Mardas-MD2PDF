@@ -1,5 +1,25 @@
 # Changelog
 
+All notable changes to Mardas MD2PDF are tracked here.
+
+The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
+
+## 1.8.9 - 2026-06-15
+
+### Fixed
+
+- Restored the official English and Persian guide front matter so cover pages again use the intended project title, subtitle, authors, branding, metadata, and full guide-cover layout.
+- Removed stray TOC-navigation prose from the YAML front matter of both guides and collapsed duplicated TOC navigation paragraphs in the body.
+- Reorganized the changelog into a strictly descending, version-by-version history with complete Phase 11 entries.
+
+### Documentation
+
+- Added `docs/DOCUMENTATION.md` to define the documentation map, guide-as-sample policy, changelog rules, and release documentation workflow.
+
+### Tests
+
+- Added documentation integrity checks for guide front matter, duplicate TOC notes, and changelog ordering.
+
 ## 1.8.8 - 2026-06-15
 
 ### Fixed
@@ -16,14 +36,30 @@
 - Fixed the architecture SVG heading so its leading text is not clipped in generated guide PDFs.
 - Collapsed duplicated visible-TOC navigation notes in the English and Persian guides.
 
+## 1.8.6 - 2026-06-14
+
+### Fixed
+
+- Replaced blocked guide image placeholders with document-local SVG assets so the official English and Persian PDF examples demonstrate the successful local-image path.
+- Cleaned guide media examples so semantic figure captions and safe HTML images are visible in generated guide PDFs without relying on parent-directory or root-level assets.
+
+## 1.8.5 - 2026-06-14
+
+### Fixed
+
+- Polished PDF footnote references so repeated references use stable numeric markers and unresolved references remain visible instead of becoming broken links.
+- Improved printed footnote layout with explicit markers, body content, back-reference links, and page-flow rules that reduce awkward footnote splitting.
+
+### Tests
+
+- Added regression coverage for repeated footnote references, unresolved footnote references, and footnote print CSS.
+
 ## 1.8.4 - 2026-06-14
 
 ### Fixed
 
 - Polished Chromium PDF running footers with bidi-safe document titles, compact running metadata, localized page labels, and style-aware footer rules.
 - Added PDF page labels so viewer page numbering restarts cleanly after a cover page while preserving cover pages as separate front matter.
-
-All notable changes to Mardas MD2PDF are tracked here.
 
 ## 1.8.3 - 2026-06-14
 
@@ -247,7 +283,6 @@ All notable changes to Mardas MD2PDF are tracked here.
 - Bumped the project to version 1.5.1 after progress feedback and Mermaid print-safety work.
 - Refreshed the generated guide PDF examples.
 
-
 ## 1.5.0 and earlier - 2026-05-26
 
 ### Added
@@ -265,11 +300,3 @@ All notable changes to Mardas MD2PDF are tracked here.
 ### Notes
 
 - This entry summarizes the public baseline before the structured changelog began. Later entries are kept version-by-version.
-
-## 1.8.6 - 2026-06-14
-
-### Fixed
-
-- Replaced blocked guide image placeholders with document-local SVG assets so the official English and Persian PDF examples demonstrate the successful local-image path.
-- Cleaned guide media examples so semantic figure captions and safe HTML images are visible in generated guide PDFs without relying on parent-directory or root-level assets.
-
