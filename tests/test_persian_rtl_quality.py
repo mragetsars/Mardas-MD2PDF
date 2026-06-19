@@ -299,3 +299,30 @@ def test_layout_css_contains_persian_table_and_toc_visual_audit_rules(tmp_path: 
     assert ".table-wrap--persian-number" in css
     assert ".table-wrap--mixed-number" in css
     assert ".table-wrap--persian-caption caption" in css
+
+
+def test_persian_toc_nested_lists_keep_rtl_tree_indentation_hooks():
+    result = render_markdown(
+        "---\nlang: fa\n---\n\n"
+        "# فصل اول\n\n## بخش اول\n\n### زیربخش A ۱۴۰۵\n\n# فصل دوم\n",
+        toc=True,
+    )
+
+    assert 'class="toc-list toc-depth-2 toc-list--nested" data-depth="2"' in result.toc_html
+    assert 'class="toc-list toc-depth-3 toc-list--nested" data-depth="3"' in result.toc_html
+    assert 'data-toc-depth="2"' in result.toc_html
+    assert 'data-toc-depth="3"' in result.toc_html
+    assert 'data-md2pdf-number-display="۱-۱-۱"' in result.toc_html
+
+
+def test_layout_css_contains_bidirectional_toc_tree_indentation_rules(tmp_path: Path):
+    options = PdfOptions(input_path=tmp_path / "input.md", output_path=tmp_path / "out.pdf")
+    css, _classes = _layout_css(options, document_direction="rtl")
+
+    assert ".md2pdf-toc--rtl .toc-list--nested" in css
+    assert "margin-inline-end: 1.35em" in css
+    assert "border-inline-end" in css
+    assert "border-inline-start: 0" in css
+    assert "grid-template-columns: minmax(0, 1fr) max-content" in css
+    assert ".md2pdf-toc--ltr .toc-list--nested" in css
+    assert "margin-inline-start: 1.35em" in css

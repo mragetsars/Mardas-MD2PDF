@@ -4,6 +4,22 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.9.6 - 2026-06-15
+
+### Fixed
+
+- Restored professional tree indentation for Persian/RTL printed tables of contents so nested heading levels indent toward the right edge, matching the structural clarity of English/LTR TOCs.
+- Added explicit TOC depth metadata and nested-list classes so RTL/LTR TOC tree layout can be regression-tested without changing heading IDs, link targets, or PDF destinations.
+
+### Documentation
+
+- Refreshed guide metadata and Persian/RTL smoke references for the 1.9.6 TOC tree indentation polish.
+- Expanded `docs/PERSIAN-RTL.md` with RTL TOC tree indentation rules.
+
+### Tests
+
+- Added regression coverage for nested Persian TOC lists, localized nested section numbers, TOC depth metadata, and bidirectional TOC indentation CSS.
+
 ## 1.9.5 - 2026-06-15
 
 ### Documentation

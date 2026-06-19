@@ -31,7 +31,7 @@ def test_guides_start_with_valid_front_matter():
         metadata = _front_matter(guide)
         assert metadata.get("title")
         assert metadata.get("summary")
-        assert metadata.get("version") == "1.9.5"
+        assert metadata.get("version") == "1.9.6"
         assert metadata.get("branding", {}).get("mode") == "full"
 
 
@@ -53,7 +53,7 @@ def test_changelog_is_descending_and_has_single_intro():
     versions = [tuple(map(int, match.groups())) for match in VERSION_RE.finditer(changelog)]
     assert versions == sorted(versions, reverse=True)
     assert len(versions) == len(set(versions))
-    assert versions[0] == (1, 9, 5)
+    assert versions[0] == (1, 9, 6)
     assert (1, 8, 6) in versions
     assert (1, 8, 5) in versions
     assert (1, 5, 0) in versions
@@ -93,6 +93,8 @@ def test_persian_rtl_reference_document_exists():
     assert "Persian navigation and references" in docs
     assert "persian-generated-number" in docs
     assert "footnotes--rtl" in docs
+    assert "toc-list--nested" in docs
+    assert "border-inline-end" in docs
 
 
 def test_guides_include_persian_rtl_live_smoke_samples():
@@ -101,8 +103,8 @@ def test_guides_include_persian_rtl_live_smoke_samples():
 
     assert "Persian/RTL visual smoke sample" in en
     assert "نمونه smoke تصویری فارسی/RTL" in fa
-    assert "version 1.9.5" in en
-    assert "version 1.9.5" in fa
+    assert "version 1.9.6" in en
+    assert "version 1.9.6" in fa
     assert "۱۴۰۵" in en
     assert "۱۴۰۵" in fa
     assert "جدول ۱۲. نمونه جدول فارسی/RTL با عددهای ترکیبی." in en

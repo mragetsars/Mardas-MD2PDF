@@ -1227,7 +1227,8 @@ def _render_toc_items(
 ) -> str:
     if not items:
         return ""
-    parts = [f'<ol class="toc-list toc-depth-{depth}">']
+    nested_class = " toc-list--nested" if depth > 1 else ""
+    parts = [f'<ol class="toc-list toc-depth-{depth}{nested_class}" data-depth="{depth}">']
     for item in items:
         display_number = localize_digits(item.number, lang=lang, text_hint=text_hint)
         number_class = localized_number_class(item.number, lang=lang, text_hint=text_hint)
@@ -1248,6 +1249,7 @@ def _render_toc_items(
         parts.append(
             f'<li class="{html.escape(" ".join(sorted(set(item_classes))))}" '
             f'data-level="{item.level}" '
+            f'data-toc-depth="{depth}" '
             f'data-md2pdf-number="{html.escape(item.number)}" '
             f'data-md2pdf-number-display="{html.escape(display_number)}" '
             f'data-md2pdf-title-profile="{html.escape(title_profile)}" '

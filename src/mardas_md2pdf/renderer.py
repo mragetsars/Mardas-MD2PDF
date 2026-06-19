@@ -934,23 +934,72 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
       .md2pdf-toc--profiled {{
         isolation: isolate;
       }}
+      .md2pdf-toc .toc-list {{
+        list-style: none;
+        margin-block: 0;
+      }}
+      .md2pdf-toc .toc-item > a {{
+        display: grid;
+        align-items: baseline;
+        column-gap: 0.75em;
+        text-decoration: none;
+      }}
+      .md2pdf-toc .toc-list--nested {{
+        margin-block-start: 1.15mm;
+      }}
       .md2pdf-toc--rtl {{
         direction: rtl;
         text-align: right;
       }}
       .md2pdf-toc--rtl .toc-list {{
         padding-inline-start: 0;
-        padding-inline-end: 1.2em;
+        padding-inline-end: 0;
+      }}
+      .md2pdf-toc--rtl .toc-list--nested {{
+        margin-inline-start: 0;
+        margin-inline-end: 1.35em;
+        padding-inline-start: 0;
+        padding-inline-end: 0.8em;
+        border-inline-start: 0;
+        border-inline-end: 1px solid color-mix(in srgb, var(--line, #dbe3ef) 76%, transparent);
+      }}
+      .md2pdf-toc--rtl .toc-item > a {{
+        grid-template-columns: minmax(0, 1fr) max-content;
+        direction: rtl;
       }}
       .md2pdf-toc--rtl .toc-number {{
+        grid-column: 2;
         min-width: 2.4em;
         text-align: left;
         direction: ltr;
         unicode-bidi: isolate;
       }}
       .md2pdf-toc--rtl .toc-title {{
+        grid-column: 1;
         direction: auto;
         unicode-bidi: plaintext;
+      }}
+      .md2pdf-toc--ltr .toc-list {{
+        padding-inline-start: 0;
+        padding-inline-end: 0;
+      }}
+      .md2pdf-toc--ltr .toc-list--nested {{
+        margin-inline-start: 1.35em;
+        margin-inline-end: 0;
+        padding-inline-start: 0.8em;
+        padding-inline-end: 0;
+        border-inline-start: 1px solid color-mix(in srgb, var(--line, #dbe3ef) 76%, transparent);
+        border-inline-end: 0;
+      }}
+      .md2pdf-toc--ltr .toc-item > a {{
+        grid-template-columns: max-content minmax(0, 1fr);
+        direction: ltr;
+      }}
+      .md2pdf-toc--ltr .toc-number {{
+        grid-column: 1;
+      }}
+      .md2pdf-toc--ltr .toc-title {{
+        grid-column: 2;
       }}
       .toc-item--rtl .toc-title {{
         direction: rtl;
