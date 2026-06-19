@@ -11,3 +11,4 @@ htmlcov/
 /output.pdf
 /patches/
 /er.name*
+# Python cache / test cache

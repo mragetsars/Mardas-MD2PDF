@@ -816,9 +816,19 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
       .mixed-script {{
         unicode-bidi: plaintext;
       }}
-      .mixed-numeral {{
+      .mixed-numeral,
+      .persian-numeral,
+      .latin-numeral {{
         font-variant-numeric: tabular-nums;
         unicode-bidi: plaintext;
+      }}
+      .persian-punctuation,
+      .rtl-ascii-punctuation {{
+        unicode-bidi: plaintext;
+      }}
+      body.md2pdf-dir-rtl .persian-punctuation,
+      body.md2pdf-dir-rtl .rtl-ascii-punctuation {{
+        direction: rtl;
       }}
       .table-wrap--rtl table {{ direction: rtl; }}
       .table-wrap--ltr table {{ direction: ltr; }}
@@ -845,6 +855,22 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
       body.md2pdf-dir-rtl figcaption,
       body.md2pdf-dir-rtl caption {{
         unicode-bidi: plaintext;
+      }}
+      .md2pdf-caption--rtl,
+      .md2pdf-caption--persian {{
+        direction: rtl;
+        unicode-bidi: plaintext;
+      }}
+      .md2pdf-caption--ltr {{
+        direction: ltr;
+        unicode-bidi: plaintext;
+      }}
+      .md2pdf-caption--mixed {{
+        direction: auto;
+        unicode-bidi: plaintext;
+      }}
+      .md2pdf-caption--numbered {{
+        font-variant-numeric: tabular-nums;
       }}
       body.md2pdf-dir-ltr .md2pdf-details {{ direction: ltr; text-align: left; }}
       body.md2pdf-dir-rtl .md2pdf-details {{ direction: rtl; text-align: right; }}

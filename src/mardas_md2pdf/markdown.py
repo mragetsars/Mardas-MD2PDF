@@ -300,6 +300,9 @@ def dominant_direction(text: str) -> str:
 
 ASCII_DIGIT_RE = re.compile(r"[0-9]")
 ARABIC_DIGIT_RE = re.compile(r"[\u0660-\u0669\u06F0-\u06F9]")
+PERSIAN_PUNCTUATION_RE = re.compile(r"[،؛؟]")
+ASCII_RTL_PUNCTUATION_RE = re.compile(r"[?,;](?=\s|$)")
+PERSIAN_CAPTION_PREFIX_RE = re.compile(r"^(?:شکل|تصویر|جدول|کد|نمودار)\b")
 
 
 def strong_direction_counts(text: str) -> tuple[int, int]:
@@ -336,6 +339,61 @@ def direction_profile(text: str) -> str:
 def has_mixed_numerals(text: str) -> bool:
     """Return whether Persian/Arabic and ASCII digits appear together."""
     return bool(ASCII_DIGIT_RE.search(text or "") and ARABIC_DIGIT_RE.search(text or ""))
+
+
+def numeral_profile(text: str) -> str:
+    """Classify digit usage for Persian/Latin number rendering hooks."""
+    has_ascii = bool(ASCII_DIGIT_RE.search(text or ""))
+    has_arabic = bool(ARABIC_DIGIT_RE.search(text or ""))
+    if has_ascii and has_arabic:
+        return "mixed"
+    if has_arabic:
+        return "persian"
+    if has_ascii:
+        return "latin"
+    return "none"
+
+
+def has_persian_punctuation(text: str) -> bool:
+    """Return whether Persian punctuation marks are present."""
+    return bool(PERSIAN_PUNCTUATION_RE.search(text or ""))
+
+
+def has_ascii_rtl_punctuation(text: str) -> bool:
+    """Return whether ASCII punctuation appears inside an RTL-dominant string."""
+    if not ASCII_RTL_PUNCTUATION_RE.search(text or ""):
+        return False
+    rtl, ltr = strong_direction_counts(text)
+    return rtl > 0 and rtl >= ltr
+
+
+def text_quality_classes(text: str) -> list[str]:
+    """Return stable CSS hooks for bidi, numeral, and punctuation quality."""
+    profile = direction_profile(text)
+    classes: list[str] = []
+    direction_class = {
+        "rtl": "md2pdf-rtl-text",
+        "ltr": "md2pdf-ltr-text",
+        "mixed": "mixed-script",
+    }.get(profile)
+    if direction_class:
+        classes.append(direction_class)
+    if has_persian(text) and has_latin(text):
+        classes.append("mixed-script")
+
+    digits = numeral_profile(text)
+    if digits == "mixed":
+        classes.append("mixed-numeral")
+    elif digits == "persian":
+        classes.append("persian-numeral")
+    elif digits == "latin":
+        classes.append("latin-numeral")
+
+    if has_persian_punctuation(text):
+        classes.append("persian-punctuation")
+    if has_ascii_rtl_punctuation(text):
+        classes.append("rtl-ascii-punctuation")
+    return sorted(set(classes))
 
 
 def _add_classes(tag: Tag, *classes: str) -> None:
@@ -1479,6 +1537,25 @@ def _append_caption_from_html(soup: BeautifulSoup, parent: Tag, caption_html: st
     return caption
 
 
+def _caption_profile_classes(caption: Tag) -> list[str]:
+    text = caption.get_text(" ", strip=True)
+    if not text:
+        return []
+    classes = text_quality_classes(text)
+    profile = direction_profile(text)
+    if profile == "rtl":
+        classes.append("md2pdf-caption--rtl")
+    elif profile == "ltr":
+        classes.append("md2pdf-caption--ltr")
+    elif profile == "mixed":
+        classes.append("md2pdf-caption--mixed")
+    if PERSIAN_CAPTION_PREFIX_RE.match(text):
+        classes.append("md2pdf-caption--persian")
+    if numeral_profile(text) != "none":
+        classes.append("md2pdf-caption--numbered")
+    return sorted(set(classes))
+
+
 def normalize_semantic_captions(soup: BeautifulSoup) -> None:
     """Apply consistent caption classes to figures, diagrams, code, and tables."""
     for figure in soup.find_all("figure"):
@@ -1491,12 +1568,14 @@ def normalize_semantic_captions(soup: BeautifulSoup) -> None:
         for caption in figure.find_all("figcaption", recursive=False):
             caption_classes = set(caption.get("class", []))
             caption_classes.update({"md2pdf-caption", f"md2pdf-caption--{kind}"})
+            caption_classes.update(_caption_profile_classes(caption))
             caption["class"] = sorted(caption_classes)
             caption["dir"] = caption.get("dir") or "auto"
     for table in soup.find_all("table"):
         for caption in table.find_all("caption", recursive=False):
             caption_classes = set(caption.get("class", []))
             caption_classes.update({"md2pdf-caption", "md2pdf-caption--table"})
+            caption_classes.update(_caption_profile_classes(caption))
             caption["class"] = sorted(caption_classes)
             caption["dir"] = caption.get("dir") or "auto"
 
@@ -1601,17 +1680,7 @@ def postprocess_html(body_html: str, *, code_style: str = "github-dark", lang: s
         profile = direction_profile(text)
         if not tag.get("dir"):
             tag["dir"] = _dir_for_profile(profile)
-        direction_class = {
-            "rtl": "md2pdf-rtl-text",
-            "ltr": "md2pdf-ltr-text",
-            "mixed": "mixed-script",
-        }.get(profile, "")
-        classes = [direction_class]
-        if has_persian(text) and has_latin(text):
-            classes.append("mixed-script")
-        if has_mixed_numerals(text):
-            classes.append("mixed-numeral")
-        _add_classes(tag, *classes)
+        _add_classes(tag, *text_quality_classes(text))
 
     # Make code and pre blocks strictly LTR.
     for tag in soup.find_all(["pre", "code"]):
@@ -1653,9 +1722,19 @@ def postprocess_html(body_html: str, *, code_style: str = "github-dark", lang: s
                 _add_classes(cell, "table-cell--mixed", "mixed-script")
                 if not cell.get("dir"):
                     cell["dir"] = "auto"
-            if has_mixed_numerals(cell_text):
+            cell_numeric_profile = numeral_profile(cell_text)
+            if cell_numeric_profile != "none":
                 numeric_cells += 1
-                _add_classes(cell, "mixed-numeral")
+                if cell_numeric_profile == "mixed":
+                    _add_classes(cell, "mixed-numeral")
+                elif cell_numeric_profile == "persian":
+                    _add_classes(cell, "persian-numeral")
+                elif cell_numeric_profile == "latin":
+                    _add_classes(cell, "latin-numeral")
+            if has_persian_punctuation(cell_text):
+                _add_classes(cell, "persian-punctuation")
+            if has_ascii_rtl_punctuation(cell_text):
+                _add_classes(cell, "rtl-ascii-punctuation")
 
         if rtl_cells > ltr_cells:
             classes.append("table-wrap--rtl")

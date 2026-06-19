@@ -4,6 +4,22 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.9.1 - 2026-06-15
+
+### Fixed
+
+- Polished Persian numeral and punctuation profiling by distinguishing Persian-only digits, Latin-only digits, mixed numerals, Persian punctuation, and ASCII punctuation inside RTL-dominant text.
+- Added caption-specific RTL hooks for Persian, numbered, and mixed Persian/English captions so figure, table, code, and Mermaid captions remain reviewable in generated HTML/PDF.
+- Removed generated Python bytecode from the Phase 12 patch history and documented ignore rules in the apply helper.
+
+### Documentation
+
+- Expanded `docs/PERSIAN-RTL.md` with punctuation review rules, numeral classes, and caption-specific RTL hooks.
+
+### Tests
+
+- Added regression coverage for Persian/Latin numeral classification, RTL punctuation markers, Persian caption hooks, and table-cell punctuation/numeral profiling.
+
 ## 1.9.0 - 2026-06-15
 
 ### Added

@@ -14,6 +14,10 @@ Phase 12 adds deterministic direction classes during HTML post-processing:
 | `md2pdf-ltr-text` | The block contains LTR strong text only. |
 | `mixed-script` | The block contains both RTL and LTR strong text. |
 | `mixed-numeral` | The block mixes ASCII digits with Persian/Arabic digits. |
+| `persian-numeral` | The block contains Persian/Arabic digits only. |
+| `latin-numeral` | The block contains ASCII digits only. |
+| `persian-punctuation` | The block contains Persian punctuation such as `،`، `؛`، or `؟`. |
+| `rtl-ascii-punctuation` | An RTL-dominant block contains ASCII punctuation such as `?`, `,`, or `;` and should be reviewed. |
 
 These classes do not rewrite the author's text. They provide stable CSS hooks for print layout, PDF extraction, and future visual-regression checks.
 
@@ -31,15 +35,31 @@ Avoid manually inserting invisible bidi control characters unless you are debugg
 
 ## Numbers
 
-Both Persian and Latin digits are supported. When both appear in one block, the renderer marks the block with `mixed-numeral` and uses tabular numeric shaping in print CSS.
+Both Persian and Latin digits are supported. When both appear in one block, the renderer marks the block with `mixed-numeral` and uses tabular numeric shaping in print CSS. Single-style numeric blocks are also classified as `persian-numeral` or `latin-numeral` so future visual tests can distinguish formal Persian prose from technical identifiers.
 
 Recommended:
 
 ```md
-نسخه 1.9.0 و شماره ۱۴۰۵ باید در یک جمله خوانا بمانند.
+نسخه 1.9.1 و شماره ۱۴۰۵ باید در یک جمله خوانا بمانند.
 ```
 
 Use one numeral style consistently in formal final documents when possible, but keep Latin digits for semantic version strings, package versions, command output, and code identifiers.
+
+## Punctuation
+
+Persian punctuation should normally use `،`، `؛`، and `؟`. The renderer does not rewrite author text, but it marks Persian punctuation with `persian-punctuation` and ASCII punctuation inside RTL-dominant text with `rtl-ascii-punctuation`. This gives reviewers and later visual-regression tests a stable way to catch cases where `?` or `;` may need author cleanup.
+
+Recommended:
+
+```md
+آیا خروجی PDF آماده است؟ بله، نسخه 1.9.1 پایدار است؛
+```
+
+Review manually:
+
+```md
+آیا خروجی PDF آماده است? بله، نسخه 1.9.1 پایدار است;
+```
 
 ## Tables
 
@@ -50,7 +70,7 @@ Recommended:
 ```md
 | بخش | مقدار | شناسه |
 |---|---|---|
-| نسخه | version 1.9.0 و ۱.۹.۰ | PDF |
+| نسخه | version 1.9.1 و ۱.۹.۱ | PDF |
 | وضعیت | پایدار | stable |
 ```
 
@@ -64,6 +84,8 @@ Recommended:
 ![نمودار معماری](images/architecture.svg)
 
 *شکل ۱. نمای کلی معماری.*
+
+Caption elements receive caption-specific hooks such as `md2pdf-caption--persian`, `md2pdf-caption--numbered`, and `md2pdf-caption--mixed` when they include Persian labels, numbers, or technical identifiers.
 ```
 
 ## Verification checklist
@@ -73,6 +95,7 @@ When changing RTL or Persian output, check these areas in both generated HTML an
 - mixed Persian/English paragraphs;
 - inline code inside Persian paragraphs;
 - version numbers and Persian/Latin digits;
+- Persian punctuation and ASCII punctuation inside RTL text;
 - RTL tables with English identifiers;
 - Persian captions for images, tables, code, and Mermaid diagrams;
 - printed TOC labels and PDF viewer outline labels;

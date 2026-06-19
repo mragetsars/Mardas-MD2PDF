@@ -29,7 +29,7 @@ def test_guides_start_with_valid_front_matter():
         metadata = _front_matter(guide)
         assert metadata.get("title")
         assert metadata.get("summary")
-        assert metadata.get("version") == "1.9.0"
+        assert metadata.get("version") == "1.9.1"
         assert metadata.get("branding", {}).get("mode") == "full"
 
 
@@ -51,7 +51,7 @@ def test_changelog_is_descending_and_has_single_intro():
     versions = [tuple(map(int, match.groups())) for match in VERSION_RE.finditer(changelog)]
     assert versions == sorted(versions, reverse=True)
     assert len(versions) == len(set(versions))
-    assert versions[0] == (1, 9, 0)
+    assert versions[0] == (1, 9, 1)
     assert (1, 8, 6) in versions
     assert (1, 8, 5) in versions
     assert (1, 5, 0) in versions
@@ -83,3 +83,6 @@ def test_persian_rtl_reference_document_exists():
     assert "mixed-script" in docs
     assert "mixed-numeral" in docs
     assert "table-wrap--rtl" in docs
+    assert "persian-numeral" in docs
+    assert "rtl-ascii-punctuation" in docs
+    assert "md2pdf-caption--persian" in docs
