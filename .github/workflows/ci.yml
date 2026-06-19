@@ -60,3 +60,54 @@ jobs:
         run: |
           mrs-md2pdf docs/guides/GUIDE.en.md -o /tmp/GUIDE.en.pdf --toc --style github --palette blue --mode light --timeout-ms 180000
           test -s /tmp/GUIDE.en.pdf
+
+  visual-qa:
+    name: Visual QA artifacts
+    runs-on: ubuntu-latest
+    needs: render-smoke
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install package, Chromium, and PDF rasterizer
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y poppler-utils
+          python -m pip install --upgrade pip
+          python -m pip install -e '.[dev]'
+          python -m playwright install --with-deps chromium
+
+      - name: Build appearance visual artifacts
+        run: |
+          python scripts/audit_appearance_matrix.py \
+            --output-dir build/visual-qa/appearance \
+            --styles modern,github \
+            --palettes blue,slate \
+            --modes light,dark \
+            --render-png \
+            --png-dpi 48 \
+            --timeout 90 \
+            --clean
+
+      - name: Build feature visual artifacts
+        run: |
+          python scripts/audit_pdf_features.py \
+            --output-dir build/visual-qa/features \
+            --appearances modern:blue:light,modern:blue:dark,academic:amber:dark \
+            --render-png \
+            --png-dpi 48 \
+            --timeout 90 \
+            --clean
+
+      - name: Upload visual QA artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-qa-${{ github.sha }}
+          path: build/visual-qa/
+          if-no-files-found: error

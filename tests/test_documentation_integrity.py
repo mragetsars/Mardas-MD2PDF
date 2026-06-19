@@ -155,3 +155,29 @@ def test_persian_rtl_reference_closeout_contract_stays_release_facing():
     assert "official guide samples stay compact and readable" in docs
     assert "Phase 13" not in docs
     assert "docs/ROADMAP.md" not in docs
+
+
+def test_visual_qa_reference_document_exists_and_stays_artifact_based():
+    docs = (ROOT / "docs/VISUAL-QA.md").read_text(encoding="utf-8")
+    docs_index = (ROOT / "docs/README.md").read_text(encoding="utf-8")
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+
+    assert "Visual QA System" in docs
+    assert "scripts/audit_appearance_matrix.py" in docs
+    assert "scripts/audit_pdf_features.py" in docs
+    assert "scripts/compare_visual_snapshots.py" in docs
+    assert "build/visual-qa/" in docs
+    assert "must not be committed" in docs
+    assert "[Visual QA system](./VISUAL-QA.md)" in docs_index
+    assert "[Visual QA system](./docs/VISUAL-QA.md)" in readme
+    assert "docs/ROADMAP.md" not in docs
+
+
+def test_ci_uploads_visual_qa_artifacts():
+    workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+
+    assert "Visual QA artifacts" in workflow
+    assert "scripts/audit_appearance_matrix.py" in workflow
+    assert "scripts/audit_pdf_features.py" in workflow
+    assert "actions/upload-artifact@v4" in workflow
+    assert "build/visual-qa/" in workflow

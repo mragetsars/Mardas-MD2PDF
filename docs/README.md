@@ -26,3 +26,4 @@ docs live in their own directories.
 - [PDF navigation](./PDF-NAVIGATION.md)
 - [PDF typography and print flow](./PDF-TYPOGRAPHY.md)
 - [Persian and RTL quality](./PERSIAN-RTL.md)
+- [Visual QA system](./VISUAL-QA.md)

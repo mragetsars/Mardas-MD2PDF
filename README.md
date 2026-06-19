@@ -58,6 +58,7 @@ The README is intentionally short and is meant to introduce the project. Complet
 - [Markdown fidelity](./docs/MARKDOWN-FIDELITY.md)
 - [PDF navigation](./docs/PDF-NAVIGATION.md)
 - [PDF typography and print flow](./docs/PDF-TYPOGRAPHY.md)
+- [Visual QA system](./docs/VISUAL-QA.md)
 - [Security policy](./docs/SECURITY.md)
 
 Generated PDF versions of the guides are available in the [`examples/`](./examples/) directory.
@@ -117,7 +118,7 @@ Mardas-MD2PDF/
 ├── docs/                   # Guides, changelog, release, maintenance, security, and feature references
 │   └── guides/             # Complete English and Persian user guides
 ├── examples/               # Generated PDF examples from the guide files
-├── scripts/                # Helper scripts for checks, examples, distributions, and cleanup
+├── scripts/                # Helper scripts for checks, examples, distributions, visual QA, and cleanup
 ├── tests/                  # Automated pytest test suite
 ├── pyproject.toml          # Package metadata and dependencies
 ├── .github/workflows/      # CI and release artifact automation
