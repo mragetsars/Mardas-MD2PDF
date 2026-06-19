@@ -4,6 +4,22 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.9.4 - 2026-06-15
+
+### Fixed
+
+- Added table-level visual-audit metadata for Persian/RTL tables, including direction profile, number profile, cell direction counts, and numeric-cell counts.
+- Added stable TOC item profile hooks so Persian, Latin, mixed-script, and numbered heading titles can be checked in generated HTML/PDF without changing heading anchors.
+- Strengthened captioned table handling for Persian captions so RTL table captions, mixed numerals, and table wrappers expose deterministic audit classes.
+
+### Documentation
+
+- Expanded `docs/PERSIAN-RTL.md` with Persian table and TOC visual-audit guidance.
+
+### Tests
+
+- Added regression coverage for profiled Persian TOC items, table-level audit metadata, captioned Persian tables, and the related print CSS selectors.
+
 ## 1.9.3 - 2026-06-15
 
 ### Fixed

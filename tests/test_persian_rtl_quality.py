@@ -123,7 +123,7 @@ def test_persian_toc_uses_rtl_nav_and_localized_section_numbers():
         toc=True,
     )
 
-    assert 'class="md2pdf-toc md2pdf-toc--rtl" dir="rtl"' in result.toc_html
+    assert 'class="md2pdf-toc md2pdf-toc--rtl md2pdf-toc--profiled" dir="rtl"' in result.toc_html
     assert 'class="toc-number persian-generated-number"' in result.toc_html
     assert 'data-md2pdf-number="1-1"' in result.toc_html
     assert '>۱</span>' in result.toc_html
@@ -228,3 +228,74 @@ def test_layout_css_contains_persian_footnote_caption_audit_rules(tmp_path: Path
     assert ".footnote-body--mixed" in css
     assert ".footnote-item--persian" in css
     assert ".md2pdf-caption--profiled" in css
+
+
+def test_persian_toc_items_expose_visual_audit_profiles():
+    result = render_markdown(
+        "---\nlang: fa\n---\n\n"
+        "# معرفی\n\n## نصب Python 3.10 و خروجی PDF\n\n## جدول‌های RTL ۱۴۰۵\n",
+        toc=True,
+    )
+
+    assert 'md2pdf-toc--profiled' in result.toc_html
+    assert 'data-md2pdf-number-locale="fa"' in result.toc_html
+    assert 'toc-item--mixed-script' in result.toc_html
+    assert 'toc-item--persian-number' in result.toc_html
+    assert 'data-md2pdf-title-profile="mixed"' in result.toc_html
+    assert 'data-md2pdf-title-number-profile="persian"' in result.toc_html
+    assert 'data-md2pdf-number-display="۱-۱"' in result.toc_html
+    assert 'class="toc-title' in result.toc_html
+
+
+def test_persian_tables_expose_table_level_visual_audit_metadata():
+    result = render_markdown(
+        "---\nlang: fa\n---\n\n"
+        "| بخش | مقدار | شناسه |\n"
+        "|---|---|---|\n"
+        "| نسخه | version 1.9.4 و ۱.۹.۴ | PDF |\n"
+        "| تاریخ | ۱۴۰۵ | stable |\n"
+        "| شناسه | 42 | پایدار |\n"
+    )
+
+    assert 'table-wrap--profiled' in result.body_html
+    assert 'table-wrap--rtl' in result.body_html
+    assert 'table-wrap--mixed-direction' in result.body_html
+    assert 'table-wrap--mixed-number' in result.body_html
+    assert 'data-md2pdf-direction-profile="mixed"' in result.body_html
+    assert 'data-md2pdf-number-profile="mixed"' in result.body_html
+    assert 'data-md2pdf-rtl-cells=' in result.body_html
+    assert 'data-md2pdf-ltr-cells=' in result.body_html
+    assert 'data-md2pdf-mixed-cells=' in result.body_html
+    assert 'data-md2pdf-numeric-cells=' in result.body_html
+    assert 'data-md2pdf-number-profile="persian"' in result.body_html
+    assert 'data-md2pdf-number-profile="latin"' in result.body_html
+
+
+def test_persian_table_caption_adds_captioned_table_audit_classes():
+    result = render_markdown(
+        "---\nlang: fa\n---\n\n"
+        "| بخش | مقدار |\n"
+        "|---|---|\n"
+        "| نسخه | ۱.۹.۴ |\n\n"
+        "جدول ۱۲. وضعیت خروجی PDF در ۱۴۰۵؟\n"
+    )
+
+    assert 'table-wrap--captioned' in result.body_html
+    assert 'table-wrap--persian-caption' in result.body_html
+    assert 'table-wrap--caption-mixed' in result.body_html
+    assert 'md2pdf-caption--table' in result.body_html
+    assert 'data-md2pdf-direction-profile="rtl"' in result.body_html
+    assert 'data-md2pdf-number-profile="persian"' in result.body_html
+
+
+def test_layout_css_contains_persian_table_and_toc_visual_audit_rules(tmp_path: Path):
+    options = PdfOptions(input_path=tmp_path / "input.md", output_path=tmp_path / "out.pdf")
+    css, _classes = _layout_css(options, document_direction="rtl")
+
+    assert ".md2pdf-toc--profiled" in css
+    assert ".toc-item--mixed" in css
+    assert ".toc-item--mixed-script" in css
+    assert ".table-wrap--profiled" in css
+    assert ".table-wrap--persian-number" in css
+    assert ".table-wrap--mixed-number" in css
+    assert ".table-wrap--persian-caption caption" in css

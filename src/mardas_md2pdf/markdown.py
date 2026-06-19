@@ -1231,11 +1231,31 @@ def _render_toc_items(
     for item in items:
         display_number = localize_digits(item.number, lang=lang, text_hint=text_hint)
         number_class = localized_number_class(item.number, lang=lang, text_hint=text_hint)
+        title_profile = direction_profile(item.title)
+        title_dir = _dir_for_profile(title_profile)
+        title_classes = ["toc-title", f"toc-title--{title_profile}"]
+        title_classes.extend(text_quality_classes(item.title))
+        item_classes = ["toc-item", f"toc-level-{item.level}", f"toc-item--{title_profile}"]
+        if has_persian(item.title):
+            item_classes.append("toc-item--persian")
+        if has_latin(item.title):
+            item_classes.append("toc-item--latin")
+        title_number_profile = numeral_profile(item.title)
+        if title_number_profile != "none":
+            item_classes.append(f"toc-item--{title_number_profile}-number")
+        if title_profile == "mixed":
+            item_classes.append("toc-item--mixed-script")
         parts.append(
-            f'<li class="toc-level-{item.level}" data-level="{item.level}" data-md2pdf-number="{html.escape(item.number)}">'
+            f'<li class="{html.escape(" ".join(sorted(set(item_classes))))}" '
+            f'data-level="{item.level}" '
+            f'data-md2pdf-number="{html.escape(item.number)}" '
+            f'data-md2pdf-number-display="{html.escape(display_number)}" '
+            f'data-md2pdf-title-profile="{html.escape(title_profile)}" '
+            f'data-md2pdf-title-number-profile="{html.escape(title_number_profile)}">'
             f'<a href="#{html.escape(item.heading_id)}">'
             f'<span class="toc-number {number_class}">{html.escape(display_number)}</span>'
-            f'<span class="toc-title">{item.title_html or html.escape(item.title)}</span>'
+            f'<span class="{html.escape(" ".join(dict.fromkeys(title_classes)))}" dir="{html.escape(title_dir)}">'
+            f'{item.title_html or html.escape(item.title)}</span>'
             f'</a>'
         )
         parts.append(_render_toc_items(item.children, depth=depth + 1, lang=lang, text_hint=text_hint))
@@ -1258,9 +1278,13 @@ def build_toc(
     aria = ui_label("toc_aria", lang=lang, text_hint=text_hint)
     toc_family = language_family(lang, text_hint)
     toc_dir = "rtl" if toc_family == "fa" else "ltr"
-    toc_classes = f"md2pdf-toc md2pdf-toc--{toc_dir}"
+    toc_classes = f"md2pdf-toc md2pdf-toc--{toc_dir} md2pdf-toc--profiled"
+    title_profile = direction_profile(title)
     return (
-        f'<nav class="{toc_classes}" dir="{toc_dir}" aria-label="{html.escape(aria)}">'
+        f'<nav class="{toc_classes}" dir="{toc_dir}" aria-label="{html.escape(aria)}" '
+        f'data-md2pdf-direction-profile="{html.escape(toc_dir)}" '
+        f'data-md2pdf-title-profile="{html.escape(title_profile)}" '
+        f'data-md2pdf-number-locale="{language_family(lang, text_hint)}">'
         f'<h2>{html.escape(title)}</h2>'
         f'{_render_toc_items(tree, lang=lang, text_hint=text_hint)}'
         '</nav>'
@@ -1754,21 +1778,32 @@ def postprocess_html(body_html: str, *, code_style: str = "github-dark", lang: s
             continue
         columns = _table_column_count(table)
         rows = _table_row_count(table)
-        classes = ["table-wrap"]
+        table_text = table.get_text(" ", strip=True)
+        table_profile = direction_profile(table_text)
+        table_number_profile = numeral_profile(table_text)
+        classes = ["table-wrap", "table-wrap--profiled", f"table-wrap--{table_profile}"]
+        classes.extend(text_quality_classes(table_text))
         if columns >= 8:
             classes.append("table-wrap--wide")
         if columns >= 12:
             classes.append("table-wrap--very-wide")
         if rows >= 18:
             classes.append("table-wrap--long")
+        if table.find("caption", recursive=False):
+            classes.append("table-wrap--captioned")
 
         rtl_cells = 0
         ltr_cells = 0
         mixed_cells = 0
+        neutral_cells = 0
         numeric_cells = 0
+        persian_numeric_cells = 0
+        latin_numeric_cells = 0
+        mixed_numeric_cells = 0
         for cell in table.find_all(["th", "td"]):
             cell_text = cell.get_text(" ", strip=True)
             cell_profile = direction_profile(cell_text)
+            cell["data-md2pdf-direction-profile"] = cell_profile
             if cell_profile == "rtl":
                 rtl_cells += 1
                 _add_classes(cell, "table-cell--rtl")
@@ -1784,14 +1819,20 @@ def postprocess_html(body_html: str, *, code_style: str = "github-dark", lang: s
                 _add_classes(cell, "table-cell--mixed", "mixed-script")
                 if not cell.get("dir"):
                     cell["dir"] = "auto"
+            else:
+                neutral_cells += 1
             cell_numeric_profile = numeral_profile(cell_text)
+            cell["data-md2pdf-number-profile"] = cell_numeric_profile
             if cell_numeric_profile != "none":
                 numeric_cells += 1
                 if cell_numeric_profile == "mixed":
+                    mixed_numeric_cells += 1
                     _add_classes(cell, "mixed-numeral")
                 elif cell_numeric_profile == "persian":
+                    persian_numeric_cells += 1
                     _add_classes(cell, "persian-numeral")
                 elif cell_numeric_profile == "latin":
+                    latin_numeric_cells += 1
                     _add_classes(cell, "latin-numeral")
             if has_persian_punctuation(cell_text):
                 _add_classes(cell, "persian-punctuation")
@@ -1809,11 +1850,35 @@ def postprocess_html(body_html: str, *, code_style: str = "github-dark", lang: s
         if mixed_cells or (rtl_cells and ltr_cells):
             classes.append("table-wrap--mixed-direction")
         if numeric_cells:
+            classes.append("table-wrap--numeric")
+        if table_number_profile == "mixed" or mixed_numeric_cells:
             classes.append("table-wrap--mixed-numerals")
+            classes.append("table-wrap--mixed-number")
+        elif table_number_profile == "persian" or persian_numeric_cells:
+            classes.append("table-wrap--persian-numerals")
+            classes.append("table-wrap--persian-number")
+        elif table_number_profile == "latin" or latin_numeric_cells:
+            classes.append("table-wrap--latin-numerals")
+            classes.append("table-wrap--latin-number")
+
+        caption = table.find("caption", recursive=False)
+        if caption:
+            caption_text = caption.get_text(" ", strip=True)
+            caption_profile = direction_profile(caption_text)
+            classes.append(f"table-wrap--caption-{caption_profile}")
+            if has_persian(caption_text):
+                classes.append("table-wrap--persian-caption")
 
         wrapper = soup.new_tag("div")
-        wrapper["class"] = classes
+        wrapper["class"] = sorted(set(classes))
         wrapper["dir"] = table.get("dir") or "auto"
+        wrapper["data-md2pdf-direction-profile"] = table_profile
+        wrapper["data-md2pdf-number-profile"] = table_number_profile
+        wrapper["data-md2pdf-rtl-cells"] = str(rtl_cells)
+        wrapper["data-md2pdf-ltr-cells"] = str(ltr_cells)
+        wrapper["data-md2pdf-mixed-cells"] = str(mixed_cells)
+        wrapper["data-md2pdf-neutral-cells"] = str(neutral_cells)
+        wrapper["data-md2pdf-numeric-cells"] = str(numeric_cells)
         if columns:
             wrapper["data-md2pdf-columns"] = str(columns)
         if rows:

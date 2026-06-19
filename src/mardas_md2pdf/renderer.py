@@ -830,9 +830,13 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
       body.md2pdf-dir-rtl .rtl-ascii-punctuation {{
         direction: rtl;
       }}
+      .table-wrap--profiled {{
+        isolation: isolate;
+      }}
       .table-wrap--rtl table {{ direction: rtl; }}
       .table-wrap--ltr table {{ direction: ltr; }}
-      .table-wrap--mixed-direction table {{ unicode-bidi: plaintext; }}
+      .table-wrap--mixed-direction table,
+      .table-wrap--mixed table {{ unicode-bidi: plaintext; }}
       .table-wrap--rtl th,
       .table-wrap--rtl td,
       .table-cell--rtl {{
@@ -848,6 +852,27 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
         unicode-bidi: plaintext;
       }}
       .table-cell--mixed {{
+        direction: auto;
+        unicode-bidi: plaintext;
+      }}
+      .table-wrap--numeric,
+      .table-wrap--persian-number,
+      .table-wrap--latin-number,
+      .table-wrap--mixed-number {{
+        font-variant-numeric: tabular-nums;
+      }}
+      .table-wrap--persian-caption caption,
+      .table-wrap--caption-rtl caption {{
+        direction: rtl;
+        text-align: right;
+        unicode-bidi: plaintext;
+      }}
+      .table-wrap--caption-ltr caption {{
+        direction: ltr;
+        text-align: left;
+        unicode-bidi: plaintext;
+      }}
+      .table-wrap--caption-mixed caption {{
         direction: auto;
         unicode-bidi: plaintext;
       }}
@@ -906,9 +931,16 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
       .md2pdf-caption--persian.md2pdf-caption--diagram {{
         text-align: center;
       }}
+      .md2pdf-toc--profiled {{
+        isolation: isolate;
+      }}
       .md2pdf-toc--rtl {{
         direction: rtl;
         text-align: right;
+      }}
+      .md2pdf-toc--rtl .toc-list {{
+        padding-inline-start: 0;
+        padding-inline-end: 1.2em;
       }}
       .md2pdf-toc--rtl .toc-number {{
         min-width: 2.4em;
@@ -917,6 +949,19 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
         unicode-bidi: isolate;
       }}
       .md2pdf-toc--rtl .toc-title {{
+        direction: auto;
+        unicode-bidi: plaintext;
+      }}
+      .toc-item--rtl .toc-title {{
+        direction: rtl;
+        text-align: right;
+      }}
+      .toc-item--ltr .toc-title {{
+        direction: ltr;
+        text-align: left;
+      }}
+      .toc-item--mixed .toc-title,
+      .toc-item--mixed-script .toc-title {{
         direction: auto;
         unicode-bidi: plaintext;
       }}

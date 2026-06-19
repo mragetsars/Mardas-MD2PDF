@@ -104,6 +104,15 @@ Printed footers in Persian documents use a localized total-page phrase: `صفح�
 
 These rules affect generated labels and audit metadata only. Version strings, command output, code, filenames, and author-written prose are preserved exactly as written.
 
+
+## Persian table and TOC visual audit
+
+Persian table wrappers now expose table-level metadata for visual-regression and PDF audit scripts. A table wrapper can carry `data-md2pdf-direction-profile`, `data-md2pdf-number-profile`, `data-md2pdf-rtl-cells`, `data-md2pdf-ltr-cells`, `data-md2pdf-mixed-cells`, and `data-md2pdf-numeric-cells`. These values make it possible to verify RTL-heavy tables, English identifier columns, mixed numeric cells, and captioned Persian tables without parsing rendered CSS.
+
+Useful table wrapper classes include `table-wrap--profiled`, `table-wrap--rtl`, `table-wrap--mixed-direction`, `table-wrap--persian-number`, `table-wrap--latin-number`, `table-wrap--mixed-number`, `table-wrap--captioned`, and `table-wrap--persian-caption`. The renderer keeps author text unchanged; these hooks only describe the content that is already present.
+
+The printed table of contents also exposes audit metadata. The TOC root receives `md2pdf-toc--profiled`, `data-md2pdf-number-locale`, and direction metadata. Individual TOC items receive title profile attributes and classes such as `toc-item--rtl`, `toc-item--ltr`, `toc-item--mixed`, `toc-item--persian`, and `toc-item--persian-number`. Generated section numbers can be localized for Persian output while the underlying heading IDs and PDF destinations remain stable.
+
 ## Verification checklist
 
 When changing RTL or Persian output, check these areas in both generated HTML and PDF:
