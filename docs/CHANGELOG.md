@@ -14,6 +14,8 @@ The project follows semantic versioning for user-visible behavior. Patch release
 ### Documentation
 
 - Updated the PDF typography guide, public README badge, and guide metadata for version 1.10.0.
+- Closed the Persian/RTL quality reference with a release-facing contract for mixed-script prose, generated labels, TOC layout, footnotes, captions, table audit hooks, and guide sample policy.
+- Linked the Persian/RTL reference from the long-form documentation index.
 
 ### Tests
 

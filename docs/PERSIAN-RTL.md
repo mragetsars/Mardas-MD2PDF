@@ -124,6 +124,27 @@ The official English and Persian guides are not only user manuals; they are also
 
 When adding a Persian/RTL renderer feature, update `docs/guides/GUIDE.en.md` and `docs/guides/GUIDE.fa.md` if the behavior should be visible in the public sample PDFs. Keep dense audit artifacts under `build/` or a manual audit workflow rather than expanding the guides excessively.
 
+## Persian/RTL release contract
+
+The 1.10.x baseline closes the focused Persian/RTL quality pass with a stable set of renderer contracts. Future changes can extend these hooks, but they should not silently weaken the following guarantees:
+
+- author text remains unchanged; Persian punctuation, Latin identifiers, inline code, command output, filenames, and version strings are preserved as written;
+- visual bidi isolation is expressed through semantic HTML/CSS hooks such as `md2pdf-ltr-isolate`, `mixed-script`, and `rtl-ascii-punctuation`, not through hidden control characters in user content;
+- generated labels may be localized for Persian output, but heading IDs, footnote anchors, PDF destinations, and back-links remain deterministic;
+- Persian TOC entries keep a compact mirrored tree layout with section numbers adjacent to titles;
+- Persian footnotes, captions, table wrappers, and running footers expose audit classes and data attributes that can be consumed by regression tests;
+- official guide samples stay compact and readable, while dense visual audits remain under `build/` or other temporary audit directories.
+
+Before closing a Persian/RTL release patch, run at least:
+
+```bash
+python -m pytest -q tests/test_persian_rtl_quality.py tests/test_documentation_integrity.py tests/test_pdf_toc_destinations.py
+MARDAS_RENDER_SMOKE=1 bash scripts/check.sh
+bash scripts/build_examples.sh
+```
+
+Then visually inspect the Persian guide cover, printed TOC, mixed-script sample, Persian table, Mermaid page, footnotes, and final footer page.
+
 ## Verification checklist
 
 When changing RTL or Persian output, check these areas in both generated HTML and PDF:

@@ -25,3 +25,4 @@ docs live in their own directories.
 - [Markdown fidelity](./MARKDOWN-FIDELITY.md)
 - [PDF navigation](./PDF-NAVIGATION.md)
 - [PDF typography and print flow](./PDF-TYPOGRAPHY.md)
+- [Persian and RTL quality](./PERSIAN-RTL.md)

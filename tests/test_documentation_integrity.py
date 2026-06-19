@@ -80,6 +80,13 @@ def test_documentation_map_exists_and_mentions_guides():
     assert "docs/ROADMAP.md" not in docs
 
 
+def test_docs_readme_lists_persian_rtl_reference():
+    docs = (ROOT / "docs/README.md").read_text(encoding="utf-8")
+
+    assert "[Persian and RTL quality](./PERSIAN-RTL.md)" in docs
+    assert "docs/ROADMAP.md" not in docs
+
+
 def test_persian_rtl_reference_document_exists():
     docs = (ROOT / "docs/PERSIAN-RTL.md").read_text(encoding="utf-8")
 
@@ -95,6 +102,9 @@ def test_persian_rtl_reference_document_exists():
     assert "footnotes--rtl" in docs
     assert "toc-list--nested" in docs
     assert "border-inline-start" in docs
+    assert "Persian/RTL release contract" in docs
+    assert "author text remains unchanged" in docs
+    assert "MARDAS_RENDER_SMOKE=1 bash scripts/check.sh" in docs
 
 
 def test_guides_include_persian_rtl_live_smoke_samples():
@@ -135,3 +145,13 @@ def test_persian_rtl_reference_mentions_guide_live_sample_policy():
     assert "live smoke samples" in docs
     assert "docs/guides/GUIDE.en.md" in docs
     assert "docs/guides/GUIDE.fa.md" in docs
+
+
+def test_persian_rtl_reference_closeout_contract_stays_release_facing():
+    docs = (ROOT / "docs/PERSIAN-RTL.md").read_text(encoding="utf-8")
+
+    assert "The 1.10.x baseline closes the focused Persian/RTL quality pass" in docs
+    assert "heading IDs, footnote anchors, PDF destinations, and back-links remain deterministic" in docs
+    assert "official guide samples stay compact and readable" in docs
+    assert "Phase 13" not in docs
+    assert "docs/ROADMAP.md" not in docs
