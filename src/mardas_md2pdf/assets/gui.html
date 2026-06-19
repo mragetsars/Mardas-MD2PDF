@@ -173,8 +173,16 @@
     .branding-card small,.mode-card small{display:block;margin-top:3px;font-size:9px;line-height:1.25;color:var(--faint);font-weight:800}
     .advanced-card{padding:0;overflow:hidden}
     .setting-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    .asset-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-    .asset-chip{max-width:100%;border:1px solid var(--border);border-radius:999px;padding:4px 8px;font-size:10px;color:var(--muted);background:var(--panel-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .asset-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0}
+    .asset-summary{font-size:10px;line-height:1.45;color:var(--faint);font-weight:800;margin:6px 0 8px}
+    .asset-list{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
+    .asset-chip{max-width:100%;border:1px solid var(--border);border-radius:999px;padding:4px 5px 4px 9px;font-size:10px;color:var(--muted);background:var(--panel-2);display:inline-flex;align-items:center;gap:6px;overflow:hidden;white-space:nowrap}
+    .asset-chip__name{min-width:0;max-width:164px;overflow:hidden;text-overflow:ellipsis}
+    .asset-chip__meta{color:var(--faint);font-family:var(--code);font-size:9px}
+    .asset-chip button{height:21px;border:1px solid var(--border);border-radius:999px;background:transparent;color:var(--muted);font:850 9px/1 var(--font);padding:0 7px;cursor:pointer}
+    .asset-chip button:hover{border-color:var(--accent);color:var(--text);background:color-mix(in srgb, var(--accent) 9%, transparent)}
+    .drop-zone{margin-top:10px;border:1px dashed color-mix(in srgb, var(--accent) 38%, var(--border));border-radius:14px;padding:12px;color:var(--faint);background:color-mix(in srgb, var(--accent) 5%, transparent);font-size:10px;font-weight:800;line-height:1.5;text-align:center;transition:border-color .16s,background .16s,color .16s}
+    body.asset-dragging .drop-zone{border-color:var(--accent);background:color-mix(in srgb, var(--accent) 13%, transparent);color:var(--text)}
     .editor-tools{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:11px;font-weight:800}
     .preview-tools{display:flex;align-items:center;gap:8px}
     .preview-note{font-size:10px;font-weight:800;color:var(--faint);letter-spacing:.02em;text-transform:none}
@@ -468,9 +476,14 @@
               <label class="switch"><span>Hide footer/page number</span><input id="noHeaderFooterInput" type="checkbox"></label>
               <div class="field"><label for="watermarkInput">Watermark text</label><input id="watermarkInput" type="text" placeholder="Optional"></div>
               <div class="field"><label for="watermarkOpacityInput">Opacity</label><input id="watermarkOpacityInput" type="number" min="0" max="1" step="0.01" value="0.065"></div>
-              <button class="btn" onclick="attachAssets()">Attach image folder/files</button>
+              <div class="asset-toolbar" aria-label="Asset manager actions">
+                <button class="btn" type="button" onclick="attachAssets()">Attach image folder/files</button>
+                <button class="btn btn-ghost" type="button" onclick="clearAssets()">Clear assets</button>
+              </div>
               <p class="hint">For Markdown image links such as <code>images/chart.png</code> or brand logos, attach the image folder or files before exporting. Up to 250 assets, 12 MB per asset, and 32 MB total are accepted.</p>
+              <div id="assetSummary" class="asset-summary">No assets attached.</div>
               <div id="assetList" class="asset-list"></div>
+              <div id="dropZone" class="drop-zone">Drop image files or folders here to attach them to the next export.</div>
             </div>
           </details>
         </div>
@@ -1275,39 +1288,125 @@ const MAX_GUI_TOTAL_ASSET_BYTES = 32 * 1024 * 1024;
 
 function attachAssets(){ $('assetInput').click(); }
 
+function assetSize(asset){
+  return Number(asset && asset.size) || 0;
+}
+
+function formatAssetSize(size){
+  if (size >= 1024 * 1024) return (size / (1024 * 1024)).toFixed(size >= 10 * 1024 * 1024 ? 0 : 1) + ' MB';
+  if (size >= 1024) return Math.round(size / 1024) + ' KB';
+  return size + ' B';
+}
+
+function assetTotalBytes(){
+  return attachedAssets.reduce((total, asset) => total + assetSize(asset), 0);
+}
+
 function renderAssetList(){
   const list = $('assetList');
+  const summary = $('assetSummary');
   if (!list) return;
+  if (summary) {
+    summary.textContent = attachedAssets.length
+      ? attachedAssets.length + ' assets · ' + formatAssetSize(assetTotalBytes()) + ' total'
+      : 'No assets attached.';
+  }
   list.innerHTML = attachedAssets.length
-    ? attachedAssets.map(asset => '<span class="asset-chip" title="' + escapeHtml(asset.path) + '">' + escapeHtml(asset.path) + '</span>').join('')
+    ? attachedAssets.map((asset, index) => '<span class="asset-chip" title="' + escapeHtml(asset.path) + '">' +
+        '<span class="asset-chip__name">' + escapeHtml(asset.path) + '</span>' +
+        '<span class="asset-chip__meta">' + escapeHtml(formatAssetSize(assetSize(asset))) + '</span>' +
+        '<button type="button" onclick="setBrandLogoFromAsset(' + index + ')">Logo</button>' +
+        '<button type="button" onclick="removeAsset(' + index + ')">Remove</button>' +
+      '</span>').join('')
     : '<span class="hint">No assets attached.</span>';
 }
 
-$('assetInput').addEventListener('change', async (event) => {
-  const files = Array.from(event.target.files || []);
-  const selected = [];
-  let totalBytes = 0;
-  let skipped = 0;
-  for (const file of files) {
-    if (selected.length >= MAX_GUI_ASSETS) { skipped++; continue; }
-    if (file.size > MAX_GUI_ASSET_BYTES) { skipped++; continue; }
-    if (totalBytes + file.size > MAX_GUI_TOTAL_ASSET_BYTES) { skipped++; continue; }
-    selected.push(file);
-    totalBytes += file.size;
-  }
-  attachedAssets = await Promise.all(selected.map(file => new Promise((resolve, reject) => {
+function readAssetFile(file){
+  return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = ev => resolve({
       name: file.name,
       path: file.webkitRelativePath || file.name,
       type: file.type || 'application/octet-stream',
+      size: file.size || 0,
       data: ev.target.result
     });
     reader.onerror = () => reject(reader.error || new Error('Failed to read asset'));
     reader.readAsDataURL(file);
-  })));
+  });
+}
+
+async function handleAssetFiles(fileList, options={}){
+  const files = Array.from(fileList || []);
+  const existing = options.replace ? [] : attachedAssets.slice();
+  const selected = [];
+  const paths = new Set(existing.map(asset => asset.path));
+  let totalBytes = existing.reduce((total, asset) => total + assetSize(asset), 0);
+  let skipped = 0;
+  for (const file of files) {
+    const path = file.webkitRelativePath || file.name;
+    if (!path || paths.has(path)) { skipped++; continue; }
+    if (existing.length + selected.length >= MAX_GUI_ASSETS) { skipped++; continue; }
+    if (file.size > MAX_GUI_ASSET_BYTES) { skipped++; continue; }
+    if (totalBytes + file.size > MAX_GUI_TOTAL_ASSET_BYTES) { skipped++; continue; }
+    selected.push(file);
+    paths.add(path);
+    totalBytes += file.size;
+  }
+  const next = await Promise.all(selected.map(readAssetFile));
+  attachedAssets = existing.concat(next);
   renderAssetList();
-  serverStatus.textContent = 'Assets attached: ' + attachedAssets.length + (skipped ? ' · skipped ' + skipped + ' over limit' : '');
+  scheduleStudioStateSave();
+  serverStatus.textContent = 'Assets attached: ' + attachedAssets.length + (skipped ? ' · skipped ' + skipped + ' duplicate/over limit' : '');
+  return { added: next.length, skipped };
+}
+
+function removeAsset(index){
+  attachedAssets.splice(index, 1);
+  renderAssetList();
+  scheduleStudioStateSave();
+  serverStatus.textContent = 'Asset removed';
+}
+
+function clearAssets(){
+  attachedAssets = [];
+  renderAssetList();
+  scheduleStudioStateSave();
+  serverStatus.textContent = 'Assets cleared';
+}
+
+function setBrandLogoFromAsset(index){
+  const asset = attachedAssets[index];
+  if (!asset) return;
+  $('brandLogoInput').value = asset.path;
+  scheduleStudioStateSave();
+  serverStatus.textContent = 'Brand logo set to ' + asset.path;
+}
+
+$('assetInput').addEventListener('change', async (event) => {
+  await handleAssetFiles(event.target.files || []);
+  event.target.value = '';
+});
+
+function dragHasFiles(event){
+  return Array.from(event.dataTransfer && event.dataTransfer.types || []).includes('Files');
+}
+
+window.addEventListener('dragover', (event) => {
+  if (!dragHasFiles(event)) return;
+  event.preventDefault();
+  document.body.classList.add('asset-dragging');
+});
+window.addEventListener('dragleave', (event) => {
+  if (event.clientX <= 0 || event.clientY <= 0 || event.clientX >= window.innerWidth || event.clientY >= window.innerHeight) {
+    document.body.classList.remove('asset-dragging');
+  }
+});
+window.addEventListener('drop', async (event) => {
+  if (!dragHasFiles(event)) return;
+  event.preventDefault();
+  document.body.classList.remove('asset-dragging');
+  await handleAssetFiles(event.dataTransfer.files || []);
 });
 
 function openFile(){ $('fileInput').click(); }

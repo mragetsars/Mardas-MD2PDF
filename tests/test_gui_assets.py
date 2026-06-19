@@ -395,3 +395,19 @@ def test_studio_file_toolbar_exposes_new_project_workflow():
     assert "Save Project" in html
     assert "DEFAULT_MARKDOWN" in html
     assert "editor.value = DEFAULT_MARKDOWN;" in html
+
+
+def test_studio_asset_manager_supports_drag_drop_and_asset_actions():
+    html = GUI_HTML.read_text(encoding="utf-8")
+
+    assert 'id="assetSummary"' in html
+    assert 'id="dropZone" class="drop-zone"' in html
+    assert "function handleAssetFiles" in html
+    assert "function readAssetFile" in html
+    assert "function removeAsset" in html
+    assert "function clearAssets" in html
+    assert "function setBrandLogoFromAsset" in html
+    assert "window.addEventListener('dragover'" in html
+    assert "window.addEventListener('drop'" in html
+    assert "body.asset-dragging .drop-zone" in html
+    assert "duplicate/over limit" in html
