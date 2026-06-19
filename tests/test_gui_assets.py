@@ -369,3 +369,29 @@ def test_gui_logo_uses_contain_fit_with_breathing_room():
     assert '.brand-mark{overflow:visible;background:transparent' in html
     assert '.brand-mark img{width:100%;height:100%;object-fit:contain;display:block}' in html
     assert 'body.light-mode .brand-mark img{filter:invert(1)' in html
+
+
+def test_studio_project_files_roundtrip_workspace_state():
+    html = GUI_HTML.read_text(encoding="utf-8")
+
+    assert "MARDAS_PROJECT_SCHEMA" in html
+    assert "mardas-md2pdf-studio-project-v1" in html
+    assert "function buildProjectBundle" in html
+    assert "function applyProjectBundle" in html
+    assert "function downloadProject" in html
+    assert "function openProject" in html
+    assert 'id="projectInput"' in html
+    assert ".mardas.json" in html
+    assert "schema: MARDAS_PROJECT_SCHEMA" in html
+    assert "assets: attachedAssets.map" in html
+
+
+def test_studio_file_toolbar_exposes_new_project_workflow():
+    html = GUI_HTML.read_text(encoding="utf-8")
+
+    assert "onclick=\"newDocument()\"" in html
+    assert "Open MD" in html
+    assert "Open Project" in html
+    assert "Save Project" in html
+    assert "DEFAULT_MARKDOWN" in html
+    assert "editor.value = DEFAULT_MARKDOWN;" in html

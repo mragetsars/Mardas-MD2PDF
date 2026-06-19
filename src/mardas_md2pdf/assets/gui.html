@@ -378,8 +378,11 @@
       </div>
       <div class="toolbar" role="toolbar" aria-label="Studio toolbar">
         <div class="tool-group" aria-label="File actions">
-          <button class="btn" onclick="openFile()" title="Open Markdown file"><svg class="icon" aria-hidden="true"><use href="#icon-folder-open"></use></svg><span>Open</span></button><input type="file" id="fileInput" accept=".md,.markdown,.txt" hidden>
+          <button class="btn" onclick="newDocument()" title="Start a clean Markdown draft"><svg class="icon" aria-hidden="true"><use href="#icon-file-text"></use></svg><span>New</span></button>
+          <button class="btn" onclick="openFile()" title="Open Markdown file"><svg class="icon" aria-hidden="true"><use href="#icon-folder-open"></use></svg><span>Open MD</span></button><input type="file" id="fileInput" accept=".md,.markdown,.txt" hidden>
+          <button class="btn" onclick="openProject()" title="Open a saved Studio project"><svg class="icon" aria-hidden="true"><use href="#icon-folder-open"></use></svg><span>Open Project</span></button><input type="file" id="projectInput" accept=".mardas.json,application/json" hidden>
           <button class="btn" onclick="downloadMarkdown()" title="Save Markdown locally"><svg class="icon" aria-hidden="true"><use href="#icon-save"></use></svg><span>Save MD</span></button>
+          <button class="btn" onclick="downloadProject()" title="Save Markdown, export options, and attached assets as a Studio project"><svg class="icon" aria-hidden="true"><use href="#icon-save"></use></svg><span>Save Project</span></button>
           <button class="btn btn-icon btn-quiet" onclick="clearStudioState()" title="Reset local Studio state" aria-label="Reset local Studio state"><svg class="icon" aria-hidden="true"><use href="#icon-rotate-ccw"></use></svg><span class="sr-only">Reset State</span></button>
         </div>
         <span class="tool-divider" aria-hidden="true"></span>
@@ -534,7 +537,34 @@ let exportProgressValue = 0;
 let activeResizePane = null;
 let settingsCollapsed = false;
 const MARDAS_STUDIO_STATE_KEY = 'mardas-md2pdf-studio-state-v1';
+const MARDAS_PROJECT_SCHEMA = 'mardas-md2pdf-studio-project-v1';
 const MAX_STORED_MARKDOWN_CHARS = 250000;
+const DEFAULT_MARKDOWN = `---
+title: "نمونه سند Mardas MD2PDF"
+author: "mragetsars"
+date: "2026-05-12"
+lang: fa
+appearance:
+  style: modern
+  palette: blue
+  mode: light
+---
+
+# نمونه Markdown
+
+این محیط برای ویرایش Markdown و گرفتن خروجی PDF با تنظیمات گرافیکی ساخته شده است.
+
+## Code
+
+\`\`\`python
+print("Hello Mardas")
+\`\`\`
+
+| قابلیت | وضعیت |
+|---|---|
+| RTL/LTR | OK |
+| PDF Export | OK |
+`;
 let saveStateTimer = null;
 
 function setIconUse(button, iconName){
@@ -684,6 +714,77 @@ function updateAppearanceName(){
   $('appearanceName').textContent = $('styleInput').value + ' · ' + $('paletteInput').value + ' · ' + $('modeInput').value + branding;
   syncChoiceCards();
 }
+
+function downloadBlob(filename, content, type){
+  const blob = content instanceof Blob ? content : new Blob([content], { type });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function projectFilename(){
+  const base = ($('filenameInput').value || 'mardas-document.pdf').replace(/\.pdf$/i, '').replace(/[^\w.-]+/g, '-').replace(/^-+|-+$/g, '') || 'mardas-document';
+  return base + '.mardas.json';
+}
+
+function buildProjectBundle(){
+  return {
+    schema: MARDAS_PROJECT_SCHEMA,
+    appVersion: '__MARDAS_VERSION__',
+    savedAt: new Date().toISOString(),
+    markdown: editor.value,
+    options: getOptions(),
+    assets: attachedAssets.map(asset => ({
+      path: asset.path,
+      name: asset.name || asset.path,
+      type: asset.type || 'application/octet-stream',
+      size: asset.size || 0,
+      data: asset.data || ''
+    }))
+  };
+}
+
+function applyProjectBundle(bundle){
+  if (!bundle || typeof bundle !== 'object') throw new Error('Project file must contain a JSON object.');
+  if (bundle.schema !== MARDAS_PROJECT_SCHEMA) throw new Error('Unsupported Studio project schema.');
+  editor.value = String(bundle.markdown || '');
+  setOptions(bundle.options || {});
+  if (Array.isArray(bundle.assets)) {
+    attachedAssets = bundle.assets
+      .filter(asset => asset && typeof asset === 'object' && asset.path && asset.data)
+      .slice(0, MAX_GUI_ASSETS)
+      .map(asset => ({
+        path: String(asset.path),
+        name: String(asset.name || asset.path),
+        type: String(asset.type || 'application/octet-stream'),
+        size: Number(asset.size || 0),
+        data: String(asset.data || '')
+      }));
+    renderAssetList();
+  }
+  renderPreview();
+  scheduleStudioStateSave();
+  serverStatus.textContent = 'Studio project loaded';
+}
+
+function newDocument(){
+  editor.value = DEFAULT_MARKDOWN;
+  $('filenameInput').value = 'mardas-document.pdf';
+  attachedAssets = [];
+  renderAssetList();
+  renderPreview();
+  scheduleStudioStateSave();
+  serverStatus.textContent = 'New document started';
+}
+
+function downloadProject(){
+  downloadBlob(projectFilename(), JSON.stringify(buildProjectBundle(), null, 2), 'application/json');
+  serverStatus.textContent = 'Studio project saved';
+}
+
+function openProject(){ $('projectInput').click(); }
 
 function getStudioState(){
   const markdown = editor.value.length <= MAX_STORED_MARKDOWN_CHARS ? editor.value : null;
@@ -1223,13 +1324,25 @@ $('fileInput').addEventListener('change', (event) => {
   reader.readAsText(file);
 });
 
+$('projectInput').addEventListener('change', (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      applyProjectBundle(JSON.parse(String(ev.target.result || '{}')));
+      $('filenameInput').value = file.name.replace(/\.mardas\.json$/i, '.pdf');
+    } catch (error) {
+      serverStatus.textContent = 'Project open failed';
+      alert(error.message);
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+});
+
 function downloadMarkdown(){
-  const blob = new Blob([editor.value], { type: 'text/markdown' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = ($('filenameInput').value || 'document.pdf').replace(/\.pdf$/i, '.md');
-  a.click();
-  URL.revokeObjectURL(a.href);
+  downloadBlob(($('filenameInput').value || 'document.pdf').replace(/\.pdf$/i, '.md'), editor.value, 'text/markdown');
 }
 
 function setExportProgress(value, message){
@@ -1446,7 +1559,7 @@ window.addEventListener('keydown', (event) => {
   }
 });
 
-editor.value = `---\ntitle: "نمونه سند Mardas MD2PDF"\nauthor: "mragetsars"\ndate: "2026-05-12"\nlang: fa\nappearance:\n  style: modern\n  palette: blue\n  mode: light\n---\n\n# نمونه Markdown\n\nاین محیط برای ویرایش Markdown و گرفتن خروجی PDF با تنظیمات گرافیکی ساخته شده است.\n\n## Code\n\n\`\`\`python\nprint("Hello Mardas")\n\`\`\`\n\n| قابلیت | وضعیت |\n|---|---|\n| RTL/LTR | OK |\n| PDF Export | OK |\n`;
+editor.value = DEFAULT_MARKDOWN;
 attachChoiceCards();
 attachOptionPersistence();
 loadStudioState();
