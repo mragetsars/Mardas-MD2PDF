@@ -435,3 +435,21 @@ def test_studio_backend_exposes_renderer_html_endpoint_contract():
     assert "build_html(" in source
     assert "render_markdown_file(" in source
     assert "code_style_for_appearance" in source
+
+
+def test_studio_exposes_command_palette_and_professional_shortcuts():
+    html = GUI_HTML.read_text(encoding="utf-8")
+
+    assert 'id="commandPaletteBackdrop"' in html
+    assert 'id="commandPaletteInput"' in html
+    assert "const COMMANDS = [" in html
+    assert "function openCommandPalette" in html
+    assert "function closeCommandPalette" in html
+    assert "function runCommand" in html
+    assert "key === 'k'" in html
+    assert "key === 'o'" in html
+    assert "key === 'e'" in html
+    assert "Ctrl/Cmd+Shift+S" in html
+    assert "command-palette-open" in html
+    assert "Use accurate preview" in html
+    assert "Open Studio project" in html
