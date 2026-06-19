@@ -31,7 +31,7 @@ def test_guides_start_with_valid_front_matter():
         metadata = _front_matter(guide)
         assert metadata.get("title")
         assert metadata.get("summary")
-        assert metadata.get("version") == "1.12.0"
+        assert metadata.get("version") == "1.12.1"
         assert metadata.get("branding", {}).get("mode") == "full"
 
 
@@ -53,7 +53,7 @@ def test_changelog_is_descending_and_has_single_intro():
     versions = [tuple(map(int, match.groups())) for match in VERSION_RE.finditer(changelog)]
     assert versions == sorted(versions, reverse=True)
     assert len(versions) == len(set(versions))
-    assert versions[0] == (1, 12, 0)
+    assert versions[0] == (1, 12, 1)
     assert (1, 8, 6) in versions
     assert (1, 8, 5) in versions
     assert (1, 5, 0) in versions
@@ -113,8 +113,8 @@ def test_guides_include_persian_rtl_live_smoke_samples():
 
     assert "Persian/RTL visual smoke sample" in en
     assert "نمونه smoke تصویری فارسی/RTL" in fa
-    assert "version 1.12.0" in en
-    assert "version 1.12.0" in fa
+    assert "version 1.12.1" in en
+    assert "version 1.12.1" in fa
     assert "۱۴۰۵" in en
     assert "۱۴۰۵" in fa
     assert "جدول ۱۲. نمونه جدول فارسی/RTL با عددهای ترکیبی." in en
@@ -122,6 +122,26 @@ def test_guides_include_persian_rtl_live_smoke_samples():
     assert en.count("[^pipeline]") >= 2
     assert fa.count("[^pipeline]") >= 2
 
+
+
+
+def test_guides_render_callouts_without_raw_alert_markers():
+    for guide in GUIDES:
+        result = render_markdown_file(guide, toc=True)
+        html = result.body_html
+        assert "[!NOTE]" not in html
+        assert "[!TIP]" not in html
+        assert "[!IMPORTANT]" not in html
+        assert "[!WARNING]" not in html
+        assert "callout-note" in html
+        assert "callout-tip" in html
+        assert "callout-warning" in html
+        if guide.name.endswith("fa.md"):
+            assert '<strong class="callout-title">نکته</strong>' in html
+            assert '<strong class="callout-title">مهم</strong>' in html
+        else:
+            assert '<strong class="callout-title">Note</strong>' in html
+            assert '<strong class="callout-title">Important</strong>' in html
 
 def test_guides_render_persian_rtl_samples_as_semantic_audit_html():
     for guide in GUIDES:

@@ -64,6 +64,25 @@ def test_persian_digits_and_punctuation_get_stable_quality_classes():
 
 
 
+
+
+def test_persian_callout_markers_are_normalized_before_ltr_isolation():
+    result = render_markdown(
+        "---\nlang: fa\n---\n\n"
+        "> [!NOTE]\n"
+        "> این Callout درباره PDF و Markdown است.\n\n"
+        "> [!IMPORTANT]\n"
+        "> این متن مهم باید بدون marker خام چاپ شود.\n"
+    )
+
+    assert "[!NOTE]" not in result.body_html
+    assert "[!IMPORTANT]" not in result.body_html
+    assert "callout-note" in result.body_html
+    assert "callout-important" in result.body_html
+    assert '<strong class="callout-title">نکته</strong>' in result.body_html
+    assert '<strong class="callout-title">مهم</strong>' in result.body_html
+    assert 'md2pdf-ltr-isolate' in result.body_html
+
 def test_persian_mixed_script_latin_runs_are_isolated_with_trailing_punctuation():
     result = render_markdown(
         "---\nlang: fa\n---\n\n"

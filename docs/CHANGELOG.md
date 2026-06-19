@@ -4,6 +4,17 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.12.1 - 2026-06-20
+
+### Fixed
+
+- Normalized GitHub/Obsidian callout markers before Persian mixed-script isolation so raw markers such as `[!NOTE]`, `[!TIP]`, `[!IMPORTANT]`, and `[!WARNING]` never leak into rendered Persian PDFs.
+- Preserved Persian-localized callout titles while still isolating Latin technical runs in the callout body.
+
+### Tests
+
+- Added regression coverage for Persian callouts in guides and mixed-script prose so future visual audits fail before raw callout markers reach generated PDFs.
+
 ## 1.12.0 - 2026-06-20
 
 ### Added

@@ -105,6 +105,8 @@ Supported kinds include `NOTE`, `INFO`, `TIP`, `IMPORTANT`, `WARNING`,
 `QUOTE`, and `ABSTRACT`, plus common aliases such as `TODO`, `HINT`, `CHECK`,
 `FAQ`, `ERROR`, `CITE`, and `TLDR`.
 
+Callout markers are normalized before Persian mixed-script isolation, so raw markers such as `[!NOTE]` and `[!IMPORTANT]` do not leak into RTL PDFs.
+
 PDF output is static, so folded callouts are rendered expanded. The fold marker
 is still preserved as a CSS class for styling and tests.
 

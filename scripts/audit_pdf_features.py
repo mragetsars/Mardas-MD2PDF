@@ -27,7 +27,7 @@ authors:
 summary: |
   A compact smoke document that exercises renderer features that have historically
   needed visual inspection, especially after typography and RTL/Persian changes.
-version: "1.11.0"
+version: "1.12.1"
 lang: en
 dir: ltr
 cover_label: "Feature Smoke"

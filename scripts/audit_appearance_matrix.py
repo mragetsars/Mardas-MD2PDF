@@ -37,7 +37,7 @@ summary: |
   appearance combination can be checked visually.
 institution: "Mardas Lab"
 course: "Appearance QA"
-version: "1.11.0"
+version: "1.12.1"
 status: "Audit"
 keywords:
   - appearance

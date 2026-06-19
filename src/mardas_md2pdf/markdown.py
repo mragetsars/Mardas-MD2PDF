@@ -564,6 +564,86 @@ def isolate_ltr_runs_in_mixed_persian_text(soup: BeautifulSoup) -> None:
     _group_ltr_isolate_footnote_refs(soup)
 
 
+CALLOUT_KIND_ALIASES = {
+    "NOTE": "note",
+    "INFO": "info",
+    "TODO": "info",
+    "TIP": "tip",
+    "HINT": "tip",
+    "IMPORTANT": "important",
+    "WARNING": "warning",
+    "WARN": "warning",
+    "CAUTION": "caution",
+    "ATTENTION": "caution",
+    "SUCCESS": "success",
+    "CHECK": "success",
+    "DONE": "success",
+    "QUESTION": "question",
+    "HELP": "question",
+    "FAQ": "question",
+    "FAILURE": "failure",
+    "FAIL": "failure",
+    "MISSING": "failure",
+    "DANGER": "danger",
+    "ERROR": "danger",
+    "BUG": "bug",
+    "EXAMPLE": "example",
+    "QUOTE": "quote",
+    "CITE": "quote",
+    "ABSTRACT": "abstract",
+    "SUMMARY": "abstract",
+    "TLDR": "abstract",
+}
+
+CALLOUT_MARKER_RE = re.compile(
+    r"^\[!(?P<kind>[A-Z][A-Z0-9_-]*)\](?P<fold>[+-])?\s*(?P<title>.*)$",
+    re.I,
+)
+
+
+def normalize_github_callouts(soup: BeautifulSoup, *, lang: str | None = None) -> None:
+    """Convert GitHub/Obsidian blockquote callouts before bidi isolation.
+
+    The Persian mixed-script isolation pass wraps Latin tokens in inline spans.
+    When that pass runs before callout normalization, markers such as
+    ``[!NOTE]`` become ``[!<span>NOTE</span>]`` and no longer match the raw
+    marker regex.  Normalizing callouts first keeps the marker structural and
+    prevents raw ``[!NOTE]`` / ``[!IMPORTANT]`` text from leaking into PDFs.
+    """
+    text_hint = soup.get_text(" ", strip=True)
+    callout_titles = {
+        canonical: ui_label(f"callout_{canonical}", lang=lang, text_hint=text_hint)
+        for canonical in sorted(set(CALLOUT_KIND_ALIASES.values()))
+    }
+
+    for blockquote in soup.find_all("blockquote"):
+        first_p = blockquote.find("p")
+        if not first_p:
+            continue
+        text = first_p.get_text("\n", strip=True)
+        first_line, _, remainder = text.partition("\n")
+        match = CALLOUT_MARKER_RE.match(first_line.strip())
+        if not match:
+            continue
+        raw_kind = match.group("kind").upper().replace("-", "_")
+        canonical = CALLOUT_KIND_ALIASES.get(raw_kind)
+        if not canonical:
+            continue
+        custom_title = match.group("title").strip()
+        classes = set(blockquote.get("class", []))
+        classes.update({"callout", f"callout-{canonical}"})
+        if match.group("fold"):
+            classes.add("callout-foldable")
+        blockquote["class"] = sorted(classes)
+        title_tag = soup.new_tag("strong")
+        title_tag["class"] = "callout-title"
+        title_tag.string = custom_title or callout_titles.get(canonical, canonical.title())
+        first_p.clear()
+        first_p.append(title_tag)
+        if remainder.strip():
+            first_p.append("\n" + remainder.strip())
+
+
 def _dir_for_profile(profile: str) -> str:
     return profile if profile in {"rtl", "ltr"} else "auto"
 
@@ -1899,6 +1979,7 @@ def postprocess_html(body_html: str, *, code_style: str = "github-dark", lang: s
     apply_literal_autolinks(soup)
     normalize_raw_code_blocks(soup, code_style=code_style)
     normalize_semantic_captions(soup)
+    normalize_github_callouts(soup, lang=lang)
     isolate_ltr_runs_in_mixed_persian_text(soup)
 
     # Direction-aware blocks and inline content.
@@ -2057,73 +2138,6 @@ def postprocess_html(body_html: str, *, code_style: str = "github-dark", lang: s
         li["class"] = list(set(li.get("class", []) + ["task-list-item"]))
         if li.parent and li.parent.name in {"ul", "ol"}:
             li.parent["class"] = list(set(li.parent.get("class", []) + ["task-list"]))
-
-    # Obsidian/GitHub flavored callouts: > [!NOTE], > [!TIP] Title, > [!NOTE]-
-    text_hint = soup.get_text(" ", strip=True)
-    callout_kind_aliases = {
-        "NOTE": "note",
-        "INFO": "info",
-        "TODO": "info",
-        "TIP": "tip",
-        "HINT": "tip",
-        "IMPORTANT": "important",
-        "WARNING": "warning",
-        "WARN": "warning",
-        "CAUTION": "caution",
-        "ATTENTION": "caution",
-        "SUCCESS": "success",
-        "CHECK": "success",
-        "DONE": "success",
-        "QUESTION": "question",
-        "HELP": "question",
-        "FAQ": "question",
-        "FAILURE": "failure",
-        "FAIL": "failure",
-        "MISSING": "failure",
-        "DANGER": "danger",
-        "ERROR": "danger",
-        "BUG": "bug",
-        "EXAMPLE": "example",
-        "QUOTE": "quote",
-        "CITE": "quote",
-        "ABSTRACT": "abstract",
-        "SUMMARY": "abstract",
-        "TLDR": "abstract",
-    }
-    callout_titles = {
-        canonical: ui_label(f"callout_{canonical}", lang=lang, text_hint=text_hint)
-        for canonical in sorted(set(callout_kind_aliases.values()))
-    }
-    callout_re = re.compile(
-        r"^\[!(?P<kind>[A-Z][A-Z0-9_-]*)\](?P<fold>[+-])?\s*(?P<title>.*)$",
-        re.I,
-    )
-    for blockquote in soup.find_all("blockquote"):
-        first_p = blockquote.find("p")
-        if not first_p:
-            continue
-        text = first_p.get_text("\n", strip=True)
-        first_line, _, remainder = text.partition("\n")
-        match = callout_re.match(first_line.strip())
-        if not match:
-            continue
-        raw_kind = match.group("kind").upper().replace("-", "_")
-        canonical = callout_kind_aliases.get(raw_kind)
-        if not canonical:
-            continue
-        custom_title = match.group("title").strip()
-        classes = set(blockquote.get("class", []))
-        classes.update({"callout", f"callout-{canonical}"})
-        if match.group("fold"):
-            classes.add("callout-foldable")
-        blockquote["class"] = sorted(classes)
-        title_tag = soup.new_tag("strong")
-        title_tag["class"] = "callout-title"
-        title_tag.string = custom_title or callout_titles.get(canonical, canonical.title())
-        first_p.clear()
-        first_p.append(title_tag)
-        if remainder.strip():
-            first_p.append("\n" + remainder.strip())
 
     # Explicit page break marker: <div class="page-break"></div> or ---page---
     for div in soup.find_all("div", class_=lambda c: c and "page-break" in c):
