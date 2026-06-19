@@ -21,6 +21,7 @@ The project follows semantic versioning for user-visible behavior. Patch release
 ### Tests
 
 - Added regression coverage for process-tree timeout handling, bounded all-appearance feature audits, reliable Visual QA CLI controls, Studio first-run status messaging, and the no-isolation build mode.
+- Kept release metadata checks compatible with the supported Python 3.10 CI target by avoiding Python 3.11-only `tomllib` in the test suite.
 
 ## 1.12.1 - 2026-06-20
 

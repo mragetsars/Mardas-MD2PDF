@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 import re
-import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -12,9 +11,14 @@ def _read(relative_path: str) -> str:
     return (ROOT / relative_path).read_text(encoding="utf-8")
 
 
+def _project_version() -> str:
+    match = re.search(r'^version = "([^"]+)"', _read("pyproject.toml"), re.MULTILINE)
+    assert match, "project.version is missing from pyproject.toml"
+    return match.group(1)
+
+
 def test_project_version_metadata_matches() -> None:
-    project = tomllib.loads(_read("pyproject.toml"))["project"]
-    version = project["version"]
+    version = _project_version()
 
     assert f'__version__ = "{version}"' in _read("src/mardas_md2pdf/__init__.py")
     assert f"Version-v{version}-success" in _read("README.md")
@@ -52,7 +56,6 @@ def test_release_docs_reference_maintenance_scripts() -> None:
 
     assert "docs/MAINTENANCE.md" in readme
     assert "Release Artifacts" in release_doc
-
 
 
 def test_example_builds_set_deterministic_pdf_dates() -> None:
