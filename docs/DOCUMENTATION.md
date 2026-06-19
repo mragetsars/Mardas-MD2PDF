@@ -47,6 +47,23 @@ Do not place explanatory prose before the front matter. Doing so prevents metada
 
 The guides intentionally contain a compact feature checklist and live examples. Keep those examples focused. If a renderer feature needs a dense stress test, use an external/manual audit artifact rather than turning the public guide into an overloaded test fixture.
 
+### Guide coverage policy
+
+The English and Persian guides are treated as release-facing smoke samples. When a renderer feature changes visible output, the guide source should either include a concise live sample or explicitly point to the focused reference document that carries the sample. The guide should cover at least these areas over time:
+
+- cover metadata and branding;
+- generated table of contents and PDF outline behavior;
+- mixed Persian/English prose and inline code;
+- MathJax inline and display formulas;
+- fenced, indented, numbered, titled, and highlighted code blocks;
+- Mermaid flowcharts;
+- local Markdown images and safe HTML images;
+- semantic captions for figures, tables, code listings, and diagrams;
+- RTL tables, mixed numerals, Persian punctuation, and generated labels;
+- footnotes, backlinks, page breaks, running footers, and page labels.
+
+Keep each live sample compact. Public guides should remain readable documentation first, while still exercising the renderer with representative cases.
+
 ## Changelog policy
 
 `docs/CHANGELOG.md` is the release ledger. Keep it structured as:

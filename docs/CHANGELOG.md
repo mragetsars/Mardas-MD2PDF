@@ -4,6 +4,18 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.9.5 - 2026-06-15
+
+### Documentation
+
+- Expanded the official English and Persian guides with compact Persian/RTL live smoke samples covering mixed-script prose, Persian and Latin numerals, semantic table captions, and reused footnote references.
+- Clarified the documentation policy that guide files must stay readable user manuals while also serving as representative renderer test cases.
+- Extended `docs/PERSIAN-RTL.md` with guide live-sample coverage rules for future Persian/RTL renderer changes.
+
+### Tests
+
+- Added documentation integrity checks that ensure the guides continue to exercise Persian/RTL tables, mixed numerals, captions, and repeated footnote references.
+
 ## 1.9.4 - 2026-06-15
 
 ### Fixed
