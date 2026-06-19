@@ -411,3 +411,27 @@ def test_studio_asset_manager_supports_drag_drop_and_asset_actions():
     assert "window.addEventListener('drop'" in html
     assert "body.asset-dragging .drop-zone" in html
     assert "duplicate/over limit" in html
+
+
+def test_studio_supports_fast_accurate_preview_and_debug_html_export():
+    html = GUI_HTML.read_text(encoding="utf-8")
+
+    assert 'id="previewModeInput"' in html
+    assert '<option value="fast" selected>Fast</option>' in html
+    assert '<option value="accurate">Accurate</option>' in html
+    assert 'id="accuratePreviewFrame"' in html
+    assert "function requestAccuratePreview" in html
+    assert "function renderFastPreview" in html
+    assert "function exportDebugHTML" in html
+    assert "fetch('/api/render-html'" in html
+    assert "Debug HTML downloaded" in html
+
+
+def test_studio_backend_exposes_renderer_html_endpoint_contract():
+    source = (GUI_HTML.parents[1] / "gui.py").read_text(encoding="utf-8")
+
+    assert '"/api/render-html"' in source
+    assert "def _render_studio_html_payload" in source
+    assert "build_html(" in source
+    assert "render_markdown_file(" in source
+    assert "code_style_for_appearance" in source

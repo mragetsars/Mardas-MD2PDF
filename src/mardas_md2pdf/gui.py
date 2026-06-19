@@ -13,8 +13,9 @@ from pathlib import Path
 from typing import Any
 
 from . import __version__
-from .appearance import validate_mode_name, validate_palette_name, validate_style_name
-from .renderer import PdfOptions, convert, validate_branding_mode, validate_page_size
+from .appearance import code_style_for_appearance, validate_mode_name, validate_palette_name, validate_style_name
+from .markdown import render_markdown_file
+from .renderer import PdfOptions, build_html, convert, validate_branding_mode, validate_page_size
 
 
 MAX_GUI_REQUEST_BYTES = 32 * 1024 * 1024
@@ -274,6 +275,107 @@ def _write_gui_assets(tmp: Path, assets: Any) -> None:
                 fallback_target.write_bytes(data)
 
 
+def _validate_studio_payload(payload: dict[str, Any]) -> tuple[str, dict[str, Any], list[Any], dict[str, Any], str]:
+    markdown = str(payload.get("markdown") or "")
+    options = payload.get("options") or {}
+    assets = payload.get("assets") or []
+    if not isinstance(options, dict):
+        raise StudioRequestError("Render options must be a JSON object.", code="invalid_options")
+    if not markdown.strip():
+        raise StudioRequestError("Markdown content is empty.", code="empty_markdown")
+    if len(markdown.encode("utf-8")) > MAX_GUI_MARKDOWN_BYTES:
+        raise StudioRequestError(
+            "Markdown content is too large. "
+            f"Maximum Markdown size is {_format_bytes(MAX_GUI_MARKDOWN_BYTES)}.",
+            status=413,
+            code="markdown_too_large",
+        )
+    render_options = _validated_render_options(options)
+    filename = _safe_filename(str(options.get("filename") or options.get("title") or "mardas-document"))
+    if not filename.lower().endswith(".pdf"):
+        filename += ".pdf"
+    return markdown, options, assets if isinstance(assets, list) else [], render_options, filename
+
+
+def _studio_pdf_options(
+    *,
+    tmp: Path,
+    md_path: Path,
+    output_path: Path,
+    options: dict[str, Any],
+    render_options: dict[str, Any],
+) -> PdfOptions:
+    brand_logo_path = None
+    brand_logo_value = str(options.get("brandLogo") or "").strip()
+    if brand_logo_value:
+        brand_logo_path = tmp / _safe_asset_relative_path(brand_logo_value, fallback="brand-logo")
+        if not brand_logo_path.is_file():
+            raise StudioRequestError(
+                "brandLogo must match an attached asset path.",
+                code="invalid_brand_logo",
+            )
+
+    return PdfOptions(
+        input_path=md_path,
+        output_path=output_path,
+        title=(str(options.get("title") or "").strip() or None),
+        author=(str(options.get("author") or "").strip() or None),
+        description=(str(options.get("description") or "").strip() or None),
+        toc=render_options["toc"],
+        toc_depth=render_options["toc_depth"],
+        toc_page_break=render_options["toc_page_break"],
+        h1_page_break=render_options["h1_page_break"],
+        page_size=render_options["page_size"],
+        document_direction=render_options["direction"],
+        style=render_options["style"],
+        palette=render_options["palette"],
+        mode=render_options["mode"],
+        cover=render_options["cover"],
+        branding=render_options["branding"],
+        brand_name=(str(options.get("brandName") or "").strip() or None),
+        brand_logo=brand_logo_path,
+        brand_footer=(str(options.get("brandFooter") or "").strip() or None),
+        watermark_text=(str(options.get("watermark") or "").strip() or None),
+        watermark_opacity=render_options["watermark_opacity"],
+        no_header_footer=render_options["no_header_footer"],
+        no_mathjax=render_options["no_mathjax"],
+    )
+
+
+def _render_studio_html_payload(payload: dict[str, Any]) -> str:
+    markdown, options, assets, render_options, _filename = _validate_studio_payload(payload)
+    with tempfile.TemporaryDirectory(prefix="mardas-md2pdf-gui-html-") as tmpdir:
+        tmp = Path(tmpdir)
+        md_path = tmp / "document.md"
+        html_path = tmp / "document.html"
+        md_path.write_text(markdown, encoding="utf-8")
+        _write_gui_assets(tmp, assets)
+        pdf_options = _studio_pdf_options(
+            tmp=tmp,
+            md_path=md_path,
+            output_path=html_path.with_suffix(".pdf"),
+            options=options,
+            render_options=render_options,
+        )
+        result = render_markdown_file(
+            md_path,
+            toc=render_options["toc"],
+            toc_depth=render_options["toc_depth"],
+            code_style=code_style_for_appearance(render_options["style"], render_options["mode"]),
+            unsafe_html=False,
+            allow_remote_images=False,
+        )
+        html_text = build_html(
+            result,
+            pdf_options,
+            include_cover=render_options["cover"],
+            include_content=True,
+            include_watermark=True,
+        )
+        html_path.write_text(html_text, encoding="utf-8")
+        return html_text
+
+
 class GuiRequestHandler(BaseHTTPRequestHandler):
     server_version = f"MardasMD2PDFGUI/{__version__}"
 
@@ -315,7 +417,7 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
         self._send_text("Not found", status=404, content_type="text/plain; charset=utf-8")
 
     def do_POST(self) -> None:  # noqa: N802 - stdlib API
-        if self.path != "/api/render":
+        if self.path not in {"/api/render", "/api/render-html"}:
             self._send_error("Unknown endpoint", status=404, code="not_found")
             return
         try:
@@ -336,67 +438,24 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
                 return
             raw = self.rfile.read(length)
             payload = _decode_json_payload(raw)
-            markdown = str(payload.get("markdown") or "")
-            options = payload.get("options") or {}
-            assets = payload.get("assets") or []
-            if not isinstance(options, dict):
-                raise StudioRequestError("Render options must be a JSON object.", code="invalid_options")
-            if not markdown.strip():
-                raise StudioRequestError("Markdown content is empty.", code="empty_markdown")
-            if len(markdown.encode("utf-8")) > MAX_GUI_MARKDOWN_BYTES:
-                self._send_error(
-                    "Markdown content is too large. "
-                    f"Maximum Markdown size is {_format_bytes(MAX_GUI_MARKDOWN_BYTES)}.",
-                    status=413,
-                    code="markdown_too_large",
-                )
+            if self.path == "/api/render-html":
+                html_text = _render_studio_html_payload(payload)
+                self._send_text(html_text, content_type="text/html; charset=utf-8")
                 return
 
-            render_options = _validated_render_options(options)
-            filename = _safe_filename(str(options.get("filename") or options.get("title") or "mardas-document"))
-            if not filename.lower().endswith(".pdf"):
-                filename += ".pdf"
-
+            markdown, options, assets, render_options, filename = _validate_studio_payload(payload)
             with tempfile.TemporaryDirectory(prefix="mardas-md2pdf-gui-") as tmpdir:
                 tmp = Path(tmpdir)
                 md_path = tmp / "document.md"
                 pdf_path = tmp / filename
                 md_path.write_text(markdown, encoding="utf-8")
                 _write_gui_assets(tmp, assets)
-                brand_logo_path = None
-                brand_logo_value = str(options.get("brandLogo") or "").strip()
-                if brand_logo_value:
-                    brand_logo_path = tmp / _safe_asset_relative_path(brand_logo_value, fallback="brand-logo")
-                    if not brand_logo_path.is_file():
-                        raise StudioRequestError(
-                            "brandLogo must match an attached asset path.",
-                            code="invalid_brand_logo",
-                        )
-
-                pdf_options = PdfOptions(
-                    input_path=md_path,
+                pdf_options = _studio_pdf_options(
+                    tmp=tmp,
+                    md_path=md_path,
                     output_path=pdf_path,
-                    title=(str(options.get("title") or "").strip() or None),
-                    author=(str(options.get("author") or "").strip() or None),
-                    description=(str(options.get("description") or "").strip() or None),
-                    toc=render_options["toc"],
-                    toc_depth=render_options["toc_depth"],
-                    toc_page_break=render_options["toc_page_break"],
-                    h1_page_break=render_options["h1_page_break"],
-                    page_size=render_options["page_size"],
-                    document_direction=render_options["direction"],
-                    style=render_options["style"],
-                    palette=render_options["palette"],
-                    mode=render_options["mode"],
-                    cover=render_options["cover"],
-                    branding=render_options["branding"],
-                    brand_name=(str(options.get("brandName") or "").strip() or None),
-                    brand_logo=brand_logo_path,
-                    brand_footer=(str(options.get("brandFooter") or "").strip() or None),
-                    watermark_text=(str(options.get("watermark") or "").strip() or None),
-                    watermark_opacity=render_options["watermark_opacity"],
-                    no_header_footer=render_options["no_header_footer"],
-                    no_mathjax=render_options["no_mathjax"],
+                    options=options,
+                    render_options=render_options,
                 )
                 convert(pdf_options)
                 data = pdf_path.read_bytes()

@@ -291,6 +291,9 @@
     .preview-status{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:850;color:var(--faint)}
     .preview-status::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--ok);display:inline-block}
     .preview-status.rendering::before{background:transparent;border:2px solid var(--border-strong);border-top-color:var(--accent);animation:spin .7s linear infinite;width:10px;height:10px}
+    .preview-mode-select{height:30px;min-width:118px;border-radius:10px;padding-left:10px;padding-right:34px;background-color:var(--panel);font-size:10px;text-transform:uppercase;letter-spacing:.06em}
+    .accurate-preview-frame{height:calc(100% - 46px);width:100%;border:0;border-left:1px solid color-mix(in srgb, var(--border) 60%, transparent);background:#ffffff;color-scheme:light}
+    [hidden]{display:none!important}
     @keyframes spin{to{transform:rotate(360deg)}}
     .footer #savedState{color:var(--muted);font-weight:850}
 
@@ -400,6 +403,7 @@
         </div>
         <span class="tool-divider" aria-hidden="true"></span>
         <div class="tool-group" aria-label="Export">
+          <button class="btn btn-icon btn-quiet" onclick="exportDebugHTML()" title="Export renderer HTML for debugging" aria-label="Export debug HTML"><svg class="icon" aria-hidden="true"><use href="#icon-file-text"></use></svg><span class="sr-only">Export HTML</span></button>
           <button class="btn btn-icon btn-quiet" onclick="toggleInterfaceMode()" id="interfaceBtn" title="Switch to light Studio UI" aria-label="Switch to light Studio UI"><svg class="icon" aria-hidden="true"><use href="#icon-sun"></use></svg></button>
           <button id="exportPdfBtn" class="btn btn-primary" onclick="renderPDF()"><span class="spinner" aria-hidden="true"></span><svg class="icon" aria-hidden="true"><use href="#icon-file-down"></use></svg><span>Export PDF</span></button>
         </div>
@@ -513,8 +517,9 @@
       </section>
       <div class="gutter preview-gutter" id="previewGutter" title="Drag to resize editor and preview" aria-label="Resize editor and preview panels"></div>
       <section class="pane preview-pane">
-        <div class="pane-head"><strong>Preview</strong><span class="preview-tools"><span id="previewStatus" class="preview-status" title="The exported PDF uses the Python renderer, MathJax, appearance CSS, TOC, page breaks, and Chromium print layout.">Approximate preview</span><button class="btn" onclick="toggleDirection()" id="dirBtn" title="Toggle preview direction"><svg class="icon" aria-hidden="true"><use href="#icon-arrow-left-right"></use></svg><span id="dirBtnLabel">RTL</span></button></span></div>
+        <div class="pane-head"><strong>Preview</strong><span class="preview-tools"><span id="previewStatus" class="preview-status" title="Approximate preview is instant; Accurate preview uses the Python renderer HTML without starting Chromium. The exported PDF uses the Python renderer, MathJax, appearance CSS, TOC, page breaks, and Chromium print layout.">Fast preview</span><select id="previewModeInput" class="preview-mode-select" title="Preview mode"><option value="fast" selected>Fast</option><option value="accurate">Accurate</option></select><button class="btn" onclick="toggleDirection()" id="dirBtn" title="Toggle preview direction"><svg class="icon" aria-hidden="true"><use href="#icon-arrow-left-right"></use></svg><span id="dirBtnLabel">RTL</span></button></span></div>
         <div id="preview" class="preview" dir="auto"></div>
+        <iframe id="accuratePreviewFrame" class="accurate-preview-frame" title="Accurate renderer HTML preview" hidden></iframe>
       </section>
     </main>
     <footer class="footer">
@@ -526,6 +531,8 @@
 const $ = (id) => document.getElementById(id);
 const editor = $('editor');
 const preview = $('preview');
+const accuratePreviewFrame = $('accuratePreviewFrame');
+const previewModeInput = $('previewModeInput');
 const statusWords = $('statusWords');
 const statusChars = $('statusChars');
 const serverStatus = $('serverStatus');
@@ -545,6 +552,7 @@ const SETTINGS_COMFORT_WIDTH = 290;
 const SETTINGS_MAX_WIDTH = 520;
 const EDITOR_MIN_WIDTH = 280;
 let renderTimer = null;
+let accuratePreviewToken = 0;
 let exportProgressTimer = null;
 let exportProgressValue = 0;
 let activeResizePane = null;
@@ -806,6 +814,7 @@ function getStudioState(){
     markdown,
     lightMode: document.body.classList.contains('light-mode'),
     previewDirection: preview.getAttribute('dir') || 'auto',
+    previewMode: previewModeInput ? previewModeInput.value : 'fast',
     editorWidth: getComputedStyle(document.documentElement).getPropertyValue('--editor-width').trim(),
     sidebarWidth: getComputedStyle(document.documentElement).getPropertyValue('--sidebar-width').trim(),
     settingsCollapsed
@@ -843,6 +852,9 @@ function loadStudioState(){
       preview.setAttribute('dir', state.previewDirection);
       editor.setAttribute('dir', state.previewDirection);
       updateDirectionButton(state.previewDirection);
+    }
+    if (previewModeInput && ['fast','accurate'].includes(state.previewMode)) {
+      previewModeInput.value = state.previewMode;
     }
     if (/^[0-9.]+px$/.test(state.sidebarWidth || '')) {
       document.documentElement.style.setProperty('--sidebar-width', state.sidebarWidth);
@@ -1238,13 +1250,48 @@ function insertMarkdown(kind){
   if (kind === 'pagebreak') return insertAtCursor('<!-- pagebreak -->\n');
 }
 
+function renderFastPreview(text){
+  preview.hidden = false;
+  if (accuratePreviewFrame) accuratePreviewFrame.hidden = true;
+  preview.innerHTML = renderMarkdownPreview(text);
+  setPreviewStatus('Fast preview updated', false);
+}
+
+async function requestAccuratePreview(text){
+  const token = ++accuratePreviewToken;
+  preview.hidden = true;
+  if (accuratePreviewFrame) accuratePreviewFrame.hidden = false;
+  setPreviewStatus('Rendering accurate preview...', true);
+  try {
+    const response = await fetch('/api/render-html', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ markdown: text, options: getOptions(), assets: attachedAssets })
+    });
+    if (!response.ok) throw new Error(await readRenderError(response));
+    const html = await response.text();
+    if (token !== accuratePreviewToken) return;
+    accuratePreviewFrame.srcdoc = html;
+    setPreviewStatus('Accurate preview updated', false);
+  } catch (error) {
+    if (token !== accuratePreviewToken) return;
+    preview.hidden = false;
+    if (accuratePreviewFrame) accuratePreviewFrame.hidden = true;
+    preview.innerHTML = '<blockquote>Accurate preview failed: ' + escapeHtml(error.message) + '</blockquote>' + renderMarkdownPreview(text);
+    setPreviewStatus('Accurate preview failed', false);
+  }
+}
+
 function renderPreview(){
   const text = editor.value;
   statusWords.textContent = 'Words: ' + (text.trim() ? text.trim().split(/\s+/).length : 0);
   statusChars.textContent = 'Chars: ' + text.length;
   syncLineNumbers();
-  preview.innerHTML = renderMarkdownPreview(text);
-  setPreviewStatus('Preview updated', false);
+  if (previewModeInput && previewModeInput.value === 'accurate') {
+    requestAccuratePreview(text);
+  } else {
+    renderFastPreview(text);
+  }
 }
 
 editor.addEventListener('input', () => {
@@ -1280,6 +1327,13 @@ editor.addEventListener('keydown', (event) => {
     scheduleStudioStateSave();
   });
 });
+
+if (previewModeInput) {
+  previewModeInput.addEventListener('change', () => {
+    renderPreview();
+    scheduleStudioStateSave();
+  });
+}
 
 let attachedAssets = [];
 const MAX_GUI_ASSETS = 250;
@@ -1492,6 +1546,30 @@ async function readRenderError(response){
   const message = payload.error || response.statusText || 'Render failed';
   const code = payload.code ? ' · ' + payload.code : '';
   return 'Export failed (' + response.status + code + '): ' + message;
+}
+
+async function exportDebugHTML(){
+  document.body.classList.add('busy');
+  setExportProgress(0.2, 'Building debug HTML...');
+  exportProgress.classList.add('active');
+  exportProgress.setAttribute('aria-hidden', 'false');
+  try {
+    const response = await fetch('/api/render-html', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ markdown: editor.value, options: getOptions(), assets: attachedAssets })
+    });
+    if (!response.ok) throw new Error(await readRenderError(response));
+    const html = await response.text();
+    const filename = ($('filenameInput').value || 'mardas-document.pdf').replace(/\.pdf$/i, '.html');
+    downloadBlob(filename, html, 'text/html');
+    finishExportProgress('Debug HTML downloaded');
+  } catch (error) {
+    finishExportProgress('Error: ' + error.message, false);
+    alert(error.message);
+  } finally {
+    document.body.classList.remove('busy');
+  }
 }
 
 async function renderPDF(){
