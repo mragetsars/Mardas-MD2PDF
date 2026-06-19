@@ -4,6 +4,22 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.9.2 - 2026-06-15
+
+### Fixed
+
+- Polished Persian generated navigation labels by localizing visible TOC section numbers while preserving stable heading IDs and link targets.
+- Localized Persian footnote reference markers and footnote list markers without changing deterministic footnote anchors or backlink IDs.
+- Added localized PDF page-label cover prefixes for Persian cover/content PDFs and strengthened caption number classes for Persian, Latin, and mixed-number captions.
+
+### Documentation
+
+- Expanded `docs/PERSIAN-RTL.md` with Persian navigation, footnote, and generated-label rules.
+
+### Tests
+
+- Added regression coverage for Persian TOC numbering, footnote markers, PDF page-label prefixes, and caption number profile classes.
+
 ## 1.9.1 - 2026-06-15
 
 ### Fixed

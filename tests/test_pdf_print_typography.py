@@ -215,6 +215,18 @@ def test_pdf_page_labels_restart_after_cover_page():
     assert labels[3]["/St"] == 1
 
 
+def test_pdf_page_labels_use_persian_cover_prefix_when_requested():
+    writer = PdfWriter()
+    writer.add_blank_page(width=200, height=200)
+    writer.add_blank_page(width=200, height=200)
+
+    _add_pdf_page_labels(writer, content_start_page=1, lang="fa")
+
+    labels = writer._root_object["/PageLabels"]["/Nums"]
+    assert labels[1]["/P"] == "جلد "
+    assert labels[3]["/St"] == 1
+
+
 def test_footnote_references_use_stable_numeric_markers():
     result = render_markdown(
         'First reference[^long-note] and the same note again[^long-note].\n\n'

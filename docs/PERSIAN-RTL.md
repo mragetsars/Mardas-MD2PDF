@@ -84,9 +84,17 @@ Recommended:
 ![نمودار معماری](images/architecture.svg)
 
 *شکل ۱. نمای کلی معماری.*
-
-Caption elements receive caption-specific hooks such as `md2pdf-caption--persian`, `md2pdf-caption--numbered`, and `md2pdf-caption--mixed` when they include Persian labels, numbers, or technical identifiers.
 ```
+
+Caption elements receive caption-specific hooks such as `md2pdf-caption--persian`, `md2pdf-caption--numbered`, `md2pdf-caption--persian-number`, `md2pdf-caption--latin-number`, and `md2pdf-caption--mixed-number` when they include Persian labels, numbers, or technical identifiers.
+
+## Persian navigation and references
+
+Generated navigation labels are owned by the renderer, so Persian documents can localize those generated numbers without rewriting author prose. In `lang: fa` documents, the printed table of contents receives `md2pdf-toc--rtl`, generated section numbers receive `persian-generated-number`, and the visible section number text is shaped with Persian digits. The raw heading IDs and link targets remain stable ASCII/Unicode anchors.
+
+Footnote references and footnote markers also use localized generated numbers in Persian documents. The footnote section receives `footnotes--rtl`, while the backlink IDs remain ASCII-safe and deterministic. PDF viewer page labels keep content numbering restarted after the cover page and use a localized cover prefix such as `جلد ` for Persian output.
+
+These rules affect generated labels only. Version strings, command output, code, filenames, and author-written prose are preserved exactly as written.
 
 ## Verification checklist
 

@@ -303,6 +303,7 @@ ARABIC_DIGIT_RE = re.compile(r"[\u0660-\u0669\u06F0-\u06F9]")
 PERSIAN_PUNCTUATION_RE = re.compile(r"[،؛؟]")
 ASCII_RTL_PUNCTUATION_RE = re.compile(r"[?,;](?=\s|$)")
 PERSIAN_CAPTION_PREFIX_RE = re.compile(r"^(?:شکل|تصویر|جدول|کد|نمودار)\b")
+PERSIAN_DIGIT_TRANSLATION = str.maketrans("0123456789", "۰۱۲۳۴۵۶۷۸۹")
 
 
 def strong_direction_counts(text: str) -> tuple[int, int]:
@@ -365,6 +366,24 @@ def has_ascii_rtl_punctuation(text: str) -> bool:
         return False
     rtl, ltr = strong_direction_counts(text)
     return rtl > 0 and rtl >= ltr
+
+
+def localize_digits(value: Any, *, lang: str | None = None, text_hint: str = "") -> str:
+    """Return ``value`` with ASCII digits shaped for Persian UI labels when appropriate.
+
+    The renderer does not rewrite author prose. This helper is reserved for
+    generated navigation and reference labels such as TOC section numbers and
+    footnote markers where the converter owns the number text.
+    """
+    text = str(value)
+    if language_family(lang, text_hint) == "fa":
+        return text.translate(PERSIAN_DIGIT_TRANSLATION)
+    return text
+
+
+def localized_number_class(value: Any, *, lang: str | None = None, text_hint: str = "") -> str:
+    """Return a stable class for generated localized number labels."""
+    return "persian-generated-number" if language_family(lang, text_hint) == "fa" else "latin-generated-number"
 
 
 def text_quality_classes(text: str) -> list[str]:
@@ -1028,11 +1047,16 @@ def replace_footnote_refs(
         entry.ref_count += 1
         ref_suffix = "" if entry.ref_count == 1 else f"-{entry.ref_count}"
         ref_id = f"fnref-{entry.anchor}{ref_suffix}"
-        safe_label = html.escape(f"{label} {entry.index}")
+        display_index = localize_digits(entry.index, lang=lang, text_hint=text_hint)
+        number_class = localized_number_class(entry.index, lang=lang, text_hint=text_hint)
+        ref_classes = f"footnote-ref {number_class}"
+        if language_family(lang, text_hint) == "fa":
+            ref_classes += " footnote-ref--rtl"
+        safe_label = html.escape(f"{label} {display_index}")
         return (
-            f'<sup class="footnote-ref" id="{html.escape(ref_id)}">'
+            f'<sup class="{html.escape(ref_classes)}" id="{html.escape(ref_id)}">'
             f'<a href="#fn-{html.escape(entry.anchor)}" aria-describedby="fn-{html.escape(entry.anchor)}" '
-            f'aria-label="{safe_label}">{entry.index}</a></sup>'
+            f'aria-label="{safe_label}">{html.escape(display_index)}</a></sup>'
         )
 
     output: list[str] = []
@@ -1073,27 +1097,31 @@ def append_footnotes(
 
     label = ui_label("footnotes", lang=lang, text_hint=text_hint)
     backref_label = ui_label("footnote_backref", lang=lang, text_hint=text_hint)
+    footnote_family = language_family(lang, text_hint)
+    footnote_dir = "rtl" if footnote_family == "fa" else "ltr"
+    number_class = localized_number_class(1, lang=lang, text_hint=text_hint)
     items = []
     for entry in entries:
         rendered = md.render(entry.raw).strip()
         ref_count = max(1, entry.ref_count)
         backrefs = []
+        display_index = localize_digits(entry.index, lang=lang, text_hint=text_hint)
         for ref_index in range(1, ref_count + 1):
             ref_suffix = "" if ref_index == 1 else f"-{ref_index}"
             ref_id = f"fnref-{entry.anchor}{ref_suffix}"
-            ref_label = html.escape(f"{backref_label} {entry.index}")
+            ref_label = html.escape(f"{backref_label} {display_index}")
             backrefs.append(
                 f'<a class="footnote-backref" href="#{html.escape(ref_id)}" aria-label="{ref_label}">↩</a>'
             )
         items.append(
             f'<li class="footnote-item" id="fn-{html.escape(entry.anchor)}">'
-            f'<span class="footnote-marker">{entry.index}.</span>'
+            f'<span class="footnote-marker {number_class}">{html.escape(display_index)}.</span>'
             f'<div class="footnote-body" dir="auto">{rendered}</div> '
             f'<span class="footnote-backrefs">{"".join(backrefs)}</span></li>'
         )
     return (
         body_html
-        + '<section class="footnotes">'
+        + f'<section class="footnotes footnotes--{footnote_dir}" dir="{footnote_dir}" aria-label="{html.escape(label)}">'
         + '<ol>'
         + "".join(items)
         + "</ol></section>"
@@ -1176,19 +1204,27 @@ def _toc_tree(entries: list[tuple[int, str, str, str]]) -> list[TocItem]:
     return roots
 
 
-def _render_toc_items(items: list[TocItem], *, depth: int = 1) -> str:
+def _render_toc_items(
+    items: list[TocItem],
+    *,
+    depth: int = 1,
+    lang: str | None = None,
+    text_hint: str = "",
+) -> str:
     if not items:
         return ""
     parts = [f'<ol class="toc-list toc-depth-{depth}">']
     for item in items:
+        display_number = localize_digits(item.number, lang=lang, text_hint=text_hint)
+        number_class = localized_number_class(item.number, lang=lang, text_hint=text_hint)
         parts.append(
-            f'<li class="toc-level-{item.level}" data-level="{item.level}">' 
+            f'<li class="toc-level-{item.level}" data-level="{item.level}" data-md2pdf-number="{html.escape(item.number)}">'
             f'<a href="#{html.escape(item.heading_id)}">'
-            f'<span class="toc-number">{html.escape(item.number)}</span>'
+            f'<span class="toc-number {number_class}">{html.escape(display_number)}</span>'
             f'<span class="toc-title">{item.title_html or html.escape(item.title)}</span>'
             f'</a>'
         )
-        parts.append(_render_toc_items(item.children, depth=depth + 1))
+        parts.append(_render_toc_items(item.children, depth=depth + 1, lang=lang, text_hint=text_hint))
         parts.append('</li>')
     parts.append('</ol>')
     return "".join(parts)
@@ -1206,10 +1242,13 @@ def build_toc(
     tree = _toc_tree(toc)
     title = ui_label("toc_title", lang=lang, text_hint=text_hint)
     aria = ui_label("toc_aria", lang=lang, text_hint=text_hint)
+    toc_family = language_family(lang, text_hint)
+    toc_dir = "rtl" if toc_family == "fa" else "ltr"
+    toc_classes = f"md2pdf-toc md2pdf-toc--{toc_dir}"
     return (
-        f'<nav class="md2pdf-toc" dir="auto" aria-label="{html.escape(aria)}">'
+        f'<nav class="{toc_classes}" dir="{toc_dir}" aria-label="{html.escape(aria)}">'
         f'<h2>{html.escape(title)}</h2>'
-        f'{_render_toc_items(tree)}'
+        f'{_render_toc_items(tree, lang=lang, text_hint=text_hint)}'
         '</nav>'
     )
 
@@ -1549,10 +1588,12 @@ def _caption_profile_classes(caption: Tag) -> list[str]:
         classes.append("md2pdf-caption--ltr")
     elif profile == "mixed":
         classes.append("md2pdf-caption--mixed")
-    if PERSIAN_CAPTION_PREFIX_RE.match(text):
+    if PERSIAN_CAPTION_PREFIX_RE.match(text) or has_persian(text):
         classes.append("md2pdf-caption--persian")
-    if numeral_profile(text) != "none":
+    number_profile = numeral_profile(text)
+    if number_profile != "none":
         classes.append("md2pdf-caption--numbered")
+        classes.append(f"md2pdf-caption--{number_profile}-number")
     return sorted(set(classes))
 
 

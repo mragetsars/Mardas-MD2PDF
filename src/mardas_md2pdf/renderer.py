@@ -869,8 +869,68 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
         direction: auto;
         unicode-bidi: plaintext;
       }}
-      .md2pdf-caption--numbered {{
+      .md2pdf-caption--numbered,
+      .toc-number,
+      .footnote-ref,
+      .footnote-marker {{
         font-variant-numeric: tabular-nums;
+      }}
+      .persian-generated-number,
+      .toc-number--persian,
+      .footnote-marker.persian-generated-number {{
+        font-family: var(--font-fa), var(--font-en), sans-serif;
+        direction: rtl;
+        unicode-bidi: isolate;
+      }}
+      .latin-generated-number {{
+        font-family: var(--font-en), var(--font-fa), sans-serif;
+        direction: ltr;
+        unicode-bidi: isolate;
+      }}
+      .md2pdf-caption--persian-number {{
+        direction: rtl;
+        unicode-bidi: plaintext;
+      }}
+      .md2pdf-caption--latin-number {{
+        direction: ltr;
+        unicode-bidi: plaintext;
+      }}
+      .md2pdf-caption--mixed-number {{
+        direction: auto;
+        unicode-bidi: plaintext;
+      }}
+      .md2pdf-toc--rtl {{
+        direction: rtl;
+        text-align: right;
+      }}
+      .md2pdf-toc--rtl .toc-number {{
+        min-width: 2.4em;
+        text-align: left;
+        direction: ltr;
+        unicode-bidi: isolate;
+      }}
+      .md2pdf-toc--rtl .toc-title {{
+        direction: auto;
+        unicode-bidi: plaintext;
+      }}
+      .md2pdf-toc--ltr {{
+        direction: ltr;
+        text-align: left;
+      }}
+      .footnotes--rtl {{
+        direction: rtl;
+        text-align: right;
+      }}
+      .footnotes--rtl .footnote-item {{
+        direction: rtl;
+      }}
+      .footnotes--rtl .footnote-body {{
+        direction: auto;
+        unicode-bidi: plaintext;
+      }}
+      .footnote-ref--rtl {{
+        direction: rtl;
+        unicode-bidi: isolate;
       }}
       body.md2pdf-dir-ltr .md2pdf-details {{ direction: ltr; text-align: left; }}
       body.md2pdf-dir-rtl .md2pdf-details {{ direction: rtl; text-align: right; }}
@@ -2003,7 +2063,16 @@ def _chromium_launch_args(options: PdfOptions) -> list[str]:
     return args
 
 
-def _add_pdf_page_labels(writer: PdfWriter, *, content_start_page: int = 0) -> None:
+def _pdf_cover_page_prefix(lang: str | None = None) -> str:
+    return "جلد " if normalize_language(lang).startswith(RTL_LANG_PREFIXES) else "Cover "
+
+
+def _add_pdf_page_labels(
+    writer: PdfWriter,
+    *,
+    content_start_page: int = 0,
+    lang: str | None = None,
+) -> None:
     """Add viewer page labels so content numbering restarts after a cover."""
     page_count = len(writer.pages)
     if page_count <= 0:
@@ -2017,7 +2086,7 @@ def _add_pdf_page_labels(writer: PdfWriter, *, content_start_page: int = 0) -> N
                 {
                     NameObject("/S"): NameObject("/D"),
                     NameObject("/St"): NumberObject(1),
-                    NameObject("/P"): TextStringObject("Cover "),
+                    NameObject("/P"): TextStringObject(_pdf_cover_page_prefix(lang)),
                 }
             )
         )
@@ -2033,6 +2102,7 @@ def _copy_pdf_with_metadata(
     outline_source_entries: list[OutlineSourceEntry] | None = None,
     *,
     outline_start_page: int = 0,
+    page_label_lang: str | None = None,
 ) -> None:
     reader = PdfReader(str(input_path))
     page_texts = _pdf_page_texts(reader) if outline_source_entries else []
@@ -2041,7 +2111,7 @@ def _copy_pdf_with_metadata(
         writer.add_page(page)
     named_destinations = _copy_pdf_named_destinations(writer, reader)
     _rewrite_pdf_link_annotation_destinations(writer, named_destinations)
-    _add_pdf_page_labels(writer, content_start_page=outline_start_page)
+    _add_pdf_page_labels(writer, content_start_page=outline_start_page, lang=page_label_lang)
     writer.add_metadata(metadata)
     if outline_source_entries:
         _add_pdf_outline(
@@ -2071,6 +2141,7 @@ def _merge_pdfs(
     outline_source_entries: list[OutlineSourceEntry] | None = None,
     *,
     outline_start_page: int = 0,
+    page_label_lang: str | None = None,
 ) -> None:
     writer = PdfWriter()
     page_texts: list[str] = []
@@ -2084,7 +2155,7 @@ def _merge_pdfs(
             writer.add_page(page)
         named_destinations.update(_copy_pdf_named_destinations(writer, reader, page_offset=page_offset))
     _rewrite_pdf_link_annotation_destinations(writer, named_destinations)
-    _add_pdf_page_labels(writer, content_start_page=outline_start_page)
+    _add_pdf_page_labels(writer, content_start_page=outline_start_page, lang=page_label_lang)
     if metadata:
         writer.add_metadata(metadata)
     if outline_source_entries:
@@ -2167,6 +2238,7 @@ def convert(options: PdfOptions) -> Path:
                         pdf_metadata,
                         outline_source_entries,
                         outline_start_page=cover_page_count,
+                        page_label_lang=footer_context.lang,
                     )
                 else:
                     content_pdf = tmp / "content.pdf"
@@ -2180,6 +2252,7 @@ def convert(options: PdfOptions) -> Path:
                         options.output_path,
                         pdf_metadata,
                         outline_source_entries,
+                        page_label_lang=footer_context.lang,
                     )
             finally:
                 browser.close()

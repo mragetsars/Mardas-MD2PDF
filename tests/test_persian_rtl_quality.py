@@ -114,3 +114,57 @@ def test_layout_css_contains_persian_numeral_and_caption_rules(tmp_path: Path):
     assert ".rtl-ascii-punctuation" in css
     assert ".md2pdf-caption--persian" in css
     assert ".md2pdf-caption--numbered" in css
+
+
+def test_persian_toc_uses_rtl_nav_and_localized_section_numbers():
+    result = render_markdown(
+        "---\nlang: fa\n---\n\n"
+        "# معرفی\n\n## نصب\n\n## خروجی PDF\n",
+        toc=True,
+    )
+
+    assert 'class="md2pdf-toc md2pdf-toc--rtl" dir="rtl"' in result.toc_html
+    assert 'class="toc-number persian-generated-number"' in result.toc_html
+    assert 'data-md2pdf-number="1-1"' in result.toc_html
+    assert '>۱</span>' in result.toc_html
+    assert '>۱-۱</span>' in result.toc_html
+
+
+def test_persian_footnotes_use_localized_markers_and_rtl_section():
+    result = render_markdown(
+        "---\nlang: fa\n---\n\n"
+        "یک ارجاع فارسی[^note].\n\n"
+        "[^note]: متن پانویس فارسی با version 1.9.2.\n"
+    )
+
+    assert 'class="footnote-ref persian-generated-number footnote-ref--rtl"' in result.body_html
+    assert '>۱</a></sup>' in result.body_html
+    assert '<section aria-label="پانویس‌ها" class="footnotes footnotes--rtl" dir="rtl">' in result.body_html
+    assert 'class="footnote-marker persian-generated-number">۱.</span>' in result.body_html
+
+
+def test_caption_number_profiles_distinguish_persian_latin_and_mixed_numbers():
+    result = render_markdown(
+        "---\nlang: fa\n---\n\n"
+        "![الف](a.svg)\n\n"
+        "*شکل ۱۲. نمودار فارسی.*\n\n"
+        "![b](b.svg)\n\n"
+        "*Figure 2. English figure.*\n\n"
+        "![ج](c.svg)\n\n"
+        "*شکل 3 و ۴. نمودار mixed.*\n"
+    )
+
+    assert 'md2pdf-caption--persian-number' in result.body_html
+    assert 'md2pdf-caption--latin-number' in result.body_html
+    assert 'md2pdf-caption--mixed-number' in result.body_html
+
+
+def test_layout_css_contains_persian_navigation_and_footnote_rules(tmp_path: Path):
+    options = PdfOptions(input_path=tmp_path / "input.md", output_path=tmp_path / "out.pdf")
+    css, _classes = _layout_css(options, document_direction="rtl")
+
+    assert ".md2pdf-toc--rtl" in css
+    assert ".persian-generated-number" in css
+    assert ".footnotes--rtl" in css
+    assert ".footnote-ref--rtl" in css
+    assert ".md2pdf-caption--persian-number" in css
