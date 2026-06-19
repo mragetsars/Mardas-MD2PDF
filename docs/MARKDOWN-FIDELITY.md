@@ -79,8 +79,11 @@ flowchart LR
 The offline renderer supports practical flowchart directions, labelled edges,
 solid/dotted/thick edges, and common node shapes such as rectangles, rounded
 nodes, diamonds, circles, databases, subroutines, stadium nodes, hexagons, and
-parallelograms. Unsupported Mermaid control lines are ignored conservatively so
-that the PDF remains readable instead of failing hard.
+parallelograms. Mermaid surfaces, nodes, labels, and edge chips use the active
+appearance palette and include dedicated dark-mode contrast variables so diagrams
+stay readable across all style/palette combinations. Unsupported Mermaid control
+lines are ignored conservatively so that the PDF remains readable instead of
+failing hard.
 
 ## Callouts
 

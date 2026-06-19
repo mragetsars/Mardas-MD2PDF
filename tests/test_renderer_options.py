@@ -148,6 +148,10 @@ def test_mermaid_css_uses_appearance_color_variables(tmp_path):
     assert "--md2pdf-mermaid-stroke" in html
     assert "var(--accent, var(--blue" in html
     assert "var(--md2pdf-mermaid-label-halo" in html
+    assert "var(--md2pdf-mermaid-figure-bg" in html
+    assert "var(--md2pdf-mermaid-figure-border" in html
+    assert "var(--md2pdf-mermaid-node-ink" in html
+    assert "var(--md2pdf-mermaid-label-bg" in html
 
 
 def test_mermaid_css_caps_diagram_height_for_print_layout(tmp_path):

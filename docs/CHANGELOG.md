@@ -4,6 +4,21 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.9.9 - 2026-06-19
+
+### Fixed
+
+- Tuned Mermaid diagram contrast in dark mode so diagram panels, SVG backgrounds, node fills, labels, borders, and caption accents use a complete dark-surface variable contract instead of inheriting only generic panel colors.
+- Brightened Mermaid strokes and label chips in dark appearance combinations, including low-accent palettes such as neutral and slate, without changing Mermaid parsing or supported syntax.
+
+### Documentation
+
+- Updated the Markdown fidelity reference and guide metadata for version 1.9.9.
+
+### Tests
+
+- Added regression coverage to ensure every dark style/palette combination emits the full Mermaid contrast variable set and that renderer CSS consumes those variables.
+
 ## 1.9.8 - 2026-06-19
 
 ### Fixed

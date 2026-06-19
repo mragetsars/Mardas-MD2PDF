@@ -290,10 +290,19 @@ body.md2pdf-mode-dark {{
   --code-ink: {surface['ink']};
   --md2pdf-details-bg: {surface['panel']};
   --md2pdf-details-ink: {surface['ink']};
-  --md2pdf-mermaid-figure-bg: {surface['panel']};
-  --md2pdf-mermaid-node-bg: {surface['panel_soft']};
-  --md2pdf-mermaid-stroke: var(--accent);
-  --md2pdf-mermaid-label-halo: {surface['page']};
+  --md2pdf-mermaid-figure-bg: color-mix(in srgb, {surface['panel_alt']} 90%, var(--accent) 4%);
+  --md2pdf-mermaid-figure-border: color-mix(in srgb, var(--accent) 28%, {surface['line']});
+  --md2pdf-mermaid-figure-ink: {surface['ink']};
+  --md2pdf-mermaid-bg: color-mix(in srgb, {surface['panel_alt']} 94%, {surface['page']} 6%);
+  --md2pdf-mermaid-border: color-mix(in srgb, var(--accent) 24%, {surface['line']});
+  --md2pdf-mermaid-node-bg: color-mix(in srgb, {surface['panel_soft']} 88%, var(--accent) 8%);
+  --md2pdf-mermaid-node-ink: {surface['heading']};
+  --md2pdf-mermaid-stroke: color-mix(in srgb, var(--accent) 76%, {surface['heading']} 24%);
+  --md2pdf-mermaid-edge-ink: {surface['heading']};
+  --md2pdf-mermaid-label-bg: color-mix(in srgb, {surface['panel_alt']} 84%, {surface['page']} 16%);
+  --md2pdf-mermaid-label-border: color-mix(in srgb, var(--accent) 38%, {surface['line']});
+  --md2pdf-mermaid-label-halo: {surface['panel_alt']};
+  --md2pdf-mermaid-caption-ink: color-mix(in srgb, var(--accent) 68%, {surface['heading']} 32%);
   background: {surface['page']} !important;
   color: var(--ink) !important;
 }}
@@ -320,11 +329,15 @@ body.md2pdf-mode-dark th {{ border-bottom-color: var(--line) !important; }}
 body.md2pdf-mode-dark tbody tr:nth-child(even) td {{ background: {surface['panel']} !important; }}
 body.md2pdf-mode-dark blockquote,
 body.md2pdf-mode-dark .callout,
-body.md2pdf-mode-dark .md2pdf-details,
-body.md2pdf-mode-dark .mermaid-diagram {{
+body.md2pdf-mode-dark .md2pdf-details {{
   background: {surface['panel']} !important;
   border-color: var(--line) !important;
   color: var(--ink) !important;
+}}
+body.md2pdf-mode-dark .mermaid-diagram {{
+  background: var(--md2pdf-mermaid-figure-bg) !important;
+  border-color: var(--md2pdf-mermaid-figure-border) !important;
+  color: var(--md2pdf-mermaid-figure-ink) !important;
 }}
 body.md2pdf-mode-dark .md2pdf-cover__summary,
 body.md2pdf-mode-dark .md2pdf-cover__subtitle,
