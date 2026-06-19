@@ -1,19 +1,28 @@
 #!/usr/bin/env python3
-"""Render every appearance combination for visual review.
+"""Render appearance combinations for visual regression review.
 
-This script is intentionally kept outside the normal CI path because it launches
-Chromium once per combination.  Use it after changing appearance CSS, styles, or
-palettes to create a complete matrix of smoke PDFs.
+The default matrix covers every registered style, palette, and mode.  For CI or
+fast local checks, pass comma-separated filters such as ``--styles modern,github``
+and ``--palettes blue,slate``.
 """
 
 from __future__ import annotations
 
 import argparse
-import subprocess
-import sys
+import dataclasses
 from pathlib import Path
+from typing import Iterable
 
 from mardas_md2pdf.appearance import MODES, PALETTES_ORDER, STYLES
+from visual_qa import (
+    ensure_clean_dir,
+    png_stats,
+    relative_to,
+    render_pdf_pages,
+    run_mardas_cli,
+    write_html_gallery,
+    write_json,
+)
 
 SAMPLE_MARKDOWN = """---
 title: "Appearance Matrix Smoke"
@@ -28,7 +37,7 @@ summary: |
   appearance combination can be checked visually.
 institution: "Mardas Lab"
 course: "Appearance QA"
-version: "1.6.1"
+version: "1.11.0"
 status: "Audit"
 keywords:
   - appearance
@@ -38,6 +47,8 @@ keywords:
 lang: en
 dir: ltr
 cover_label: "Appearance Audit"
+branding:
+  mode: full
 ---
 
 # Overview
@@ -90,81 +101,142 @@ A screen-first dark output may use deep surfaces, but it should not make every s
 """
 
 
+@dataclasses.dataclass(frozen=True, slots=True)
+class RenderItem:
+    style: str
+    palette: str
+    mode: str
+
+    @property
+    def name(self) -> str:
+        return f"{self.style}-{self.palette}-{self.mode}"
+
+
+def _parse_filter(value: str | None, allowed: Iterable[str], *, label: str) -> tuple[str, ...]:
+    allowed_tuple = tuple(allowed)
+    if not value:
+        return allowed_tuple
+    requested = tuple(part.strip() for part in value.split(",") if part.strip())
+    invalid = [part for part in requested if part not in allowed_tuple]
+    if invalid:
+        choices = ", ".join(allowed_tuple)
+        raise SystemExit(f"invalid {label}: {', '.join(invalid)}; expected one of: {choices}")
+    return requested
+
+
 def _write_sample(path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(SAMPLE_MARKDOWN, encoding="utf-8")
-
-
-def _render_png(pdf: Path, output_dir: Path, page: int, label: str, dpi: int) -> None:
-    output_dir.mkdir(parents=True, exist_ok=True)
-    target = output_dir / f"{pdf.stem}.png"
-    if target.exists():
-        return
-    prefix = output_dir / pdf.stem
-    subprocess.run(
-        ["pdftoppm", "-png", "-r", str(dpi), "-f", str(page), "-singlefile", str(pdf), str(prefix)],
-        check=True,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    )
-    generated = output_dir / f"{pdf.stem}.png"
-    if not generated.exists():
-        raise RuntimeError(f"pdftoppm did not create {label} render for {pdf.name}")
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output-dir", type=Path, default=Path("appearance-audit"))
+    parser.add_argument("--output-dir", type=Path, default=Path("build/visual-qa/appearance"))
     parser.add_argument("--source", type=Path, help="Use an existing Markdown smoke document")
+    parser.add_argument("--styles", help="Comma-separated style filter")
+    parser.add_argument("--palettes", help="Comma-separated palette filter")
+    parser.add_argument("--modes", help="Comma-separated mode filter")
+    parser.add_argument("--clean", action="store_true", help="Delete output directory before rendering")
     parser.add_argument("--render-png", action="store_true", help="Render cover/content PNGs with pdftoppm")
-    parser.add_argument("--png-dpi", type=int, default=64)
-    parser.add_argument("--timeout", type=int, default=60, help="Seconds per PDF render")
+    parser.add_argument("--png-dpi", type=int, default=72)
+    parser.add_argument("--timeout", type=int, default=90, help="Seconds per PDF render")
+    parser.add_argument("--timeout-ms", type=int, default=180_000, help="Chromium timeout in milliseconds")
     args = parser.parse_args(argv)
 
-    args.output_dir.mkdir(parents=True, exist_ok=True)
-    source = args.source or args.output_dir / "appearance_matrix.md"
+    if args.clean:
+        ensure_clean_dir(args.output_dir)
+    else:
+        args.output_dir.mkdir(parents=True, exist_ok=True)
+
+    styles = _parse_filter(args.styles, STYLES, label="style")
+    palettes = _parse_filter(args.palettes, PALETTES_ORDER, label="palette")
+    modes = _parse_filter(args.modes, MODES, label="mode")
+    source = args.source or args.output_dir / "appearance-matrix.md"
     if args.source is None:
         _write_sample(source)
 
     pdf_dir = args.output_dir / "pdf"
-    pdf_dir.mkdir(exist_ok=True)
+    cover_dir = args.output_dir / "cover_png"
+    content_dir = args.output_dir / "content_png"
+    pdf_dir.mkdir(parents=True, exist_ok=True)
+
     failures: list[str] = []
-    for style in STYLES:
-        for palette in PALETTES_ORDER:
-            for mode in MODES:
-                name = f"{style}-{palette}-{mode}"
-                output_pdf = pdf_dir / f"{name}.pdf"
-                command = [
-                    sys.executable,
-                    "-m",
-                    "mardas_md2pdf.cli",
-                    str(source),
-                    "-o",
-                    str(output_pdf),
-                    "--style",
-                    style,
-                    "--palette",
-                    palette,
-                    "--mode",
-                    mode,
-                    "--toc",
-                    "--toc-depth",
-                    "3",
-                    "--progress",
-                    "off",
-                ]
-                print(f"render {name}")
+    records: list[dict[str, object]] = []
+    for style in styles:
+        for palette in palettes:
+            for mode in modes:
+                item = RenderItem(style=style, palette=palette, mode=mode)
+                output_pdf = pdf_dir / f"{item.name}.pdf"
+                record: dict[str, object] = {
+                    "name": item.name,
+                    "style": style,
+                    "palette": palette,
+                    "mode": mode,
+                    "pdf": relative_to(output_pdf, args.output_dir),
+                }
+                print(f"render {item.name}")
                 try:
-                    subprocess.run(command, check=True, timeout=args.timeout)
+                    run_mardas_cli(
+                        source,
+                        output_pdf,
+                        style=style,
+                        palette=palette,
+                        mode=mode,
+                        command_timeout=args.timeout,
+                        timeout_ms=args.timeout_ms,
+                    )
                     if args.render_png:
-                        _render_png(output_pdf, args.output_dir / "cover", 1, "cover", args.png_dpi)
-                        _render_png(output_pdf, args.output_dir / "content", 2, "content", args.png_dpi)
-                except Exception as exc:  # noqa: BLE001 - audit script should keep collecting failures.
-                    failures.append(f"{name}: {exc}")
+                        cover_png = render_pdf_pages(
+                            output_pdf,
+                            cover_dir,
+                            pages=(1,),
+                            dpi=args.png_dpi,
+                            prefix=item.name,
+                        )[0]
+                        content_png = render_pdf_pages(
+                            output_pdf,
+                            content_dir,
+                            pages=(2,),
+                            dpi=args.png_dpi,
+                            prefix=item.name,
+                        )[0]
+                        record["cover_png"] = relative_to(cover_png, args.output_dir)
+                        record["content_png"] = relative_to(content_png, args.output_dir)
+                        record["cover_stats"] = dataclasses.asdict(png_stats(cover_png))
+                        record["content_stats"] = dataclasses.asdict(png_stats(content_png))
+                    records.append(record)
+                except Exception as exc:  # noqa: BLE001 - audit should keep collecting failures.
+                    failures.append(f"{item.name}: {exc}")
+
+    payload = {
+        "matrix": {
+            "styles": styles,
+            "palettes": palettes,
+            "modes": modes,
+            "count": len(styles) * len(palettes) * len(modes),
+        },
+        "source": relative_to(source, args.output_dir),
+        "records": records,
+        "failures": failures,
+    }
+    write_json(args.output_dir / "manifest.json", payload)
+
+    if args.render_png:
+        cover_items = [
+            {"label": str(record["name"]), "image": str(record["cover_png"]), "meta": "cover"}
+            for record in records
+            if "cover_png" in record
+        ]
+        content_items = [
+            {"label": str(record["name"]), "image": str(record["content_png"]), "meta": "content"}
+            for record in records
+            if "content_png" in record
+        ]
+        write_html_gallery(args.output_dir / "cover-gallery.html", title="Appearance cover matrix", items=cover_items)
+        write_html_gallery(args.output_dir / "content-gallery.html", title="Appearance content matrix", items=content_items)
 
     if failures:
-        failure_text = "\n".join(failures)
-        (args.output_dir / "failures.txt").write_text(failure_text + "\n", encoding="utf-8")
-        print(failure_text, file=sys.stderr)
+        (args.output_dir / "failures.txt").write_text("\n".join(failures) + "\n", encoding="utf-8")
         return 1
     return 0
 
