@@ -118,3 +118,5 @@ For guide-specific issues, visually inspect at least:
 - one image/media page;
 - the final footnote/checklist page;
 - the same areas in the Persian guide.
+
+- `docs/VISUAL-QA.md` documents the visual QA artifact scripts and CI upload workflow.

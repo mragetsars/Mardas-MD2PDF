@@ -63,6 +63,21 @@ python scripts/compare_visual_snapshots.py \
 The comparison script uses a dependency-free PNG reader. It writes `summary.json`
 and `SUMMARY.md`, then fails if any matched PNG exceeds the configured thresholds.
 
+## Studio visual smoke
+
+Use the Studio visual smoke audit after changing `src/mardas_md2pdf/assets/gui.html`,
+Studio backend endpoints, appearance controls, toolbar layout, or export workflow:
+
+```bash
+python scripts/audit_studio_visual.py \
+  --output-dir build/visual-qa/studio \
+  --clean
+```
+
+The script launches the local Studio server on an ephemeral port, opens it with
+Playwright Chromium, checks that the core settings sections are visible, and
+writes `studio-default.png` plus a JSON manifest.
+
 ## CI artifacts
 
 The CI visual QA job intentionally runs a reduced matrix. It uploads

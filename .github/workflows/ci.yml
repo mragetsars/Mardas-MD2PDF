@@ -87,8 +87,8 @@ jobs:
         run: |
           python scripts/audit_appearance_matrix.py \
             --output-dir build/visual-qa/appearance \
-            --styles modern,github \
-            --palettes blue,slate \
+            --styles modern \
+            --palettes blue \
             --modes light,dark \
             --render-png \
             --png-dpi 48 \
@@ -99,10 +99,17 @@ jobs:
         run: |
           python scripts/audit_pdf_features.py \
             --output-dir build/visual-qa/features \
-            --appearances modern:blue:light,modern:blue:dark,academic:amber:dark \
+            --appearances modern:blue:light,modern:blue:dark \
             --render-png \
             --png-dpi 48 \
             --timeout 90 \
+            --clean
+
+      - name: Capture Studio visual artifact
+        run: |
+          python scripts/audit_studio_visual.py \
+            --output-dir build/visual-qa/studio \
+            --timeout 30 \
             --clean
 
       - name: Upload visual QA artifacts

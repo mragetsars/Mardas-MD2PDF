@@ -57,6 +57,7 @@ def test_visual_qa_png_stats_and_diff_are_dependency_free(tmp_path: Path) -> Non
         "audit_appearance_matrix.py",
         "audit_pdf_features.py",
         "compare_visual_snapshots.py",
+        "audit_studio_visual.py",
     ],
 )
 def test_visual_qa_scripts_have_help(script: str) -> None:
@@ -92,6 +93,9 @@ def test_appearance_matrix_supports_filtered_dry_manifest(tmp_path: Path) -> Non
             "60",
         ],
         check=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
     )
 
     manifest = json.loads((output_dir / "manifest.json").read_text(encoding="utf-8"))

@@ -294,7 +294,25 @@ def run_mardas_cli(
     ]
     if toc:
         command.append("--toc")
-    subprocess.run(command, check=True, timeout=command_timeout)
+    try:
+        subprocess.run(
+            command,
+            check=True,
+            timeout=command_timeout,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+    except subprocess.CalledProcessError as exc:
+        output = "\n".join(part for part in [exc.stdout, exc.stderr] if part)
+        raise RuntimeError(f"mrs-md2pdf failed for {output_pdf}:\n{output}") from exc
+    except subprocess.TimeoutExpired as exc:
+        output = "\n".join(
+            part.decode("utf-8", errors="replace") if isinstance(part, bytes) else part
+            for part in [exc.stdout, exc.stderr]
+            if part
+        )
+        raise RuntimeError(f"mrs-md2pdf timed out for {output_pdf}:\n{output}") from exc
     if not output_pdf.is_file() or output_pdf.stat().st_size == 0:
         raise RuntimeError(f"expected non-empty PDF output at {output_pdf}")
 

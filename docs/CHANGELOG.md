@@ -4,6 +4,22 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.11.0 - 2026-06-19
+
+### Added
+
+- Added a Visual QA system for appearance matrix artifacts, feature-heavy PDF smoke artifacts, dependency-free PNG snapshot comparison, and Studio screenshots.
+- Added CI artifact publishing for reduced visual QA outputs under `build/visual-qa/` so reviewers can inspect PDFs, PNG renders, manifests, galleries, and Studio screenshots without committing generated artifacts.
+
+### Documentation
+
+- Added `docs/VISUAL-QA.md` and linked it from the README and documentation index.
+- Refreshed guide metadata and public version badges for version 1.11.0.
+
+### Tests
+
+- Added regression coverage for visual QA helper scripts, PNG statistics/diff behavior, filtered appearance audits, snapshot comparison summaries, Visual QA documentation links, and CI artifact wiring.
+
 ## 1.10.0 - 2026-06-19
 
 ### Fixed
