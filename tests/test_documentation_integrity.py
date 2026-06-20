@@ -31,7 +31,7 @@ def test_guides_start_with_valid_front_matter():
         metadata = _front_matter(guide)
         assert metadata.get("title")
         assert metadata.get("summary")
-        assert metadata.get("version") == "1.13.8"
+        assert metadata.get("version") == "1.13.9"
         assert metadata.get("branding", {}).get("mode") == "full"
 
 
@@ -50,18 +50,23 @@ def test_guides_share_mardas_appearance_contract():
 
 def test_project_logo_assets_are_packaged_and_documented():
     mark = ROOT / "src/mardas_md2pdf/assets/mardas-md2pdf-mark.svg"
+    mark_white = ROOT / "src/mardas_md2pdf/assets/mardas-md2pdf-mark-white.svg"
     app_icon = ROOT / "src/mardas_md2pdf/assets/mardas-md2pdf-app-icon.svg"
     guide_logo = ROOT / "docs/guides/images/logo.svg"
     branding_docs = (ROOT / "docs/BRANDING.md").read_text(encoding="utf-8")
     pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
 
-    for asset in (mark, app_icon, guide_logo):
+    for asset in (mark, mark_white, app_icon, guide_logo):
         assert asset.exists(), f"missing logo asset: {asset}"
         text = asset.read_text(encoding="utf-8")
         assert text.startswith("<svg")
-        assert "#088981" in text
-        assert "#123563" in text
+        if asset != mark_white:
+            assert "#088981" in text
+            assert "#123563" in text
 
+    mark_white_text = mark_white.read_text(encoding="utf-8")
+    assert "mask" in mark_white_text
+    assert "#FFFFFF" in mark_white_text
     assert guide_logo.read_text(encoding="utf-8") == mark.read_text(encoding="utf-8")
     architecture = (ROOT / "docs/guides/images/architecture.svg").read_text(encoding="utf-8")
     assert "architecture-project-mark" in architecture
@@ -70,8 +75,19 @@ def test_project_logo_assets_are_packaged_and_documented():
     assert "#123563" in architecture
     assert '"assets/*.svg"' in pyproject
     assert "mardas-md2pdf-mark.svg" in branding_docs
+    assert "mardas-md2pdf-mark-white.svg" in branding_docs
     assert "mardas-md2pdf-app-icon.svg" in branding_docs
     assert "should use `brand.logo` only for their own organization or lab logo" in branding_docs
+
+
+def test_guides_reuse_architecture_banner_for_safe_html_examples():
+    en = (ROOT / "docs/guides/GUIDE.en.md").read_text(encoding="utf-8")
+    fa = (ROOT / "docs/guides/GUIDE.fa.md").read_text(encoding="utf-8")
+
+    assert '<img src="images/architecture.svg" width="760" alt="Architecture diagram rendered from safe HTML with explicit width">' in en
+    assert '<img src="images/architecture.svg" width="760" alt="نمودار معماری با اندازه مشخص در HTML امن">' in fa
+    assert '<img src="images/logo.svg"' not in en
+    assert '<img src="images/logo.svg"' not in fa
 
 
 def test_guides_do_not_duplicate_toc_navigation_note():
@@ -92,7 +108,7 @@ def test_changelog_is_descending_and_has_single_intro():
     versions = [tuple(map(int, match.groups())) for match in VERSION_RE.finditer(changelog)]
     assert versions == sorted(versions, reverse=True)
     assert len(versions) == len(set(versions))
-    assert versions[0] == (1, 13, 8)
+    assert versions[0] == (1, 13, 9)
     assert (1, 8, 6) in versions
     assert (1, 8, 5) in versions
     assert (1, 5, 0) in versions
@@ -152,8 +168,8 @@ def test_guides_include_persian_rtl_live_smoke_samples():
 
     assert "Persian/RTL visual smoke sample" in en
     assert "نمونه smoke تصویری فارسی/RTL" in fa
-    assert "version 1.13.8" in en
-    assert "version 1.13.8" in fa
+    assert "version 1.13.9" in en
+    assert "version 1.13.9" in fa
     assert "۱۴۰۵" in en
     assert "۱۴۰۵" in fa
     assert "جدول ۱۲. نمونه جدول فارسی/RTL با عددهای ترکیبی." in en

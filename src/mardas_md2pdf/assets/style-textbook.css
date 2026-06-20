@@ -731,11 +731,11 @@ body.md2pdf-toc-break.md2pdf-h1-break .md2pdf-toc + h1 {
   background: linear-gradient(135deg, #0f172a, #1f2937);
 }
 .md2pdf-cover__logo {
-  width: 7.7mm !important;
-  height: 7.7mm !important;
+  width: 7.2mm !important;
+  height: 7.2mm !important;
   object-fit: contain;
   object-position: center center;
-  transform: translate(-0.24mm, -0.18mm);
+  transform: none;
 }
 .md2pdf-cover__brand-copy strong {
   font-size: 9.6pt;

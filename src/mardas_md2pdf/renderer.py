@@ -207,9 +207,13 @@ def _image_data_uri(path: Path | None) -> str | None:
     return f"data:{mime_type};base64,{encoded}"
 
 
-def _default_logo_path() -> Path | None:
+def _default_logo_path(*, variant: str = "default") -> Path | None:
     """Return the packaged product mark used by default cover branding."""
-    for filename in ("mardas-md2pdf-mark.svg", "Mardas.png"):
+    candidates = {
+        "default": ("mardas-md2pdf-mark.svg", "Mardas.png"),
+        "cover-label": ("mardas-md2pdf-mark-white.svg", "mardas-md2pdf-mark.svg", "Mardas.png"),
+    }
+    for filename in candidates.get(variant, candidates["default"]):
         path = _asset_path(filename)
         if path.exists():
             return path
@@ -219,7 +223,7 @@ def _default_logo_path() -> Path | None:
 def _cover_logo_uri(options: PdfOptions) -> str | None:
     if not options.cover_logo_enabled:
         return None
-    return _image_data_uri(options.cover_logo or options.brand_logo or _default_logo_path())
+    return _image_data_uri(options.cover_logo or options.brand_logo or _default_logo_path(variant="cover-label"))
 
 
 def _metadata_dict(value: Any) -> dict[str, Any]:
@@ -293,7 +297,7 @@ def _resolve_cover_branding(metadata: dict[str, Any], options: PdfOptions, base_
     if not options.cover_logo_enabled:
         logo = None
     if product_brand and mode == "full" and logo is None:
-        logo = _default_logo_path()
+        logo = _default_logo_path(variant="cover-label")
 
     return CoverBranding(mode=mode, name=name, footer=footer, logo=logo, product=product_brand)
 

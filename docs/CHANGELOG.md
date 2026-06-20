@@ -4,6 +4,14 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.13.9 - 2026-06-20
+
+- Added a dedicated white vector cover-label mark for built-in Mardas MD2PDF branding while keeping the full-color mark for Studio and document-local examples.
+- Refined guide cover-brand mark sizing across packaged print styles so the logo remains centered in the compact label chip.
+- Reworked the official guide architecture/banner SVG for cleaner spacing, alignment, and emerald visual consistency.
+- Updated the English and Persian guide safe-HTML image sizing samples to reuse the architecture/banner asset instead of switching to the raw logo.
+- Strengthened documentation integrity tests for the white cover-mark asset and the guide image-sample contract.
+
 ## 1.13.8 - 2026-06-20
 
 ### Fixed

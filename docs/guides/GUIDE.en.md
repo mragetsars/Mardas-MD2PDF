@@ -12,7 +12,7 @@ summary: |
   This document also acts as a live rendering sample for cover pages, tables of contents, mixed RTL/LTR text, formulas, code, Mermaid flowcharts, images, tables, footnotes, page breaks, and safe HTML.
 institution: "Mardas Lab"
 course: "Markdown Publishing"
-version: "1.13.8"
+version: "1.13.9"
 status: "Stable"
 keywords:
   - Markdown
@@ -211,7 +211,7 @@ department: "Department name"
 course: "Course or project title"
 supervisor: "Supervisor name"
 date: "2026-05-20"
-version: "1.13.8"
+version: "1.13.9"
 status: "Draft"
 keywords: [Markdown, PDF, RTL, MathJax]
 cover_label: "Technical Report"
@@ -311,12 +311,12 @@ Inline code remains stable: `mrs-md2pdf input.md -o output.pdf --toc`.
 
 This compact sample is intentionally part of the guide because the guide is both user documentation and a live renderer test case.[^pipeline] It keeps Persian punctuation, Latin package names, Persian digits, semantic table captions, and mixed-direction cells in the official PDF examples.
 
-آیا خروجی PDF برای `version 1.13.8` و شماره ۱۴۰۵ پایدار است؟ پاسخ: بله؛ جدول زیر باید RTL، mixed-script، و mixed-number hooks را فعال کند.
+آیا خروجی PDF برای `version 1.13.9` و شماره ۱۴۰۵ پایدار است؟ پاسخ: بله؛ جدول زیر باید RTL، mixed-script، و mixed-number hooks را فعال کند.
 
 | بخش نمونه | مقدار | انتظار در PDF |
 | :--- | :--- | :--- |
 | شماره فارسی | ۱۴۰۵ | عدد فارسی با متن RTL پایدار بماند. |
-| نسخه فنی | version 1.13.8 و ۱.۹.۹ | Latin/Persian numerals در یک سلول خوانا بمانند. |
+| نسخه فنی | version 1.13.9 و ۱.۹.۹ | Latin/Persian numerals در یک سلول خوانا بمانند. |
 | شناسه انگلیسی | `PDF`, `TOC`, `MathJax` | identifierهای English داخل جدول فارسی جابه‌جا نشوند. |
 
 جدول ۱۲. نمونه جدول فارسی/RTL با عددهای ترکیبی.
@@ -617,7 +617,7 @@ Markdown images are embedded when they point to local files. A common caption pa
 When the caption starts with `Figure`, `Fig.`, `شکل`, or `تصویر`, the renderer wraps the image and caption in a semantic figure block. Safe HTML image attributes such as `width` and `height` are preserved:
 
 ```html
-<img src="images/logo.svg" width="144" alt="Project logo">
+<img src="images/architecture.svg" width="760" alt="Architecture diagram with explicit width">
 ```
 
 
@@ -627,9 +627,9 @@ Images are resolved relative to the Markdown file. Local images are embedded int
 
 *Figure 1. Architecture overview.*
 
-Safe raw HTML images can also be used when explicit sizing is needed:
+Safe raw HTML images can also be used when explicit sizing is needed. The guide deliberately reuses the same banner/architecture asset here so the HTML example exercises width handling without switching to an unrelated raw logo:
 
-<img src="images/logo.svg" width="144" alt="Project logo with explicit width">
+<img src="images/architecture.svg" width="760" alt="Architecture diagram rendered from safe HTML with explicit width">
 
 ## Image rules
 

@@ -161,7 +161,7 @@ The print stylesheet aligns markers, note bodies, and back-reference arrows in a
 
 ## Version 1.8.6 guide media audit
 
-The English and Persian guide PDFs now exercise the successful document-local image path with `docs/guides/images/architecture.svg` and `docs/guides/images/logo.svg`. The blocked-image placeholder remains covered by tests and troubleshooting text, while the public examples show a real semantic figure and a safe HTML image.
+The English and Persian guide PDFs now exercise the successful document-local image path with `docs/guides/images/architecture.svg` in both the semantic figure example and the safe HTML sizing example. The blocked-image placeholder remains covered by tests and troubleshooting text, while the public examples stay visually consistent instead of switching to a raw logo asset.
 
 ## Phase 11 visual audit closure
 
