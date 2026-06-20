@@ -12,7 +12,7 @@ summary: |
   This document also acts as a live rendering sample for cover pages, tables of contents, mixed RTL/LTR text, formulas, code, Mermaid flowcharts, images, tables, footnotes, page breaks, and safe HTML.
 institution: "Mardas Lab"
 course: "Markdown Publishing"
-version: "1.13.1"
+version: "1.13.2"
 status: "Stable"
 keywords:
   - Markdown
@@ -29,6 +29,10 @@ appearance:
   mode: light
 branding:
   mode: full
+brand:
+  name: "Mardas MD2PDF"
+  logo: "images/brand-mark.svg"
+  footer: "Markdown to PDF Engine"
 ---
 
 # Introduction
@@ -142,10 +146,10 @@ Create a simple PDF:
 mrs-md2pdf input.md -o output.pdf
 ```
 
-Create a PDF with a table of contents and a GitHub-style appearance:
+Create a PDF with a table of contents and the project's recommended Mardas appearance:
 
 ```bash
-mrs-md2pdf input.md -o output.pdf --toc --style github --palette blue --mode light
+mrs-md2pdf input.md -o output.pdf --toc --style modern --palette emerald --mode light
 ```
 
 Create a long report with book-like page flow:
@@ -211,7 +215,7 @@ department: "Department name"
 course: "Course or project title"
 supervisor: "Supervisor name"
 date: "2026-05-20"
-version: "1.13.1"
+version: "1.13.2"
 status: "Draft"
 keywords: [Markdown, PDF, RTL, MathJax]
 cover_label: "Technical Report"
@@ -311,12 +315,12 @@ Inline code remains stable: `mrs-md2pdf input.md -o output.pdf --toc`.
 
 This compact sample is intentionally part of the guide because the guide is both user documentation and a live renderer test case.[^pipeline] It keeps Persian punctuation, Latin package names, Persian digits, semantic table captions, and mixed-direction cells in the official PDF examples.
 
-آیا خروجی PDF برای `version 1.13.1` و شماره ۱۴۰۵ پایدار است؟ پاسخ: بله؛ جدول زیر باید RTL، mixed-script، و mixed-number hooks را فعال کند.
+آیا خروجی PDF برای `version 1.13.2` و شماره ۱۴۰۵ پایدار است؟ پاسخ: بله؛ جدول زیر باید RTL، mixed-script، و mixed-number hooks را فعال کند.
 
 | بخش نمونه | مقدار | انتظار در PDF |
 | :--- | :--- | :--- |
 | شماره فارسی | ۱۴۰۵ | عدد فارسی با متن RTL پایدار بماند. |
-| نسخه فنی | version 1.13.1 و ۱.۹.۹ | Latin/Persian numerals در یک سلول خوانا بمانند. |
+| نسخه فنی | version 1.13.2 و ۱.۹.۹ | Latin/Persian numerals در یک سلول خوانا بمانند. |
 | شناسه انگلیسی | `PDF`, `TOC`, `MathJax` | identifierهای English داخل جدول فارسی جابه‌جا نشوند. |
 
 جدول ۱۲. نمونه جدول فارسی/RTL با عددهای ترکیبی.
@@ -804,7 +808,7 @@ Mardas MD2PDF uses one appearance system instead of parallel visual presets. Cho
 Choose appearance from the CLI:
 
 ```bash
-mrs-md2pdf input.md -o output.pdf --style github --palette blue --mode light
+mrs-md2pdf input.md -o output.pdf --style modern --palette emerald --mode light
 mrs-md2pdf input.md -o output.pdf --style academic --palette emerald --mode dark
 ```
 
@@ -887,7 +891,7 @@ mrs-md2pdf --help
 A typical automation command can be as simple as:
 
 ```bash
-mrs-md2pdf docs/report.md -o build/report.pdf --toc --style modern --palette blue --mode light
+mrs-md2pdf docs/report.md -o build/report.pdf --toc --style modern --palette emerald --mode light
 ```
 
 The repository includes a GitHub Actions CI workflow that runs Ruff, pytest, and a Chromium render smoke test on supported Python versions. For CI workflows, prefer explicit options:
@@ -897,7 +901,7 @@ mrs-md2pdf docs/report.md -o build/report.pdf \
   --toc \
   --toc-depth 4 \
   --style modern \
-  --palette blue \
+  --palette emerald \
   --mode light \
   --page-size A4 \
   --dir auto \

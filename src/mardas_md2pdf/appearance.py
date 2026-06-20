@@ -426,6 +426,72 @@ body.md2pdf-mode-dark .md2pdf-watermark--image img {{ filter: invert(1) grayscal
 """
 
 
+def _modern_emerald_guide_css(appearance: Appearance) -> str:
+    if appearance.style != "modern" or appearance.palette != "emerald" or appearance.mode != "light":
+        return ""
+    return """
+body.md2pdf-style-modern.md2pdf-palette-emerald:not(.md2pdf-mode-dark) .md2pdf-cover {
+  background:
+    radial-gradient(circle at 4% 5%, rgba(16, 185, 129, 0.22), transparent 28%),
+    radial-gradient(circle at 94% 88%, rgba(13, 148, 136, 0.16), transparent 31%),
+    radial-gradient(circle at 72% 20%, rgba(52, 211, 153, 0.13), transparent 30%),
+    linear-gradient(180deg, #ffffff 0%, #ecfdf5 100%) !important;
+}
+body.md2pdf-style-modern.md2pdf-palette-emerald:not(.md2pdf-mode-dark) .md2pdf-cover__decor--one {
+  border-color: rgba(16, 185, 129, 0.32) !important;
+}
+body.md2pdf-style-modern.md2pdf-palette-emerald:not(.md2pdf-mode-dark) .md2pdf-cover__decor--two {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.16), rgba(13, 148, 136, 0.14)) !important;
+}
+body.md2pdf-style-modern.md2pdf-palette-emerald:not(.md2pdf-mode-dark) .md2pdf-cover__brand {
+  border-color: rgba(16, 185, 129, 0.24) !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+  box-shadow: 0 8px 22px rgba(6, 78, 59, 0.08) !important;
+}
+body.md2pdf-style-modern.md2pdf-palette-emerald:not(.md2pdf-mode-dark) .md2pdf-cover__mark {
+  background: linear-gradient(135deg, #10b981, #0f766e) !important;
+}
+body.md2pdf-style-modern.md2pdf-palette-emerald:not(.md2pdf-mode-dark) .md2pdf-cover__brand-copy em,
+body.md2pdf-style-modern.md2pdf-palette-emerald:not(.md2pdf-mode-dark) .md2pdf-cover__summary {
+  color: #475569 !important;
+}
+body.md2pdf-style-modern.md2pdf-palette-emerald:not(.md2pdf-mode-dark) h2::before,
+body.md2pdf-style-modern.md2pdf-palette-emerald:not(.md2pdf-mode-dark) h3::before {
+  background: linear-gradient(135deg, #10b981, #0d9488) !important;
+}
+body.md2pdf-style-modern.md2pdf-palette-emerald:not(.md2pdf-mode-dark) .callout,
+body.md2pdf-style-modern.md2pdf-palette-emerald:not(.md2pdf-mode-dark) .callout-note,
+body.md2pdf-style-modern.md2pdf-palette-emerald:not(.md2pdf-mode-dark) .callout-tip,
+body.md2pdf-style-modern.md2pdf-palette-emerald:not(.md2pdf-mode-dark) .callout-success,
+body.md2pdf-style-modern.md2pdf-palette-emerald:not(.md2pdf-mode-dark) .callout-important,
+body.md2pdf-style-modern.md2pdf-palette-emerald:not(.md2pdf-mode-dark) .callout-warning,
+body.md2pdf-style-modern.md2pdf-palette-emerald:not(.md2pdf-mode-dark) .callout-caution,
+body.md2pdf-style-modern.md2pdf-palette-emerald:not(.md2pdf-mode-dark) .callout-danger,
+body.md2pdf-style-modern.md2pdf-palette-emerald:not(.md2pdf-mode-dark) .callout-failure,
+body.md2pdf-style-modern.md2pdf-palette-emerald:not(.md2pdf-mode-dark) .callout-bug,
+body.md2pdf-style-modern.md2pdf-palette-emerald:not(.md2pdf-mode-dark) .callout-question,
+body.md2pdf-style-modern.md2pdf-palette-emerald:not(.md2pdf-mode-dark) .callout-example,
+body.md2pdf-style-modern.md2pdf-palette-emerald:not(.md2pdf-mode-dark) .callout-quote,
+body.md2pdf-style-modern.md2pdf-palette-emerald:not(.md2pdf-mode-dark) .callout-abstract {
+  background: linear-gradient(180deg, #ecfdf5 0%, #ffffff 100%) !important;
+  border-color: rgba(16, 185, 129, 0.28) !important;
+  border-inline-start-color: #10b981 !important;
+  color: #0f172a !important;
+}
+body.md2pdf-style-modern.md2pdf-palette-emerald:not(.md2pdf-mode-dark) .callout-title {
+  color: #065f46 !important;
+}
+body.md2pdf-style-modern.md2pdf-palette-emerald:not(.md2pdf-mode-dark) table thead th {
+  background: color-mix(in srgb, #ecfdf5 72%, #f8fafc) !important;
+}
+body.md2pdf-style-modern.md2pdf-palette-emerald:not(.md2pdf-mode-dark) .md2pdf-toc,
+body.md2pdf-style-modern.md2pdf-palette-emerald:not(.md2pdf-mode-dark) .table-wrap table,
+body.md2pdf-style-modern.md2pdf-palette-emerald:not(.md2pdf-mode-dark) .code-block {
+  border-color: color-mix(in srgb, #10b981 20%, var(--line)) !important;
+}
+"""
+
+
 def palette_css(palette_name: str, mode_name: str, style_name: str | None = None) -> str:
     appearance = resolve_appearance(palette=palette_name, mode=mode_name, style=style_name)
     colors = PALETTES[appearance.palette]
@@ -499,5 +565,6 @@ body.md2pdf-style-academic.md2pdf-palette-{appearance.palette}:not(.md2pdf-mode-
 body.md2pdf-style-academic.md2pdf-palette-{appearance.palette}:not(.md2pdf-mode-dark) .md2pdf-cover__decor--two {{
   background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 10%, transparent), color-mix(in srgb, var(--accent-2) 9%, transparent)) !important;
 }}
+{_modern_emerald_guide_css(appearance)}
 {dark_css}
 """

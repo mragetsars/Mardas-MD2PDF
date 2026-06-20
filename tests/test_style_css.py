@@ -122,3 +122,15 @@ def test_all_appearance_combinations_emit_clean_palette_css(tmp_path):
                 assert f"md2pdf-mode-{mode}" in html
                 assert "background: transparent !important;" in html
                 assert "background-color: color-mix(in srgb, var(--accent-soft" in html
+
+
+def test_modern_emerald_palette_has_strong_guide_identity_contract():
+    from mardas_md2pdf.appearance import palette_css
+
+    css = palette_css("emerald", "light", "modern")
+
+    assert "md2pdf-style-modern.md2pdf-palette-emerald" in css
+    assert "#10b981" in css
+    assert "callout-warning" in css
+    assert "md2pdf-cover__brand" in css
+    assert "linear-gradient(180deg, #ecfdf5 0%, #ffffff 100%)" in css

@@ -66,6 +66,8 @@ def test_example_builds_set_deterministic_pdf_dates() -> None:
     assert "1735689600" in script
     assert "python -m mardas_md2pdf.cli docs/guides/GUIDE.en.md" in script
     assert "python -m mardas_md2pdf.cli docs/guides/GUIDE.fa.md" in script
+    assert script.count("--style modern --palette emerald --mode light") == 2
+    assert "--palette blue" not in script
 
 
 def test_build_dist_supports_no_isolation_mode() -> None:

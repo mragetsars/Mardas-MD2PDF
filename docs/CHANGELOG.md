@@ -4,6 +4,19 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.13.2 - 2026-06-20
+
+### Changed
+- Strengthened the official guide visual identity so the English and Persian examples use a visibly emerald Mardas cover, callout, table, heading, and footer accent contract instead of only storing `palette: emerald` in front matter.
+- Added a compact emerald guide brand mark and wired the official guides to use it for cover branding.
+- Updated guide quickstart and automation examples to prefer the same `modern + emerald + light` appearance used by the official examples.
+
+### Fixed
+- Fixed remaining guide drift where the cover and semantic callouts still looked blue/violet/yellow despite the guide metadata declaring the emerald palette.
+
+### Tests
+- Added regression coverage for the official guide brand mark, guide metadata, and modern-emerald callout/cover CSS contract.
+
 ## 1.13.1 - 2026-06-20
 
 ### Changed

@@ -11,11 +11,11 @@ mkdir -p examples
 python -m mardas_md2pdf.cli docs/guides/GUIDE.en.md \
   -o examples/GUIDE.en.pdf \
   --toc \
-  --style github --palette blue --mode light \
+  --style modern --palette emerald --mode light \
   --timeout-ms "$timeout_ms"
 
 python -m mardas_md2pdf.cli docs/guides/GUIDE.fa.md \
   -o examples/GUIDE.fa.pdf \
   --toc \
-  --style modern --palette blue --mode light \
+  --style modern --palette emerald --mode light \
   --timeout-ms "$timeout_ms"
