@@ -165,3 +165,25 @@ def test_chunked_visual_qa_runner_builds_bounded_case_chunks() -> None:
 
     assert chunked(cases, 1) == [(cases[0],), (cases[1],)]
     assert chunked(cases, 2) == [cases]
+
+
+def test_chunked_visual_qa_runner_uses_safe_command_capture() -> None:
+    source = (SCRIPTS / "run_visual_qa_matrix.py").read_text(encoding="utf-8")
+
+    assert "from visual_qa import ensure_clean_dir, run_command, write_json" in source
+    assert "subprocess.run" not in source
+    assert "stdout=subprocess.PIPE" not in source
+
+
+def test_chunked_visual_qa_runner_reports_child_failures_without_crashing() -> None:
+    from run_visual_qa_matrix import _run
+
+    result = _run(
+        [sys.executable, "-c", "import sys; print('before failure'); print('bad', file=sys.stderr); sys.exit(7)"],
+        timeout=10,
+    )
+
+    assert result["returncode"] == 1
+    assert result["command"]
+    assert "before failure" in result["stderr_tail"]
+    assert "bad" in result["stderr_tail"]

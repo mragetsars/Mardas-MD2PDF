@@ -4,6 +4,16 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.13.10 - 2026-06-21
+
+### Fixed
+- Replaced the chunked Visual QA runner's pipe-captured subprocess execution with the shared process-tree-safe command helper so batch audits report failed child chunks instead of hanging when Chromium or Poppler descendants inherit output handles.
+- Aligned the guide media regression contract with the current architecture-banner samples: guide Markdown must use the document-local `images/architecture.svg` sample, keep the packaged `images/logo.svg` asset available, and avoid reintroducing direct logo embeds in the manuals.
+
+### Tests
+- Added regression coverage for chunked Visual QA command capture and child-failure reporting.
+- Updated guide media integrity coverage so contradictory `images/logo.svg` expectations cannot make the baseline test suite fail.
+
 ## 1.13.9 - 2026-06-20
 
 - Added a dedicated white vector cover-label mark for built-in Mardas MD2PDF branding while keeping the full-color mark for Studio and document-local examples.

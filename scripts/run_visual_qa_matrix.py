@@ -11,13 +11,12 @@ from __future__ import annotations
 
 import argparse
 import dataclasses
-import subprocess
 import sys
 from pathlib import Path
 from typing import Iterable, Sequence
 
 from mardas_md2pdf.appearance import MODES, PALETTES_ORDER, STYLES
-from visual_qa import ensure_clean_dir, write_json
+from visual_qa import ensure_clean_dir, run_command, write_json
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -51,7 +50,24 @@ def build_cases(
 
 
 def _run(command: list[str], *, timeout: int) -> dict[str, object]:
-    completed = subprocess.run(command, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout)
+    """Run a child audit chunk without pipe-related process hangs.
+
+    The chunk runner is itself part of the visual QA reliability boundary.  The
+    child audit scripts can launch Python, Playwright/Chromium, and Poppler
+    helpers; using pipe-captured subprocess calls here can block if a grandchild
+    inherits a pipe after the direct child exits.  Reuse
+    the shared ``visual_qa.run_command`` helper so output is captured through
+    temporary files and timeout cleanup targets the process tree.
+    """
+    try:
+        completed = run_command(command, timeout=timeout, description="visual QA chunk")
+    except RuntimeError as exc:
+        return {
+            "command": command,
+            "returncode": 1,
+            "stdout_tail": "",
+            "stderr_tail": str(exc)[-4000:],
+        }
     return {
         "command": command,
         "returncode": completed.returncode,
