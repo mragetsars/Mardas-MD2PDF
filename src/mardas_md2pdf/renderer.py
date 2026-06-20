@@ -1830,27 +1830,42 @@ def _footer_template(
     safe_meta = html.escape(metadata)
     page_label = html.escape(_footer_page_label(lang))
     title_align = "right" if document_direction == "rtl" else "left"
+    center_style = (
+        "position:absolute; left:50%; transform:translateX(-50%); "
+        "max-width:35%; min-width:0; overflow:hidden; text-overflow:ellipsis; "
+        "white-space:nowrap; text-align:center; opacity:.82; font-weight:600;"
+    )
     meta_html = (
-        f'<span dir="auto" style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:center; opacity:.78; font-weight:600;">{safe_meta}</span>'
+        f'<span dir="auto" style="{center_style}">{safe_meta}</span>'
         if safe_meta
-        else '<span aria-hidden="true"></span>'
+        else '<span aria-hidden="true" style="position:absolute; left:50%; transform:translateX(-50%);"></span>'
     )
     if normalize_language(lang).startswith(RTL_LANG_PREFIXES):
         page_html = (
-            f'<span dir="rtl" style="direction:rtl; unicode-bidi:plaintext; white-space:nowrap; text-align:left; font-weight:{page_weight}; font-family:Vazirmatn, Arial, sans-serif;">'
+            f'<span dir="rtl" style="display:block; white-space:nowrap; text-align:left; direction:rtl; unicode-bidi:plaintext; font-weight:{page_weight}; font-family:Vazirmatn, Arial, sans-serif;">'
             f'{page_label} <span class="pageNumber"></span> از <span class="totalPages"></span></span>'
         )
     else:
         page_html = (
-            f'<span dir="ltr" style="direction:ltr; unicode-bidi:isolate; white-space:nowrap; text-align:right; font-weight:{page_weight}; font-family:Arial, sans-serif;">'
+            f'<span dir="ltr" style="display:block; white-space:nowrap; text-align:right; direction:ltr; unicode-bidi:isolate; font-weight:{page_weight}; font-family:Arial, sans-serif;">'
             f'{page_label} <span class="pageNumber"></span>/<span class="totalPages"></span></span>'
         )
+    title_html = (
+        f'<span dir="auto" style="display:block; min-width:0; direction:{html.escape(document_direction)}; unicode-bidi:plaintext; '
+        f'text-align:{title_align}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:{title_weight};">{safe_title}</span>'
+    )
+    if document_direction == "rtl":
+        left_html = page_html
+        right_html = title_html
+    else:
+        left_html = title_html
+        right_html = page_html
     return f"""
     <div style="width:100%; font-size:8px; color:{color}; padding:0 16mm; font-family:{font_family};">
-      <div style="border-top:1px solid {rule_color}; padding-top:4.5px; display:grid; grid-template-columns:minmax(0,1.4fr) minmax(0,.9fr) minmax(22mm,.6fr); align-items:center; gap:5mm; direction:ltr;">
-        <span dir="auto" style="min-width:0; direction:{html.escape(document_direction)}; unicode-bidi:plaintext; text-align:{title_align}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:{title_weight};">{safe_title}</span>
+      <div style="position:relative; min-height:11px; border-top:1px solid {rule_color}; padding-top:4.5px; display:flex; align-items:center; justify-content:space-between; gap:5mm; direction:ltr;">
+        <span style="display:block; width:35%; min-width:0;">{left_html}</span>
         {meta_html}
-        {page_html}
+        <span style="display:block; width:35%; min-width:0;">{right_html}</span>
       </div>
     </div>
     """

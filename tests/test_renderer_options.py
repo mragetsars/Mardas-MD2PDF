@@ -102,6 +102,7 @@ def test_footer_template_isolates_mixed_title_in_ltr_footer_slot():
     assert "unicode-bidi:isolate" in footer
     assert "راهنمای Mardas MD2PDF" in footer
     assert "text-align:left" in footer
+    assert "position:absolute; left:50%; transform:translateX(-50%)" in footer
 
 
 def test_print_css_hides_heading_permalink_markers(tmp_path):

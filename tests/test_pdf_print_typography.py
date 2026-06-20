@@ -177,7 +177,7 @@ def test_guide_architecture_svg_title_is_not_clipped():
     assert "meta-start" in svg
     assert "text-anchor:start" in svg
     assert 'class="meta meta-start"' in svg
-    assert 'x="126"' in svg
+    assert 'Mardas MD2PDF' in svg
 
 
 def test_pdf_typography_docs_cover_guide_media_audit():
@@ -228,8 +228,26 @@ def test_footer_template_is_bidi_safe_and_contains_running_metadata():
     assert "Mardas Lab · 1.8.4 · Stable" in template
     assert "صفحه" in template
     assert "unicode-bidi:plaintext" in template
-    assert "grid-template-columns" in template
+    assert "position:absolute; left:50%; transform:translateX(-50%)" in template
+    assert template.index('class="pageNumber"') < template.index("گزارش Mardas MD2PDF")
 
+
+
+
+def test_ltr_footer_template_keeps_metadata_centered_between_outer_slots():
+    template = _footer_template(
+        FooterContext(
+            title="Mardas MD2PDF Guide",
+            metadata="Markdown Publishing · 1.13.1 · Stable",
+            lang="en",
+            document_direction="ltr",
+        ),
+        "modern",
+        "light",
+    )
+
+    assert "position:absolute; left:50%; transform:translateX(-50%)" in template
+    assert template.index("Mardas MD2PDF Guide") < template.index('class="pageNumber"')
 
 
 
