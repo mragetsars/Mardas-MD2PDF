@@ -85,3 +85,7 @@ The default cleanup removes Python caches, pytest/ruff caches, build outputs,
 editable-install metadata, and the common root-level `output.pdf` scratch file.
 The `--patches` option also removes a temporary root-level `patches/` directory
 after patch sets have been applied.
+
+## Release gate
+
+Run `./scripts/release_gate.sh` before tagging a release. Set `MARDAS_RELEASE_VISUAL_QA=1` when the full chunked visual matrix is required instead of the reduced smoke matrix.

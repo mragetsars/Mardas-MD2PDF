@@ -58,6 +58,45 @@ math, Mermaid, footnotes, callouts, and Persian mixed-script punctuation. The
 default appearance set stays small for quick local checks; add `--all-appearances`
 when a change must be validated across every style, palette, and mode.
 
+
+## Chunked full-matrix runner
+
+For release candidates, prefer the chunked runner. It delegates to the appearance
+and feature audits, but keeps each child process bounded and resumable:
+
+```bash
+python scripts/run_visual_qa_matrix.py \
+  --output-dir build/visual-qa/full \
+  --render-png \
+  --raster-timeout 60 \
+  --resume \
+  --clean
+```
+
+For a fast smoke pass, bound the matrix without changing the audit documents:
+
+```bash
+python scripts/run_visual_qa_matrix.py \
+  --output-dir build/visual-qa/full-smoke \
+  --max-cases 2 \
+  --render-png \
+  --fail-fast \
+  --clean
+```
+
+## PDF preflight
+
+After regenerating public examples, run a PDF preflight to catch parser warnings,
+font embedding gaps, and rasterization failures before a release:
+
+```bash
+python scripts/check_pdf_preflight.py \
+  examples/GUIDE.en.pdf \
+  examples/GUIDE.fa.pdf \
+  --pages 1,2,3 \
+  --output build/pdf-preflight.json
+```
+
 ## Snapshot comparison
 
 When a known-good PNG snapshot exists, compare it with a candidate snapshot:

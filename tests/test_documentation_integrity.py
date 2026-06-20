@@ -31,7 +31,7 @@ def test_guides_start_with_valid_front_matter():
         metadata = _front_matter(guide)
         assert metadata.get("title")
         assert metadata.get("summary")
-        assert metadata.get("version") == "1.12.2"
+        assert metadata.get("version") == "1.13.0"
         assert metadata.get("branding", {}).get("mode") == "full"
 
 
@@ -53,7 +53,7 @@ def test_changelog_is_descending_and_has_single_intro():
     versions = [tuple(map(int, match.groups())) for match in VERSION_RE.finditer(changelog)]
     assert versions == sorted(versions, reverse=True)
     assert len(versions) == len(set(versions))
-    assert versions[0] == (1, 12, 2)
+    assert versions[0] == (1, 13, 0)
     assert (1, 8, 6) in versions
     assert (1, 8, 5) in versions
     assert (1, 5, 0) in versions
@@ -113,8 +113,8 @@ def test_guides_include_persian_rtl_live_smoke_samples():
 
     assert "Persian/RTL visual smoke sample" in en
     assert "نمونه smoke تصویری فارسی/RTL" in fa
-    assert "version 1.12.2" in en
-    assert "version 1.12.2" in fa
+    assert "version 1.13.0" in en
+    assert "version 1.13.0" in fa
     assert "۱۴۰۵" in en
     assert "۱۴۰۵" in fa
     assert "جدول ۱۲. نمونه جدول فارسی/RTL با عددهای ترکیبی." in en
@@ -187,6 +187,8 @@ def test_visual_qa_reference_document_exists_and_stays_artifact_based():
     assert "scripts/audit_pdf_features.py" in docs
     assert "scripts/compare_visual_snapshots.py" in docs
     assert "scripts/audit_studio_visual.py" in docs
+    assert "scripts/run_visual_qa_matrix.py" in docs
+    assert "scripts/check_pdf_preflight.py" in docs
     assert "build/visual-qa/" in docs
     assert "must not be committed" in docs
     assert "[Visual QA system](./VISUAL-QA.md)" in docs_index

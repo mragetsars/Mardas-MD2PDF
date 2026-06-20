@@ -34,6 +34,7 @@ def test_maintenance_scripts_are_executable() -> None:
         "scripts/build_examples.sh",
         "scripts/build_dist.sh",
         "scripts/clean_workspace.sh",
+        "scripts/release_gate.sh",
     ]:
         path = ROOT / relative_path
         assert path.is_file()
@@ -63,6 +64,8 @@ def test_example_builds_set_deterministic_pdf_dates() -> None:
 
     assert "SOURCE_DATE_EPOCH" in script
     assert "1735689600" in script
+    assert "python -m mardas_md2pdf.cli docs/guides/GUIDE.en.md" in script
+    assert "python -m mardas_md2pdf.cli docs/guides/GUIDE.fa.md" in script
 
 
 def test_build_dist_supports_no_isolation_mode() -> None:
@@ -70,3 +73,17 @@ def test_build_dist_supports_no_isolation_mode() -> None:
 
     assert "MARDAS_BUILD_NO_ISOLATION" in script
     assert "python -m build --no-isolation" in script
+
+
+def test_release_gate_consolidates_release_checks() -> None:
+    script = ROOT.joinpath("scripts", "release_gate.sh").read_text(encoding="utf-8")
+    release_doc = _read("docs/RELEASE.md")
+
+    assert "scripts/check.sh" in script
+    assert "MARDAS_RELEASE_SMOKE_TIMEOUT" in script
+    assert "scripts/build_examples.sh" in script
+    assert "scripts/check_pdf_preflight.py" in script
+    assert "scripts/run_visual_qa_matrix.py" in script
+    assert "scripts/build_dist.sh" in script
+    assert "MARDAS_RELEASE_VISUAL_QA" in script
+    assert "./scripts/release_gate.sh" in release_doc

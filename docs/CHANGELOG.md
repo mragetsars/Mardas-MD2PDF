@@ -4,6 +4,27 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.13.0 - 2026-06-20
+
+### Fixed
+
+- Reduced PDF preflight font warnings in modern/GitHub output by avoiding environment-specific Inter font embedding in print styles and guide SVG samples.
+- Improved footer contrast in dark-mode PDF output so page labels and running metadata stay readable across styles.
+
+### Added
+
+- Added `scripts/check_pdf_preflight.py` for repeatable PDF font, rasterization, and parser-warning checks.
+- Added `scripts/run_visual_qa_matrix.py` as a chunked full-matrix Visual QA runner for appearance and feature-heavy PDF audits.
+- Added `scripts/release_gate.sh` to consolidate pytest, smoke rendering, guide rebuilds, PDF preflight, bounded Visual QA, and distribution builds into one release command.
+
+### Documentation
+
+- Documented guide-level PDF preflight checks, chunked Visual QA runs, and the consolidated release gate.
+
+### Tests
+
+- Added regression coverage for PDF preflight parsing, explicit appearance triples, chunking contracts, dark footer contrast, guide preflight documentation, and release-gate script wiring.
+
 ## 1.12.2 - 2026-06-20
 
 ### Fixed

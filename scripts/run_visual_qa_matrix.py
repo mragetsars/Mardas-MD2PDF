@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import argparse
 import dataclasses
-import json
 import subprocess
 import sys
 from pathlib import Path

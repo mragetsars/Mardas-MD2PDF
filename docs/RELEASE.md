@@ -18,16 +18,23 @@ Run the local checks before tagging:
 ./scripts/check.sh
 ```
 
-For a full release verification, include the Chromium smoke test and regenerate the guide samples:
+For a full release verification, use the consolidated release gate:
 
 ```bash
-MARDAS_RENDER_SMOKE=1 ./scripts/check.sh
-./scripts/build_examples.sh
-./scripts/build_dist.sh
-./scripts/clean_workspace.sh
+./scripts/release_gate.sh
+```
+
+The gate runs the same core commands release maintainers previously ran manually: `./scripts/check.sh`, `./scripts/build_examples.sh`, `./scripts/build_dist.sh`, and optional cleanup via `./scripts/clean_workspace.sh`.
+
+For exhaustive local visual review, opt in to the full chunked Visual QA matrix:
+
+```bash
+MARDAS_RELEASE_VISUAL_QA=1 ./scripts/release_gate.sh
 ```
 
 Use `./scripts/clean_workspace.sh --patches` after local patch application if temporary patch bundles were unpacked into the repository root.
+
+The release gate writes PDF preflight data to `build/release/pdf-preflight.json` and one-case Visual QA smoke artifacts to `build/release/visual-qa-smoke/` unless `MARDAS_RELEASE_VISUAL_QA=1` is set.
 
 Open the generated PDFs and visually check the cover, table of contents, page numbers, code blocks, formulas, Mermaid diagrams, local images, wide tables, blocked-image placeholders, watermarks, and footnotes. When changing appearance CSS or palette behavior, also run `python scripts/audit_appearance_matrix.py --output-dir build/appearance-audit --render-png --resume` and review the full style/palette/mode matrix. The example build helper sets `SOURCE_DATE_EPOCH` by default so repeated guide builds do not churn metadata dates. In offline or pre-provisioned release environments, `MARDAS_BUILD_NO_ISOLATION=1 ./scripts/build_dist.sh` reuses the current environment instead of creating an isolated build environment.
 
