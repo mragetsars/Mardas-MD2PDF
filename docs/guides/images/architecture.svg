@@ -6,17 +6,21 @@
       <stop offset="0" stop-color="#10b981"/>
       <stop offset="1" stop-color="#0f766e"/>
     </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#0f172a" flood-opacity="0.12"/>
+    </filter>
     <marker id="arrow" viewBox="0 0 10 10" refX="8.4" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M 0 0 L 10 5 L 0 10 z" fill="#10b981"/>
     </marker>
     <style>
       .bg{fill:#f8fafc;stroke:#dbe3ef;stroke-width:2}
-      .card{fill:#ffffff;stroke:#cbd5e1;stroke-width:2}
-      .card-accent{fill:#ecfdf5;stroke:#10b981;stroke-width:2}
+      .card{fill:#ffffff;stroke:#cbd5e1;stroke-width:2;filter:url(#shadow)}
+      .card-accent{fill:#ecfdf5;stroke:#10b981;stroke-width:2;filter:url(#shadow)}
       .label{font:700 25px "Segoe UI",Arial,sans-serif;fill:#0f172a;text-anchor:middle}
       .meta{font:600 16px "Segoe UI",Arial,sans-serif;fill:#64748b;text-anchor:middle}
       .meta-start{text-anchor:start}
       .arrow{fill:none;stroke:#10b981;stroke-width:5;stroke-linecap:round;marker-end:url(#arrow)}
+      .dot{fill:url(#accent)}
       .brand{font:800 24px "Segoe UI",Arial,sans-serif;fill:#0f172a}
     </style>
   </defs>
@@ -24,7 +28,7 @@
 
   <g transform="translate(56 56)">
     <rect x="0" y="0" width="76" height="76" rx="22" fill="url(#accent)"/>
-    <path d="M64.1 38.5 L43.8 64.0 L32.3 89.4 L30.0 102.7 L30.6 115.9 L33.4 126.8 L38.2 135.3 L50.2 143.5 L64.5 143.2 L76.2 135.9 L96.1 115.6 L106.8 112.1 L112.6 113.4 L117.8 117.0 L120.9 123.0 L121.5 130.5 L115.9 142.8 L102.2 150.9 L102.2 153.3 L126.6 151.7 L145.8 142.4 L157.0 129.4 L161.9 114.1 L161.4 104.6 L157.9 95.8 L151.9 88.6 L144.5 83.5 L153.2 75.0 L158.5 66.1 L159.4 57.9 L156.1 49.4 L149.2 43.8 L141.2 41.3 L131.9 41.1 L121.2 43.6 L102.8 54.5 L85.2 74.1 L76.1 64.2 L66.4 39.1 Z" fill="#ffffff" transform="translate(-8 -4) scale(.48)"/>
+    <path d="M18 52V22h12l10 14 10-14h12v30H52V37l-9 11h-6l-9-11v15Z" fill="#ffffff"/>
     <text x="98" y="34" class="brand">Mardas MD2PDF</text>
     <text x="98" y="62" class="meta meta-start">Markdown to structured print pipeline</text>
   </g>

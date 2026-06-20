@@ -393,7 +393,7 @@ body.md2pdf-mode-dark .md2pdf-cover__brand {{
   border-color: var(--line) !important;
   color: var(--ink) !important;
 }}
-body.md2pdf-mode-dark .md2pdf-cover__brand--product .md2pdf-cover__mark {{ background: linear-gradient(135deg, var(--accent), var(--accent-2)) !important; }}
+body.md2pdf-mode-dark .md2pdf-cover__mark {{ background: linear-gradient(135deg, var(--accent), var(--accent-2)) !important; }}
 body.md2pdf-mode-dark .md2pdf-cover__brand-copy strong {{ color: {surface['heading']} !important; }}
 body.md2pdf-mode-dark .md2pdf-cover__brand-copy em {{ color: var(--muted) !important; }}
 body.md2pdf-mode-dark .md2pdf-cover__release {{
@@ -448,7 +448,7 @@ body.md2pdf-style-modern.md2pdf-palette-emerald:not(.md2pdf-mode-dark) .md2pdf-c
   background: rgba(255, 255, 255, 0.94) !important;
   box-shadow: 0 8px 22px rgba(6, 78, 59, 0.08) !important;
 }
-body.md2pdf-style-modern.md2pdf-palette-emerald:not(.md2pdf-mode-dark) .md2pdf-cover__brand--product .md2pdf-cover__mark {
+body.md2pdf-style-modern.md2pdf-palette-emerald:not(.md2pdf-mode-dark) .md2pdf-cover__mark {
   background: linear-gradient(135deg, #10b981, #0f766e) !important;
 }
 body.md2pdf-style-modern.md2pdf-palette-emerald:not(.md2pdf-mode-dark) .md2pdf-cover__brand-copy em,

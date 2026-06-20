@@ -59,7 +59,7 @@ preferred name for new branded output.
 ## Project examples
 
 The built-in English and Persian guides explicitly use `branding.mode: full`, because they
-are examples of Mardas MD2PDF itself. They do not set a custom `brand` block; this lets
-the renderer use the packaged Mardas logo and the canonical product label instead of a
-guide-local placeholder mark. User documents should normally keep the default `off` mode
-unless they intentionally need branding.
+are examples of Mardas MD2PDF itself. They also pin the guide-local
+`images/brand-mark.svg` artwork so the cover keeps the classic compact rounded product
+label used by the official examples. User documents should normally keep the default
+`off` mode unless they intentionally need branding.

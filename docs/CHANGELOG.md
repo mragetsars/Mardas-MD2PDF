@@ -4,6 +4,18 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.13.4 - 2026-06-20
+
+### Fixed
+- Restored the classic guide cover branding label: a compact rounded pill, circular optical logo frame, and the guide-local `images/brand-mark.svg` artwork used by the earlier official examples.
+- Removed the product/custom cover-brand class split introduced in the previous branding polish so guide covers do not regress to a squared or overbuilt badge.
+
+### Documentation
+- Clarified that official guides intentionally pin the local brand mark to preserve the established guide cover identity.
+
+### Tests
+- Restored regression coverage that requires the official guide front matter to keep `brand.logo: images/brand-mark.svg`.
+
 ## 1.13.3 - 2026-06-20
 
 ### Changed
