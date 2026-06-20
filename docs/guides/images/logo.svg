@@ -1,22 +1,32 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="640" height="240" viewBox="0 0 640 240" role="img" aria-labelledby="title desc">
-  <title id="title">Mardas MD2PDF sample logo</title>
-  <desc id="desc">A compact sample mark used by the documentation image embedding section.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="260" viewBox="0 0 720 260" role="img" aria-labelledby="title desc">
+  <title id="title">Mardas MD2PDF brand plate</title>
+  <desc id="desc">Official emerald brand plate used in the Mardas MD2PDF guides.</desc>
   <defs>
-    <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
-      <stop offset="0" stop-color="#10a37f"/>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#ecfdf5"/>
+      <stop offset="1" stop-color="#f8fafc"/>
+    </linearGradient>
+    <linearGradient id="mark" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#10b981"/>
       <stop offset="1" stop-color="#0f766e"/>
     </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#0f172a" flood-opacity="0.14"/>
+    </filter>
     <style>
-      .word{font:900 52px Segoe UI,Arial,sans-serif;fill:#0f172a;letter-spacing:-1px}
-      .tag{font:700 20px Segoe UI,Arial,sans-serif;fill:#64748b;letter-spacing:2px}
+      .word{font:900 54px "Segoe UI",Arial,sans-serif;fill:#0f172a;letter-spacing:-1.2px}
+      .tag{font:700 20px "Segoe UI",Arial,sans-serif;fill:#475569;letter-spacing:3px}
+      .meta{font:600 18px "Segoe UI",Arial,sans-serif;fill:#0f766e}
     </style>
   </defs>
-  <rect width="640" height="240" rx="38" fill="#f8fafc" stroke="#dbe3ef" stroke-width="4"/>
-  <g transform="translate(58 58)">
-    <rect x="0" y="0" width="116" height="116" rx="30" fill="url(#g)"/>
-    <path d="M32 72c0-24 17-43 39-43 16 0 28 8 34 21-13-6-28-2-38 8-10 10-14 25-8 38-16-5-27-14-27-24Z" fill="#fff" opacity=".96"/>
-    <path d="M31 82c22 10 48 4 63-15 7-9 10-19 10-30 13 11 17 31 8 47-12 22-41 30-81-2Z" fill="#ecfeff" opacity=".9"/>
+  <rect width="720" height="260" rx="34" fill="url(#bg)" stroke="#cbd5e1" stroke-width="3"/>
+  <g transform="translate(44 34)" filter="url(#shadow)">
+    <rect x="0" y="0" width="172" height="172" rx="44" fill="url(#mark)"/>
+    <circle cx="86" cy="86" r="58" fill="#ffffff" opacity="0.10"/>
+    <path d="M45 122V52h24l18 31 18-31h24v70h-20V85l-16 27H81L65 85v37Z" fill="#ffffff"/>
+    <path d="M118 58c17 8 28 25 28 44 0 13-5 24-14 33-10 10-24 15-39 15-14 0-26-4-36-12 12 2 26 0 36-8 9-6 15-17 16-29 2-16 6-30 9-43Z" fill="#d1fae5" opacity="0.92"/>
   </g>
-  <text x="204" y="108" class="word">Mardas MD2PDF</text>
-  <text x="206" y="150" class="tag">LOCAL MARKDOWN PUBLISHING</text>
+  <text x="252" y="110" class="word">Mardas MD2PDF</text>
+  <text x="254" y="148" class="tag">MARKDOWN TO PDF</text>
+  <text x="254" y="186" class="meta">Structured publishing for bilingual technical documents</text>
 </svg>
