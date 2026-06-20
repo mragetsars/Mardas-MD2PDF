@@ -270,7 +270,7 @@ def test_gui_uses_inline_svg_icons_and_project_logo():
     assert 'href="#icon-file-down"' in html
     assert 'href="#icon-bold"' in html
     assert 'href="#icon-table"' in html
-    assert '<span class="brand-mark"><img src="/assets/Mardas.png" alt="" /></span>' in html
+    assert '<span class="brand-mark"><img src="/assets/mardas-md2pdf-mark.svg" alt="" /></span>' in html
     assert 'stroke-width:1.8' in html
 
 
@@ -368,7 +368,7 @@ def test_gui_logo_uses_contain_fit_with_breathing_room():
 
     assert '.brand-mark{overflow:visible;background:transparent' in html
     assert '.brand-mark img{width:100%;height:100%;object-fit:contain;display:block}' in html
-    assert 'body.light-mode .brand-mark img{filter:invert(1)' in html
+    assert 'body.light-mode .brand-mark img{filter:none;opacity:1}' in html
 
 
 def test_studio_project_files_roundtrip_workspace_state():

@@ -20,7 +20,7 @@ docs live in their own directories.
 ## Feature references
 
 - [Appearance system](./APPEARANCE.md)
-- [Cover branding](./BRANDING.md)
+- [Cover branding](./BRANDING.md), including the logo asset contract
 - [Studio workflow](./STUDIO.md)
 - [Markdown fidelity](./MARKDOWN-FIDELITY.md)
 - [PDF navigation](./PDF-NAVIGATION.md)

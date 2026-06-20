@@ -240,7 +240,7 @@ def test_ltr_footer_template_keeps_metadata_centered_between_outer_slots():
     template = _footer_template(
         FooterContext(
             title="Mardas MD2PDF Guide",
-            metadata="Markdown Publishing · 1.13.6 · Stable",
+            metadata="Markdown Publishing · 1.13.7 · Stable",
             lang="en",
             document_direction="ltr",
         ),

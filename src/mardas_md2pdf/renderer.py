@@ -208,8 +208,12 @@ def _image_data_uri(path: Path | None) -> str | None:
 
 
 def _default_logo_path() -> Path | None:
-    path = _asset_path("Mardas.png")
-    return path if path.exists() else None
+    """Return the packaged product mark used by default cover branding."""
+    for filename in ("mardas-md2pdf-mark.svg", "Mardas.png"):
+        path = _asset_path(filename)
+        if path.exists():
+            return path
+    return None
 
 
 def _cover_logo_uri(options: PdfOptions) -> str | None:

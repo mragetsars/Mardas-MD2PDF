@@ -403,10 +403,12 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
             html = _asset_text("gui.html").replace("__MARDAS_VERSION__", __version__)
             self._send_text(html)
             return
-        if self.path == "/assets/Mardas.png":
-            data = (resources.files("mardas_md2pdf") / "assets" / "Mardas.png").read_bytes()
+        if self.path in {"/assets/Mardas.png", "/assets/mardas-md2pdf-mark.svg"}:
+            filename = "mardas-md2pdf-mark.svg" if self.path.endswith(".svg") else "Mardas.png"
+            data = (resources.files("mardas_md2pdf") / "assets" / filename).read_bytes()
+            content_type = "image/svg+xml" if filename.endswith(".svg") else "image/png"
             self.send_response(200)
-            self.send_header("Content-Type", "image/png")
+            self.send_header("Content-Type", content_type)
             self.send_header("Content-Length", str(len(data)))
             self.end_headers()
             self.wfile.write(data)

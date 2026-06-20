@@ -4,6 +4,19 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.13.7 - 2026-06-20
+
+### Changed
+- Adopted the dedicated Mardas MD2PDF project logo as packaged SVG assets for the built-in cover brand label and Studio UI.
+- Kept the legacy `Mardas.png` raster asset as a compatibility fallback while preferring `mardas-md2pdf-mark.svg` for new built-in product branding.
+
+### Documentation
+- Documented the official mark, app icon, guide-local logo copy, and custom-brand usage boundaries in the branding reference.
+- Synced README badge and English/Persian guide metadata to version `1.13.7`.
+
+### Tests
+- Added regression coverage for the packaged SVG logo asset contract and updated Studio logo checks for the new colored project mark.
+
 ## 1.13.6 - 2026-06-20
 
 ### Fixed

@@ -25,7 +25,7 @@ Because the English and Persian guides are both user guides and live rendering s
 | `docs/MAINTENANCE.md` | Routine local checks and build workflow. | Update when scripts or CI gates change. |
 | `docs/SECURITY.md` | Trusted/untrusted input boundaries. | Update when renderer or asset handling security changes. |
 | `docs/APPEARANCE.md` | Style, palette, and mode reference. | Update when appearance choices or audit rules change. |
-| `docs/BRANDING.md` | Cover branding and organization branding reference. | Update when cover/branding behavior changes. |
+| `docs/BRANDING.md` | Cover branding, logo assets, and organization branding reference. | Update when cover/branding behavior or logo assets change. |
 | `docs/STUDIO.md` | Studio workflow and GUI behavior. | Update when Studio layout, preview, or export behavior changes. |
 | `docs/MARKDOWN-FIDELITY.md` | Markdown feature support and edge-case behavior. | Update when parser/renderer fidelity changes. |
 | `docs/PDF-NAVIGATION.md` | Visible TOC, PDF outline, destinations, and metadata. | Update when TOC/bookmark behavior changes. |

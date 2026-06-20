@@ -64,3 +64,19 @@ metadata; this keeps the cover on the built-in product branding path, where the 
 rounded label uses the packaged Mardas logo, the established product typography, and no
 drop shadow. User documents should normally keep the default `off` mode unless they
 intentionally need branding.
+
+## Official project logo assets
+
+The project now ships the dedicated Mardas MD2PDF logo as package assets:
+
+| Asset | Purpose |
+| :--- | :--- |
+| `src/mardas_md2pdf/assets/mardas-md2pdf-mark.svg` | Primary product mark used by the built-in cover brand label and Studio UI. |
+| `src/mardas_md2pdf/assets/mardas-md2pdf-app-icon.svg` | Rounded-square launcher/app icon artwork for distribution and platform packaging. |
+| `src/mardas_md2pdf/assets/Mardas.png` | Compatibility raster asset kept for older references and external workflows. |
+| `docs/guides/images/logo.svg` | Guide-local copy used in the official image examples. |
+
+The official English and Persian guides should keep `branding.mode: full` without custom
+`brand` metadata. That keeps them on the built-in product-branding path, where the cover
+label uses the packaged project logo and the active appearance palette. Custom documents
+should use `brand.logo` only for their own organization or lab logo.
