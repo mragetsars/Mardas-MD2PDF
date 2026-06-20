@@ -31,7 +31,7 @@ def test_guides_start_with_valid_front_matter():
         metadata = _front_matter(guide)
         assert metadata.get("title")
         assert metadata.get("summary")
-        assert metadata.get("version") == "1.13.7"
+        assert metadata.get("version") == "1.13.8"
         assert metadata.get("branding", {}).get("mode") == "full"
 
 
@@ -63,6 +63,11 @@ def test_project_logo_assets_are_packaged_and_documented():
         assert "#123563" in text
 
     assert guide_logo.read_text(encoding="utf-8") == mark.read_text(encoding="utf-8")
+    architecture = (ROOT / "docs/guides/images/architecture.svg").read_text(encoding="utf-8")
+    assert "architecture-project-mark" in architecture
+    assert "M18 52V22" not in architecture
+    assert "#088981" in architecture
+    assert "#123563" in architecture
     assert '"assets/*.svg"' in pyproject
     assert "mardas-md2pdf-mark.svg" in branding_docs
     assert "mardas-md2pdf-app-icon.svg" in branding_docs
@@ -87,7 +92,7 @@ def test_changelog_is_descending_and_has_single_intro():
     versions = [tuple(map(int, match.groups())) for match in VERSION_RE.finditer(changelog)]
     assert versions == sorted(versions, reverse=True)
     assert len(versions) == len(set(versions))
-    assert versions[0] == (1, 13, 7)
+    assert versions[0] == (1, 13, 8)
     assert (1, 8, 6) in versions
     assert (1, 8, 5) in versions
     assert (1, 5, 0) in versions
@@ -147,8 +152,8 @@ def test_guides_include_persian_rtl_live_smoke_samples():
 
     assert "Persian/RTL visual smoke sample" in en
     assert "نمونه smoke تصویری فارسی/RTL" in fa
-    assert "version 1.13.7" in en
-    assert "version 1.13.7" in fa
+    assert "version 1.13.8" in en
+    assert "version 1.13.8" in fa
     assert "۱۴۰۵" in en
     assert "۱۴۰۵" in fa
     assert "جدول ۱۲. نمونه جدول فارسی/RTL با عددهای ترکیبی." in en

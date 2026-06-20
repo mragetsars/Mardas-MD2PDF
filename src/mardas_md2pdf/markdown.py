@@ -2115,26 +2115,57 @@ def postprocess_html(body_html: str, *, code_style: str = "github-dark", lang: s
             wrapper["data-md2pdf-rows"] = str(rows)
         table.wrap(wrapper)
 
+    def _consume_task_list_marker(li: Tag) -> bool | None:
+        children = list(li.contents)
+        for idx, child in enumerate(children):
+            if not isinstance(child, NavigableString):
+                if str(child).strip():
+                    return None
+                continue
+            text = str(child)
+            if not text.strip():
+                continue
+            match = re.match(r"^(\s*)\[( |x|X)\]\s+", text)
+            if match:
+                child.replace_with(text[match.end() :])
+                return match.group(2).lower() == "x"
+
+            # Persian mixed-script isolation can wrap the `x` in `[x]` before task
+            # list normalization runs, producing `[<span ...>x</span>] text`.
+            # Consume that structured marker so RTL guide task lists render with
+            # real disabled checkboxes instead of visible `[x]` text.
+            if not re.match(r"^\s*\[\s*$", text):
+                return None
+            if idx + 2 >= len(children):
+                return None
+            marker = children[idx + 1]
+            closer = children[idx + 2]
+            marker_text = marker.get_text(strip=True) if isinstance(marker, Tag) else str(marker).strip()
+            if marker_text not in {"x", "X", ""}:
+                return None
+            if not isinstance(closer, NavigableString):
+                return None
+            close_text = str(closer)
+            close_match = re.match(r"^\]\s+", close_text)
+            if not close_match:
+                return None
+
+            child.extract()
+            marker.extract()
+            closer.replace_with(close_text[close_match.end() :])
+            return marker_text.lower() == "x"
+        return None
+
     # GitHub-style task lists.
     for li in soup.find_all("li"):
-        first_text = None
-        for child in li.children:
-            if isinstance(child, NavigableString) and child.strip():
-                first_text = child
-                break
-        if first_text is None:
+        checked = _consume_task_list_marker(li)
+        if checked is None:
             continue
-        text = str(first_text)
-        match = re.match(r"^(\s*)\[( |x|X)\]\s+", text)
-        if not match:
-            continue
-        checked = match.group(2).lower() == "x"
         checkbox = soup.new_tag("input", type="checkbox")
         if checked:
             checkbox["checked"] = "checked"
         checkbox["disabled"] = "disabled"
         li.insert(0, checkbox)
-        first_text.replace_with(text[match.end() :])
         li["class"] = list(set(li.get("class", []) + ["task-list-item"]))
         if li.parent and li.parent.name in {"ul", "ol"}:
             li.parent["class"] = list(set(li.parent.get("class", []) + ["task-list"]))

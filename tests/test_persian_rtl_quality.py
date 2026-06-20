@@ -66,6 +66,21 @@ def test_persian_digits_and_punctuation_get_stable_quality_classes():
 
 
 
+def test_persian_checked_task_lists_survive_mixed_script_isolation():
+    result = render_markdown(
+        "---\nlang: fa\n---\n\n"
+        "## فهرست وظایف\n\n"
+        "- [x] ورودی Markdown\n"
+        "- [ ] بازبینی انسانی نهایی\n"
+    )
+
+    assert "[x]" not in result.body_html
+    assert "task-list" in result.body_html
+    assert result.body_html.count('type="checkbox"') == 2
+    assert result.body_html.count('checked="checked"') == 1
+    assert "ورودی" in result.body_html
+    assert "Markdown" in result.body_html
+
 def test_persian_callout_markers_are_normalized_before_ltr_isolation():
     result = render_markdown(
         "---\nlang: fa\n---\n\n"

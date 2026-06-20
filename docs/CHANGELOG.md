@@ -4,6 +4,19 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.13.8 - 2026-06-20
+
+### Fixed
+- Fixed Persian checked task-list items so `[x]` markers still become disabled PDF checkboxes after mixed-script isolation wraps the Latin `x`.
+- Rebalanced the official guide image samples so the standalone project mark remains compact and no longer forces a nearly blank Persian guide page.
+- Updated the guide architecture diagram to use the official Mardas MD2PDF mark instead of the temporary literal `M` placeholder.
+
+### Documentation
+- Synced README badge and English/Persian guide metadata to version `1.13.8`.
+
+### Tests
+- Added regression coverage for Persian checked task lists and the official guide logo sample sizing.
+
 ## 1.13.7 - 2026-06-20
 
 ### Changed
