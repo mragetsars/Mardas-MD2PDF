@@ -532,8 +532,12 @@ def test_cover_branding_full_is_explicit(tmp_path):
 
     assert "md2pdf-cover--branding-full" in html
     assert "md2pdf-cover__brand--full" in html
-    assert "md2pdf-cover__brand--product" not in html
+    assert "md2pdf-cover__brand--product" in html
     assert "md2pdf-cover__brand--custom" not in html
+    assert "box-shadow: none !important;" in html
+    assert "linear-gradient(135deg, var(--accent), var(--accent-2))" in html
+    assert "linear-gradient(135deg, #0f172a, #2563eb)" not in html
+    assert "color-mix(in srgb, var(--accent) 54%, #64748b)" in html
     assert "Mardas MD2PDF" in html
     assert "Markdown to PDF Engine" in html
 
@@ -558,6 +562,8 @@ brand:
     html = build_html(render_markdown(md), PdfOptions(input_path=input_path, output_path=tmp_path / "out.pdf"))
 
     assert "md2pdf-cover--branding-full" in html
+    assert "md2pdf-cover__brand--full md2pdf-cover__brand--custom" in html
+    assert "md2pdf-cover__brand--full md2pdf-cover__brand--product" not in html
     assert "Acme Research Lab" in html
     assert "Internal Report" in html
     assert "Markdown to PDF Engine" not in html

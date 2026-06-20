@@ -4,6 +4,31 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.13.6 - 2026-06-20
+
+### Fixed
+- Restored the product cover brand label to use the active appearance palette instead of a hard-coded blue product mark, so the official emerald guides keep the old compact label geometry while matching the current cover theme.
+- Kept the guide cover brand label shadowless and compact, with the built-in Mardas product logo tinted through the surrounding palette-aware mark frame.
+
+### Documentation
+- Synced guide metadata, README badge, and changelog to version `1.13.6`.
+
+### Tests
+- Added regression coverage that rejects hard-coded blue product-brand styling and requires the modern emerald guide label to stay palette-aware and shadowless.
+
+## 1.13.5 - 2026-06-20
+
+### Fixed
+- Restored the official guide cover label to the exact built-in product-branding path used by the earlier good guide examples: packaged Mardas logo, compact rounded pill, established two-line typography, and no drop shadow.
+- Removed the temporary guide-local `images/brand-mark.svg` artwork from the official guides so the cover label no longer renders as a separate custom brand asset.
+- Reintroduced product/custom brand classes only as stable render hooks so product labels can keep the classic Mardas styling while custom organization brands remain neutral.
+
+### Documentation
+- Clarified that official guides use `branding.mode: full` without custom `brand` metadata to preserve the built-in Mardas product label.
+
+### Tests
+- Updated regression coverage to require the official guides to avoid custom brand metadata and to keep the modern emerald cover label shadowless.
+
 ## 1.13.4 - 2026-06-20
 
 ### Fixed

@@ -444,12 +444,15 @@ body.md2pdf-style-modern.md2pdf-palette-emerald:not(.md2pdf-mode-dark) .md2pdf-c
   background: linear-gradient(135deg, rgba(16, 185, 129, 0.16), rgba(13, 148, 136, 0.14)) !important;
 }
 body.md2pdf-style-modern.md2pdf-palette-emerald:not(.md2pdf-mode-dark) .md2pdf-cover__brand {
-  border-color: rgba(16, 185, 129, 0.24) !important;
-  background: rgba(255, 255, 255, 0.94) !important;
-  box-shadow: 0 8px 22px rgba(6, 78, 59, 0.08) !important;
+  border-color: color-mix(in srgb, #10b981 22%, rgba(15, 23, 42, 0.12)) !important;
+  background: color-mix(in srgb, #ffffff 92%, #ecfdf5 8%) !important;
+  box-shadow: none !important;
 }
-body.md2pdf-style-modern.md2pdf-palette-emerald:not(.md2pdf-mode-dark) .md2pdf-cover__mark {
-  background: linear-gradient(135deg, #10b981, #0f766e) !important;
+body.md2pdf-style-modern.md2pdf-palette-emerald:not(.md2pdf-mode-dark) .md2pdf-cover__brand--product .md2pdf-cover__mark {
+  background: linear-gradient(135deg, #10b981, #0d9488) !important;
+}
+body.md2pdf-style-modern.md2pdf-palette-emerald:not(.md2pdf-mode-dark) .md2pdf-cover__brand--product .md2pdf-cover__brand-copy em {
+  color: #047857 !important;
 }
 body.md2pdf-style-modern.md2pdf-palette-emerald:not(.md2pdf-mode-dark) .md2pdf-cover__brand-copy em,
 body.md2pdf-style-modern.md2pdf-palette-emerald:not(.md2pdf-mode-dark) .md2pdf-cover__summary {

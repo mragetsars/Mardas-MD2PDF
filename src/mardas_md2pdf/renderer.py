@@ -315,8 +315,13 @@ def _cover_brand_html(branding: CoverBranding) -> str:
         )
     mark_html = '' if branding.mode == "subtle" else f'<span class="md2pdf-cover__mark">{_brand_logo_html(branding)}</span>'
     footer_html = f'<em>{html.escape(branding.footer)}</em>' if branding.footer else ""
+    brand_kind = "product" if branding.product else "custom"
+    brand_classes = (
+        f"md2pdf-cover__brand md2pdf-cover__brand--{html.escape(branding.mode)} "
+        f"md2pdf-cover__brand--{brand_kind}"
+    )
     return (
-        f'<div class="md2pdf-cover__brand md2pdf-cover__brand--{html.escape(branding.mode)}" dir="ltr">'
+        f'<div class="{brand_classes}" dir="ltr">'
         f'{mark_html}'
         '<span class="md2pdf-cover__brand-copy">'
         f'<strong>{html.escape(branding.name)}</strong>'
@@ -779,6 +784,17 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
       }}
       .md2pdf-cover__brand--subtle .md2pdf-cover__brand-copy em {{
         display: none !important;
+      }}
+      .md2pdf-cover__brand--product {{
+        border-color: color-mix(in srgb, var(--accent) 22%, rgba(15, 23, 42, 0.12)) !important;
+        background: color-mix(in srgb, #ffffff 92%, var(--accent-soft) 8%) !important;
+        box-shadow: none !important;
+      }}
+      .md2pdf-cover__brand--product .md2pdf-cover__mark {{
+        background: linear-gradient(135deg, var(--accent), var(--accent-2)) !important;
+      }}
+      .md2pdf-cover__brand--product .md2pdf-cover__brand-copy em {{
+        color: color-mix(in srgb, var(--accent) 54%, #64748b) !important;
       }}
       .md2pdf-document {{
         position: relative;
