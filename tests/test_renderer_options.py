@@ -532,8 +532,12 @@ def test_cover_branding_full_is_explicit(tmp_path):
 
     assert "md2pdf-cover--branding-full" in html
     assert "md2pdf-cover__brand--full" in html
+    assert "md2pdf-cover__brand--product" in html
     assert "Mardas MD2PDF" in html
     assert "Markdown to PDF Engine" in html
+    assert "Mardas.png" not in html
+    assert "data:image/png;base64," in html
+    assert '<span class="md2pdf-cover__logo md2pdf-cover__logo--fallback"' not in html
 
 
 def test_cover_branding_uses_custom_brand_metadata(tmp_path):
@@ -556,6 +560,7 @@ brand:
     html = build_html(render_markdown(md), PdfOptions(input_path=input_path, output_path=tmp_path / "out.pdf"))
 
     assert "md2pdf-cover--branding-full" in html
+    assert "md2pdf-cover__brand--custom" in html
     assert "Acme Research Lab" in html
     assert "Internal Report" in html
     assert "Markdown to PDF Engine" not in html

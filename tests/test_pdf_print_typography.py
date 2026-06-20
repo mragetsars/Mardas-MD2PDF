@@ -145,8 +145,10 @@ def test_guide_image_references_use_document_local_assets():
     assert "images/logo.svg" in en
     assert "images/architecture.png" not in en
     assert "images/logo.png" not in en
+    assert "images/brand-mark.svg" not in en
     assert "images/architecture.svg" in fa
     assert "images/logo.svg" in fa
+    assert "images/brand-mark.svg" not in fa
 
 
 def test_local_svg_images_embed_and_keep_semantic_captions(tmp_path: Path):
@@ -238,7 +240,7 @@ def test_ltr_footer_template_keeps_metadata_centered_between_outer_slots():
     template = _footer_template(
         FooterContext(
             title="Mardas MD2PDF Guide",
-            metadata="Markdown Publishing · 1.13.2 · Stable",
+            metadata="Markdown Publishing · 1.13.3 · Stable",
             lang="en",
             document_direction="ltr",
         ),

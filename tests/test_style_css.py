@@ -133,4 +133,5 @@ def test_modern_emerald_palette_has_strong_guide_identity_contract():
     assert "#10b981" in css
     assert "callout-warning" in css
     assert "md2pdf-cover__brand" in css
+    assert "md2pdf-cover__brand--product" in css
     assert "linear-gradient(180deg, #ecfdf5 0%, #ffffff 100%)" in css

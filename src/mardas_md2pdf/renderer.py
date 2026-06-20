@@ -315,8 +315,10 @@ def _cover_brand_html(branding: CoverBranding) -> str:
         )
     mark_html = '' if branding.mode == "subtle" else f'<span class="md2pdf-cover__mark">{_brand_logo_html(branding)}</span>'
     footer_html = f'<em>{html.escape(branding.footer)}</em>' if branding.footer else ""
+    brand_kind = "product" if branding.product else "custom"
     return (
-        f'<div class="md2pdf-cover__brand md2pdf-cover__brand--{html.escape(branding.mode)}" dir="ltr">'
+        f'<div class="md2pdf-cover__brand md2pdf-cover__brand--{html.escape(branding.mode)} '
+        f'md2pdf-cover__brand--{brand_kind}" dir="ltr">'
         f'{mark_html}'
         '<span class="md2pdf-cover__brand-copy">'
         f'<strong>{html.escape(branding.name)}</strong>'

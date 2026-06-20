@@ -4,6 +4,19 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.13.3 - 2026-06-20
+
+### Changed
+- Restored the official guide cover branding to use the packaged Mardas product logo instead of the temporary guide-local M-style placeholder mark.
+- Refined the cover branding badge frame so product branding keeps the compact professional label while custom organization brands remain neutral and user-owned.
+- Reworked the guide SVG brand samples and architecture diagram so they use a Mardas-like organic product mark rather than a literal `M` icon.
+
+### Fixed
+- Fixed the Persian guide pipeline code sample so the mixed RTL/LTR text no longer reorders visually inside the code block.
+
+### Tests
+- Updated regression coverage for guide branding metadata, packaged product logo usage, and the product/custom cover badge class contract.
+
 ## 1.13.2 - 2026-06-20
 
 ### Changed

@@ -717,7 +717,7 @@ body.md2pdf-toc-break.md2pdf-h1-break .md2pdf-toc + h1 {
 }
 .md2pdf-cover::after { display: none; }
 
-/* v0.7 full-bleed cover refinements: circular optical logo frame */
+/* v0.7 full-bleed cover refinements: professional product logo frame */
 .md2pdf-cover-full-bleed .md2pdf-document,
 .md2pdf-cover-full-bleed .md2pdf-article {
   min-height: 100vh;
@@ -733,26 +733,43 @@ body.md2pdf-toc-break.md2pdf-h1-break .md2pdf-toc + h1 {
     linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
 }
 .md2pdf-cover__brand {
-  border-radius: 999px;
-  padding: 2.2mm 3.4mm 2.2mm 2.4mm;
-  gap: 3mm;
+  border-radius: 20px;
+  padding: 2.35mm 3.8mm 2.35mm 2.55mm;
+  gap: 3.15mm;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.10);
 }
 .md2pdf-cover__mark {
-  width: 12.2mm;
-  height: 12.2mm;
-  border-radius: 999px;
+  width: 12.8mm;
+  height: 12.8mm;
+  border-radius: 15px;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
   background: linear-gradient(135deg, #0f172a, #1f2937);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22), 0 8px 18px rgba(15, 23, 42, 0.16);
+}
+.md2pdf-cover__brand--product .md2pdf-cover__mark {
+  background: linear-gradient(135deg, #10b981 0%, #0f766e 100%);
+}
+.md2pdf-cover__brand--custom .md2pdf-cover__mark {
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.10);
+}
+.md2pdf-cover__brand--custom .md2pdf-cover__logo--fallback {
+  color: var(--accent, #10b981);
 }
 .md2pdf-cover__logo {
-  width: 7.7mm !important;
-  height: 7.7mm !important;
+  width: 9.5mm !important;
+  height: 8.4mm !important;
   object-fit: contain;
   object-position: center center;
-  transform: translate(-0.24mm, -0.18mm);
+  transform: none;
+}
+.md2pdf-cover__brand--product .md2pdf-cover__logo {
+  width: 10.2mm !important;
+  height: 9.1mm !important;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.18));
 }
 .md2pdf-cover__brand-copy strong {
   font-size: 9.6pt;
