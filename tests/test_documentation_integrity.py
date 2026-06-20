@@ -218,3 +218,15 @@ def test_studio_reference_documents_professional_workflow_features():
     assert "Accurate" in docs
     assert "Export debug HTML" in docs
     assert "drag-and-drop asset" in readme or "drag-and-drop asset management" in readme
+
+
+def test_guides_document_pdf_preflight_smoke_checks():
+    en = (ROOT / "docs/guides/GUIDE.en.md").read_text(encoding="utf-8")
+    fa = (ROOT / "docs/guides/GUIDE.fa.md").read_text(encoding="utf-8")
+
+    assert "PDF Preflight Checks" in en
+    assert "بررسی Preflight فایل PDF" in fa
+    assert "scripts/check_pdf_preflight.py" in en
+    assert "scripts/check_pdf_preflight.py" in fa
+    assert "build/pdf-preflight.json" in en
+    assert "build/pdf-preflight.json" in fa

@@ -959,6 +959,20 @@ mrs-md2pdf input.md -o output.pdf --debug-html output.html
 
 Open `output.html` in a browser and inspect the generated structure and CSS.
 
+# PDF Preflight Checks
+
+For important public PDFs, run a quick preflight after building the examples. This check rasterizes representative pages, lists embedded fonts, and records PDF syntax warnings before a document is released:
+
+```bash
+python scripts/check_pdf_preflight.py \
+  examples/GUIDE.en.pdf \
+  examples/GUIDE.fa.pdf \
+  --pages 1,2,3 \
+  --output build/pdf-preflight.json
+```
+
+A clean visual result still matters more than a raw tool warning, but preflight output gives maintainers a repeatable place to catch font, rasterization, and PDF parser regressions.
+
 # Footnotes
 
 Footnotes are useful for references, technical notes, and extra explanations.[^pipeline]

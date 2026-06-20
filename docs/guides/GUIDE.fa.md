@@ -878,6 +878,20 @@ mrs-md2pdf input.md -o output.pdf --debug-html output.html
 
 سپس `output.html` را در مرورگر باز کنید و ساختار و CSS تولیدشده را بررسی کنید.
 
+# بررسی Preflight فایل PDF
+
+برای PDFهای مهم و عمومی، بعد از ساخت exampleها یک preflight سریع اجرا کنید. این بررسی چند صفحه نماینده را raster می‌کند، فونت‌های embed شده را فهرست می‌کند و هشدارهای syntax مربوط به PDF را قبل از انتشار ثبت می‌کند:
+
+```bash
+python scripts/check_pdf_preflight.py \
+  examples/GUIDE.en.pdf \
+  examples/GUIDE.fa.pdf \
+  --pages 1,2,3 \
+  --output build/pdf-preflight.json
+```
+
+خروجی تصویری تمیز همچنان معیار اصلی است، اما گزارش preflight محل تکرارپذیری برای گرفتن regressionهای مربوط به فونت، rasterization و parserهای PDF فراهم می‌کند.
+
 # پانویس
 
 پانویس برای ارجاع، یادداشت فنی و توضیح تکمیلی مناسب است.[^pipeline]
