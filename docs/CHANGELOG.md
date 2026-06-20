@@ -4,6 +4,23 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.13.1 - 2026-06-20
+
+### Changed
+- Reworked printed footer layout so the running metadata line stays truly centered while titles and page numbers align cleanly on the outer edges in both LTR and RTL guides.
+- Standardized both official guides on the `modern + emerald + light` appearance so the documentation, Studio palette, and embedded brand artwork follow one consistent Mardas visual language.
+- Refreshed the official guide SVG brand samples with a cleaner Mardas-style logo plate and a matching emerald architecture diagram.
+
+### Fixed
+- Fixed asymmetric Persian footer placement where page numbers and document titles no longer sat flush on the expected outer edges.
+- Fixed English/Persian guide sample drift caused by using different styles and palettes across the official example PDFs.
+
+### Documentation
+- Synced guide metadata, release references, and appearance contracts to version `1.13.1`.
+
+### Tests
+- Added regression coverage for footer slot alignment and the shared guide appearance contract.
+
 ## 1.13.0 - 2026-06-20
 
 ### Fixed
