@@ -1804,18 +1804,27 @@ def _footer_template(
     font_family = "Vazirmatn, 'Noto Sans Arabic', Tahoma, Arial, sans-serif"
     title_weight = "650"
     page_weight = "700"
+    if mode == "dark":
+        color = "#cbd5e1"
+        rule_color = "#475569"
+        title_weight = "700"
+        page_weight = "800"
     if kind == "textbook-light":
         color = "#374151"
         rule_color = "#d1d5db"
     elif kind == "textbook-dark":
-        color = "#cbd5e1"
-        rule_color = "#475569"
+        color = "#dbeafe"
+        rule_color = "#64748b"
     elif kind == "academic":
-        color = "#4b5563"
-        rule_color = "#9ca3af"
+        if mode == "dark":
+            color = "#d1d5db"
+            rule_color = "#6b7280"
+        else:
+            color = "#4b5563"
+            rule_color = "#9ca3af"
         font_family = "Georgia, 'Times New Roman', Vazirmatn, serif"
         title_weight = "600"
-        page_weight = "600"
+        page_weight = "650"
 
     safe_title = html.escape(title)
     safe_meta = html.escape(metadata)

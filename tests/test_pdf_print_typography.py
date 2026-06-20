@@ -231,6 +231,41 @@ def test_footer_template_is_bidi_safe_and_contains_running_metadata():
     assert "grid-template-columns" in template
 
 
+
+
+def test_dark_footer_template_uses_release_grade_contrast():
+    template = _footer_template(
+        FooterContext(
+            title="Dark Report",
+            metadata="1.12.2 · Stable",
+            lang="en",
+            document_direction="ltr",
+        ),
+        "modern",
+        "dark",
+    )
+
+    assert "#cbd5e1" in template
+    assert "#475569" in template
+    assert "font-weight:800" in template
+
+
+def test_academic_dark_footer_keeps_serif_contract_with_stronger_rule():
+    template = _footer_template(
+        FooterContext(
+            title="Academic Report",
+            metadata="1.12.2 · Stable",
+            lang="en",
+            document_direction="ltr",
+        ),
+        "academic",
+        "dark",
+    )
+
+    assert "Georgia" in template
+    assert "#d1d5db" in template
+    assert "#6b7280" in template
+
 def test_pdf_page_labels_restart_after_cover_page():
     writer = PdfWriter()
     writer.add_blank_page(width=200, height=200)
