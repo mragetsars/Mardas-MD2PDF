@@ -7,8 +7,8 @@
       <stop offset="1" stop-color="#0f766e"/>
     </linearGradient>
     <style>
-      .word{font:900 52px Inter,Segoe UI,Arial,sans-serif;fill:#0f172a;letter-spacing:-1px}
-      .tag{font:700 20px Inter,Segoe UI,Arial,sans-serif;fill:#64748b;letter-spacing:2px}
+      .word{font:900 52px Segoe UI,Arial,sans-serif;fill:#0f172a;letter-spacing:-1px}
+      .tag{font:700 20px Segoe UI,Arial,sans-serif;fill:#64748b;letter-spacing:2px}
     </style>
   </defs>
   <rect width="640" height="240" rx="38" fill="#f8fafc" stroke="#dbe3ef" stroke-width="4"/>

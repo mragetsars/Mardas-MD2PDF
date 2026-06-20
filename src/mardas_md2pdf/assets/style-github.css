@@ -11,7 +11,7 @@
 
 :root {
   --font-fa: "Vazirmatn", "Vazir", "Noto Sans Arabic", "Noto Naskh Arabic", "Segoe UI", sans-serif;
-  --font-en: "Inter", "Noto Sans", "Segoe UI", Arial, sans-serif;
+  --font-en: "Noto Sans", "Segoe UI", Arial, sans-serif;
   --font-code: "JetBrains Mono", "Fira Code", "Cascadia Code", "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
   --ink: #172033;
   --muted: #637083;

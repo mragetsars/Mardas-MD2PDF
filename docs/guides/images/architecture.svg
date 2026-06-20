@@ -16,8 +16,8 @@
       .bg{fill:#f8fafc;stroke:#dbe3ef;stroke-width:2}
       .card{fill:#ffffff;stroke:#cbd5e1;stroke-width:2;filter:url(#shadow)}
       .card-accent{fill:#ecfdf5;stroke:#10a37f;stroke-width:2;filter:url(#shadow)}
-      .label{font:700 26px Inter,Segoe UI,Arial,sans-serif;fill:#0f172a;text-anchor:middle}
-      .meta{font:600 16px Inter,Segoe UI,Arial,sans-serif;fill:#64748b;text-anchor:middle}
+      .label{font:700 26px Segoe UI,Arial,sans-serif;fill:#0f172a;text-anchor:middle}
+      .meta{font:600 16px Segoe UI,Arial,sans-serif;fill:#64748b;text-anchor:middle}
       .meta-start{text-anchor:start}
       .arrow{fill:none;stroke:#10a37f;stroke-width:5;stroke-linecap:round;marker-end:url(#arrow)}
       .dot{fill:url(#accent)}
