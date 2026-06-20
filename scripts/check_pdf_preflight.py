@@ -194,7 +194,7 @@ def _parse_pages(value: str) -> tuple[int, ...]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("pdfs", nargs="+", type=Path, help="PDF files to preflight")
-    parser.add_argument("--output", type=Path, help="Write JSON report to this path")
+    parser.add_argument("--output", "--output-dir", dest="output", type=Path, help="Write JSON report to this path")
     parser.add_argument("--pages", type=_parse_pages, default=(1, 2), help="Comma-separated 1-based pages to rasterize")
     parser.add_argument("--dpi", type=int, default=72)
     parser.add_argument("--timeout", type=int, default=60, help="Seconds per external preflight command")

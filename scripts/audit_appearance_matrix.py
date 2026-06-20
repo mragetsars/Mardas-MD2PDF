@@ -126,6 +126,29 @@ def _parse_filter(value: str | None, allowed: Iterable[str], *, label: str) -> t
     return requested
 
 
+def _parse_appearance(value: str) -> RenderItem:
+    parts = tuple(part.strip() for part in value.split(":"))
+    if len(parts) != 3:
+        raise SystemExit(f"invalid appearance {value!r}; expected style:palette:mode")
+    style, palette, mode = parts
+    if style not in STYLES:
+        raise SystemExit(f"invalid style {style!r}; expected one of: {', '.join(STYLES)}")
+    if palette not in PALETTES_ORDER:
+        raise SystemExit(f"invalid palette {palette!r}; expected one of: {', '.join(PALETTES_ORDER)}")
+    if mode not in MODES:
+        raise SystemExit(f"invalid mode {mode!r}; expected one of: {', '.join(MODES)}")
+    return RenderItem(style, palette, mode)
+
+
+def _parse_appearances(value: str | None) -> tuple[RenderItem, ...] | None:
+    if not value:
+        return None
+    appearances = tuple(_parse_appearance(part) for part in value.split(",") if part.strip())
+    if not appearances:
+        raise SystemExit("--appearances must include at least one style:palette:mode triple")
+    return appearances
+
+
 def _write_sample(path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(SAMPLE_MARKDOWN, encoding="utf-8")
@@ -208,6 +231,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--styles", help="Comma-separated style filter")
     parser.add_argument("--palettes", help="Comma-separated palette filter")
     parser.add_argument("--modes", help="Comma-separated mode filter")
+    parser.add_argument("--appearances", help="Comma-separated appearance triples: style:palette:mode,style:palette:mode")
     parser.add_argument("--clean", action="store_true", help="Delete output directory before rendering")
     parser.add_argument("--resume", action="store_true", help="Reuse completed records from an existing manifest")
     parser.add_argument("--fail-fast", action="store_true", help="Stop after the first render or rasterization failure")
@@ -226,6 +250,9 @@ def main(argv: list[str] | None = None) -> int:
     else:
         args.output_dir.mkdir(parents=True, exist_ok=True)
 
+    explicit_appearances = _parse_appearances(args.appearances)
+    if explicit_appearances and (args.styles or args.palettes or args.modes):
+        raise SystemExit("--appearances cannot be combined with --styles, --palettes, or --modes")
     styles = _parse_filter(args.styles, STYLES, label="style")
     palettes = _parse_filter(args.palettes, PALETTES_ORDER, label="palette")
     modes = _parse_filter(args.modes, MODES, label="mode")
@@ -238,7 +265,9 @@ def main(argv: list[str] | None = None) -> int:
     content_dir = args.output_dir / "content_png"
     pdf_dir.mkdir(parents=True, exist_ok=True)
 
-    cases = [RenderItem(style, palette, mode) for style in styles for palette in palettes for mode in modes]
+    cases = list(explicit_appearances) if explicit_appearances else [
+        RenderItem(style, palette, mode) for style in styles for palette in palettes for mode in modes
+    ]
     if args.max_cases is not None:
         cases = cases[: args.max_cases]
 

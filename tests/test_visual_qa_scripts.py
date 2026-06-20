@@ -58,6 +58,8 @@ def test_visual_qa_png_stats_and_diff_are_dependency_free(tmp_path: Path) -> Non
         "audit_pdf_features.py",
         "compare_visual_snapshots.py",
         "audit_studio_visual.py",
+        "run_visual_qa_matrix.py",
+        "check_pdf_preflight.py",
     ],
 )
 def test_visual_qa_scripts_define_helpful_cli_entrypoints(script: str) -> None:
@@ -145,3 +147,21 @@ def test_feature_audit_all_appearances_can_be_bounded_without_rendering() -> Non
 
     assert len(appearances) == len(STYLES) * len(PALETTES_ORDER) * len(MODES)
     assert appearances[0].name == f"{STYLES[0]}-{PALETTES_ORDER[0]}-{MODES[0]}"
+
+
+def test_appearance_audit_accepts_explicit_appearance_triples() -> None:
+    from audit_appearance_matrix import _parse_appearances
+
+    appearances = _parse_appearances("modern:blue:light,github:slate:dark")
+
+    assert appearances is not None
+    assert [appearance.name for appearance in appearances] == ["modern-blue-light", "github-slate-dark"]
+
+
+def test_chunked_visual_qa_runner_builds_bounded_case_chunks() -> None:
+    from run_visual_qa_matrix import AppearanceCase, chunked
+
+    cases = tuple(AppearanceCase("modern", "blue", mode) for mode in ("light", "dark"))
+
+    assert chunked(cases, 1) == [(cases[0],), (cases[1],)]
+    assert chunked(cases, 2) == [cases]
