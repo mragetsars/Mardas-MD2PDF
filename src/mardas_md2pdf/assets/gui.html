@@ -1261,7 +1261,7 @@ function insertMarkdown(kind){
   if (kind === 'italic') return wrapSelection('*', '*', 'italic text');
   if (kind === 'link') return wrapSelection('[', '](https://example.com)', 'link text');
   if (kind === 'image') return insertAtCursor('![Alt text](images/example.png)');
-  if (kind === 'code') return insertAtCursor('```python title="renderer.py" {2,5-6} linenos\ndef convert(markdown: str) -> bytes:\n    html = render_markdown(markdown)\n    pdf = render_pdf(html)\n    return pdf\n```\n');
+  if (kind === 'code') return insertAtCursor('```python title="renderer.py" {2,5-6} linenos\ndef convert(markdown: str) -> bytes:\n    html = render_markdown(markdown)\n    pdf = render_pdf(html)\n    metadata = inspect_pdf(pdf)\n    log_export(metadata)\n    return pdf\n```\n');
   if (kind === 'mermaid') return insertAtCursor('```mermaid\nflowchart TD\n  A[Markdown] --> B[HTML]\n  B --> C[Chromium PDF]\n```\n');
   if (kind === 'table') return insertAtCursor('| Column A | Column B |\n|---|---|\n| Value | Value |\n');
   if (kind === 'math') return insertAtCursor('$$\nE = mc^2\n$$\n');

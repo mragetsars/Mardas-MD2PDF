@@ -4,6 +4,15 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.13.23 - 2026-06-21
+
+### Documentation
+- Corrected the official advanced-code-fence samples so `{2,5-6}` visibly highlights three existing code rows instead of demonstrating an out-of-range range on a four-line snippet.
+- Updated the Studio code insertion template and Markdown fidelity guide to use the same six-line sample, making line-highlight ranges easier to verify visually.
+
+### Tests
+- Added regression coverage for visible multi-line highlight ranges and for documentation/Studio samples that keep `{2,5-6}` within the actual code block length.
+
 ## 1.13.22 - 2026-06-21
 
 ### Fixed

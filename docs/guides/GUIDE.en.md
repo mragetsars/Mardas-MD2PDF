@@ -12,7 +12,7 @@ summary: |
   This document also acts as a live rendering sample for cover pages, tables of contents, mixed RTL/LTR text, formulas, code, Mermaid flowcharts, images, tables, footnotes, page breaks, and safe HTML.
 institution: "Mardas Lab"
 course: "Markdown Publishing"
-version: "1.13.22"
+version: "1.13.23"
 status: "Stable"
 keywords:
   - Markdown
@@ -211,7 +211,7 @@ department: "Department name"
 course: "Course or project title"
 supervisor: "Supervisor name"
 date: "2026-05-20"
-version: "1.13.22"
+version: "1.13.23"
 status: "Draft"
 keywords: [Markdown, PDF, RTL, MathJax]
 cover_label: "Technical Report"
@@ -311,12 +311,12 @@ Inline code remains stable: `mrs-md2pdf input.md -o output.pdf --toc`.
 
 This compact sample is intentionally part of the guide because the guide is both user documentation and a live renderer test case.[^pipeline] It keeps Persian punctuation, Latin package names, Persian digits, semantic table captions, and mixed-direction cells in the official PDF examples.
 
-آیا خروجی PDF برای `version 1.13.22` و شماره ۱۴۰۵ پایدار است؟ پاسخ: بله؛ جدول زیر باید RTL، mixed-script، و mixed-number hooks را فعال کند.
+آیا خروجی PDF برای `version 1.13.23` و شماره ۱۴۰۵ پایدار است؟ پاسخ: بله؛ جدول زیر باید RTL، mixed-script، و mixed-number hooks را فعال کند.
 
 | بخش نمونه | مقدار | انتظار در PDF |
 | :--- | :--- | :--- |
 | شماره فارسی | ۱۴۰۵ | عدد فارسی با متن RTL پایدار بماند. |
-| نسخه فنی | version 1.13.22 و ۱.۹.۹ | Latin/Persian numerals در یک سلول خوانا بمانند. |
+| نسخه فنی | version 1.13.23 و ۱.۹.۹ | Latin/Persian numerals در یک سلول خوانا بمانند. |
 | شناسه انگلیسی | `PDF`, `TOC`, `MathJax` | identifierهای English داخل جدول فارسی جابه‌جا نشوند. |
 
 جدول ۱۲. نمونه جدول فارسی/RTL با عددهای ترکیبی.
@@ -555,9 +555,13 @@ Code fences can carry a filename/title, line numbers, and highlighted lines. Thi
 def convert(markdown: str) -> bytes:
     html = render_markdown(markdown)
     pdf = render_pdf(html)
+    metadata = inspect_pdf(pdf)
+    log_export(metadata)
     return pdf
 ```
 ````
+
+The `{2,5-6}` part means: highlight line 2 and the inclusive line range 5 through 6. Highlight numbers refer to rows inside the shown snippet, unless `linenostart` is used for source-file numbering.
 
 The example above renders as a code block with a custom caption, line-number table, and highlighted lines:
 
@@ -565,6 +569,8 @@ The example above renders as a code block with a custom caption, line-number tab
 def convert(markdown: str) -> bytes:
     html = render_markdown(markdown)
     pdf = render_pdf(html)
+    metadata = inspect_pdf(pdf)
+    log_export(metadata)
     return pdf
 ```
 

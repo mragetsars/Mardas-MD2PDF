@@ -16,9 +16,13 @@ lines, and a custom starting line number.
 def convert(markdown: str) -> bytes:
     html = render_markdown(markdown)
     pdf = render_pdf(html)
+    metadata = inspect_pdf(pdf)
+    log_export(metadata)
     return pdf
 ```
 ```
+
+In the example above, `{2,5-6}` highlights line 2 and the inclusive range from line 5 through line 6. Values that point outside the snippet do not produce a visible highlighted row, so official examples should keep highlight ranges within the actual code block length.
 
 The same information can be written in Pandoc/MkDocs-style attributes:
 

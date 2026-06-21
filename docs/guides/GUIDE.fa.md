@@ -12,7 +12,7 @@ summary: |
   همین سند به عنوان نمونه زنده رندر نیز استفاده می‌شود و جلد، فهرست مطالب، متن ترکیبی فارسی/English، فرمول، کد، نمودار Mermaid، تصویر، جدول، پانویس، شکست صفحه و HTML امن را نمایش می‌دهد.
 institution: "Mardas Lab"
 course: "انتشار حرفه‌ای Markdown"
-version: "1.13.22"
+version: "1.13.23"
 status: "Stable"
 keywords:
   - Markdown
@@ -209,7 +209,7 @@ department: "نام دانشکده یا دپارتمان"
 course: "نام درس یا پروژه"
 supervisor: "نام استاد یا راهنما"
 date: "۱۴۰۵-۰۲-۳۰"
-version: "1.13.22"
+version: "1.13.23"
 status: "Draft"
 keywords: [Markdown, PDF, RTL, MathJax]
 cover_label: "گزارش فنی"
@@ -309,12 +309,12 @@ mrs-md2pdf input.md -o output.pdf --no-cover-logo
 
 این نمونه کوچک عمداً داخل guide مانده است، چون guide هم راهنمای کاربر است و هم test case زنده renderer.[^pipeline] این بخش نشانه‌گذاری فارسی، نام‌های لاتین، عدد فارسی، caption جدول، و سلول‌های mixed-direction را در PDF رسمی نگه می‌دارد.
 
-آیا خروجی PDF برای `version 1.13.22` و شماره ۱۴۰۵ پایدار است؟ پاسخ: بله؛ جدول زیر باید hookهای RTL، mixed-script و mixed-number را فعال کند.
+آیا خروجی PDF برای `version 1.13.23` و شماره ۱۴۰۵ پایدار است؟ پاسخ: بله؛ جدول زیر باید hookهای RTL، mixed-script و mixed-number را فعال کند.
 
 | بخش نمونه | مقدار | انتظار در PDF |
 | :--- | :--- | :--- |
 | شماره فارسی | ۱۴۰۵ | عدد فارسی کنار متن RTL پایدار بماند. |
-| نسخه فنی | version 1.13.22 و ۱.۹.۹ | عددهای Latin/Persian در یک سلول خوانا بمانند. |
+| نسخه فنی | version 1.13.23 و ۱.۹.۹ | عددهای Latin/Persian در یک سلول خوانا بمانند. |
 | شناسه انگلیسی | `PDF`, `TOC`, `MathJax` | identifierهای English داخل جدول فارسی جابه‌جا نشوند. |
 
 جدول ۱۲. نمونه جدول فارسی/RTL با عددهای ترکیبی.
@@ -492,9 +492,13 @@ console.log(message);
 def convert(markdown: str) -> bytes:
     html = render_markdown(markdown)
     pdf = render_pdf(html)
+    metadata = inspect_pdf(pdf)
+    log_export(metadata)
     return pdf
 ```
 ````
+
+بخش `{2,5-6}` یعنی: خط ۲ و بازه‌ی شاملِ خط‌های ۵ تا ۶ برجسته شوند. شماره‌های highlight بر اساس ردیف‌های داخل همان snippet حساب می‌شوند، مگر اینکه برای شماره‌گذاری فایل اصلی از `linenostart` استفاده شده باشد.
 
 نمونه بالا در PDF به شکل یک بلوک کد با caption سفارشی، شماره خط و highlight رندر می‌شود:
 
@@ -502,6 +506,8 @@ def convert(markdown: str) -> bytes:
 def convert(markdown: str) -> bytes:
     html = render_markdown(markdown)
     pdf = render_pdf(html)
+    metadata = inspect_pdf(pdf)
+    log_export(metadata)
     return pdf
 ```
 

@@ -454,6 +454,8 @@ def test_studio_editor_toolbar_exposes_project_features() -> None:
         assert expected in html
 
     assert "```python title=\"renderer.py\" {2,5-6} linenos" in html
+    assert "metadata = inspect_pdf(pdf)" in html
+    assert "log_export(metadata)" in html
     assert "```mermaid" in html
     assert "<!-- pagebreak -->" in html
 

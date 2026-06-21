@@ -24,10 +24,12 @@ def test_code_fence_parser_accepts_aliases_and_unquoted_values():
 
 def test_code_fence_attributes_render_with_title_line_numbers_and_highlights():
     result = render_markdown(
-        '```{.python .numberLines title=renderer.py hl_lines="2 4-5"}\n'
+        '```{.python .numberLines title=renderer.py hl_lines="2 5-6"}\n'
         'def convert(markdown: str) -> bytes:\n'
         '    html = render_markdown(markdown)\n'
         '    pdf = render_pdf(html)\n'
+        '    metadata = inspect_pdf(pdf)\n'
+        '    log_export(metadata)\n'
         '    return pdf\n'
         '```\n'
     )
@@ -35,9 +37,11 @@ def test_code_fence_attributes_render_with_title_line_numbers_and_highlights():
     assert 'md2pdf-caption--code' in result.body_html
     assert 'renderer.py</figcaption>' in result.body_html
     assert 'data-lang="python"' in result.body_html
+    assert 'data-lines="6"' in result.body_html
     assert 'code-block--numbered' in result.body_html
     assert 'code-block--highlighted' in result.body_html
-    assert 'class="hll"' in result.body_html
+    assert result.body_html.count('class="hll"') == 3
+    assert 'log_export' in result.body_html
 
 
 def test_mermaid_fence_title_is_preserved_as_caption():
