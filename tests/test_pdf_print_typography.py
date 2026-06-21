@@ -140,7 +140,7 @@ def test_guide_image_references_use_document_local_assets():
     assert "README.png" not in en
     assert "README.png" not in fa
     assert (guide_dir / "images/architecture.svg").exists()
-    assert (guide_dir / "images/logo.svg").exists()
+    assert not (guide_dir / "images/logo.svg").exists()
     assert "images/architecture.svg" in en
     assert "images/logo.svg" not in en
     assert "images/brand-mark.svg" not in en
@@ -179,11 +179,10 @@ def test_guide_architecture_svg_title_is_not_clipped():
     svg_path = Path("docs/guides/images/architecture.svg")
     svg = svg_path.read_text(encoding="utf-8")
 
-    assert "Markdown to structured print pipeline" in svg
-    assert "meta-start" in svg
-    assert "text-anchor:start" in svg
-    assert 'class="meta meta-start"' in svg
-    assert 'Mardas MD2PDF' in svg
+    assert "Mardas MD2PDF structured print pipeline banner" in svg
+    assert "data:image/png;base64," in svg
+    assert 'viewBox="0 0 1774 887"' in svg
+    assert "<image" in svg
 
 
 def test_pdf_typography_docs_cover_guide_media_audit():

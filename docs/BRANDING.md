@@ -76,9 +76,21 @@ The project now ships the dedicated Mardas MD2PDF logo as package assets:
 | `src/mardas_md2pdf/assets/mardas-md2pdf-mark.svg` | Scalable full-color vector companion for integrations that require SVG. |
 | `src/mardas_md2pdf/assets/mardas-md2pdf-mark-white.svg` | Scalable white vector companion for integrations that require SVG. |
 | `src/mardas_md2pdf/assets/mardas-md2pdf-app-icon.svg` | Rounded-square launcher/app icon artwork for distribution and platform packaging. |
-| `docs/guides/images/logo.svg` and `docs/guides/images/logo.png` | Guide-local copies kept for documentation and media integrity tests; image/HTML examples reuse the architecture banner for coherent sizing samples. |
+| `docs/guides/images/architecture.svg` and `docs/guides/images/logo.png` | Guide-local documentation media. `architecture.svg` is the sample banner embedded in the manuals; `logo.png` is a clean local logo copy kept for documentation integrity checks and optional guide-local examples. |
 
 The official English and Persian guides should keep `branding.mode: full` without custom
 `brand` metadata. That keeps them on the built-in product-branding path, where the cover
 label uses the packaged white application-logo variant on top of the active appearance palette. Custom documents
 should use `brand.logo` only for their own organization or lab logo.
+
+## Asset layout policy
+
+Project image assets are intentionally split by responsibility so packaging, documentation, and repository presentation do not leak into each other:
+
+| Location | Purpose | Notes |
+| :--- | :--- | :--- |
+| `src/mardas_md2pdf/assets/` | Packaged runtime assets shipped with the application. | Used by Studio, built-in cover branding, app/distribution icons, GUI HTML, and print style resources. These files are part of the Python package contract. |
+| `docs/guides/images/` | Guide-local documentation media used by `GUIDE.en.md` and `GUIDE.fa.md`. | Keep only media that the manuals or guide-integrity tests actually need. These files are not the canonical runtime source for product branding. |
+| `README.png` | Repository hero artwork for GitHub and package landing pages. | Never reference this file from guide Markdown or runtime rendering paths. It exists only for repository presentation. |
+
+This layout is the intended clean structure for the project: runtime assets stay inside the package, guide samples stay beside the guides that exercise them, and repository-only artwork stays at the root. When a file is no longer used by one of those scopes, remove it instead of keeping parallel copies without a clear owner.

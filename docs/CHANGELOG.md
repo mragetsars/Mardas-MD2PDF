@@ -4,6 +4,20 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.13.12 - 2026-06-21
+
+### Changed
+- Replaced the guide-local architecture banner artwork with the supplied structured print pipeline illustration so the English and Persian manuals use the cleaner approved visual.
+- Replaced the repository `README.png` hero artwork with the supplied dark banner so the public landing image matches the intended product presentation.
+- Removed the obsolete `docs/guides/images/logo.svg` file from the guide media contract; the guide directory now keeps only the local `architecture.svg` sample and the approved `logo.png` copy.
+
+### Documentation
+- Documented the asset-layout policy for runtime packaged assets, guide-local documentation media, and the repository-level README artwork in `docs/BRANDING.md`.
+- Synced README badge and English/Persian guide metadata to version `1.13.12`.
+
+### Tests
+- Updated documentation/media integrity tests so malformed guide-local `logo.svg` artwork cannot silently return and the replacement architecture banner contract stays explicit.
+
 ## 1.13.11 - 2026-06-21
 
 ### Changed

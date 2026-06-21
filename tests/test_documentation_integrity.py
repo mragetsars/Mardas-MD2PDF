@@ -32,7 +32,7 @@ def test_guides_start_with_valid_front_matter():
         metadata = _front_matter(guide)
         assert metadata.get("title")
         assert metadata.get("summary")
-        assert metadata.get("version") == "1.13.11"
+        assert metadata.get("version") == "1.13.12"
         assert metadata.get("branding", {}).get("mode") == "full"
 
 
@@ -61,8 +61,8 @@ def test_project_logo_assets_are_packaged_and_documented():
     mark = ROOT / "src/mardas_md2pdf/assets/mardas-md2pdf-mark.svg"
     mark_white = ROOT / "src/mardas_md2pdf/assets/mardas-md2pdf-mark-white.svg"
     app_icon = ROOT / "src/mardas_md2pdf/assets/mardas-md2pdf-app-icon.svg"
-    guide_logo = ROOT / "docs/guides/images/logo.svg"
     guide_logo_png = ROOT / "docs/guides/images/logo.png"
+    readme_png = ROOT / "README.png"
     branding_docs = (ROOT / "docs/BRANDING.md").read_text(encoding="utf-8")
     pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
 
@@ -70,23 +70,25 @@ def test_project_logo_assets_are_packaged_and_documented():
         assert asset.exists(), f"missing canonical logo asset: {asset}"
         assert _png_dimensions(asset) == (768, 768)
 
-    for asset in (mark, mark_white, app_icon, guide_logo):
+    assert readme_png.exists()
+    assert _png_dimensions(readme_png) == (1916, 821)
+
+    for asset in (mark, mark_white, app_icon):
         assert asset.exists(), f"missing logo asset: {asset}"
-        text = asset.read_text(encoding="utf-8")
-        assert text.startswith("<svg")
+        svg_text = asset.read_text(encoding="utf-8")
+        assert svg_text.startswith("<svg")
         if asset != mark_white:
-            assert "#088A83" in text
-            assert "#123664" in text
+            assert "#088A83" in svg_text
+            assert "#123664" in svg_text
 
     mark_white_text = mark_white.read_text(encoding="utf-8")
     assert "mask" in mark_white_text
     assert "#FFFFFF" in mark_white_text
-    assert guide_logo.read_text(encoding="utf-8") == mark.read_text(encoding="utf-8")
+    assert not (ROOT / "docs/guides/images/logo.svg").exists()
     architecture = (ROOT / "docs/guides/images/architecture.svg").read_text(encoding="utf-8")
-    assert "architecture-project-mark" in architecture
-    assert "M18 52V22" not in architecture
-    assert "#088A83" in architecture
-    assert "#123664" in architecture
+    assert "Mardas MD2PDF structured print pipeline banner" in architecture
+    assert "data:image/png;base64," in architecture
+    assert 'viewBox="0 0 1774 887"' in architecture
     assert not (ROOT / "src/mardas_md2pdf/assets" / ("Mardas" + ".png")).exists()
     assert '"assets/*.png"' in pyproject
     assert '"assets/*.svg"' in pyproject
@@ -96,6 +98,10 @@ def test_project_logo_assets_are_packaged_and_documented():
     assert "mardas-md2pdf-mark-white.svg" in branding_docs
     assert "mardas-md2pdf-app-icon.svg" in branding_docs
     assert "should use `brand.logo` only for their own organization or lab logo" in branding_docs
+    assert "Asset layout policy" in branding_docs
+    assert "`src/mardas_md2pdf/assets/`" in branding_docs
+    assert "`docs/guides/images/`" in branding_docs
+    assert "`README.png`" in branding_docs
 
 
 def test_guides_reuse_architecture_banner_for_safe_html_examples():
@@ -126,7 +132,7 @@ def test_changelog_is_descending_and_has_single_intro():
     versions = [tuple(map(int, match.groups())) for match in VERSION_RE.finditer(changelog)]
     assert versions == sorted(versions, reverse=True)
     assert len(versions) == len(set(versions))
-    assert versions[0] == (1, 13, 11)
+    assert versions[0] == (1, 13, 12)
     assert (1, 8, 6) in versions
     assert (1, 8, 5) in versions
     assert (1, 5, 0) in versions
@@ -186,8 +192,8 @@ def test_guides_include_persian_rtl_live_smoke_samples():
 
     assert "Persian/RTL visual smoke sample" in en
     assert "نمونه smoke تصویری فارسی/RTL" in fa
-    assert "version 1.13.11" in en
-    assert "version 1.13.11" in fa
+    assert "version 1.13.12" in en
+    assert "version 1.13.12" in fa
     assert "۱۴۰۵" in en
     assert "۱۴۰۵" in fa
     assert "جدول ۱۲. نمونه جدول فارسی/RTL با عددهای ترکیبی." in en
