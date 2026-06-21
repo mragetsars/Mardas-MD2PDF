@@ -4,6 +4,19 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.13.15 - 2026-06-21
+
+### Fixed
+- Made the `MARDAS_RENDER_SMOKE=1` path in `scripts/check.sh` run the guide render through the process-tree-safe Visual QA command helper so CI/release smoke checks do not hang when Chromium descendants inherit captured output handles.
+- Added `MARDAS_RENDER_SMOKE_TIMEOUT` for a bounded outer smoke-render timeout independent of the Chromium `MARDAS_TIMEOUT_MS` page timeout.
+- Disabled third-party pytest plugin autoload inside `scripts/check.sh` by default, with `MARDAS_ALLOW_PYTEST_PLUGINS=1` as an explicit opt-in, so local release checks stay deterministic after Playwright smoke renders.
+
+### Documentation
+- Synced README badge and English/Persian guide metadata to version `1.13.15`.
+
+### Tests
+- Added release-script regression coverage for the process-tree-safe render-smoke wrapper.
+
 ## 1.13.14 - 2026-06-21
 
 ### Fixed

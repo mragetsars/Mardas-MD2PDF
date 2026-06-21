@@ -12,7 +12,7 @@ Use this checklist when preparing a tagged Mardas MD2PDF release.
 
 ## Quality gates
 
-Run the local checks before tagging:
+Run the local checks before tagging. The check helper keeps pytest isolated from unrelated third-party plugins unless `MARDAS_ALLOW_PYTEST_PLUGINS=1` is explicitly set:
 
 ```bash
 ./scripts/check.sh
@@ -31,6 +31,8 @@ For exhaustive local visual review, opt in to the full chunked Visual QA matrix:
 ```bash
 MARDAS_RELEASE_VISUAL_QA=1 ./scripts/release_gate.sh
 ```
+
+When a release runner is slow, use `MARDAS_TIMEOUT_MS` for Chromium's page timeout and `MARDAS_RENDER_SMOKE_TIMEOUT` for the outer `./scripts/check.sh` smoke-render command timeout.
 
 Use `./scripts/clean_workspace.sh --patches` after local patch application if temporary patch bundles were unpacked into the repository root.
 

@@ -31,6 +31,7 @@ def test_maintenance_scripts_are_executable() -> None:
     for relative_path in [
         "scripts/install_playwright.sh",
         "scripts/check.sh",
+        "scripts/render_smoke.py",
         "scripts/build_examples.sh",
         "scripts/build_dist.sh",
         "scripts/clean_workspace.sh",
@@ -89,3 +90,16 @@ def test_release_gate_consolidates_release_checks() -> None:
     assert "scripts/build_dist.sh" in script
     assert "MARDAS_RELEASE_VISUAL_QA" in script
     assert "./scripts/release_gate.sh" in release_doc
+
+
+def test_check_render_smoke_uses_process_tree_safe_command_runner() -> None:
+    check_script = ROOT.joinpath("scripts", "check.sh").read_text(encoding="utf-8")
+    smoke_script = ROOT.joinpath("scripts", "render_smoke.py").read_text(encoding="utf-8")
+
+    assert "python scripts/render_smoke.py" in check_script
+    assert "MARDAS_RENDER_SMOKE=0 python -m pytest" in check_script
+    assert "PYTEST_DISABLE_PLUGIN_AUTOLOAD=1" in check_script
+    assert "MARDAS_ALLOW_PYTEST_PLUGINS" in check_script
+    assert "from visual_qa import run_command" in smoke_script
+    assert "MARDAS_RENDER_SMOKE_TIMEOUT" in smoke_script
+    assert 'description="render smoke"' in smoke_script

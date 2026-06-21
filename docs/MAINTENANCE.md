@@ -10,10 +10,16 @@ Run the default quality gate before creating a patch or tag:
 ./scripts/check.sh
 ```
 
-The script runs Ruff and pytest from the repository root. To include real Chromium render smoke tests, including PDF metadata and outline inspection, enable the optional environment flag:
+The script runs Ruff and pytest from the repository root. It disables third-party pytest plugin autoload by default so local virtualenv plugins cannot change release-gate behavior; set `MARDAS_ALLOW_PYTEST_PLUGINS=1` only when intentionally debugging pytest plugins. To include real Chromium render smoke tests, including PDF metadata and outline inspection, enable the optional environment flag:
 
 ```bash
 MARDAS_RENDER_SMOKE=1 ./scripts/check.sh
+```
+
+For slow CI runners, `MARDAS_TIMEOUT_MS` controls the Chromium page timeout and `MARDAS_RENDER_SMOKE_TIMEOUT` controls the outer smoke-command timeout:
+
+```bash
+MARDAS_RENDER_SMOKE=1 MARDAS_TIMEOUT_MS=600000 MARDAS_RENDER_SMOKE_TIMEOUT=420 ./scripts/check.sh
 ```
 
 ## Generated examples
