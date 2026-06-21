@@ -4,6 +4,15 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.13.22 - 2026-06-21
+
+### Fixed
+- Removed the final highlighted-code indentation drift by eliminating the highlighted-line padding that shifted highlighted content one character to the right of the following indented code rows.
+- Normalized highlighted-line CSS to inherit the code row's font size and line height so advanced numbered code blocks use the same vertical rhythm as ordinary code blocks.
+
+### Tests
+- Added regression coverage that highlighted numbered code strips preserve leading spaces, do not reintroduce the old padding offset, and keep the line break outside the `.hll` wrapper.
+
 ## 1.13.21 - 2026-06-21
 
 ### Fixed

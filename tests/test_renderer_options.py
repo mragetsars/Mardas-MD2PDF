@@ -515,6 +515,31 @@ def test_numbered_code_css_aligns_line_numbers_with_code_rows(tmp_path):
     assert "background-color: var(--md2pdf-code-highlight-bg) !important;" in html
 
 
+
+def test_highlighted_code_css_preserves_indentation_and_line_metrics(tmp_path):
+    from mardas_md2pdf.markdown import render_markdown
+    from mardas_md2pdf.renderer import PdfOptions, build_html
+
+    md = (
+        '```python title="renderer.py" {2} linenos\n'
+        'def convert(markdown: str) -> bytes:\n'
+        '    html = render_markdown(markdown)\n'
+        '    pdf = render_pdf(html)\n'
+        '    return pdf\n'
+        '```\n'
+    )
+    input_path = tmp_path / "highlighted-code.md"
+    input_path.write_text(md, encoding="utf-8")
+    html = build_html(render_markdown(md), PdfOptions(input_path=input_path, output_path=tmp_path / "out.pdf"))
+
+    assert '.codehilite .hll,' in html
+    assert 'padding-inline-start: 0;' in html
+    assert 'line-height: inherit;' in html
+    assert 'vertical-align: baseline;' in html
+    assert 'padding-inline-start: 1.2mm' not in html
+    assert '<span class="hll">    <span class="n">html</span>' in html
+    assert '</span>\n    <span class="n">pdf</span>' in html
+
 def test_cover_branding_is_off_by_default(tmp_path):
     from mardas_md2pdf.markdown import render_markdown
     from mardas_md2pdf.renderer import PdfOptions, build_html

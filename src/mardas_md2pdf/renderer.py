@@ -1622,13 +1622,17 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
         display: inline-block;
         min-width: 100%;
         box-sizing: border-box;
+        margin-inline-start: 0;
+        padding-inline-start: 0;
+        line-height: inherit;
+        vertical-align: baseline;
         background-color: var(--md2pdf-code-highlight-bg) !important;
         box-shadow: inset 3px 0 0 var(--md2pdf-code-highlight-border);
       }}
       .code-block--numbered .codehilite .hll,
       .code-block--numbered .highlight .hll {{
-        margin-inline-start: 0;
-        padding-inline-start: 1.2mm;
+        font-size: inherit;
+        line-height: inherit;
       }}
     """
     ]
