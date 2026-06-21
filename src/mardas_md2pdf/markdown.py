@@ -253,6 +253,25 @@ class CodeHtmlFormatter(HtmlFormatter):
         )
 
 
+HIGHLIGHT_TRAILING_NEWLINE_RE = re.compile(
+    r'(<span class="hll">.*?)(\r?\n)(</span>)',
+    re.DOTALL,
+)
+
+
+def _normalize_highlight_line_breaks(highlighted_html: str) -> str:
+    """Keep Pygments highlighted-line wrappers from swallowing the next line's indent.
+
+    Pygments emits highlighted lines as ``<span class="hll">...\n</span>``.
+    When print CSS turns that wrapper into a full-width highlight strip, the
+    following line's leading spaces can visually attach to the highlighted inline
+    box and disappear at the start of the next code row. Moving the line break
+    outside the wrapper preserves the logical code text while keeping the
+    highlighter scoped to a single physical line.
+    """
+    return HIGHLIGHT_TRAILING_NEWLINE_RE.sub(r"\1\3\2", highlighted_html)
+
+
 def extract_frontmatter(text: str) -> tuple[dict[str, Any], str]:
     match = FRONTMATTER_RE.match(text)
     if not match:
@@ -905,7 +924,7 @@ def highlight_code(
         hl_lines=normalized_highlight_lines,
         line_start=line_start,
     )
-    highlighted = highlight(code, lexer, formatter)
+    highlighted = _normalize_highlight_line_breaks(highlight(code, lexer, formatter))
     caption_value = caption if caption not in (None, "") else label.upper()
     caption_html = (
         '<figcaption class="md2pdf-caption md2pdf-caption--code" dir="auto">'

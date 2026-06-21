@@ -4,6 +4,14 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.13.21 - 2026-06-21
+
+### Fixed
+- Fixed the remaining advanced highlighted-code indentation defect by normalizing Pygments highlighted-line HTML so the newline is emitted outside the `.hll` wrapper. This keeps full-row highlight strips without letting the highlighted inline box consume the next line's leading spaces.
+
+### Tests
+- Added regression coverage that verifies the line after a highlighted numbered-code row keeps its leading indentation in the generated HTML.
+
 ## 1.13.20 - 2026-06-21
 
 ### Fixed

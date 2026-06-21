@@ -526,6 +526,24 @@ def test_code_fence_titles_line_numbers_and_highlight_lines():
     assert 'class="hll"' in result.body_html
 
 
+def test_highlighted_code_line_break_stays_outside_hll_wrapper():
+    result = render_markdown(
+        '```python title="renderer.py" {2} linenos\n'
+        'def convert(markdown: str) -> bytes:\n'
+        '    html = render_markdown(markdown)\n'
+        '    pdf = render_pdf(html)\n'
+        '    return pdf\n'
+        '```\n'
+    )
+
+    assert '<span class="hll">' in result.body_html
+    assert '</span>\n    <span class="n">pdf</span>' in result.body_html
+    assert (
+        'render_markdown</span><span class="p">(</span><span class="n">markdown</span>'
+        '<span class="p">)</span>\n</span>'
+    ) not in result.body_html
+
+
 def test_pagebreak_directives_normalize_to_pdf_break_class():
     result = render_markdown("A\n\n<!-- pagebreak -->\n\nB\n\n:::pagebreak\n:::\n\nC")
     assert result.body_html.count('md2pdf-page-break') >= 2
