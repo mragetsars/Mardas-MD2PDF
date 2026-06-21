@@ -32,7 +32,7 @@ def test_guides_start_with_valid_front_matter():
         metadata = _front_matter(guide)
         assert metadata.get("title")
         assert metadata.get("summary")
-        assert metadata.get("version") == "1.13.23"
+        assert metadata.get("version") == "1.13.24"
         assert metadata.get("branding", {}).get("mode") == "full"
 
 
@@ -138,7 +138,7 @@ def test_changelog_is_descending_and_has_single_intro():
     versions = [tuple(map(int, match.groups())) for match in VERSION_RE.finditer(changelog)]
     assert versions == sorted(versions, reverse=True)
     assert len(versions) == len(set(versions))
-    assert versions[0] == (1, 13, 23)
+    assert versions[0] == (1, 13, 24)
     assert (1, 8, 6) in versions
     assert (1, 8, 5) in versions
     assert (1, 5, 0) in versions
@@ -207,14 +207,50 @@ def test_advanced_code_samples_keep_highlight_ranges_visible():
         assert "return pdf" in text
 
 
+
+
+def test_feature_reference_docs_are_guide_first_maintenance_contracts():
+    docs_index = (ROOT / "docs/README.md").read_text(encoding="utf-8")
+    documentation_policy = (ROOT / "docs/DOCUMENTATION.md").read_text(encoding="utf-8")
+
+    assert "guide-first documentation model" in docs_index
+    assert "Reference-document rule" in documentation_policy
+    assert "not duplicate the complete guide narrative" in documentation_policy
+
+    focused_docs = [
+        "APPEARANCE.md",
+        "BRANDING.md",
+        "MARKDOWN-FIDELITY.md",
+        "PDF-NAVIGATION.md",
+        "PDF-TYPOGRAPHY.md",
+        "PERSIAN-RTL.md",
+        "STUDIO.md",
+        "VISUAL-QA.md",
+    ]
+    for filename in focused_docs:
+        body = (ROOT / "docs" / filename).read_text(encoding="utf-8")
+        assert "User-facing source of truth" in body, filename
+        assert "guide" in body.lower(), filename
+
+
+def test_guides_state_that_focused_docs_are_maintenance_contracts():
+    en = (ROOT / "docs/guides/GUIDE.en.md").read_text(encoding="utf-8")
+    fa = (ROOT / "docs/guides/GUIDE.fa.md").read_text(encoding="utf-8")
+
+    assert "canonical user manual" in en
+    assert "maintainer contracts" in en
+    assert "مرجع اصلی آموزش کاربر" in fa
+    assert "قراردادهای نگه‌داری" in fa
+
+
 def test_guides_include_persian_rtl_live_smoke_samples():
     en = (ROOT / "docs/guides/GUIDE.en.md").read_text(encoding="utf-8")
     fa = (ROOT / "docs/guides/GUIDE.fa.md").read_text(encoding="utf-8")
 
     assert "Persian/RTL visual smoke sample" in en
     assert "نمونه smoke تصویری فارسی/RTL" in fa
-    assert "version 1.13.23" in en
-    assert "version 1.13.23" in fa
+    assert "version 1.13.24" in en
+    assert "version 1.13.24" in fa
     assert "۱۴۰۵" in en
     assert "۱۴۰۵" in fa
     assert "جدول ۱۲. نمونه جدول فارسی/RTL با عددهای ترکیبی." in en

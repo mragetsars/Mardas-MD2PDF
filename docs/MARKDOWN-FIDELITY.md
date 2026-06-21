@@ -1,15 +1,15 @@
-# Markdown Fidelity
+# Markdown Fidelity Contract
 
-Mardas MD2PDF treats Markdown as the source format for print-ready technical
-publishing. The renderer intentionally supports a focused set of GitHub-,
-MkDocs-, Pandoc-, Quarto-, and Obsidian-style conventions that commonly appear
-in engineering reports, course notes, documentation, and mixed Persian/English
-PDFs.
+The guides are the canonical user tutorial for Markdown features. This file records the parser/renderer contract that maintainers must preserve.
+
+## User-facing source of truth
+
+- `docs/guides/GUIDE.en.md` and `docs/guides/GUIDE.fa.md` teach paragraphs, emphasis, lists, task lists, tables, blockquotes, callouts, GitHub-style alerts, details, autolinks, heading anchors, page breaks, formulas, code blocks, Mermaid, images, safe HTML, and footnotes.
+- The guide PDFs under `examples/` are the official visual samples.
 
 ## Fenced code blocks
 
-Code fences may include a language, title, line-number controls, highlighted
-lines, and a custom starting line number.
+The advanced fence grammar supports language, title, line highlights, line numbers, and line-start metadata.
 
 ```markdown
 ```python title="renderer.py" {2,5-6} linenos
@@ -22,110 +22,50 @@ def convert(markdown: str) -> bytes:
 ```
 ```
 
-In the example above, `{2,5-6}` highlights line 2 and the inclusive range from line 5 through line 6. Values that point outside the snippet do not produce a visible highlighted row, so official examples should keep highlight ranges within the actual code block length.
+Contract:
 
-The same information can be written in Pandoc/MkDocs-style attributes:
-
-```markdown
-```{.python .numberLines title=renderer.py hl_lines="2 5-6"}
-```
-```
-
-Supported title keys include `title`, `filename`, `file`, `caption`, and `name`.
-Supported line-number flags include `linenos`, `line-numbers`, `numbered`,
-`numberLines`, and `.numberLines`. Supported highlight keys include `hl_lines`,
-`highlight`, `line-highlight`, `lines`, and `emphasize-lines`.
-
-Use `linenostart`, `start`, `startline`, `line-start`, or `first-line` when a
-snippet should keep the original line number from a source file:
-
-```markdown
-```python title="module.py" linenos linenostart=42 {43}
-def first():
-    return 1
-```
-```
-
-When all highlighted line values are greater than or equal to the custom start
-line, the renderer treats them as source-file line numbers and maps them back to
-the snippet rows internally.
+- `python` selects the lexer.
+- `title="renderer.py"` becomes the code caption.
+- `{2,5-6}` highlights line 2 and the inclusive range 5 through 6.
+- `linenos` enables line numbers.
+- `linenostart=10` or equivalent metadata shifts displayed line numbers but must not corrupt highlight selection.
+- Highlight wrappers must preserve indentation, line rhythm, and newline boundaries.
 
 ## Language aliases
 
-Common aliases are normalized before syntax highlighting:
+The parser recognizes practical aliases such as:
 
 | Alias | Normalized language |
 | :--- | :--- |
 | `py` | `python` |
 | `js` | `javascript` |
 | `ts` | `typescript` |
-| `sh`, `shell`, `zsh` | `bash` |
-| `md` | `markdown` |
+| `sh` / `shell` | `bash` |
 | `mmd` | `mermaid` |
-| `yml` | `yaml` |
-
-Unknown languages fall back to plain text while keeping the requested language
-label in the code caption.
 
 ## Mermaid diagrams
 
-Mermaid `flowchart` / `graph` fences are rendered offline to SVG. This keeps PDF
-rendering reproducible and avoids CDN or browser-network dependencies.
+The offline Mermaid renderer covers the common flowchart subset used by the guides and project reports:
 
-```markdown
-```mermaid title="Pipeline"
-flowchart LR
-  Input[Markdown] --> HTML[Structured HTML]
-  HTML --> PDF[(PDF)]
-```
-```
+- `flowchart` / `graph` declarations;
+- `TD`, `TB`, `LR`, `RL`, `BT` directions;
+- rectangle, rounded, circle, diamond, database, hexagon, subroutine, stadium, and parallelogram nodes;
+- solid, dotted, thick, and labelled edges, including pipe-labelled edges such as `A -.->|no| B`;
+- semantic captions through the same caption pipeline as figures and code listings.
 
-The offline renderer supports practical flowchart directions, labelled edges,
-solid/dotted/thick edges, and common node shapes such as rectangles, rounded
-nodes, diamonds, circles, databases, subroutines, stadium nodes, hexagons, and
-parallelograms. Mermaid surfaces, nodes, labels, and edge chips use the active
-appearance palette and include dedicated dark-mode contrast variables so diagrams
-stay readable across all style/palette combinations. Unsupported Mermaid control
-lines are ignored conservatively so that the PDF remains readable instead of
-failing hard.
+When syntax falls outside the supported subset, the renderer should fail visibly and safely rather than silently deleting user content.
 
 ## Callouts
 
-Blockquote callouts follow GitHub/Obsidian syntax:
-
-```markdown
-> [!NOTE]
-> A regular note.
-
-> [!SUCCESS] Build passed
-> The renderer supports callout aliases.
-
-> [!QUESTION]- Why?
-> Fold markers are preserved as metadata but PDF output stays expanded.
-```
-
-Supported kinds include `NOTE`, `INFO`, `TIP`, `IMPORTANT`, `WARNING`,
-`CAUTION`, `SUCCESS`, `QUESTION`, `FAILURE`, `DANGER`, `BUG`, `EXAMPLE`,
-`QUOTE`, and `ABSTRACT`, plus common aliases such as `TODO`, `HINT`, `CHECK`,
-`FAQ`, `ERROR`, `CITE`, and `TLDR`.
-
-Callout markers are normalized before Persian mixed-script isolation, so raw markers such as `[!NOTE]` and `[!IMPORTANT]` do not leak into RTL PDFs.
-
-PDF output is static, so folded callouts are rendered expanded. The fold marker
-is still preserved as a CSS class for styling and tests.
+GitHub-style alert blocks are normalized into semantic callouts. Raw markers such as `[!NOTE]` must not remain visible in rendered guide HTML/PDF output. Persian guide output must use localized callout titles.
 
 ## Page breaks, math, footnotes, and images
 
-The renderer also supports:
+These features are taught in the guides. Maintainers should preserve the following invariants:
 
-- inline and display MathJax expressions;
-- footnotes with Markdown content;
-- task lists;
-- safe HTML after sanitization;
-- document-local images with blocked placeholders for unsafe paths;
-- `---page---`, `<!-- pagebreak -->`, and `::: pagebreak :::` style page breaks;
-- image-caption pairs converted into semantic figures when the pattern is clear.
-
-The Studio Preview is intentionally lightweight, but it mirrors these constructs
-closely enough for day-to-day editing. The final authority is always the HTML/PDF
-pipeline used by `mrs-md2pdf`.
+- manual page breaks become print-safe markers;
+- MathJax source is protected until browser rendering;
+- footnotes keep references and backlinks readable;
+- local images are embedded or replaced with blocked placeholders;
+- safe HTML image sizing stays deterministic;
+- captions remain attached to figures, code listings, tables, and diagrams.

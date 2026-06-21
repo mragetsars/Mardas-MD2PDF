@@ -1,29 +1,17 @@
-# Appearance System
+# Appearance Maintenance Notes
 
-Mardas MD2PDF uses one appearance model for the final PDF output:
+The complete user tutorial for `style`, `palette`, and `mode` lives in the guide sections `Appearance`, `First PDF`, and `Front Matter`. This file is the maintainer contract for keeping that guide coverage and the implementation synchronized.
 
-```text
-style + palette + mode
-```
+## User-facing source of truth
 
-This replaces the older split between visual themes and rendering profiles.  The
-new model keeps each decision focused and predictable:
-
-- **Style** controls document shape: spacing, cover layout, code block form,
-  table density, and heading treatment.
-- **Palette** controls accent colors: links, bullets, cover accents, callouts,
-  and Mermaid strokes.
-- **Mode** controls contrast: light or dark output.
+- `docs/guides/GUIDE.en.md` and `docs/guides/GUIDE.fa.md` must teach appearance selection and show runnable CLI/front-matter examples.
+- `examples/GUIDE.en.pdf` and `examples/GUIDE.fa.pdf` are the official visual samples for `modern + emerald + light`.
+- Studio must expose the same style, palette, and mode choices as the CLI.
 
 ## CLI
 
 ```bash
-mrs-md2pdf input.md -o output.pdf --style modern --palette blue --mode light
-```
-
-Discover available choices with:
-
-```bash
+mrs-md2pdf input.md -o output.pdf --style modern --palette emerald --mode light
 mrs-md2pdf --list-styles
 mrs-md2pdf --list-palettes
 mrs-md2pdf --list-modes
@@ -31,92 +19,56 @@ mrs-md2pdf --list-modes
 
 ## Front matter
 
-Documents can store appearance choices in front matter:
-
 ```yaml
 appearance:
   style: modern
-  palette: blue
+  palette: emerald
   mode: light
 ```
 
-Top-level keys are also accepted for compact documents:
-
-```yaml
-style: academic
-palette: emerald
-mode: light
-```
-
-CLI values take precedence over front matter when provided by the command line
-or Studio.
+If a document omits appearance settings, the renderer falls back to its defaults. The guides use `modern`, `emerald`, and `light` intentionally so the official examples have a stable visual baseline.
 
 ## Built-in styles
 
-| Style | Purpose |
+| Style | Contract |
 | :--- | :--- |
-| `modern` | Clean rounded document layout for reports and guides. |
-| `github` | README-friendly layout for technical documentation. |
-| `textbook` | Compact print-first layout for course notes and long documents. |
-| `academic` | Formal serif-leaning layout for papers and academic reports. |
+| `modern` | Product/report style with rounded blocks and strong visual hierarchy. |
+| `github` | Markdown-project style close to GitHub-style documents. |
+| `textbook` | Longer teaching material with book-like rhythm. |
+| `academic` | Formal report, thesis, and structured article output. |
 
 ## Built-in palettes
 
-| Palette | Purpose |
+| Palette | Contract |
 | :--- | :--- |
-| `blue` | Default professional blue accents. |
-| `emerald` | Green accents for calm reports and dashboards. |
-| `violet` | Purple accents for creative and product documents. |
-| `amber` | Warm amber accents for teaching and review documents. |
-| `rose` | Rose accents for editorial or highlighted reports. |
-| `slate` | Cool neutral accents for understated technical documents. |
-| `neutral` | Minimal grayscale accents for formal output. |
+| `blue` | Professional default blue. |
+| `emerald` | Calm green used by the official guide PDFs. |
+| `violet` | Creative/product documents. |
+| `amber` | Review and educational material. |
+| `rose` | Editorial reports. |
+| `slate` | Formal technical documents. |
+| `neutral` | Minimal grayscale output. |
 
 ## Modes
 
-| Mode | Purpose |
-| :--- | :--- |
-| `light` | Light paper-like output for ordinary print and sharing. |
-| `dark` | Dark output for screen-first documents and high-contrast previews. |
+- `light` is the default print-oriented mode.
+- `dark` is supported for screen-like PDFs and must keep code blocks, Mermaid labels, TOC links, callouts, and table surfaces readable.
 
 ## Studio
 
-Studio exposes the same model in the Appearance panel.  The label at the top of
-the settings sidebar always shows the active combination, for example:
-
-```text
-modern · blue · light
-```
-
-The preview remains approximate; the backend renderer is still the source of
-truth for MathJax, Mermaid, cover layout, PDF outlines, and print CSS.
-
+Studio appearance cards must map to the same values as the CLI and front matter. A Studio change that adds or removes an appearance choice must update the guide, this contract, and the GUI tests.
 
 ## Palette purity rules
 
-Styles should not force a brand color.  They may define spacing, density,
-corner radius, typography, and cover structure, but accent color should come
-from the selected palette.  This is especially important for the `academic`
-style: its formal layout stays intact across palettes, while callouts, cover
-accents, Mermaid strokes, TOC numbers, and code captions follow `--palette`.
-
-Cover labels such as `cover_label: "Complete Guide"` are rendered as plain
-label text with an accent rule, not as a filled badge.  That keeps Persian and
-English covers from looking as if a printing highlight was accidentally left on
-top of the label.
+Palette changes must not introduce unrelated layout changes. A palette should change color tokens only. Layout shape belongs to style CSS, and light/dark surface contrast belongs to mode-specific tokens.
 
 ## Visual audit workflow
 
-After changing style CSS, palette colors, or mode behavior, render the full
-appearance matrix and review both the cover and a content page:
+For appearance changes, run representative guide builds and at least one visual matrix pass:
 
 ```bash
-python scripts/audit_appearance_matrix.py --output-dir build/appearance-audit --render-png
+python scripts/audit_appearance_matrix.py --output-dir build/appearance-audit --render-png --resume
+python scripts/run_visual_qa_matrix.py --output-dir build/visual-qa/matrix --max-cases 1 --render-png --clean
 ```
 
-The matrix covers every built-in `style × palette × mode` combination.  Dark
-mode deliberately uses style-specific surfaces: `modern` stays deep navy,
-`github` follows a GitHub-like dark surface, `textbook` uses a near-black print
-surface, and `academic` uses a neutral charcoal surface.  Palettes remain accent
-choices in both modes, so a dark document should keep the selected accent
-without making all styles look identical.
+Artifacts under `build/` are temporary and must not be committed.

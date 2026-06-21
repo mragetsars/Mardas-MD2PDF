@@ -2,7 +2,7 @@
 
 > **Professional Markdown to PDF converter for Persian, English, and mixed RTL/LTR technical documents**
 
-![Language](https://img.shields.io/badge/Language-Python-blue) ![Renderer](https://img.shields.io/badge/Renderer-Playwright%20%2B%20Chromium-green) ![Math](https://img.shields.io/badge/Math-MathJax-purple) ![Version](https://img.shields.io/badge/Version-v1.13.23-success) ![Status](https://img.shields.io/badge/Status-Stable-success) ![CI](https://github.com/mragetsars/Mardas-MD2PDF/actions/workflows/ci.yml/badge.svg)
+![Language](https://img.shields.io/badge/Language-Python-blue) ![Renderer](https://img.shields.io/badge/Renderer-Playwright%20%2B%20Chromium-green) ![Math](https://img.shields.io/badge/Math-MathJax-purple) ![Version](https://img.shields.io/badge/Version-v1.13.24-success) ![Status](https://img.shields.io/badge/Status-Stable-success) ![CI](https://github.com/mragetsars/Mardas-MD2PDF/actions/workflows/ci.yml/badge.svg)
 
 ## Overview
 
@@ -45,23 +45,17 @@ The project provides two user-facing interfaces:
 
 ## Documentation
 
-The README is intentionally short and is meant to introduce the project. Complete usage details are maintained in the guide files:
+The README is intentionally short. The project uses a **guide-first documentation model**:
 
-- [English Guide](./docs/guides/GUIDE.en.md)
-- [راهنمای فارسی](./docs/guides/GUIDE.fa.md)
-- [Changelog](./docs/CHANGELOG.md)
-- [Release checklist](./docs/RELEASE.md)
-- [Maintenance workflow](./docs/MAINTENANCE.md)
-- [Appearance system](./docs/APPEARANCE.md)
-- [Cover branding and logo assets](./docs/BRANDING.md)
-- [Studio workflow](./docs/STUDIO.md)
-- [Markdown fidelity](./docs/MARKDOWN-FIDELITY.md)
-- [PDF navigation](./docs/PDF-NAVIGATION.md)
-- [PDF typography and print flow](./docs/PDF-TYPOGRAPHY.md)
-- [Visual QA system](./docs/VISUAL-QA.md), including the consolidated `scripts/release_gate.sh` release check
-- [Security policy](./docs/SECURITY.md)
+- [English Guide](./docs/guides/GUIDE.en.md) — canonical user manual and live rendering sample.
+- [راهنمای فارسی](./docs/guides/GUIDE.fa.md) — canonical Persian/RTL user manual and live rendering sample.
+- [Documentation map](./docs/README.md) — explains which files are guide material, maintenance references, release notes, or QA contracts.
 
 Generated PDF versions of the guides are available in the [`examples/`](./examples/) directory.
+
+Focused docs such as [Appearance maintenance notes](./docs/APPEARANCE.md), [Markdown fidelity parser contract](./docs/MARKDOWN-FIDELITY.md), [PDF typography and print-flow contract](./docs/PDF-TYPOGRAPHY.md), [Persian and RTL quality contract](./docs/PERSIAN-RTL.md), [Studio workflow contract](./docs/STUDIO.md), and [Visual QA system](./docs/VISUAL-QA.md) support maintainers. They should not duplicate the complete guide narrative.
+
+Release and operations references are [Changelog](./docs/CHANGELOG.md), [Release checklist](./docs/RELEASE.md), [Maintenance workflow](./docs/MAINTENANCE.md), and [Security policy](./docs/SECURITY.md).
 
 ## Quick Start
 

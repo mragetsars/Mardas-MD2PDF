@@ -1,38 +1,40 @@
 # Documentation System
 
-This document defines how Mardas MD2PDF documentation is organized and kept release-ready.
+Mardas MD2PDF documentation follows a **guide-first** model: the English and Persian guides are the canonical user manuals, the official feature walkthroughs, and live rendering samples. Supporting docs under `docs/` are maintainer references and QA contracts, not parallel tutorials.
 
 ## Goals
 
-The documentation has three jobs:
+The documentation has four jobs:
 
-1. help users install and run the converter;
-2. explain the renderer, Studio, security, appearance, branding, and PDF output behavior;
-3. act as a reproducible rendering sample for English, Persian, RTL/LTR, math, code, Mermaid, local images, tables, footnotes, page flow, and PDF navigation.
-
-Because the English and Persian guides are both user guides and live rendering samples, changes to renderer behavior should update the guide source and regenerated guide PDFs in the same release patch.
+1. teach users how to install, configure, and use the converter;
+2. demonstrate every user-facing renderer feature with real Markdown samples;
+3. preserve QA/release contracts for implementation maintainers;
+4. keep generated guide PDFs reproducible and visually reviewable.
 
 ## Documentation map
 
-| File | Purpose | Release responsibility |
+| File | Ownership | Release responsibility |
 | :--- | :--- | :--- |
-| `README.md` | Short project introduction, core capabilities, and quick start. | Keep concise and link to long-form docs. |
-| `docs/README.md` | Index for long-form documentation. | Add links whenever a new reference document is introduced. |
-| `docs/guides/GUIDE.en.md` | English user guide and rendering sample. | Must start with valid YAML front matter. |
-| `docs/guides/GUIDE.fa.md` | Persian user guide and rendering sample. | Must start with valid YAML front matter and preserve RTL examples. |
-| `docs/CHANGELOG.md` | Version-by-version release history. | Keep entries in descending version order. |
-| `docs/RELEASE.md` | Release checklist. | Update when release mechanics change. |
-| `docs/MAINTENANCE.md` | Routine local checks and build workflow. | Update when scripts or CI gates change. |
-| `docs/SECURITY.md` | Trusted/untrusted input boundaries. | Update when renderer or asset handling security changes. |
-| `docs/APPEARANCE.md` | Style, palette, and mode reference. | Update when appearance choices or audit rules change. |
-| `docs/BRANDING.md` | Cover branding, logo assets, and organization branding reference. | Update when cover/branding behavior or logo assets change. |
-| `docs/STUDIO.md` | Studio workflow and GUI behavior. | Update when Studio layout, preview, or export behavior changes. |
-| `docs/MARKDOWN-FIDELITY.md` | Markdown feature support and edge-case behavior. | Update when parser/renderer fidelity changes. |
-| `docs/PDF-NAVIGATION.md` | Visible TOC, PDF outline, destinations, and metadata. | Update when TOC/bookmark behavior changes. |
-| `docs/PDF-TYPOGRAPHY.md` | Print flow, captions, footnotes, media samples, and visual audit rules. | Update when PDF layout behavior changes. |
-| `docs/PERSIAN-RTL.md` | Persian/RTL authoring rules, mixed text, numbers, captions, and RTL tables. | Update when bidi, Persian, table, caption, or numeric behavior changes. |
+| `README.md` | Project landing page, short overview, quick start, and links. | Keep concise; link to the guides and maintainer references. |
+| `docs/README.md` | Directory index for the guide-first documentation model. | Update whenever docs are added, removed, or reclassified. |
+| `docs/guides/GUIDE.en.md` | Canonical English user manual and live rendering sample. | Must fully teach user-facing features and start with valid YAML front matter. |
+| `docs/guides/GUIDE.fa.md` | Canonical Persian user manual and RTL/Persian live rendering sample. | Must mirror user-facing coverage while preserving Persian readability and RTL samples. |
+| `examples/GUIDE.en.pdf` | Generated English guide PDF. | Rebuild with `scripts/build_examples.sh`; never hand-edit. |
+| `examples/GUIDE.fa.pdf` | Generated Persian guide PDF. | Rebuild with `scripts/build_examples.sh`; visually inspect RTL output. |
+| `docs/CHANGELOG.md` | Release ledger. | Keep descending, accurate, and free of roadmap entries. |
+| `docs/RELEASE.md` | Release checklist and artifact workflow. | Update when release mechanics or gates change. |
+| `docs/MAINTENANCE.md` | Routine local checks, examples, distributions, and patch hygiene. | Update when scripts or local QA workflow changes. |
+| `docs/SECURITY.md` | Trust boundaries and reporting. | Update when input, HTML, asset, Studio, sandbox, or metadata security changes. |
+| `docs/APPEARANCE.md` | Appearance implementation contract. | User tutorial lives in the guides; this file records options, tokens, and QA rules. |
+| `docs/BRANDING.md` | Cover branding and logo asset contract. | User tutorial lives in the guides; this file records asset ownership and packaging policy. |
+| `docs/MARKDOWN-FIDELITY.md` | Markdown parser/renderer fidelity contract. | User tutorial lives in the guides; this file records grammar, aliases, and edge cases. |
+| `docs/PDF-NAVIGATION.md` | TOC, outline, destination, metadata, and link QA contract. | User tutorial lives in the guides; this file records verification and debugging rules. |
+| `docs/PDF-TYPOGRAPHY.md` | Print-flow, captions, footnotes, media, and page layout contract. | User tutorial lives in the guides; this file records regression-prone layout invariants. |
+| `docs/PERSIAN-RTL.md` | Persian/RTL quality contract. | User tutorial lives in the guides; this file records bidi, numeric, table, and release invariants. |
+| `docs/STUDIO.md` | Studio behavior contract. | User tutorial lives in the guides; this file records GUI state, preview, export, and asset boundaries. |
+| `docs/VISUAL-QA.md` | Visual QA artifact workflow. | User tutorial lives in the guides; this file records scripts, output directories, and CI artifact rules. |
 
-## Guide policy
+## Guide coverage policy
 
 The guide files must remain valid Markdown documents with valid YAML front matter at byte zero:
 
@@ -45,24 +47,30 @@ title: ...
 
 Do not place explanatory prose before the front matter. Doing so prevents metadata extraction and causes the guide cover to fall back to generic values such as `Generated Document`.
 
-The guides intentionally contain a compact feature checklist and live examples. Keep those examples focused. If a renderer feature needs a dense stress test, use an external/manual audit artifact rather than turning the public guide into an overloaded test fixture.
+The guides are the canonical place for feature education and examples. They should cover at least these areas:
 
-### Guide coverage policy
+- installation and first PDF workflow;
+- front matter, cover metadata, branding, and watermarks;
+- language selection, direction, Persian/RTL behavior, mixed text, punctuation, and numerals;
+- table of contents, PDF outline/bookmarks, metadata, page labels, and running footers;
+- Markdown feature support, GitHub-style alerts, details, links, lists, tables, and page breaks;
+- MathJax formulas;
+- fenced, indented, titled, numbered, highlighted, and advanced code blocks;
+- Mermaid flowcharts with node and edge labels;
+- local images, safe HTML images, blocked placeholders, and semantic captions;
+- page flow, margins, page sizes, wide tables, code blocks, captions, footnotes, and final checklist;
+- Studio GUI workflow, CLI workflow, automation, and preflight checks.
 
-The English and Persian guides are treated as release-facing smoke samples. When a renderer feature changes visible output, the guide source should either include a concise live sample or explicitly point to the focused reference document that carries the sample. The guide should cover at least these areas over time:
+### Reference-document rule
 
-- cover metadata and branding;
-- generated table of contents and PDF outline behavior;
-- mixed Persian/English prose and inline code;
-- MathJax inline and display formulas;
-- fenced, indented, numbered, titled, and highlighted code blocks;
-- Mermaid flowcharts;
-- local Markdown images and safe HTML images;
-- semantic captions for figures, tables, code listings, and diagrams;
-- RTL tables, mixed numerals, Persian punctuation, and generated labels;
-- footnotes, backlinks, page breaks, running footers, and page labels.
+The focused files such as `docs/APPEARANCE.md`, `docs/PDF-TYPOGRAPHY.md`, and `docs/PERSIAN-RTL.md` must not duplicate the complete guide narrative. They should contain:
 
-Keep each live sample compact. Public guides should remain readable documentation first, while still exercising the renderer with representative cases.
+- a link back to the canonical guide section;
+- the implementation contract or parser/renderer invariant;
+- release/QA commands and artifacts;
+- notes that explain why a regression test exists.
+
+If a detail is helpful for ordinary users, put it in the guide. If it is mainly useful to prevent a future regression, keep it in the focused reference and add a test.
 
 ## Changelog policy
 
@@ -119,4 +127,4 @@ For guide-specific issues, visually inspect at least:
 - the final footnote/checklist page;
 - the same areas in the Persian guide.
 
-- `docs/VISUAL-QA.md` documents the visual QA artifact scripts and CI upload workflow.
+`docs/VISUAL-QA.md` documents the visual QA artifact scripts and CI upload workflow. No roadmap file is part of this documentation set.

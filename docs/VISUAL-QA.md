@@ -1,142 +1,66 @@
 # Visual QA System
 
-Mardas MD2PDF keeps visual review artifacts outside the permanent source tree.
-The scripts in this section write audit outputs under `build/visual-qa/` so they
-can be inspected locally or uploaded from CI without adding generated PDFs, PNGs,
-or screenshots to the repository.
+The guides teach what users should inspect visually. This file records the maintainer-facing visual QA artifact workflow. Visual QA outputs belong under `build/visual-qa/` or another `build/` subdirectory and must not be committed.
+
+## User-facing source of truth
+
+- The guide sections `PDF Preflight Checks`, `Final Publishing Checklist`, `Appearance`, `Code Blocks`, `Mermaid Flowcharts`, `Images and Safe HTML`, and `GUI Workflow` explain what the user sees.
+- This file explains which scripts generate temporary audit artifacts.
 
 ## Appearance matrix
 
-Use the appearance matrix after changing style, palette, mode, cover, print CSS,
-or dark-mode behavior:
-
 ```bash
-python scripts/audit_appearance_matrix.py \
-  --output-dir build/visual-qa/appearance \
-  --render-png \
-  --raster-timeout 60 \
-  --resume \
-  --clean
+python scripts/audit_appearance_matrix.py --output-dir build/visual-qa/appearance --render-png --resume
 ```
 
-For a smaller CI-sized subset:
-
-```bash
-python scripts/audit_appearance_matrix.py \
-  --output-dir build/visual-qa/appearance \
-  --styles modern,github \
-  --palettes blue,slate \
-  --modes light,dark \
-  --render-png \
-  --max-cases 8 \
-  --fail-fast \
-  --clean
-```
-
-The script writes PDFs, optional PNG page renders, `manifest.json`, and HTML
-galleries for cover and content review. Long runs update the manifest after
-every case, so failed or interrupted audits can be resumed with `--resume`.
-Use `--fail-fast` for CI gates and `--max-cases` for bounded smoke checks.
+Use this after style, palette, mode, code-block, Mermaid, table, or callout visual changes.
 
 ## PDF feature smoke audit
 
-Use the feature smoke audit after changing Markdown parsing, table handling,
-code block rendering, Mermaid, MathJax, captions, or mixed RTL/LTR prose:
-
 ```bash
-python scripts/audit_pdf_features.py \
-  --output-dir build/visual-qa/features \
-  --all-appearances \
-  --render-png \
-  --raster-timeout 60 \
-  --resume \
-  --clean
+python scripts/audit_pdf_features.py --output-dir build/visual-qa/features --render-png --resume
 ```
 
-The default feature document includes code metadata, table captions, display
-math, Mermaid, footnotes, callouts, and Persian mixed-script punctuation. The
-default appearance set stays small for quick local checks; add `--all-appearances`
-when a change must be validated across every style, palette, and mode.
-
+Use this for feature-heavy renderer changes across code, Mermaid, images, tables, footnotes, watermarks, and TOC behavior.
 
 ## Chunked full-matrix runner
 
-For release candidates, prefer the chunked runner. It delegates to the appearance
-and feature audits, but keeps each child process bounded and resumable:
-
 ```bash
-python scripts/run_visual_qa_matrix.py \
-  --output-dir build/visual-qa/full \
-  --render-png \
-  --raster-timeout 60 \
-  --resume \
-  --clean
+python scripts/run_visual_qa_matrix.py --output-dir build/visual-qa/matrix --max-cases 1 --render-png --clean
 ```
 
-For a fast smoke pass, bound the matrix without changing the audit documents:
-
-```bash
-python scripts/run_visual_qa_matrix.py \
-  --output-dir build/visual-qa/full-smoke \
-  --max-cases 2 \
-  --render-png \
-  --fail-fast \
-  --clean
-```
+Use the chunked runner when the full matrix is too slow for one process. Increase cases only when the environment can handle it.
 
 ## PDF preflight
 
-After regenerating public examples, run a PDF preflight to catch parser warnings,
-font embedding gaps, and rasterization failures before a release:
-
 ```bash
-python scripts/check_pdf_preflight.py \
-  examples/GUIDE.en.pdf \
-  examples/GUIDE.fa.pdf \
-  --pages 1,2,3 \
-  --output build/pdf-preflight.json
+python scripts/check_pdf_preflight.py examples/GUIDE.en.pdf examples/GUIDE.fa.pdf --pages 1,2 --timeout 60
 ```
+
+Preflight checks text extraction, PDF opening, selected pages, metadata, and basic structural health. It does not replace human visual inspection.
 
 ## Snapshot comparison
 
-When a known-good PNG snapshot exists, compare it with a candidate snapshot:
-
 ```bash
-python scripts/compare_visual_snapshots.py \
-  build/visual-baseline/features/png \
-  build/visual-qa/features/png \
-  --output-dir build/visual-qa/diff \
-  --max-changed-ratio 0.015 \
-  --max-rms-delta 4
+python scripts/compare_visual_snapshots.py --baseline build/visual-qa/baseline --candidate build/visual-qa/candidate
 ```
 
-The comparison script uses a dependency-free PNG reader. It writes `summary.json`
-and `SUMMARY.md`, then fails if any matched PNG exceeds the configured thresholds.
+Snapshot comparison is useful after typography or layout changes, but differences still need human interpretation.
 
 ## Studio visual smoke
 
-Use the Studio visual smoke audit after changing `src/mardas_md2pdf/assets/gui.html`,
-Studio backend endpoints, appearance controls, toolbar layout, or export workflow:
-
 ```bash
-python scripts/audit_studio_visual.py \
-  --output-dir build/visual-qa/studio \
-  --clean
+python scripts/audit_studio_visual.py --output-dir build/visual-qa/studio --timeout 30 --clean
 ```
 
-The script launches the local Studio server on an ephemeral port, opens it with
-Playwright Chromium, checks that the core settings sections are visible, and
-writes `studio-default.png` plus a JSON manifest.
+Use this after Studio layout, preview, asset, or workflow changes.
 
 ## CI artifacts
 
-The CI visual QA job intentionally runs a reduced matrix with fail-fast and
-raster timeouts. It uploads `build/visual-qa/` as an artifact so reviewers can
-download the rendered PDFs, PNG pages, manifests, and HTML galleries. Full local
-audits can still render all appearance combinations when deeper review is needed,
-and interrupted local runs can be resumed with `--resume`.
+The CI workflow uploads Visual QA artifacts so failures can be inspected without committing generated PNG/PDF audit outputs. Artifact directories should remain under `build/visual-qa/` or another ignored `build/` path.
 
 ## Repository hygiene
 
-Generated visual artifacts belong under `build/visual-qa/` and must not be committed. Keep permanent coverage in scripts, tests, and documentation; keep
-actual audit outputs disposable.
+- `build/visual-qa/` and other audit outputs are temporary.
+- Visual QA artifacts must not be committed.
+- Generated guide PDFs are the only release-facing generated PDF examples, and they are rebuilt intentionally through `scripts/build_examples.sh`.

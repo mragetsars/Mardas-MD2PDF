@@ -1,60 +1,32 @@
-# PDF Navigation
+# PDF Navigation Contract
 
-Mardas MD2PDF uses two navigation layers in generated PDFs:
+The guides teach table-of-contents behavior and include live TOC samples. This file records the maintainer QA contract for visible TOC links, PDF outline/bookmarks, destinations, metadata, and page labels.
 
-1. **Visible table of contents links** inside the document body.
-2. **PDF viewer outline/bookmarks** exposed by readers such as Chrome, Preview, Okular, and Acrobat.
+## User-facing source of truth
 
-Both layers are generated from the same Markdown heading IDs.  The renderer now preserves Chromium's named destinations when pypdf writes metadata, merges cover/content PDFs, or adds outline entries. This keeps TOC links active and prevents PDF viewer bookmarks from resolving to matching text inside the table of contents instead of the real heading.
+- Guide sections: `Table of Contents`, `Security and Trusted Inputs`, and `PDF Preflight Checks`.
+- Official visual samples: `examples/GUIDE.en.pdf` and `examples/GUIDE.fa.pdf`.
 
 ## What to verify
 
-When changing heading, TOC, outline, or PDF metadata behavior, render a document with:
-
-- a cover page;
-- a visible TOC;
-- duplicated headings;
-- Persian and English headings;
-- nested headings across several levels.
-
-Then check:
-
-- TOC entries jump to the real content heading;
-- viewer bookmarks jump to the real content heading, not the TOC row;
-- duplicated headings use stable suffixed IDs;
-- non-Latin heading IDs remain usable in both visible links and PDF destinations.
+- The visible table of contents links point to real document headings, not to matching text inside the TOC itself.
+- The PDF viewer outline/bookmarks use the same heading hierarchy as Markdown headings.
+- Cover/content merging preserves named destinations.
+- Metadata writing does not drop internal link annotations.
+- Page labels start content numbering after the cover.
+- Persian TOC entries keep generated numbers, mixed-script headings, and RTL alignment readable.
 
 ## Debugging
 
-Use `--debug-html` to inspect the generated HTML anchors:
+Use the focused tests first:
 
 ```bash
-mrs-md2pdf input.md -o output.pdf --toc --debug-html output.html
+python -m pytest -q tests/test_pdf_toc_destinations.py
+python scripts/check_pdf_preflight.py examples/GUIDE.en.pdf examples/GUIDE.fa.pdf --pages 1,2 --timeout 60
 ```
 
-For PDF-level debugging, inspect named destinations and outline items with `pypdf`:
-
-```python
-from pypdf import PdfReader
-
-reader = PdfReader("output.pdf")
-print(reader.named_destinations.keys())
-print(reader.outline)
-```
+For PDF-level failures, inspect annotations and destinations with `pypdf` before changing renderer layout. Link bugs often come from cover/content merge order, named-destination variants, or metadata rewrites rather than TOC HTML itself.
 
 ## Visible TOC link annotations
 
-Visible TOC links are rendered by Chromium as PDF link annotations. After pypdf
-copies pages, writes metadata, merges cover/content PDFs, or adds outline items,
-those annotations are rewritten from named destinations into explicit destination
-arrays. This makes the printed TOC independent of viewer-specific named-destination
-resolution while still preserving the named destinations used for diagnostics and
-outline fallback behavior.
-
-When debugging a navigation issue, inspect both layers:
-
-- the link annotation on the visible TOC row should contain an explicit `/Dest`
-  array pointing at the target page;
-- the PDF outline item should point at the same heading coordinate.
-
-See also [PDF typography and print flow](./PDF-TYPOGRAPHY.md) for page-break and long-block behavior.
+The guides intentionally include visible TOC pages so reviewers can inspect both the printed TOC and the PDF viewer outline. Keep the guide note about Visible TOC links single-source in the guide; this file should remain the QA contract.
