@@ -341,6 +341,8 @@ body.md2pdf-mode-dark {{
   --quote: {surface['panel']};
   --code-bg: {surface['code']};
   --code-ink: {surface['ink']};
+  --md2pdf-code-highlight-bg: color-mix(in srgb, var(--accent) 30%, {surface['code']});
+  --md2pdf-code-highlight-border: color-mix(in srgb, var(--accent) 68%, {surface['line']});
   --md2pdf-details-bg: {surface['panel']};
   --md2pdf-details-ink: {surface['ink']};
   --md2pdf-mermaid-figure-bg: color-mix(in srgb, {surface['panel_alt']} 90%, var(--accent) 4%);

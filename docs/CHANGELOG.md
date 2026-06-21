@@ -4,6 +4,15 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.13.17 - 2026-06-21
+
+### Fixed
+- Reworked highlighted code-line backgrounds so advanced fenced-code samples with line numbers stay readable on dark code surfaces in light styles and in dark-mode textbook/academic output, instead of resolving to pale callout-style or light-surface fills.
+- Made mixed Persian/Latin table cells in Persian documents resolve to an explicit RTL base direction while keeping Latin identifiers isolated, fixing tables whose Persian descriptions were visually laid out as LTR.
+
+### Tests
+- Added regression coverage for code highlight contrast CSS and Persian mixed-script table direction voting.
+
 ## 1.13.16 - 2026-06-21
 
 ### Fixed

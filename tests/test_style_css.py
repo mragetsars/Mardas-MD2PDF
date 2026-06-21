@@ -23,6 +23,8 @@ def test_dark_style_overrides_details_and_mermaid_for_contrast():
     css = palette_css("neutral", "dark", "textbook")
     assert "--md2pdf-details-bg: #101010" in css
     assert "--md2pdf-details-ink: #e5e5e5" in css
+    assert "--md2pdf-code-highlight-bg: color-mix(in srgb, var(--accent) 30%, #0a0a0a)" in css
+    assert "--md2pdf-code-highlight-border: color-mix(in srgb, var(--accent) 68%, #343434)" in css
     assert "--md2pdf-mermaid-figure-bg: color-mix(in srgb, #0a0a0a 90%, var(--accent) 4%)" in css
     assert "--md2pdf-mermaid-figure-border: color-mix(in srgb, var(--accent) 28%, #343434)" in css
     assert "--md2pdf-mermaid-bg: color-mix(in srgb, #0a0a0a 94%, #050505 6%)" in css
@@ -54,6 +56,8 @@ def test_all_dark_appearance_styles_emit_complete_mermaid_contrast_contract():
         "--md2pdf-mermaid-label-border:",
         "--md2pdf-mermaid-label-halo:",
         "--md2pdf-mermaid-caption-ink:",
+        "--md2pdf-code-highlight-bg:",
+        "--md2pdf-code-highlight-border:",
     ]
     for style in STYLES:
         for palette in PALETTES_ORDER:
@@ -121,8 +125,66 @@ def test_all_appearance_combinations_emit_clean_palette_css(tmp_path):
                 assert f"md2pdf-palette-{palette}" in html
                 assert f"md2pdf-mode-{mode}" in html
                 assert "background: transparent !important;" in html
-                assert "background-color: color-mix(in srgb, var(--accent-soft" in html
+                assert "--md2pdf-code-highlight-bg: color-mix(in srgb, var(--accent" in html
+                assert "background-color: var(--md2pdf-code-highlight-bg) !important;" in html
 
+
+
+
+def test_dark_code_highlight_overrides_root_light_code_surface(tmp_path):
+    from mardas_md2pdf.markdown import render_markdown
+    from mardas_md2pdf.renderer import PdfOptions, build_html
+
+    md = (
+        '```python title="renderer.py" {2} linenos\n'
+        'def convert(markdown: str) -> bytes:\n'
+        '    html = render_markdown(markdown)\n'
+        '    return html\n'
+        '```\n'
+    )
+    input_path = tmp_path / "dark-highlight.md"
+    input_path.write_text(md, encoding="utf-8")
+
+    html = build_html(
+        render_markdown(md),
+        PdfOptions(
+            input_path=input_path,
+            output_path=tmp_path / "dark-highlight.pdf",
+            style="textbook",
+            palette="slate",
+            mode="dark",
+        ),
+    )
+
+    assert "md2pdf-style-textbook" in html
+    assert "md2pdf-mode-dark" in html
+    assert "--code-bg: #0a0a0a" in html
+    assert "--md2pdf-code-highlight-bg: color-mix(in srgb, var(--accent) 30%, #0a0a0a)" in html
+    assert "--md2pdf-code-highlight-bg: color-mix(in srgb, var(--accent, #2563eb) 24%, var(--code-bg, #0f172a))" in html
+    assert "background-color: var(--md2pdf-code-highlight-bg) !important;" in html
+
+
+def test_code_highlight_uses_code_surface_not_pale_callout_color(tmp_path):
+    md = '```python title="renderer.py" {2} linenos\ndef convert(markdown: str) -> bytes:\n    html = render_markdown(markdown)\n    return html\n```\n'
+    input_path = tmp_path / "highlight.md"
+    input_path.write_text(md, encoding="utf-8")
+    html = build_html(
+        render_markdown(md),
+        PdfOptions(
+            input_path=input_path,
+            output_path=tmp_path / "highlight.pdf",
+            style="modern",
+            palette="emerald",
+            mode="light",
+        ),
+    )
+
+    assert "code-block--highlighted" in html
+    assert "--md2pdf-code-highlight-bg: color-mix(in srgb, var(--accent" in html
+    assert "var(--code-bg" in html
+    assert "background-color: var(--md2pdf-code-highlight-bg) !important;" in html
+    assert "box-shadow: inset 3px 0 0 var(--md2pdf-code-highlight-border);" in html
+    assert "background-color: color-mix(in srgb, var(--accent-soft" not in html
 
 
 def test_dark_mode_palettes_use_screen_safe_accent_tokens():

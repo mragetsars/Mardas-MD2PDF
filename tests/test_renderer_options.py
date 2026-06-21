@@ -503,7 +503,7 @@ def test_numbered_code_css_aligns_line_numbers_with_code_rows(tmp_path):
     assert ".code-block--numbered .linenos pre" in html
     assert "padding: 4.2mm 2.2mm 4.2mm 4mm !important;" in html
     assert "body.md2pdf-style-textbook .code-block--numbered .linenos pre" in html
-    assert "background-color: color-mix(in srgb, var(--accent-soft" in html
+    assert "background-color: var(--md2pdf-code-highlight-bg) !important;" in html
 
 
 def test_cover_branding_is_off_by_default(tmp_path):

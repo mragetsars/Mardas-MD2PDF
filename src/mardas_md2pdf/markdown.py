@@ -352,6 +352,33 @@ def direction_profile(text: str) -> str:
     return "neutral"
 
 
+def mixed_text_direction(text: str, *, lang: str | None = None) -> str:
+    """Return a concrete direction for mixed-script prose.
+
+    ``dir=auto`` is usually fine for ordinary paragraphs, but mixed Persian/Latin
+    table cells often start with a Latin technical token or inherit an LTR table
+    direction. In those cases Chromium lays the whole Persian sentence out as if
+    it were LTR. This helper keeps pure LTR/RTL text unchanged and gives Persian
+    mixed prose an explicit RTL base direction while preserving isolated Latin
+    identifiers inside the cell.
+    """
+    profile = direction_profile(text)
+    if profile in {"rtl", "ltr"}:
+        return profile
+    if profile == "neutral":
+        return "auto"
+
+    rtl, ltr = strong_direction_counts(text)
+    family = language_family(lang, text)
+    if has_persian(text) and family == "fa":
+        return "rtl"
+    if rtl > ltr:
+        return "rtl"
+    if ltr > rtl:
+        return "ltr"
+    return "rtl" if family == "fa" else "ltr"
+
+
 def has_mixed_numerals(text: str) -> bool:
     """Return whether Persian/Arabic and ASCII digits appear together."""
     return bool(ASCII_DIGIT_RE.search(text or "") and ARABIC_DIGIT_RE.search(text or ""))
@@ -2030,6 +2057,8 @@ def postprocess_html(body_html: str, *, code_style: str = "github-dark", lang: s
         ltr_cells = 0
         mixed_cells = 0
         neutral_cells = 0
+        rtl_direction_votes = 0
+        ltr_direction_votes = 0
         numeric_cells = 0
         persian_numeric_cells = 0
         latin_numeric_cells = 0
@@ -2040,19 +2069,31 @@ def postprocess_html(body_html: str, *, code_style: str = "github-dark", lang: s
             cell["data-md2pdf-direction-profile"] = cell_profile
             if cell_profile == "rtl":
                 rtl_cells += 1
+                rtl_direction_votes += 1
                 _add_classes(cell, "table-cell--rtl")
                 if not cell.get("dir"):
                     cell["dir"] = "rtl"
             elif cell_profile == "ltr":
                 ltr_cells += 1
+                ltr_direction_votes += 1
                 _add_classes(cell, "table-cell--ltr")
                 if not cell.get("dir"):
                     cell["dir"] = "ltr"
             elif cell_profile == "mixed":
                 mixed_cells += 1
-                _add_classes(cell, "table-cell--mixed", "mixed-script")
-                if not cell.get("dir"):
-                    cell["dir"] = "auto"
+                concrete_direction = mixed_text_direction(cell_text, lang=lang)
+                mixed_direction_class = (
+                    f"table-cell--mixed-{concrete_direction}"
+                    if concrete_direction in {"rtl", "ltr"}
+                    else ""
+                )
+                _add_classes(cell, "table-cell--mixed", mixed_direction_class, "mixed-script")
+                if concrete_direction == "rtl":
+                    rtl_direction_votes += 1
+                elif concrete_direction == "ltr":
+                    ltr_direction_votes += 1
+                if not cell.get("dir") or str(cell.get("dir")).lower() == "auto":
+                    cell["dir"] = concrete_direction
             else:
                 neutral_cells += 1
             cell_numeric_profile = numeral_profile(cell_text)
@@ -2073,10 +2114,20 @@ def postprocess_html(body_html: str, *, code_style: str = "github-dark", lang: s
             if has_ascii_rtl_punctuation(cell_text):
                 _add_classes(cell, "rtl-ascii-punctuation")
 
-        if rtl_cells > ltr_cells:
+        table_direction = "auto"
+        if rtl_direction_votes > ltr_direction_votes:
+            table_direction = "rtl"
+        elif ltr_direction_votes > rtl_direction_votes:
+            table_direction = "ltr"
+        elif language_family(lang, table_text) == "fa" and has_persian(table_text):
+            table_direction = "rtl"
+        elif ltr_direction_votes or rtl_direction_votes:
+            table_direction = "ltr"
+
+        if table_direction == "rtl":
             classes.append("table-wrap--rtl")
             table["dir"] = table.get("dir") or "rtl"
-        elif ltr_cells > rtl_cells:
+        elif table_direction == "ltr":
             classes.append("table-wrap--ltr")
             table["dir"] = table.get("dir") or "ltr"
         else:
@@ -2112,6 +2163,8 @@ def postprocess_html(body_html: str, *, code_style: str = "github-dark", lang: s
         wrapper["data-md2pdf-ltr-cells"] = str(ltr_cells)
         wrapper["data-md2pdf-mixed-cells"] = str(mixed_cells)
         wrapper["data-md2pdf-neutral-cells"] = str(neutral_cells)
+        wrapper["data-md2pdf-rtl-direction-votes"] = str(rtl_direction_votes)
+        wrapper["data-md2pdf-ltr-direction-votes"] = str(ltr_direction_votes)
         wrapper["data-md2pdf-numeric-cells"] = str(numeric_cells)
         if columns:
             wrapper["data-md2pdf-columns"] = str(columns)

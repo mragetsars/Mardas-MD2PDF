@@ -721,6 +721,8 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
         --md2pdf-document-direction: {doc_dir};
         --md2pdf-inline-math-scale: {inline_math_scale};
         --md2pdf-display-math-scale: {display_math_scale};
+        --md2pdf-code-highlight-bg: color-mix(in srgb, var(--accent, #2563eb) 24%, var(--code-bg, #0f172a));
+        --md2pdf-code-highlight-border: color-mix(in srgb, var(--accent, #2563eb) 52%, transparent);
       }}
       body.md2pdf-dir-rtl .md2pdf-document,
       body.md2pdf-dir-rtl .md2pdf-article {{ direction: rtl; }}
@@ -896,6 +898,20 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
       .table-cell--mixed {{
         direction: auto;
         unicode-bidi: plaintext;
+      }}
+      .table-cell--mixed-rtl {{
+        direction: rtl;
+        text-align: right;
+        unicode-bidi: plaintext;
+      }}
+      .table-cell--mixed-ltr {{
+        direction: ltr;
+        text-align: left;
+        unicode-bidi: plaintext;
+      }}
+      .table-wrap--rtl .table-cell--mixed:not(.table-cell--mixed-ltr) {{
+        direction: rtl;
+        text-align: right;
       }}
       .table-wrap--numeric,
       .table-wrap--persian-number,
@@ -1583,9 +1599,16 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
       .code-block--numbered .code pre {{
         margin: 0 !important;
       }}
-      .codehilite .hll {{
+      .codehilite .hll,
+      .highlight .hll {{
         display: block;
-        background-color: color-mix(in srgb, var(--accent-soft, #fef3c7) 72%, transparent) !important;
+        background-color: var(--md2pdf-code-highlight-bg) !important;
+        box-shadow: inset 3px 0 0 var(--md2pdf-code-highlight-border);
+      }}
+      .code-block--numbered .codehilite .hll,
+      .code-block--numbered .highlight .hll {{
+        margin-inline-start: 0;
+        padding-inline-start: 1.2mm;
       }}
     """
     ]

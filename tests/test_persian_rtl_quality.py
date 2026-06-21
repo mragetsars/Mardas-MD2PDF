@@ -39,6 +39,23 @@ def test_rtl_tables_get_direction_and_cell_profiles():
     assert 'table-cell--mixed' in result.body_html
 
 
+
+def test_persian_mixed_table_cells_prefer_rtl_direction_for_readability():
+    result = render_markdown(
+        "---\nlang: fa\ndir: rtl\n---\n\n"
+        "| Style | کاربرد پیشنهادی |\n"
+        "|---|---|\n"
+        "| `modern` | مستندات عمومی، proposal، گزارش نرم‌افزاری و راهنمای محصول. |\n"
+        "| `github` | مستندات پروژه‌ای شبیه README و خروجی نزدیک به GitHub-style Markdown. |\n"
+    )
+
+    assert 'table-wrap--rtl' in result.body_html
+    assert 'data-md2pdf-rtl-direction-votes=' in result.body_html
+    assert 'data-md2pdf-ltr-direction-votes=' in result.body_html
+    assert 'table-cell--mixed table-cell--mixed-rtl' in result.body_html
+    assert 'dir="rtl">مستندات عمومی، <span class="md2pdf-ltr-isolate" dir="ltr" lang="en">proposal</span>' in result.body_html
+    assert 'dir="rtl">مستندات پروژه‌ای شبیه <span class="md2pdf-ltr-isolate" dir="ltr" lang="en">README</span>' in result.body_html
+
 def test_layout_css_contains_persian_rtl_quality_rules(tmp_path: Path):
     options = PdfOptions(input_path=tmp_path / "input.md", output_path=tmp_path / "out.pdf")
     css, _classes = _layout_css(options, document_direction="rtl")
@@ -48,6 +65,9 @@ def test_layout_css_contains_persian_rtl_quality_rules(tmp_path: Path):
     assert ".mixed-numeral" in css
     assert ".table-wrap--rtl table" in css
     assert ".table-cell--mixed" in css
+    assert ".table-cell--mixed-rtl" in css
+    assert ".table-cell--mixed-ltr" in css
+    assert ".table-wrap--rtl .table-cell--mixed:not(.table-cell--mixed-ltr)" in css
     assert "unicode-bidi: plaintext" in css
 
 
