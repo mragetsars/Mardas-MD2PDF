@@ -1,39 +1,27 @@
 # Project Documentation
 
-This directory uses a **guide-first documentation model**.
+This directory uses a **guide-first documentation model**. The English and Persian guides are the complete user manuals, the feature references, and the live renderer samples. They teach the feature, show runnable Markdown examples, and are rebuilt into the official PDFs under `examples/`.
 
-The complete user-facing manual is the guide pair in `docs/guides/`. Those guides are also live renderer samples: they teach the feature, show runnable Markdown examples, and are rebuilt into the official PDFs under `examples/`.
-
-The other documents in this directory are intentionally **maintenance references**. They should not become a second user manual. They record implementation contracts, QA commands, asset ownership, release gates, and security boundaries that maintainers need when changing the renderer, Studio, packaging, or release workflow.
+Feature documentation is intentionally **not** split into separate reference pages. Earlier standalone feature notes were retired because they duplicated the guides and created drift. Keep user-facing explanations in the guides, and keep this directory focused on operations, release discipline, security, and documentation policy.
 
 ## Canonical user guides
 
-- [English guide](./guides/GUIDE.en.md) — canonical English user manual and live rendering sample.
-- [راهنمای فارسی](./guides/GUIDE.fa.md) — canonical Persian user manual and RTL/Persian live rendering sample.
+- [English guide](./guides/GUIDE.en.md) — complete English user manual and live rendering sample.
+- [راهنمای فارسی](./guides/GUIDE.fa.md) — complete Persian user manual and RTL/Persian live rendering sample.
 
-Generated PDF versions are stored in `examples/GUIDE.en.pdf` and `examples/GUIDE.fa.pdf`.
+Generated PDF versions are stored in:
 
-## Maintainer and release operations
+- `examples/GUIDE.en.pdf`
+- `examples/GUIDE.fa.pdf`
+
+## Operations and governance
 
 - [Changelog](./CHANGELOG.md) — version-by-version release ledger.
 - [Release checklist](./RELEASE.md) — release gate, build, tag, and artifact workflow.
-- [Maintenance workflow](./MAINTENANCE.md) — routine local checks, build examples, distribution build, and patch hygiene.
+- [Maintenance workflow](./MAINTENANCE.md) — routine local checks, guide builds, distribution builds, and patch hygiene.
 - [Security policy](./SECURITY.md) — trust boundaries for Markdown, HTML, assets, Studio, Chromium, and PDF metadata.
-- [Documentation system](./DOCUMENTATION.md) — ownership policy for guides, reference notes, changelog, and generated examples.
-
-## Maintenance references for feature areas
-
-These files support the guide; they do not replace it.
-
-- [Appearance maintenance notes](./APPEARANCE.md)
-- [Cover branding and asset contract](./BRANDING.md)
-- [Markdown fidelity parser contract](./MARKDOWN-FIDELITY.md)
-- [PDF navigation contract](./PDF-NAVIGATION.md)
-- [PDF typography and print-flow contract](./PDF-TYPOGRAPHY.md)
-- [Persian and RTL quality](./PERSIAN-RTL.md)
-- [Studio workflow contract](./STUDIO.md)
-- [Visual QA system](./VISUAL-QA.md)
+- [Documentation system](./DOCUMENTATION.md) — ownership rules for guides, operations docs, changelog entries, and generated examples.
 
 ## Rule of thumb
 
-When writing for users, update the guides. When documenting an invariant that prevents regressions, update the relevant maintenance reference and add or update tests.
+When writing for users, update `docs/guides/GUIDE.en.md` and `docs/guides/GUIDE.fa.md`. When documenting a release gate, maintenance command, security boundary, or documentation policy, update the appropriate operations file above. Do not create a parallel feature manual under `docs/`.

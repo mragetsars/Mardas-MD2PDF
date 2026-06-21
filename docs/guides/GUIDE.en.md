@@ -12,7 +12,7 @@ summary: |
   This document also acts as a live rendering sample for cover pages, tables of contents, mixed RTL/LTR text, formulas, code, Mermaid flowcharts, images, tables, footnotes, page breaks, and safe HTML.
 institution: "Mardas Lab"
 course: "Markdown Publishing"
-version: "1.13.24"
+version: "1.13.25"
 status: "Stable"
 keywords:
   - Markdown
@@ -34,7 +34,7 @@ branding:
 # Introduction
 
 > [!NOTE]
-> Version 1.7.0 improves renderer fidelity for advanced code-fence metadata, Mermaid flowcharts, and extended callouts. See `docs/MARKDOWN-FIDELITY.md` for the dedicated feature reference.
+> This guide is the complete user manual and feature reference for Mardas MD2PDF. It teaches each supported feature with runnable Markdown and keeps those same examples in the official PDF output.
 
 Mardas MD2PDF is a Markdown-to-PDF publishing tool designed for documents that mix Persian and English content. It keeps the writing workflow simple while giving the final PDF a professional printed layout.
 
@@ -50,7 +50,7 @@ The renderer does not draw paragraphs manually on a PDF canvas. Instead, it conv
 > This guide is both documentation and a rendering sample. The PDF version of this file is available in the `examples/` directory, so users can inspect the actual output of every major feature.
 
 > [!TIP]
-> This guide is the canonical user manual. Focused files such as `docs/APPEARANCE.md`, `docs/PDF-TYPOGRAPHY.md`, and `docs/PERSIAN-RTL.md` are maintainer contracts that keep implementation and QA rules synchronized with the examples shown here.
+> Mardas MD2PDF now keeps user-facing feature documentation in this guide instead of maintaining parallel feature-reference pages. Release, maintenance, security, and changelog files remain under `docs/` for project operations.
 
 ## Rendering sample checklist
 
@@ -214,7 +214,7 @@ department: "Department name"
 course: "Course or project title"
 supervisor: "Supervisor name"
 date: "2026-05-20"
-version: "1.13.24"
+version: "1.13.25"
 status: "Draft"
 keywords: [Markdown, PDF, RTL, MathJax]
 cover_label: "Technical Report"
@@ -314,17 +314,17 @@ Inline code remains stable: `mrs-md2pdf input.md -o output.pdf --toc`.
 
 This compact sample is intentionally part of the guide because the guide is both user documentation and a live renderer test case.[^pipeline] It keeps Persian punctuation, Latin package names, Persian digits, semantic table captions, and mixed-direction cells in the official PDF examples.
 
-آیا خروجی PDF برای `version 1.13.24` و شماره ۱۴۰۵ پایدار است؟ پاسخ: بله؛ جدول زیر باید RTL، mixed-script، و mixed-number hooks را فعال کند.
+آیا خروجی PDF برای `version 1.13.25` و شماره ۱۴۰۵ پایدار است؟ پاسخ: بله؛ جدول زیر باید RTL، mixed-script، و mixed-number hooks را فعال کند.
 
 | بخش نمونه | مقدار | انتظار در PDF |
 | :--- | :--- | :--- |
 | شماره فارسی | ۱۴۰۵ | عدد فارسی با متن RTL پایدار بماند. |
-| نسخه فنی | version 1.13.24 و ۱.۹.۹ | Latin/Persian numerals در یک سلول خوانا بمانند. |
+| نسخه فنی | version 1.13.25 و ۱.۹.۹ | Latin/Persian numerals در یک سلول خوانا بمانند. |
 | شناسه انگلیسی | `PDF`, `TOC`, `MathJax` | identifierهای English داخل جدول فارسی جابه‌جا نشوند. |
 
 جدول ۱۲. نمونه جدول فارسی/RTL با عددهای ترکیبی.
 
-For a focused Persian/RTL checklist covering mixed identifiers, numeric styles, RTL tables, and captions, see `docs/PERSIAN-RTL.md`.
+Use this section as the Persian/RTL checklist for mixed identifiers, numeric styles, RTL tables, captions, and footnote back-links. The Persian guide repeats the same concepts in an RTL document shell.
 
 # Table of Contents
 
@@ -849,7 +849,7 @@ The GUI is useful for users who prefer a visual workflow:
 7. Preview the document approximately, then export the final PDF and watch the export progress indicator in the footer.
 8. Use **Ctrl/Cmd+S** to save Markdown and **Ctrl/Cmd+Enter** to export quickly.
 
-Studio stores the current draft, layout, interface mode, direction toggle, editor width, and export settings in browser local storage. This makes accidental refreshes less disruptive during long editing sessions. Use **Reset State** when you want to clear the saved local draft and return to a clean workspace. The same workflow is documented in `docs/STUDIO.md`.
+Studio stores the current draft, layout, interface mode, direction toggle, editor width, and export settings in browser local storage. This makes accidental refreshes less disruptive during long editing sessions. Use **Reset State** when you want to clear the saved local draft and return to a clean workspace. This section is the Studio workflow reference for users.
 
 If an export fails, Studio shows the HTTP status and stable backend error code, such as `invalid_json`, `invalid_page_size`, `invalid_toc_depth`, `invalid_watermark_opacity`, `markdown_too_large`, or `render_failed`. If you bind Studio to a non-local host, the backend prints a warning because other users on the reachable network can submit Markdown and attached assets.
 

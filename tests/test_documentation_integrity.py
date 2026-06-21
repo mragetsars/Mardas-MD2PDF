@@ -32,7 +32,7 @@ def test_guides_start_with_valid_front_matter():
         metadata = _front_matter(guide)
         assert metadata.get("title")
         assert metadata.get("summary")
-        assert metadata.get("version") == "1.13.24"
+        assert metadata.get("version") == "1.13.25"
         assert metadata.get("branding", {}).get("mode") == "full"
 
 
@@ -64,7 +64,7 @@ def test_project_logo_assets_are_packaged_and_documented():
     gui_mark_mask = ROOT / "src/mardas_md2pdf/assets/mardas-md2pdf-mark-gui-mask.svg"
     guide_logo_png = ROOT / "docs/guides/images/logo.png"
     readme_png = ROOT / "README.png"
-    branding_docs = (ROOT / "docs/BRANDING.md").read_text(encoding="utf-8")
+    documentation_docs = (ROOT / "docs/DOCUMENTATION.md").read_text(encoding="utf-8")
     pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
 
     for asset in (logo, logo_white, guide_logo_png):
@@ -97,17 +97,17 @@ def test_project_logo_assets_are_packaged_and_documented():
     assert not (ROOT / "src/mardas_md2pdf/assets" / ("Mardas" + ".png")).exists()
     assert '"assets/*.png"' in pyproject
     assert '"assets/*.svg"' in pyproject
-    assert "mardas-md2pdf-logo.png" in branding_docs
-    assert "mardas-md2pdf-logo-white.png" in branding_docs
-    assert "mardas-md2pdf-mark.svg" in branding_docs
-    assert "mardas-md2pdf-mark-white.svg" in branding_docs
-    assert "mardas-md2pdf-app-icon.svg" in branding_docs
-    assert "mardas-md2pdf-mark-gui-mask.svg" in branding_docs
-    assert "should use `brand.logo` only for their own organization or lab logo" in branding_docs
-    assert "Asset layout policy" in branding_docs
-    assert "`src/mardas_md2pdf/assets/`" in branding_docs
-    assert "`docs/guides/images/`" in branding_docs
-    assert "`README.png`" in branding_docs
+    assert "mardas-md2pdf-logo.png" in documentation_docs
+    assert "mardas-md2pdf-logo-white.png" in documentation_docs
+    assert "mardas-md2pdf-mark.svg" in documentation_docs
+    assert "mardas-md2pdf-mark-white.svg" in documentation_docs
+    assert "mardas-md2pdf-app-icon.svg" in documentation_docs
+    assert "mardas-md2pdf-mark-gui-mask.svg" in documentation_docs
+    assert "should use `brand.logo` only for their own organization or lab logo" in documentation_docs
+    assert "Asset layout policy" in documentation_docs
+    assert "`src/mardas_md2pdf/assets/`" in documentation_docs
+    assert "`docs/guides/images/`" in documentation_docs
+    assert "`README.png`" in documentation_docs
 
 
 def test_guides_reuse_architecture_banner_for_safe_html_examples():
@@ -138,7 +138,7 @@ def test_changelog_is_descending_and_has_single_intro():
     versions = [tuple(map(int, match.groups())) for match in VERSION_RE.finditer(changelog)]
     assert versions == sorted(versions, reverse=True)
     assert len(versions) == len(set(versions))
-    assert versions[0] == (1, 13, 24)
+    assert versions[0] == (1, 13, 25)
     assert (1, 8, 6) in versions
     assert (1, 8, 5) in versions
     assert (1, 5, 0) in versions
@@ -159,42 +159,27 @@ def test_documentation_map_exists_and_mentions_guides():
     assert "docs/guides/GUIDE.fa.md" in docs
     assert "Changelog policy" in docs
     assert "Historical changelog reconstruction" in docs
-    assert "docs/PERSIAN-RTL.md" in docs
+    assert "Retired feature-reference pages" in docs
     assert "Guide coverage policy" in docs
     assert "live rendering samples" in docs
     assert "docs/ROADMAP.md" not in docs
 
 
-def test_docs_readme_lists_persian_rtl_reference():
+def test_docs_readme_is_lean_and_guide_first():
     docs = (ROOT / "docs/README.md").read_text(encoding="utf-8")
 
-    assert "[Persian and RTL quality](./PERSIAN-RTL.md)" in docs
+    assert "guide-first documentation model" in docs
+    assert "Feature documentation is intentionally" in docs
+    assert "./guides/GUIDE.en.md" in docs
+    assert "./guides/GUIDE.fa.md" in docs
+    assert "./RELEASE.md" in docs
+    assert "./MAINTENANCE.md" in docs
+    assert "./SECURITY.md" in docs
     assert "docs/ROADMAP.md" not in docs
-
-
-def test_persian_rtl_reference_document_exists():
-    docs = (ROOT / "docs/PERSIAN-RTL.md").read_text(encoding="utf-8")
-
-    assert "Persian and RTL Quality" in docs
-    assert "mixed-script" in docs
-    assert "mixed-numeral" in docs
-    assert "table-wrap--rtl" in docs
-    assert "persian-numeral" in docs
-    assert "rtl-ascii-punctuation" in docs
-    assert "md2pdf-caption--persian" in docs
-    assert "Persian navigation and references" in docs
-    assert "persian-generated-number" in docs
-    assert "footnotes--rtl" in docs
-    assert "toc-list--nested" in docs
-    assert "border-inline-start" in docs
-    assert "Persian/RTL release contract" in docs
-    assert "author text remains unchanged" in docs
-    assert "MARDAS_RENDER_SMOKE=1 bash scripts/check.sh" in docs
 
 
 def test_advanced_code_samples_keep_highlight_ranges_visible():
     files = [
-        ROOT / "docs/MARKDOWN-FIDELITY.md",
         ROOT / "docs/guides/GUIDE.en.md",
         ROOT / "docs/guides/GUIDE.fa.md",
         ROOT / "src/mardas_md2pdf/assets/gui.html",
@@ -209,15 +194,8 @@ def test_advanced_code_samples_keep_highlight_ranges_visible():
 
 
 
-def test_feature_reference_docs_are_guide_first_maintenance_contracts():
-    docs_index = (ROOT / "docs/README.md").read_text(encoding="utf-8")
-    documentation_policy = (ROOT / "docs/DOCUMENTATION.md").read_text(encoding="utf-8")
-
-    assert "guide-first documentation model" in docs_index
-    assert "Reference-document rule" in documentation_policy
-    assert "not duplicate the complete guide narrative" in documentation_policy
-
-    focused_docs = [
+def test_obsolete_feature_reference_docs_are_removed():
+    removed_docs = [
         "APPEARANCE.md",
         "BRANDING.md",
         "MARKDOWN-FIDELITY.md",
@@ -227,20 +205,25 @@ def test_feature_reference_docs_are_guide_first_maintenance_contracts():
         "STUDIO.md",
         "VISUAL-QA.md",
     ]
-    for filename in focused_docs:
-        body = (ROOT / "docs" / filename).read_text(encoding="utf-8")
-        assert "User-facing source of truth" in body, filename
-        assert "guide" in body.lower(), filename
+    for filename in removed_docs:
+        assert not (ROOT / "docs" / filename).exists(), filename
+
+    docs_index = (ROOT / "docs/README.md").read_text(encoding="utf-8")
+    documentation_policy = (ROOT / "docs/DOCUMENTATION.md").read_text(encoding="utf-8")
+    for filename in removed_docs:
+        assert f"./{filename}" not in docs_index
+        assert f"docs/{filename}" not in documentation_policy
+    assert "Retired feature-reference pages" in documentation_policy
 
 
-def test_guides_state_that_focused_docs_are_maintenance_contracts():
+def test_guides_state_that_feature_docs_were_retired():
     en = (ROOT / "docs/guides/GUIDE.en.md").read_text(encoding="utf-8")
     fa = (ROOT / "docs/guides/GUIDE.fa.md").read_text(encoding="utf-8")
 
-    assert "canonical user manual" in en
-    assert "maintainer contracts" in en
-    assert "مرجع اصلی آموزش کاربر" in fa
-    assert "قراردادهای نگه‌داری" in fa
+    assert "complete user manual" in en
+    assert "instead of maintaining parallel feature-reference pages" in en
+    assert "مرجع کامل کاربر" in fa
+    assert "صفحه‌های feature/reference موازی حذف شده‌اند" in fa
 
 
 def test_guides_include_persian_rtl_live_smoke_samples():
@@ -249,8 +232,8 @@ def test_guides_include_persian_rtl_live_smoke_samples():
 
     assert "Persian/RTL visual smoke sample" in en
     assert "نمونه smoke تصویری فارسی/RTL" in fa
-    assert "version 1.13.24" in en
-    assert "version 1.13.24" in fa
+    assert "version 1.13.25" in en
+    assert "version 1.13.25" in fa
     assert "۱۴۰۵" in en
     assert "۱۴۰۵" in fa
     assert "جدول ۱۲. نمونه جدول فارسی/RTL با عددهای ترکیبی." in en
@@ -293,45 +276,6 @@ def test_guides_render_persian_rtl_samples_as_semantic_audit_html():
             assert "md2pdf-rtl-text" in html or "mixed-script" in html
 
 
-def test_persian_rtl_reference_mentions_guide_live_sample_policy():
-    docs = (ROOT / "docs/PERSIAN-RTL.md").read_text(encoding="utf-8")
-
-    assert "Guide live-sample coverage" in docs
-    assert "user manuals" in docs
-    assert "live smoke samples" in docs
-    assert "docs/guides/GUIDE.en.md" in docs
-    assert "docs/guides/GUIDE.fa.md" in docs
-
-
-def test_persian_rtl_reference_closeout_contract_stays_release_facing():
-    docs = (ROOT / "docs/PERSIAN-RTL.md").read_text(encoding="utf-8")
-
-    assert "The 1.10.x baseline closes the focused Persian/RTL quality pass" in docs
-    assert "heading IDs, footnote anchors, PDF destinations, and back-links remain deterministic" in docs
-    assert "official guide samples stay compact and readable" in docs
-    assert "Phase 13" not in docs
-    assert "docs/ROADMAP.md" not in docs
-
-
-def test_visual_qa_reference_document_exists_and_stays_artifact_based():
-    docs = (ROOT / "docs/VISUAL-QA.md").read_text(encoding="utf-8")
-    docs_index = (ROOT / "docs/README.md").read_text(encoding="utf-8")
-    readme = (ROOT / "README.md").read_text(encoding="utf-8")
-
-    assert "Visual QA System" in docs
-    assert "scripts/audit_appearance_matrix.py" in docs
-    assert "scripts/audit_pdf_features.py" in docs
-    assert "scripts/compare_visual_snapshots.py" in docs
-    assert "scripts/audit_studio_visual.py" in docs
-    assert "scripts/run_visual_qa_matrix.py" in docs
-    assert "scripts/check_pdf_preflight.py" in docs
-    assert "build/visual-qa/" in docs
-    assert "must not be committed" in docs
-    assert "[Visual QA system](./VISUAL-QA.md)" in docs_index
-    assert "[Visual QA system](./docs/VISUAL-QA.md)" in readme
-    assert "docs/ROADMAP.md" not in docs
-
-
 def test_ci_uploads_visual_qa_artifacts():
     workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
 
@@ -343,19 +287,38 @@ def test_ci_uploads_visual_qa_artifacts():
     assert "build/visual-qa/" in workflow
 
 
-def test_studio_reference_documents_professional_workflow_features():
-    docs = (ROOT / "docs/STUDIO.md").read_text(encoding="utf-8")
-    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+def test_guides_cover_retired_feature_reference_topics():
+    combined = (ROOT / "docs/guides/GUIDE.en.md").read_text(encoding="utf-8") + "\n" + (ROOT / "docs/guides/GUIDE.fa.md").read_text(encoding="utf-8")
 
-    assert ".mardas.json" in docs
-    assert "Project files" in docs
-    assert "Save Project" in docs
-    assert "Open Project" in docs
-    assert "command palette" in docs
-    assert "Ctrl/Cmd+K" in docs
-    assert "Accurate" in docs
-    assert "Export debug HTML" in docs
-    assert "drag-and-drop asset" in readme or "drag-and-drop asset management" in readme
+    required = [
+        "Appearance",
+        "Cover Branding",
+        "Enhanced code fences",
+        "PDF navigation",
+        "Persian/RTL visual smoke sample",
+        "GUI Workflow",
+        "PDF Preflight Checks",
+        "Mermaid Flowcharts",
+    ]
+    for marker in required:
+        assert marker in combined
+
+
+def test_readme_has_no_stale_feature_reference_links():
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    docs_index = (ROOT / "docs/README.md").read_text(encoding="utf-8")
+    combined = readme + "\n" + docs_index
+    for stale in [
+        "docs/APPEARANCE.md",
+        "docs/BRANDING.md",
+        "docs/MARKDOWN-FIDELITY.md",
+        "docs/PDF-NAVIGATION.md",
+        "docs/PDF-TYPOGRAPHY.md",
+        "docs/PERSIAN-RTL.md",
+        "docs/STUDIO.md",
+        "docs/VISUAL-QA.md",
+    ]:
+        assert stale not in combined
 
 
 def test_guides_document_pdf_preflight_smoke_checks():

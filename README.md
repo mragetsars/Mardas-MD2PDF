@@ -2,7 +2,7 @@
 
 > **Professional Markdown to PDF converter for Persian, English, and mixed RTL/LTR technical documents**
 
-![Language](https://img.shields.io/badge/Language-Python-blue) ![Renderer](https://img.shields.io/badge/Renderer-Playwright%20%2B%20Chromium-green) ![Math](https://img.shields.io/badge/Math-MathJax-purple) ![Version](https://img.shields.io/badge/Version-v1.13.24-success) ![Status](https://img.shields.io/badge/Status-Stable-success) ![CI](https://github.com/mragetsars/Mardas-MD2PDF/actions/workflows/ci.yml/badge.svg)
+![Language](https://img.shields.io/badge/Language-Python-blue) ![Renderer](https://img.shields.io/badge/Renderer-Playwright%20%2B%20Chromium-green) ![Math](https://img.shields.io/badge/Math-MathJax-purple) ![Version](https://img.shields.io/badge/Version-v1.13.25-success) ![Status](https://img.shields.io/badge/Status-Stable-success) ![CI](https://github.com/mragetsars/Mardas-MD2PDF/actions/workflows/ci.yml/badge.svg)
 
 ## Overview
 
@@ -45,17 +45,15 @@ The project provides two user-facing interfaces:
 
 ## Documentation
 
-The README is intentionally short. The project uses a **guide-first documentation model**:
+The README is intentionally short. Mardas MD2PDF uses a **guide-first documentation model**:
 
-- [English Guide](./docs/guides/GUIDE.en.md) — canonical user manual and live rendering sample.
-- [راهنمای فارسی](./docs/guides/GUIDE.fa.md) — canonical Persian/RTL user manual and live rendering sample.
-- [Documentation map](./docs/README.md) — explains which files are guide material, maintenance references, release notes, or QA contracts.
+- [English Guide](./docs/guides/GUIDE.en.md) — the complete English user manual and live rendering sample.
+- [راهنمای فارسی](./docs/guides/GUIDE.fa.md) — the complete Persian/RTL user manual and live rendering sample.
+- [Documentation map](./docs/README.md) — the small index for release, maintenance, security, and documentation policy files.
 
-Generated PDF versions of the guides are available in the [`examples/`](./examples/) directory.
+Generated PDF versions of the guides are available in the [`examples/`](./examples/) directory. Feature documentation is not split across parallel reference pages; user-facing explanations, runnable examples, and renderer smoke cases belong in the guides so the Markdown source and the official PDFs stay synchronized.
 
-Focused docs such as [Appearance maintenance notes](./docs/APPEARANCE.md), [Markdown fidelity parser contract](./docs/MARKDOWN-FIDELITY.md), [PDF typography and print-flow contract](./docs/PDF-TYPOGRAPHY.md), [Persian and RTL quality contract](./docs/PERSIAN-RTL.md), [Studio workflow contract](./docs/STUDIO.md), and [Visual QA system](./docs/VISUAL-QA.md) support maintainers. They should not duplicate the complete guide narrative.
-
-Release and operations references are [Changelog](./docs/CHANGELOG.md), [Release checklist](./docs/RELEASE.md), [Maintenance workflow](./docs/MAINTENANCE.md), and [Security policy](./docs/SECURITY.md).
+Release and operations references are [Changelog](./docs/CHANGELOG.md), [Release checklist](./docs/RELEASE.md), [Maintenance workflow](./docs/MAINTENANCE.md), [Security policy](./docs/SECURITY.md), and [Documentation policy](./docs/DOCUMENTATION.md).
 
 ## Quick Start
 
@@ -94,7 +92,7 @@ Launch the GUI:
 mrs-md2pdf-gui
 ```
 
-The Studio interface groups export settings into Document, Appearance, Branding, Layout, and Advanced sections. Appearance and branding choices use visual cards, while advanced controls such as watermarks and local assets stay collapsed until needed. Studio can now save and reopen `.mardas.json` project files containing Markdown, export options, and attached assets; it also supports drag-and-drop asset management, accurate renderer-backed HTML preview, debug HTML export, and a command palette via **Ctrl/Cmd+K**. Use **Ctrl/Cmd+S** for Markdown, **Ctrl/Cmd+Shift+S** for a project bundle, and **Ctrl/Cmd+Enter** to export the PDF. When Studio is bound to a non-local host, the backend prints a warning because reachable users can submit Markdown and attached assets. See [Studio workflow](./docs/STUDIO.md) for details.
+The Studio interface groups export settings into Document, Appearance, Branding, Layout, and Advanced sections. Appearance and branding choices use visual cards, while advanced controls such as watermarks and local assets stay collapsed until needed. Studio can save and reopen `.mardas.json` project files containing Markdown, export options, and attached assets; it also supports drag-and-drop asset management, accurate renderer-backed HTML preview, debug HTML export, and a command palette via **Ctrl/Cmd+K**. Use **Ctrl/Cmd+S** for Markdown, **Ctrl/Cmd+Shift+S** for a project bundle, and **Ctrl/Cmd+Enter** to export the PDF. The complete Studio walkthrough lives in the guides.
 
 ## Repository Structure
 
@@ -109,7 +107,7 @@ Mardas-MD2PDF/
 │   ├── cli.py              # Command-line interface
 │   ├── gui.py              # Local browser-based GUI backend
 │   └── assets/             # Style CSS, GUI shell, logo, and vendored MathJax files
-├── docs/                   # Guides, changelog, release, maintenance, security, and feature references
+├── docs/                   # Guides, changelog, release, maintenance, security, and documentation policy
 │   └── guides/             # Complete English and Persian user guides
 ├── examples/               # Generated PDF examples from the guide files
 ├── scripts/                # Helper scripts for checks, examples, distributions, visual QA, and cleanup

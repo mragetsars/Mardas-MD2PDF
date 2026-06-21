@@ -4,6 +4,15 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.13.25 - 2026-06-21
+
+### Documentation
+- Removed the standalone feature/reference docs for appearance, branding, Markdown fidelity, PDF navigation, PDF typography, Persian/RTL, Studio, and visual QA because their user-facing content now belongs in the English and Persian guides.
+- Polished the guide-first documentation wording in the README, docs index, documentation policy, and both guides so the guides are explicitly the complete feature manual and live renderer sample.
+
+### Tests
+- Updated documentation integrity tests to reject stale feature-reference links and confirm the guides cover the retired feature areas.
+
 ## 1.13.24 - 2026-06-21
 
 ### Documentation

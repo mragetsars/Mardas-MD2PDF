@@ -186,12 +186,12 @@ def test_guide_architecture_png_is_optimized_for_guide_builds():
     assert not Path("docs/guides/images/architecture.svg").exists()
 
 
-def test_pdf_typography_docs_cover_guide_media_audit():
-    docs = Path("docs/PDF-TYPOGRAPHY.md").read_text(encoding="utf-8")
+def test_guides_cover_media_and_safe_html_audit_samples():
+    combined = (Path("docs/guides/GUIDE.en.md").read_text(encoding="utf-8") + "\n" + Path("docs/guides/GUIDE.fa.md").read_text(encoding="utf-8"))
 
-    assert "Guide media samples" in docs
-    assert "blocked placeholders" in docs
-    assert "Images and Safe HTML" in docs
+    assert "Images and Safe HTML" in combined
+    assert "blocked placeholder" in combined or "blocked placeholders" in combined
+    assert "images/architecture.png" in combined
 
 
 def test_footer_context_collects_running_metadata(tmp_path: Path):
