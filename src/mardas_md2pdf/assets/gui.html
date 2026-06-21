@@ -83,9 +83,10 @@
       padding:0 18px;border-bottom:1px solid var(--border);background:var(--shell);backdrop-filter:blur(18px);direction:ltr;
     }
     .brand{display:flex;align-items:center;gap:12px;min-width:260px;white-space:nowrap}
-    .brand-mark{width:36px;height:36px;border-radius:0;display:grid;place-items:center;background:transparent;border:0;box-shadow:none;color:var(--text);font-weight:900;letter-spacing:-.05em;padding:0}
+    .brand-mark{width:36px;height:36px;border-radius:0;display:grid;place-items:center;background:transparent;border:0;box-shadow:none;color:var(--text);font-weight:900;letter-spacing:-.05em;padding:0;flex:0 0 36px}
     .brand-copy strong{display:block;font-size:15px;font-weight:900;letter-spacing:.02em;color:var(--text)}
     .brand-copy span{display:block;margin-top:2px;color:var(--muted);font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
+    .brand-mark::before{content:"";width:100%;height:100%;display:block;background:currentColor;-webkit-mask:url("/assets/mardas-md2pdf-mark-gui-mask.svg") center/contain no-repeat;mask:url("/assets/mardas-md2pdf-mark-gui-mask.svg") center/contain no-repeat}
     .toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
     .btn,.seg button,select,input[type=text],input[type=number]{
       height:36px;border:1px solid var(--border);border-radius:12px;background:var(--panel);color:var(--text);
@@ -325,9 +326,7 @@
     .btn-primary .icon{width:16px;height:16px}
     .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);border:0;white-space:nowrap}
     .brand-mark{overflow:visible;background:transparent;border:0;box-shadow:none;padding:0}
-    .brand-mark img{width:100%;height:100%;object-fit:contain;display:block}
     body.light-mode .brand-mark{background:transparent;border:0;box-shadow:none}
-    body.light-mode .brand-mark img{filter:none;opacity:1}
     .tool-group{gap:7px}.tool-divider{opacity:.72}
     .btn .icon{display:block}
     .btn-icon .icon{width:17px;height:17px;margin:auto}
@@ -392,7 +391,7 @@
   <div class="app">
     <header class="topbar">
       <div class="brand">
-        <span class="brand-mark"><img src="/assets/mardas-md2pdf-logo.png" alt="" /></span>
+        <span class="brand-mark" aria-hidden="true"></span>
         <span class="brand-copy"><strong>Mardas MD2PDF Studio</strong><span>Markdown to PDF Engine · v__MARDAS_VERSION__</span></span>
       </div>
       <div class="toolbar" role="toolbar" aria-label="Studio toolbar">

@@ -4,6 +4,19 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.13.13 - 2026-06-21
+
+### Changed
+- Switched the Studio topbar brand mark from the raster logo to a dedicated monochrome SVG mask so the GUI uses a true vector logo.
+- Made the Studio brand mark inherit the exact same color as the `Mardas MD2PDF Studio` wordmark in both dark and light interface modes.
+
+### Documentation
+- Documented the new Studio-specific vector brand-mask asset in `docs/BRANDING.md`.
+- Synced README badge and English/Persian guide metadata to version `1.13.13`.
+
+### Tests
+- Extended GUI, packaged-asset, and documentation-integrity tests to enforce the vector-branding contract for Studio.
+
 ## 1.13.12 - 2026-06-21
 
 ### Changed

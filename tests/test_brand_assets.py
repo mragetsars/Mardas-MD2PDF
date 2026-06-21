@@ -17,5 +17,6 @@ def test_studio_brand_asset_routes_expose_only_current_application_logos():
     assert routes["/assets/mardas-md2pdf-logo.png"] == brand_assets.PRODUCT_LOGO
     assert routes["/assets/mardas-md2pdf-logo-white.png"] == brand_assets.PRODUCT_LOGO_WHITE
     assert routes["/assets/mardas-md2pdf-mark.svg"] == brand_assets.PRODUCT_MARK_SVG
+    assert routes["/assets/mardas-md2pdf-mark-gui-mask.svg"] == brand_assets.PRODUCT_GUI_MARK_MASK_SVG
     assert brand_assets.gui_brand_asset_filename("/assets/" + "Mardas" + ".png") is None
     assert brand_assets.asset_content_type(brand_assets.PRODUCT_LOGO) == "image/png"
