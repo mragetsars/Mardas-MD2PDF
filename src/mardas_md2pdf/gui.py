@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from . import __version__
+from .brand_assets import asset_content_type, gui_brand_asset_filename, packaged_asset_path
 from .appearance import code_style_for_appearance, validate_mode_name, validate_palette_name, validate_style_name
 from .markdown import render_markdown_file
 from .renderer import PdfOptions, build_html, convert, validate_branding_mode, validate_page_size
@@ -403,10 +404,10 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
             html = _asset_text("gui.html").replace("__MARDAS_VERSION__", __version__)
             self._send_text(html)
             return
-        if self.path in {"/assets/Mardas.png", "/assets/mardas-md2pdf-mark.svg"}:
-            filename = "mardas-md2pdf-mark.svg" if self.path.endswith(".svg") else "Mardas.png"
-            data = (resources.files("mardas_md2pdf") / "assets" / filename).read_bytes()
-            content_type = "image/svg+xml" if filename.endswith(".svg") else "image/png"
+        filename = gui_brand_asset_filename(self.path)
+        if filename is not None:
+            data = packaged_asset_path(filename).read_bytes()
+            content_type = asset_content_type(filename)
             self.send_response(200)
             self.send_header("Content-Type", content_type)
             self.send_header("Content-Length", str(len(data)))

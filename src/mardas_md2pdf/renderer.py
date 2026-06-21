@@ -31,6 +31,7 @@ from .appearance import (
     resolve_appearance,
     style_css_file,
 )
+from .brand_assets import product_logo_path
 from .markdown import MarkdownRenderResult, render_markdown_file
 
 
@@ -208,16 +209,8 @@ def _image_data_uri(path: Path | None) -> str | None:
 
 
 def _default_logo_path(*, variant: str = "default") -> Path | None:
-    """Return the packaged product mark used by default cover branding."""
-    candidates = {
-        "default": ("mardas-md2pdf-mark.svg", "Mardas.png"),
-        "cover-label": ("mardas-md2pdf-mark-white.svg", "mardas-md2pdf-mark.svg", "Mardas.png"),
-    }
-    for filename in candidates.get(variant, candidates["default"]):
-        path = _asset_path(filename)
-        if path.exists():
-            return path
-    return None
+    """Return the packaged Mardas MD2PDF product logo for built-in branding."""
+    return product_logo_path(variant=variant)
 
 
 def _cover_logo_uri(options: PdfOptions) -> str | None:

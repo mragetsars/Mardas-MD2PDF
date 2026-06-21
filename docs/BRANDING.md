@@ -61,7 +61,7 @@ preferred name for new branded output.
 The built-in English and Persian guides explicitly use `branding.mode: full`, because they
 are examples of Mardas MD2PDF itself. They intentionally do not set custom `brand`
 metadata; this keeps the cover on the built-in product branding path, where the compact
-rounded label uses the packaged Mardas logo, a dedicated white vector cover-mark variant,
+rounded label uses the packaged Mardas MD2PDF application logo, a dedicated white cover-label variant,
 the established product typography, and no drop shadow. User documents should normally keep the default `off` mode unless they
 intentionally need branding.
 
@@ -71,13 +71,14 @@ The project now ships the dedicated Mardas MD2PDF logo as package assets:
 
 | Asset | Purpose |
 | :--- | :--- |
-| `src/mardas_md2pdf/assets/mardas-md2pdf-mark.svg` | Primary full-color product mark used by the Studio UI and document-local examples. |
-| `src/mardas_md2pdf/assets/mardas-md2pdf-mark-white.svg` | White vector cover-label variant used on the built-in product-branded guide covers. |
+| `src/mardas_md2pdf/assets/mardas-md2pdf-logo.png` | Canonical full-color application logo used by Studio and preferred product branding paths. |
+| `src/mardas_md2pdf/assets/mardas-md2pdf-logo-white.png` | Canonical white transparent application logo used by built-in cover-label branding. |
+| `src/mardas_md2pdf/assets/mardas-md2pdf-mark.svg` | Scalable full-color vector companion for integrations that require SVG. |
+| `src/mardas_md2pdf/assets/mardas-md2pdf-mark-white.svg` | Scalable white vector companion for integrations that require SVG. |
 | `src/mardas_md2pdf/assets/mardas-md2pdf-app-icon.svg` | Rounded-square launcher/app icon artwork for distribution and platform packaging. |
-| `src/mardas_md2pdf/assets/Mardas.png` | Compatibility raster asset kept for older references and external workflows. |
-| `docs/guides/images/logo.svg` | Guide-local copy kept for the project logo asset itself; image/HTML examples now reuse the architecture banner for more coherent sizing samples. |
+| `docs/guides/images/logo.svg` and `docs/guides/images/logo.png` | Guide-local copies kept for documentation and media integrity tests; image/HTML examples reuse the architecture banner for coherent sizing samples. |
 
 The official English and Persian guides should keep `branding.mode: full` without custom
 `brand` metadata. That keeps them on the built-in product-branding path, where the cover
-label uses the packaged white cover-mark variant on top of the active appearance palette. Custom documents
+label uses the packaged white application-logo variant on top of the active appearance palette. Custom documents
 should use `brand.logo` only for their own organization or lab logo.

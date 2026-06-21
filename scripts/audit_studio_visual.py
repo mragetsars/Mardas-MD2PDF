@@ -75,11 +75,11 @@ def _capture_studio(html_text: str, screenshot_path: Path, timeout_ms: int) -> d
 def _fetch_studio_html(url: str, timeout: float) -> str:
     with urllib.request.urlopen(url, timeout=timeout) as response:  # noqa: S310 - local Studio URL only.
         html_text = response.read().decode("utf-8")
-    asset_url = url.rstrip("/") + "/assets/Mardas.png"
+    asset_url = url.rstrip("/") + "/assets/mardas-md2pdf-logo.png"
     try:
         with urllib.request.urlopen(asset_url, timeout=timeout) as response:  # noqa: S310 - local Studio URL only.
             logo_data = base64.b64encode(response.read()).decode("ascii")
-        html_text = html_text.replace('/assets/Mardas.png', f'data:image/png;base64,{logo_data}')
+        html_text = html_text.replace('/assets/mardas-md2pdf-logo.png', f'data:image/png;base64,{logo_data}')
     except Exception:
         pass
     return html_text

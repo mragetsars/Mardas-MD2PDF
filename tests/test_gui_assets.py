@@ -270,7 +270,7 @@ def test_gui_uses_inline_svg_icons_and_project_logo():
     assert 'href="#icon-file-down"' in html
     assert 'href="#icon-bold"' in html
     assert 'href="#icon-table"' in html
-    assert '<span class="brand-mark"><img src="/assets/mardas-md2pdf-mark.svg" alt="" /></span>' in html
+    assert '<span class="brand-mark"><img src="/assets/mardas-md2pdf-logo.png" alt="" /></span>' in html
     assert 'stroke-width:1.8' in html
 
 

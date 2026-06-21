@@ -4,6 +4,19 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.13.11 - 2026-06-21
+
+### Changed
+- Adopted the supplied Mardas MD2PDF application logo as canonical packaged full-color and white transparent PNG assets for Studio, cover branding, README artwork, and guide-local documentation assets.
+- Centralized built-in product logo resolution and Studio brand-asset routing in `brand_assets.py` so renderer and GUI paths use the same asset contract.
+- Refreshed the README hero image to use the dedicated application logo instead of the older generic mark artwork.
+
+### Fixed
+- Removed the legacy raster logo fallback from runtime branding and Studio asset routes so built-in branding no longer depends on the old Mardas logo file.
+
+### Tests
+- Added regression coverage for canonical app-logo packaging, transparent PNG dimensions, Studio routing, renderer fallback order, and documentation references.
+
 ## 1.13.10 - 2026-06-21
 
 ### Fixed
@@ -39,7 +52,7 @@ The project follows semantic versioning for user-visible behavior. Patch release
 
 ### Changed
 - Adopted the dedicated Mardas MD2PDF project logo as packaged SVG assets for the built-in cover brand label and Studio UI.
-- Kept the legacy `Mardas.png` raster asset as a compatibility fallback while preferring `mardas-md2pdf-mark.svg` for new built-in product branding.
+- Kept the legacy raster compatibility fallback while preferring `mardas-md2pdf-mark.svg` for new built-in product branding.
 
 ### Documentation
 - Documented the official mark, app icon, guide-local logo copy, and custom-brand usage boundaries in the branding reference.
