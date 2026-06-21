@@ -1349,9 +1349,7 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
       }}
       .md2pdf-mermaid-edge-label {{
         fill: var(--md2pdf-mermaid-edge-ink, var(--muted, #64748b));
-        font-size: 11px;
-        font-weight: 750;
-        dominant-baseline: middle;
+        font: 750 11px/1 var(--font-en), var(--font-fa), sans-serif;
         unicode-bidi: plaintext;
       }}
       .md2pdf-page-break {{
@@ -1587,6 +1585,25 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
         color: inherit !important;
         line-height: inherit;
         text-align: right;
+        font-variant-numeric: tabular-nums;
+      }}
+      .code-block--numbered .linenodiv,
+      .code-block--numbered td.linenos .normal,
+      .code-block--numbered td.linenos .special,
+      .code-block--numbered span.linenos,
+      .code-block--numbered span.linenos.special {{
+        margin: 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+      }}
+      .code-block--numbered td.linenos .normal,
+      .code-block--numbered td.linenos .special,
+      .code-block--numbered span.linenos,
+      .code-block--numbered span.linenos.special {{
+        display: block;
       }}
       body.md2pdf-style-textbook .code-block--numbered .linenos pre,
       body.md2pdf-style-academic .code-block--numbered .linenos pre {{

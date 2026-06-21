@@ -167,6 +167,8 @@ def _split_chained_edges(statement: str) -> list[str]:
 def _parse_edge(line: str) -> ParsedEdge | None:
     patterns = [
         (re.compile(r"^(?P<left>.*?)\s*-->\|(?P<label>[^|]+)\|\s*(?P<right>.+)$"), "arrow"),
+        (re.compile(r"^(?P<left>.*?)\s*==>\|(?P<label>[^|]+)\|\s*(?P<right>.+)$"), "thick"),
+        (re.compile(r"^(?P<left>.*?)\s*-\.->\|(?P<label>[^|]+)\|\s*(?P<right>.+)$"), "dotted"),
         (re.compile(r"^(?P<left>.*?)\s*--\s*(?P<label>[^-]+?)\s*-->\s*(?P<right>.+)$"), "arrow"),
         (re.compile(r"^(?P<left>.*?)\s*-\.\s*(?P<label>[^.]+?)\s*\.->\s*(?P<right>.+)$"), "dotted"),
         (re.compile(r"^(?P<left>.*?)\s*-\.->\s*(?P<right>.+)$"), "dotted"),
@@ -481,13 +483,14 @@ def _edge_svg(edge: MermaidEdge, nodes: dict[str, MermaidNode], *, horizontal: b
         label_h = 18
         label_x0 = label_x - label_w / 2
         label_y0 = label_y - 13
+        label_center_y = label_y0 + label_h / 2
         label = (
             f'<g class="md2pdf-mermaid-edge-label-group">'
             f'<rect class="md2pdf-mermaid-edge-label-bg" x="{label_x0:.1f}" y="{label_y0:.1f}" '
             f'width="{label_w:.1f}" height="{label_h:.1f}" rx="9" />'
-            f'<text class="md2pdf-mermaid-edge-label" x="{label_x:.1f}" y="{label_y:.1f}" '
+            f'<text class="md2pdf-mermaid-edge-label" x="{label_x:.1f}" y="{label_center_y:.1f}" '
             f'text-anchor="middle" direction="{direction}" unicode-bidi="plaintext">'
-            f'{safe_label}</text>'
+            f'<tspan x="{label_x:.1f}" dy="0.35em">{safe_label}</tspan></text>'
             f'</g>'
         )
     return f'<g class="{" ".join(classes)}"><path d="{path}"{marker} />{label}</g>'

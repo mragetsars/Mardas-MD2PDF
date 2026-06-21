@@ -22,6 +22,24 @@ def test_mermaid_edge_labels_use_background_chips_not_stroked_text():
     assert "valid input" in svg
 
 
+
+
+def test_mermaid_edge_labels_use_centered_tspan_and_pipe_labelled_dotted_edges():
+    svg = render_mermaid_to_svg(
+        """flowchart LR
+        Start((Start)) -->|valid input| Check{Ready?}
+        Check -.->|no| Retry[Retry options]
+        """
+    )
+
+    assert svg is not None
+    assert 'Retry options' in svg
+    assert '>no<' in svg
+    assert 'class="md2pdf-mermaid-edge md2pdf-mermaid-edge-dotted"' in svg
+    assert 'class="md2pdf-mermaid-edge-label"' in svg
+    assert 'dy="0.35em"' in svg
+
+
 def test_renderer_mermaid_label_css_avoids_pdf_text_extraction_duplicates(tmp_path: Path):
     result = render_markdown(
         """```mermaid

@@ -4,7 +4,15 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
-## 1.13.17 - 2026-06-21
+## 1.13.18 - 2026-06-21
+
+### Fixed
+- Centered Mermaid edge-label text inside its rounded label chips more reliably for Chromium PDF output by switching chip text to an explicit `tspan` vertical offset instead of relying on SVG baseline heuristics alone.
+- Removed the stray dark badge backgrounds that Pygments emits around numbered-code gutter spans so advanced code blocks render clean line numbers without per-line boxes.
+- Added support for common pipe-labelled dotted Mermaid edges such as `-.->|no| Retry`, so practical guide diagrams keep the expected label and retry node in offline rendering.
+
+### Tests
+- Added regression coverage for Mermaid chip text centering, pipe-labelled dotted Mermaid edges, and clean numbered-code gutter CSS overrides.
 
 ### Fixed
 - Reworked highlighted code-line backgrounds so advanced fenced-code samples with line numbers stay readable on dark code surfaces in light styles and in dark-mode textbook/academic output, instead of resolving to pale callout-style or light-surface fills.

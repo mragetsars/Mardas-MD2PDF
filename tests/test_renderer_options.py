@@ -502,6 +502,10 @@ def test_numbered_code_css_aligns_line_numbers_with_code_rows(tmp_path):
     assert "padding: 0 !important;" in html
     assert ".code-block--numbered .linenos pre" in html
     assert "padding: 4.2mm 2.2mm 4.2mm 4mm !important;" in html
+    assert "font-variant-numeric: tabular-nums;" in html
+    assert ".code-block--numbered td.linenos .normal" in html
+    assert "background: transparent !important;" in html
+    assert "box-shadow: none !important;" in html
     assert "body.md2pdf-style-textbook .code-block--numbered .linenos pre" in html
     assert "background-color: var(--md2pdf-code-highlight-bg) !important;" in html
 
