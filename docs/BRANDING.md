@@ -77,7 +77,7 @@ The project now ships the dedicated Mardas MD2PDF logo as package assets:
 | `src/mardas_md2pdf/assets/mardas-md2pdf-mark-white.svg` | Scalable white vector companion for integrations that require SVG. |
 | `src/mardas_md2pdf/assets/mardas-md2pdf-app-icon.svg` | Rounded-square launcher/app icon artwork for distribution and platform packaging. |
 | `src/mardas_md2pdf/assets/mardas-md2pdf-mark-gui-mask.svg` | Studio-only monochrome vector mask so the GUI brand mark inherits the same color as the `Mardas MD2PDF Studio` wordmark in dark and light modes. |
-| `docs/guides/images/architecture.svg` and `docs/guides/images/logo.png` | Guide-local documentation media. `architecture.svg` is the sample banner embedded in the manuals; `logo.png` is a clean local logo copy kept for documentation integrity checks and optional guide-local examples. |
+| `docs/guides/images/architecture.png` and `docs/guides/images/logo.png` | Guide-local documentation media. `architecture.png` is the sample banner embedded in the manuals; `logo.png` is a clean local logo copy kept for documentation integrity checks and optional guide-local examples. |
 
 The official English and Persian guides should keep `branding.mode: full` without custom
 `brand` metadata. That keeps them on the built-in product-branding path, where the cover

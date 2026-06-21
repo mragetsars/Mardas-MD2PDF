@@ -4,6 +4,19 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.13.14 - 2026-06-21
+
+### Fixed
+- Replaced the heavyweight guide architecture SVG wrapper with an optimized document-local PNG so guide builds no longer embed a large base64 raster image inside SVG and then inside HTML.
+- Updated English/Persian guide image and safe-HTML samples to use `images/architecture.png` while preserving the approved banner artwork.
+
+### Documentation
+- Clarified the guide media asset contract in `docs/BRANDING.md` and `docs/PDF-TYPOGRAPHY.md` so sample media stays lightweight and build-friendly.
+- Synced README badge and English/Persian guide metadata to version `1.13.14`.
+
+### Tests
+- Updated guide media integrity tests to reject the removed nested-base64 `architecture.svg` path and enforce the optimized PNG contract.
+
 ## 1.13.13 - 2026-06-21
 
 ### Changed

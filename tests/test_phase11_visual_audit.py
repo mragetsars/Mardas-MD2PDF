@@ -51,6 +51,7 @@ def test_guide_markdown_uses_document_local_media_assets_when_available():
     combined = en.read_text(encoding="utf-8") + "\n" + fa.read_text(encoding="utf-8")
 
     assert "README.png" not in combined
-    assert "images/architecture.svg" in combined
+    assert "images/architecture.png" in combined
+    assert "images/architecture.svg" not in combined
     assert not Path("docs/guides/images/logo.svg").exists()
     assert "images/logo.svg" not in combined

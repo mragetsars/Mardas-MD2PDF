@@ -139,14 +139,16 @@ def test_guide_image_references_use_document_local_assets():
 
     assert "README.png" not in en
     assert "README.png" not in fa
-    assert (guide_dir / "images/architecture.svg").exists()
+    assert (guide_dir / "images/architecture.png").exists()
+    assert not (guide_dir / "images/architecture.svg").exists()
     assert not (guide_dir / "images/logo.svg").exists()
-    assert "images/architecture.svg" in en
+    assert "images/architecture.png" in en
+    assert "images/architecture.svg" not in en
     assert "images/logo.svg" not in en
     assert "images/brand-mark.svg" not in en
-    assert "images/architecture.png" not in en
     assert "images/logo.png" not in en
-    assert "images/architecture.svg" in fa
+    assert "images/architecture.png" in fa
+    assert "images/architecture.svg" not in fa
     assert "images/logo.svg" not in fa
     assert "images/brand-mark.svg" not in fa
     assert 'width="240"' not in en
@@ -175,14 +177,13 @@ def test_local_svg_images_embed_and_keep_semantic_captions(tmp_path: Path):
     assert 'Image blocked or missing' not in result.body_html
 
 
-def test_guide_architecture_svg_title_is_not_clipped():
-    svg_path = Path("docs/guides/images/architecture.svg")
-    svg = svg_path.read_text(encoding="utf-8")
+def test_guide_architecture_png_is_optimized_for_guide_builds():
+    png_path = Path("docs/guides/images/architecture.png")
+    data = png_path.read_bytes()
 
-    assert "Mardas MD2PDF structured print pipeline banner" in svg
-    assert "data:image/png;base64," in svg
-    assert 'viewBox="0 0 1774 887"' in svg
-    assert "<image" in svg
+    assert data.startswith(b"\x89PNG\r\n\x1a\n")
+    assert len(data) < 450_000
+    assert not Path("docs/guides/images/architecture.svg").exists()
 
 
 def test_pdf_typography_docs_cover_guide_media_audit():

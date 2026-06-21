@@ -32,7 +32,7 @@ def test_guides_start_with_valid_front_matter():
         metadata = _front_matter(guide)
         assert metadata.get("title")
         assert metadata.get("summary")
-        assert metadata.get("version") == "1.13.13"
+        assert metadata.get("version") == "1.13.14"
         assert metadata.get("branding", {}).get("mode") == "full"
 
 
@@ -89,10 +89,11 @@ def test_project_logo_assets_are_packaged_and_documented():
     assert "mask" in mark_white_text
     assert "#FFFFFF" in mark_white_text
     assert not (ROOT / "docs/guides/images/logo.svg").exists()
-    architecture = (ROOT / "docs/guides/images/architecture.svg").read_text(encoding="utf-8")
-    assert "Mardas MD2PDF structured print pipeline banner" in architecture
-    assert "data:image/png;base64," in architecture
-    assert 'viewBox="0 0 1774 887"' in architecture
+    architecture = ROOT / "docs/guides/images/architecture.png"
+    assert architecture.exists()
+    assert _png_dimensions(architecture) == (1200, 600)
+    assert architecture.stat().st_size < 450_000
+    assert not (ROOT / "docs/guides/images/architecture.svg").exists()
     assert not (ROOT / "src/mardas_md2pdf/assets" / ("Mardas" + ".png")).exists()
     assert '"assets/*.png"' in pyproject
     assert '"assets/*.svg"' in pyproject
@@ -113,8 +114,8 @@ def test_guides_reuse_architecture_banner_for_safe_html_examples():
     en = (ROOT / "docs/guides/GUIDE.en.md").read_text(encoding="utf-8")
     fa = (ROOT / "docs/guides/GUIDE.fa.md").read_text(encoding="utf-8")
 
-    assert '<img src="images/architecture.svg" width="760" alt="Architecture diagram rendered from safe HTML with explicit width">' in en
-    assert '<img src="images/architecture.svg" width="760" alt="نمودار معماری با اندازه مشخص در HTML امن">' in fa
+    assert '<img src="images/architecture.png" width="760" alt="Architecture diagram rendered from safe HTML with explicit width">' in en
+    assert '<img src="images/architecture.png" width="760" alt="نمودار معماری با اندازه مشخص در HTML امن">' in fa
     assert '<img src="images/logo.svg"' not in en
     assert '<img src="images/logo.svg"' not in fa
 
@@ -137,7 +138,7 @@ def test_changelog_is_descending_and_has_single_intro():
     versions = [tuple(map(int, match.groups())) for match in VERSION_RE.finditer(changelog)]
     assert versions == sorted(versions, reverse=True)
     assert len(versions) == len(set(versions))
-    assert versions[0] == (1, 13, 13)
+    assert versions[0] == (1, 13, 14)
     assert (1, 8, 6) in versions
     assert (1, 8, 5) in versions
     assert (1, 5, 0) in versions
@@ -197,8 +198,8 @@ def test_guides_include_persian_rtl_live_smoke_samples():
 
     assert "Persian/RTL visual smoke sample" in en
     assert "نمونه smoke تصویری فارسی/RTL" in fa
-    assert "version 1.13.13" in en
-    assert "version 1.13.13" in fa
+    assert "version 1.13.14" in en
+    assert "version 1.13.14" in fa
     assert "۱۴۰۵" in en
     assert "۱۴۰۵" in fa
     assert "جدول ۱۲. نمونه جدول فارسی/RTL با عددهای ترکیبی." in en
