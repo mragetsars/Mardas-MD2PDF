@@ -893,6 +893,10 @@ def highlight_code(
     if linenos and line_start > 1:
         extra_attrs += f" data-line-start=\"{line_start}\""
     classes = "code-block" + (f" {html.escape(extra_classes)}" if extra_classes else "")
+    if has_persian(code):
+        classes += " code-block--rtl-script"
+    if has_persian(code) and has_latin(code):
+        classes += " code-block--mixed-script"
     if linenos:
         classes += " code-block--numbered"
     if highlight_lines:

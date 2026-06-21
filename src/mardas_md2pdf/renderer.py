@@ -1375,6 +1375,17 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
         direction: ltr;
         text-align: left;
       }}
+      .code-block--rtl-script pre,
+      .code-block--rtl-script code,
+      .code-block--rtl-script .codehilite,
+      .code-block--rtl-script .highlight {{
+        font-family: var(--font-fa), var(--font-code);
+        letter-spacing: 0;
+      }}
+      .code-block--rtl-script .codehilite span,
+      .code-block--rtl-script .highlight span {{
+        font-family: inherit;
+      }}
 
       .heading-anchor {{
         opacity: 0.34;

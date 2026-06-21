@@ -124,6 +124,47 @@ def test_all_appearance_combinations_emit_clean_palette_css(tmp_path):
                 assert "background-color: color-mix(in srgb, var(--accent-soft" in html
 
 
+
+def test_dark_mode_palettes_use_screen_safe_accent_tokens():
+    from mardas_md2pdf.appearance import DARK_PALETTES, DARK_STYLE_SURFACES, palette_css
+
+    def relative_luminance(hex_color: str) -> float:
+        channels = [int(hex_color[index : index + 2], 16) / 255 for index in (1, 3, 5)]
+        linear = [value / 12.92 if value <= 0.03928 else ((value + 0.055) / 1.055) ** 2.4 for value in channels]
+        return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
+
+    def contrast_ratio(first: str, second: str) -> float:
+        lighter, darker = sorted([relative_luminance(first), relative_luminance(second)], reverse=True)
+        return (lighter + 0.05) / (darker + 0.05)
+
+    slate_css = palette_css("slate", "dark", "textbook")
+    neutral_css = palette_css("neutral", "dark", "textbook")
+    emerald_css = palette_css("emerald", "dark", "modern")
+
+    assert "--accent: #cbd5e1" in slate_css
+    assert "--accent: #d4d4d4" in neutral_css
+    assert "--accent: #34d399" in emerald_css
+    assert "body.md2pdf-mode-dark .md2pdf-toc a" in slate_css
+    for palette in DARK_PALETTES.values():
+        for surface in DARK_STYLE_SURFACES.values():
+            assert contrast_ratio(palette["accent"], surface["page"]) >= 4.5
+            assert contrast_ratio(palette["accent"], surface["panel"]) >= 4.5
+
+
+def test_rtl_script_code_blocks_use_persian_font_fallback(tmp_path):
+    from mardas_md2pdf.markdown import render_markdown
+    from mardas_md2pdf.renderer import PdfOptions, build_html
+
+    md = "---\nlang: fa\ndir: rtl\n---\n\n```yaml\ntitle: \"گزارش فنی من\"\nversion: \"1.0.0\"\n```\n"
+    input_path = tmp_path / "rtl-code.md"
+    input_path.write_text(md, encoding="utf-8")
+
+    html = build_html(render_markdown(md), PdfOptions(input_path=input_path, output_path=tmp_path / "out.pdf"))
+
+    assert "code-block--rtl-script" in html
+    assert "code-block--mixed-script" in html
+    assert "font-family: var(--font-fa), var(--font-code);" in html
+
 def test_modern_emerald_palette_has_strong_guide_identity_contract():
     from mardas_md2pdf.appearance import palette_css
 

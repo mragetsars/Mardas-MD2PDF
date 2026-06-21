@@ -116,6 +116,16 @@ def test_visual_qa_commands_are_process_tree_timeout_safe() -> None:
     assert "timed out after" in source
 
 
+
+def test_build_examples_uses_process_tree_safe_render_commands() -> None:
+    source = (SCRIPTS / "build_examples.sh").read_text(encoding="utf-8")
+
+    assert "from visual_qa import run_command" in source
+    assert "MARDAS_BUILD_EXAMPLES_COMMAND_TIMEOUT" in source
+    assert '"--progress",' in source
+    assert '"off",' in source
+
+
 def test_visual_qa_scripts_expose_reliable_batch_controls() -> None:
     appearance_help = subprocess.run(
         [sys.executable, str(SCRIPTS / "audit_appearance_matrix.py"), "--help"],

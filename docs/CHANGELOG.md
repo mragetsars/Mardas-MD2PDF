@@ -4,6 +4,16 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.13.16 - 2026-06-21
+
+### Fixed
+- Improved dark-mode palette tokens so low-saturation palettes such as `slate` and `neutral` keep readable TOC links, headings, and accents on dark textbook/academic surfaces.
+- Marked code blocks containing Persian/Arabic script with stable CSS hooks and used Persian-capable font fallback inside those blocks so Persian YAML/string samples render joined and readable.
+- Hardened `scripts/build_examples.sh` to render guide PDFs through the shared process-tree-safe command runner and force `--progress off` for non-interactive release builds.
+
+### Tests
+- Added coverage for dark-mode palette contrast tokens, RTL-script code-block CSS, and process-tree-safe guide example builds.
+
 ## 1.13.15 - 2026-06-21
 
 ### Fixed

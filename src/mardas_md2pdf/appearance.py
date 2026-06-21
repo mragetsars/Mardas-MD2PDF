@@ -77,6 +77,59 @@ PALETTES: dict[str, dict[str, str]] = {
         "quote": "#fafafa",
     },
 }
+
+DARK_PALETTES: dict[str, dict[str, str]] = {
+    "blue": {
+        "accent": "#60a5fa",
+        "accent_2": "#a78bfa",
+        "accent_soft": "#172554",
+        "accent_line": "#3b82f6",
+        "quote": "#111827",
+    },
+    "emerald": {
+        "accent": "#34d399",
+        "accent_2": "#2dd4bf",
+        "accent_soft": "#064e3b",
+        "accent_line": "#10b981",
+        "quote": "#0f172a",
+    },
+    "violet": {
+        "accent": "#a78bfa",
+        "accent_2": "#f0abfc",
+        "accent_soft": "#2e1065",
+        "accent_line": "#8b5cf6",
+        "quote": "#111827",
+    },
+    "amber": {
+        "accent": "#fbbf24",
+        "accent_2": "#f97316",
+        "accent_soft": "#451a03",
+        "accent_line": "#f59e0b",
+        "quote": "#171717",
+    },
+    "rose": {
+        "accent": "#fb7185",
+        "accent_2": "#f472b6",
+        "accent_soft": "#4c0519",
+        "accent_line": "#f43f5e",
+        "quote": "#111827",
+    },
+    "slate": {
+        "accent": "#cbd5e1",
+        "accent_2": "#94a3b8",
+        "accent_soft": "#1e293b",
+        "accent_line": "#94a3b8",
+        "quote": "#171717",
+    },
+    "neutral": {
+        "accent": "#d4d4d4",
+        "accent_2": "#a3a3a3",
+        "accent_soft": "#262626",
+        "accent_line": "#a3a3a3",
+        "quote": "#171717",
+    },
+}
+
 PALETTES_ORDER = tuple(PALETTES)
 PALETTE_DESCRIPTIONS = {
     "blue": "Default professional blue accents.",
@@ -497,7 +550,7 @@ body.md2pdf-style-modern.md2pdf-palette-emerald:not(.md2pdf-mode-dark) .code-blo
 
 def palette_css(palette_name: str, mode_name: str, style_name: str | None = None) -> str:
     appearance = resolve_appearance(palette=palette_name, mode=mode_name, style=style_name)
-    colors = PALETTES[appearance.palette]
+    colors = DARK_PALETTES[appearance.palette] if appearance.mode == "dark" else PALETTES[appearance.palette]
     dark_css = _dark_mode_css(appearance) if appearance.mode == "dark" else ""
     return f"""
 :root {{

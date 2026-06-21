@@ -364,7 +364,8 @@ def test_build_html_uses_resolved_appearance_classes_and_palette_css(tmp_path):
     assert "md2pdf-style-academic" in html
     assert "md2pdf-palette-emerald" in html
     assert "md2pdf-mode-dark" in html
-    assert "--accent: #059669" in html
+    assert "--accent: #34d399" in html
+    assert "--accent-line: #10b981" in html
 
 
 def test_front_matter_appearance_is_used_when_cli_keeps_defaults(tmp_path):
