@@ -4,6 +4,15 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.13.20 - 2026-06-21
+
+### Fixed
+- Corrected numbered-code gutter alignment for highlighted advanced code blocks by keeping Pygments line-number spans inline. The previous block display override doubled the effective gutter line spacing and made numbers drift away from code rows.
+- Changed highlighted code rows from block boxes to full-width inline-block highlights so highlighted lines remain visually continuous without adding extra line breaks inside `<pre>` layout.
+
+### Tests
+- Added regression assertions that numbered-code gutter spans stay inline and highlighted rows use full-width inline-block styling.
+
 ## 1.13.19 - 2026-06-21
 
 ### Fixed

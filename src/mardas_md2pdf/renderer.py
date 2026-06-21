@@ -1608,10 +1608,7 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
       .code-block--numbered td.linenos .special,
       .code-block--numbered span.linenos,
       .code-block--numbered span.linenos.special {{
-        display: block;
-      }}
-      .code-block--numbered td.linenos .normal,
-      .code-block--numbered td.linenos .special {{
+        display: inline !important;
         line-height: inherit;
       }}
       .code-block--numbered .code {{
@@ -1622,7 +1619,9 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
       }}
       .codehilite .hll,
       .highlight .hll {{
-        display: block;
+        display: inline-block;
+        min-width: 100%;
+        box-sizing: border-box;
         background-color: var(--md2pdf-code-highlight-bg) !important;
         box-shadow: inset 3px 0 0 var(--md2pdf-code-highlight-border);
       }}
