@@ -4,6 +4,15 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.13.26 - 2026-06-21
+
+### Fixed
+- Changed Markdown footnote rendering from a single document-end endnote section to page-local print footnote blocks inserted near the reference, avoiding guide footnote calls that jump to the final page of the PDF.
+- Updated the official English and Persian guide footnote samples so the Persian/RTL smoke sample and the dedicated Footnotes section use distinct footnote IDs and demonstrate local footnote placement.
+
+### Tests
+- Added regression coverage for page-local footnote sections, repeated-reference local clones, localized Persian footnote markers, and footnote print CSS.
+
 ## 1.13.25 - 2026-06-21
 
 ### Documentation

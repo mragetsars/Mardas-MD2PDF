@@ -273,7 +273,7 @@ def test_multiline_footnotes_render_as_markdown_blocks():
     assert "خط دوم همان پانویس" in result.body_html
     assert "<strong>تاکید</strong>" in result.body_html
     assert '<li class="md2pdf-rtl-text" dir="rtl">مورد اول</li>' in result.body_html
-    assert '<section aria-label="پانویس‌ها" class="footnotes footnotes--rtl" dir="rtl">' in result.body_html
+    assert '<section aria-label="پانویس‌ها" class="footnotes footnotes--local footnotes--rtl" dir="rtl">' in result.body_html
     assert 'class="footnote-item footnote-item--persian footnote-item--rtl" id="fn-n"' in result.body_html
     assert '<span class="footnote-marker persian-generated-number">۱.</span>' in result.body_html
 

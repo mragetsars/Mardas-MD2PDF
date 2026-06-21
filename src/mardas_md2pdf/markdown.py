@@ -1321,6 +1321,7 @@ def replace_footnote_refs(
         entry.ref_count += 1
         ref_suffix = "" if entry.ref_count == 1 else f"-{entry.ref_count}"
         ref_id = f"fnref-{entry.anchor}{ref_suffix}"
+        note_id = f"fn-{entry.anchor}{ref_suffix}"
         display_index = localize_digits(entry.index, lang=lang, text_hint=text_hint)
         number_class = localized_number_class(entry.index, lang=lang, text_hint=text_hint)
         ref_classes = f"footnote-ref {number_class}"
@@ -1328,8 +1329,11 @@ def replace_footnote_refs(
             ref_classes += " footnote-ref--rtl"
         safe_label = html.escape(f"{label} {display_index}")
         return (
-            f'<sup class="{html.escape(ref_classes)}" id="{html.escape(ref_id)}">'
-            f'<a href="#fn-{html.escape(entry.anchor)}" aria-describedby="fn-{html.escape(entry.anchor)}" '
+            f'<sup class="{html.escape(ref_classes)}" id="{html.escape(ref_id)}" '
+            f'data-md2pdf-footnote-anchor="{html.escape(entry.anchor)}" '
+            f'data-md2pdf-footnote-note-id="{html.escape(note_id)}" '
+            f'data-md2pdf-footnote-ref-id="{html.escape(ref_id)}">'
+            f'<a href="#{html.escape(note_id)}" aria-describedby="{html.escape(note_id)}" '
             f'aria-label="{safe_label}">{html.escape(display_index)}</a></sup>'
         )
 
@@ -1357,6 +1361,59 @@ def replace_footnote_refs(
     return "".join(output)
 
 
+
+def _render_footnote_item(
+    entry: FootnoteEntry,
+    md: MarkdownIt,
+    *,
+    note_id: str,
+    ref_ids: list[str],
+    lang: str | None = None,
+    text_hint: str = "",
+) -> str:
+    rendered = md.render(entry.raw).strip()
+    footnote_text = BeautifulSoup(rendered, "html.parser").get_text(" ", strip=True) or entry.raw
+    body_profile = direction_profile(footnote_text)
+    body_dir = _dir_for_profile(body_profile)
+    body_classes = ["footnote-body", f"footnote-body--{body_profile}"]
+    body_classes.extend(text_quality_classes(footnote_text))
+    item_classes = ["footnote-item", f"footnote-item--{body_profile}"]
+    if has_persian(footnote_text):
+        item_classes.append("footnote-item--persian")
+    if has_latin(footnote_text):
+        item_classes.append("footnote-item--latin")
+    note_number_profile = numeral_profile(footnote_text)
+    if note_number_profile != "none":
+        item_classes.append(f"footnote-item--{note_number_profile}-number")
+    display_index = localize_digits(entry.index, lang=lang, text_hint=text_hint)
+    number_class = localized_number_class(entry.index, lang=lang, text_hint=text_hint)
+    backref_label = ui_label("footnote_backref", lang=lang, text_hint=text_hint)
+    backrefs = []
+    for ref_id in ref_ids:
+        ref_label = html.escape(f"{backref_label} {display_index}")
+        backrefs.append(
+            f'<a class="footnote-backref" href="#{html.escape(ref_id)}" aria-label="{ref_label}">↩</a>'
+        )
+    return (
+        f'<li class="{html.escape(" ".join(sorted(set(item_classes))))}" id="{html.escape(note_id)}">'
+        f'<span class="footnote-marker {number_class}">{html.escape(display_index)}.</span>'
+        f'<div class="{html.escape(" ".join(sorted(set(body_classes))))}" dir="{body_dir}" '
+        f'data-md2pdf-direction-profile="{body_profile}" data-md2pdf-number-profile="{note_number_profile}">{rendered}</div> '
+        f'<span class="footnote-backrefs">{"".join(backrefs)}</span></li>'
+    )
+
+
+def _footnote_container(tag: Tag) -> Tag:
+    for parent in tag.parents:
+        if not isinstance(parent, Tag):
+            continue
+        if parent.name in {"p", "li", "td", "th", "blockquote", "figure", "section", "div"}:
+            if "footnotes" in parent.get("class", []):
+                continue
+            return parent
+    return tag
+
+
 def append_footnotes(
     body_html: str,
     footnotes: list[tuple[str, str]] | list[FootnoteEntry],
@@ -1365,53 +1422,66 @@ def append_footnotes(
     lang: str | None = None,
     text_hint: str = "",
 ) -> str:
+    """Insert footnotes near their references instead of collecting endnotes.
+
+    Markdown libraries commonly render footnotes as a single end-of-document
+    section. That is acceptable for web pages, but it is not the expected print
+    behavior for a PDF guide. Chromium does not implement CSS ``float: footnote``,
+    so Mardas MD2PDF renders each footnote as a local print block immediately
+    after the block that contains the reference. The block is kept with the
+    reference when page flow allows it, which avoids the older endnote-only
+    behavior and keeps repeated references on different pages readable.
+    """
     entries = _normalize_footnotes(footnotes)
     if not entries:
         return body_html
 
+    soup = BeautifulSoup(body_html, "html.parser")
+    entry_by_anchor = {entry.anchor: entry for entry in entries}
     label = ui_label("footnotes", lang=lang, text_hint=text_hint)
-    backref_label = ui_label("footnote_backref", lang=lang, text_hint=text_hint)
     footnote_family = language_family(lang, text_hint)
     footnote_dir = "rtl" if footnote_family == "fa" else "ltr"
-    number_class = localized_number_class(1, lang=lang, text_hint=text_hint)
-    items = []
-    for entry in entries:
-        rendered = md.render(entry.raw).strip()
-        footnote_text = BeautifulSoup(rendered, "html.parser").get_text(" ", strip=True) or entry.raw
-        body_profile = direction_profile(footnote_text)
-        body_dir = _dir_for_profile(body_profile)
-        body_classes = ["footnote-body", f"footnote-body--{body_profile}"]
-        body_classes.extend(text_quality_classes(footnote_text))
-        item_classes = ["footnote-item", f"footnote-item--{body_profile}"]
-        if has_persian(footnote_text):
-            item_classes.append("footnote-item--persian")
-        if has_latin(footnote_text):
-            item_classes.append("footnote-item--latin")
-        if numeral_profile(footnote_text) != "none":
-            item_classes.append(f"footnote-item--{numeral_profile(footnote_text)}-number")
-        ref_count = max(1, entry.ref_count)
-        backrefs = []
-        display_index = localize_digits(entry.index, lang=lang, text_hint=text_hint)
-        for ref_index in range(1, ref_count + 1):
-            ref_suffix = "" if ref_index == 1 else f"-{ref_index}"
-            ref_id = f"fnref-{entry.anchor}{ref_suffix}"
-            ref_label = html.escape(f"{backref_label} {display_index}")
-            backrefs.append(
-                f'<a class="footnote-backref" href="#{html.escape(ref_id)}" aria-label="{ref_label}">↩</a>'
+    grouped: dict[int, tuple[Tag, list[tuple[FootnoteEntry, str, str]]]] = {}
+
+    for ref in soup.find_all("sup", class_=lambda c: c and "footnote-ref" in c):
+        if not isinstance(ref, Tag):
+            continue
+        anchor = str(ref.get("data-md2pdf-footnote-anchor") or "")
+        note_id = str(ref.get("data-md2pdf-footnote-note-id") or "")
+        ref_id = str(ref.get("data-md2pdf-footnote-ref-id") or ref.get("id") or "")
+        entry = entry_by_anchor.get(anchor)
+        if entry is None or not note_id or not ref_id:
+            continue
+        container = _footnote_container(ref)
+        key = id(container)
+        if key not in grouped:
+            grouped[key] = (container, [])
+        grouped[key][1].append((entry, note_id, ref_id))
+
+    for container, items in list(grouped.values()):
+        rendered_items = []
+        seen_note_ids: set[str] = set()
+        for entry, note_id, ref_id in items:
+            if note_id in seen_note_ids:
+                continue
+            seen_note_ids.add(note_id)
+            rendered_items.append(
+                _render_footnote_item(entry, md, note_id=note_id, ref_ids=[ref_id], lang=lang, text_hint=text_hint)
             )
-        items.append(
-            f'<li class="{html.escape(" ".join(sorted(set(item_classes))))}" id="fn-{html.escape(entry.anchor)}">'
-            f'<span class="footnote-marker {number_class}">{html.escape(display_index)}.</span>'
-            f'<div class="{html.escape(" ".join(sorted(set(body_classes))))}" dir="{body_dir}" data-md2pdf-direction-profile="{body_profile}" data-md2pdf-number-profile="{numeral_profile(footnote_text)}">{rendered}</div> '
-            f'<span class="footnote-backrefs">{"".join(backrefs)}</span></li>'
+        if not rendered_items:
+            continue
+        section_html = (
+            f'<section class="footnotes footnotes--local footnotes--{footnote_dir}" dir="{footnote_dir}" '
+            f'aria-label="{html.escape(label)}"><ol>{"".join(rendered_items)}</ol></section>'
         )
-    return (
-        body_html
-        + f'<section class="footnotes footnotes--{footnote_dir}" dir="{footnote_dir}" aria-label="{html.escape(label)}">'
-        + '<ol>'
-        + "".join(items)
-        + "</ol></section>"
-    )
+        section = BeautifulSoup(section_html, "html.parser").find("section")
+        if section is None:
+            continue
+        if container.name in {"td", "th", "li"}:
+            container.append(section)
+        else:
+            container.insert_after(section)
+    return str(soup)
 
 
 def slugify(value: str, used: set[str]) -> str:

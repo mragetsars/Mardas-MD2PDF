@@ -327,8 +327,9 @@ def test_footnote_references_use_stable_numeric_markers():
     assert 'id="fnref-long-note-2"' in result.body_html
     assert 'href="#fn-long-note"' in result.body_html
     assert '>1</a></sup>' in result.body_html
-    assert '<section aria-label="Footnotes" class="footnotes footnotes--ltr" dir="ltr">' in result.body_html
+    assert '<section aria-label="Footnotes" class="footnotes footnotes--local footnotes--ltr" dir="ltr">' in result.body_html
     assert 'class="footnote-item footnote-item--latin footnote-item--ltr" id="fn-long-note"' in result.body_html
+    assert 'id="fn-long-note-2"' in result.body_html
     assert 'class="footnote-backrefs"' in result.body_html
     assert 'href="#fnref-long-note-2"' in result.body_html
 
@@ -349,7 +350,9 @@ def test_build_html_contains_footnote_print_polish(tmp_path: Path):
 
     assert '.footnotes' in html
     assert 'break-inside: avoid-page' in html
+    assert '.footnotes--local' in html
+    assert 'break-before: avoid' in html
     assert 'grid-template-columns: max-content minmax(0, 1fr) max-content' in html
     assert '.footnote-backrefs' in html
-    assert '<section aria-label="Footnotes" class="footnotes footnotes--ltr" dir="ltr">' in html
+    assert '<section aria-label="Footnotes" class="footnotes footnotes--local footnotes--ltr" dir="ltr">' in html
     assert 'class="footnote-item footnote-item--latin footnote-item--ltr"' in html

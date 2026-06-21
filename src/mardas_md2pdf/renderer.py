@@ -1084,6 +1084,27 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
         direction: ltr;
         text-align: left;
       }}
+      .footnotes--local {{
+        margin-block: 0.55em 1.15em !important;
+        padding-block-start: 2mm !important;
+        border-block-start: 1px solid var(--line, #dbe3ef);
+        color: var(--muted, #64748b);
+        font-size: 8.5pt;
+        line-height: 1.48;
+        break-inside: avoid;
+        page-break-inside: avoid;
+        break-before: avoid;
+        page-break-before: avoid;
+      }}
+      .footnotes--local .footnote-item {{
+        margin-block: 0.32em;
+      }}
+      .footnotes--local .footnote-body {{
+        line-height: 1.48;
+      }}
+      .footnotes--local + .footnotes--local {{
+        margin-block-start: -0.35em !important;
+      }}
       .footnotes--rtl {{
         direction: rtl;
         text-align: right;

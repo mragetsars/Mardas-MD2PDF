@@ -12,7 +12,7 @@ summary: |
   This document also acts as a live rendering sample for cover pages, tables of contents, mixed RTL/LTR text, formulas, code, Mermaid flowcharts, images, tables, footnotes, page breaks, and safe HTML.
 institution: "Mardas Lab"
 course: "Markdown Publishing"
-version: "1.13.25"
+version: "1.13.26"
 status: "Stable"
 keywords:
   - Markdown
@@ -214,7 +214,7 @@ department: "Department name"
 course: "Course or project title"
 supervisor: "Supervisor name"
 date: "2026-05-20"
-version: "1.13.25"
+version: "1.13.26"
 status: "Draft"
 keywords: [Markdown, PDF, RTL, MathJax]
 cover_label: "Technical Report"
@@ -312,14 +312,14 @@ Inline code remains stable: `mrs-md2pdf input.md -o output.pdf --toc`.
 
 ## Persian/RTL visual smoke sample
 
-This compact sample is intentionally part of the guide because the guide is both user documentation and a live renderer test case.[^pipeline] It keeps Persian punctuation, Latin package names, Persian digits, semantic table captions, and mixed-direction cells in the official PDF examples.
+This compact sample is intentionally part of the guide because the guide is both user documentation and a live renderer test case.[^rtl-smoke] It keeps Persian punctuation, Latin package names, Persian digits, semantic table captions, and mixed-direction cells in the official PDF examples.
 
-آیا خروجی PDF برای `version 1.13.25` و شماره ۱۴۰۵ پایدار است؟ پاسخ: بله؛ جدول زیر باید RTL، mixed-script، و mixed-number hooks را فعال کند.
+آیا خروجی PDF برای `version 1.13.26` و شماره ۱۴۰۵ پایدار است؟ پاسخ: بله؛ جدول زیر باید RTL، mixed-script، و mixed-number hooks را فعال کند.
 
 | بخش نمونه | مقدار | انتظار در PDF |
 | :--- | :--- | :--- |
 | شماره فارسی | ۱۴۰۵ | عدد فارسی با متن RTL پایدار بماند. |
-| نسخه فنی | version 1.13.25 و ۱.۹.۹ | Latin/Persian numerals در یک سلول خوانا بمانند. |
+| نسخه فنی | version 1.13.26 و ۱.۹.۹ | Latin/Persian numerals در یک سلول خوانا بمانند. |
 | شناسه انگلیسی | `PDF`, `TOC`, `MathJax` | identifierهای English داخل جدول فارسی جابه‌جا نشوند. |
 
 جدول ۱۲. نمونه جدول فارسی/RTL با عددهای ترکیبی.
@@ -984,11 +984,14 @@ A clean visual result still matters more than a raw tool warning, but preflight 
 
 # Footnotes
 
-Footnotes are useful for references, technical notes, and extra explanations.[^pipeline]
+Footnotes are useful for references, technical notes, and extra explanations.[^footnote-demo]
 
-[^pipeline]: Mardas MD2PDF intentionally uses Chromium for layout instead of drawing every paragraph directly on a PDF canvas.
+[^rtl-smoke]: This live sample intentionally exercises Persian punctuation, mixed Latin identifiers, Persian digits, semantic table captions, and page-local footnote rendering in the official English guide.
+
+[^footnote-demo]: Mardas MD2PDF intentionally uses Chromium for layout instead of drawing every paragraph directly on a PDF canvas.
     This gives the project strong support for CSS print rules, mixed direction text, MathJax SVG output, tables, local images, and syntax-highlighted code.
 
+    - Page-local footnote blocks are inserted near the reference instead of being collected as document-end endnotes.
     - Multiline footnotes are supported.
     - Markdown inside footnotes is preserved.
     - Inline code like `@page`, `$x$`, and `[^id]` remains readable when it is written inside backticks.

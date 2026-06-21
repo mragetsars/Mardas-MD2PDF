@@ -232,7 +232,7 @@ def test_persian_footnotes_use_localized_markers_and_rtl_section():
 
     assert 'class="footnote-ref persian-generated-number footnote-ref--rtl"' in result.body_html
     assert '>۱</a></sup>' in result.body_html
-    assert '<section aria-label="پانویس‌ها" class="footnotes footnotes--rtl" dir="rtl">' in result.body_html
+    assert '<section aria-label="پانویس‌ها" class="footnotes footnotes--local footnotes--rtl" dir="rtl">' in result.body_html
     assert 'class="footnote-marker persian-generated-number">۱.</span>' in result.body_html
 
 
