@@ -21,6 +21,12 @@
   --blue-soft: #d9ecff;
   --blue-line: #5aa6e8;
   --code-bg: #ffffff;
+  --md2pdf-code-font-size: var(--md2pdf-code-font-size);
+  --md2pdf-code-line-height: var(--md2pdf-code-line-height);
+  --md2pdf-code-pre-padding-block: 3.5mm;
+  --md2pdf-code-pre-padding-inline: 4mm;
+  --md2pdf-code-gutter-padding-inline-start: 4mm;
+  --md2pdf-code-gutter-padding-inline-end: 2.2mm;
   --inline-code-bg: #f3f4f6;
   --table-head: #f6f8fb;
   --radius: 7px;
@@ -195,7 +201,7 @@ table {
   border-collapse: collapse;
   border-spacing: 0;
   font-size: 9.2pt;
-  line-height: 1.65;
+  line-height: var(--md2pdf-code-line-height);
   background: #ffffff;
 }
 thead { display: table-header-group; }
@@ -275,14 +281,14 @@ figcaption {
   direction: ltr;
   unicode-bidi: isolate;
   margin: 0;
-  padding: 3.5mm 4mm;
+  padding: var(--md2pdf-code-pre-padding-block) var(--md2pdf-code-pre-padding-inline);
   overflow-wrap: normal;
   white-space: pre-wrap;
   word-break: normal;
   color: #2d3748;
   font-family: var(--font-code);
-  font-size: 8.4pt;
-  line-height: 1.62;
+  font-size: var(--md2pdf-code-font-size);
+  line-height: var(--md2pdf-code-line-height);
   text-align: left;
   tab-size: 2;
 }
@@ -776,7 +782,7 @@ body.md2pdf-toc-break.md2pdf-h1-break .md2pdf-toc + h1 {
   margin: -4mm 0 4mm auto;
   color: #64748b;
   font-size: 13pt;
-  line-height: 1.65;
+  line-height: var(--md2pdf-code-line-height);
   font-weight: 750;
   text-align: right;
 }

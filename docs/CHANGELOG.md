@@ -4,6 +4,15 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.13.19 - 2026-06-21
+
+### Fixed
+- Aligned advanced numbered-code gutters with the actual code rows by moving numbered-code sizing and padding to shared per-style code metric tokens, then reusing those same metrics for both the code cell and the line-number gutter.
+- Removed another source of numbered-code drift: the gutter no longer depends on hardcoded textbook/academic padding overrides inside the renderer, so future style tuning stays synchronized automatically.
+
+### Tests
+- Added regression coverage that every bundled style emits the shared code metric tokens and that numbered-code CSS uses those tokens for gutter/code alignment.
+
 ## 1.13.18 - 2026-06-21
 
 ### Fixed

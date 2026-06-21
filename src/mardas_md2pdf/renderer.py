@@ -1577,13 +1577,18 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
         color: color-mix(in srgb, var(--code-ink, #e2e8f0) 46%, transparent) !important;
         text-align: right;
         user-select: none;
+        font-family: var(--font-code);
+      }}
+      .code-block--numbered .linenos pre,
+      .code-block--numbered .code pre {{
+        font-size: var(--md2pdf-code-font-size, 8.8pt) !important;
+        line-height: var(--md2pdf-code-line-height, 1.65) !important;
       }}
       .code-block--numbered .linenos pre {{
         margin: 0 !important;
-        padding: 4.2mm 2.2mm 4.2mm 4mm !important;
+        padding: var(--md2pdf-code-pre-padding-block, 4.2mm) var(--md2pdf-code-gutter-padding-inline-end, 2.2mm) var(--md2pdf-code-pre-padding-block, 4.2mm) var(--md2pdf-code-gutter-padding-inline-start, 4mm) !important;
         background: transparent !important;
         color: inherit !important;
-        line-height: inherit;
         text-align: right;
         font-variant-numeric: tabular-nums;
       }}
@@ -1605,10 +1610,9 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
       .code-block--numbered span.linenos.special {{
         display: block;
       }}
-      body.md2pdf-style-textbook .code-block--numbered .linenos pre,
-      body.md2pdf-style-academic .code-block--numbered .linenos pre {{
-        padding-top: 3.5mm !important;
-        padding-bottom: 3.5mm !important;
+      .code-block--numbered td.linenos .normal,
+      .code-block--numbered td.linenos .special {{
+        line-height: inherit;
       }}
       .code-block--numbered .code {{
         padding: 0 !important;

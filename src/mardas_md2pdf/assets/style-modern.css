@@ -24,6 +24,12 @@
   --accent-soft: #eef4ff;
   --quote: #eff6ff;
   --code-bg: #0f172a;
+  --md2pdf-code-font-size: var(--md2pdf-code-font-size);
+  --md2pdf-code-line-height: var(--md2pdf-code-line-height);
+  --md2pdf-code-pre-padding-block: 4.2mm;
+  --md2pdf-code-pre-padding-inline: 4.6mm;
+  --md2pdf-code-gutter-padding-inline-start: 4mm;
+  --md2pdf-code-gutter-padding-inline-end: 2.2mm;
   --code-ink: #e2e8f0;
   --radius: 14px;
   --shadow: none;
@@ -247,7 +253,7 @@ figure { margin: 1.25em 0; page-break-inside: avoid; }
 figcaption {
   margin-top: 2mm;
   color: var(--muted);
-  font-size: 8.8pt;
+  font-size: var(--md2pdf-code-font-size);
   text-align: center;
 }
 
@@ -293,14 +299,14 @@ figcaption {
   direction: ltr;
   unicode-bidi: isolate;
   margin: 0;
-  padding: 4.2mm 4.6mm;
+  padding: var(--md2pdf-code-pre-padding-block) var(--md2pdf-code-pre-padding-inline);
   overflow-wrap: normal;
   white-space: pre-wrap;
   word-break: normal;
   color: var(--code-ink);
   font-family: var(--font-code);
-  font-size: 8.8pt;
-  line-height: 1.65;
+  font-size: var(--md2pdf-code-font-size);
+  line-height: var(--md2pdf-code-line-height);
   text-align: left;
   tab-size: 2;
 }
@@ -790,7 +796,7 @@ body.md2pdf-toc-break.md2pdf-h1-break .md2pdf-toc + h1 {
   margin: -4mm 0 4mm auto;
   color: #64748b;
   font-size: 13pt;
-  line-height: 1.65;
+  line-height: var(--md2pdf-code-line-height);
   font-weight: 750;
   text-align: right;
 }
