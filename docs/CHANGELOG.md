@@ -4,6 +4,16 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.13.29 - 2026-06-29
+
+### Changed
+- Made Studio default to a renderer-backed PDF-like preview that injects screen-only page sizing, margins, auto-fit scaling, paper shadow, and visible page-break markers so the preview is closer to exported PDF geometry.
+- Added an optional Exact PDF preview mode that renders the current document through the existing PDF endpoint and displays the result in the browser PDF viewer for highest-fidelity manual checks.
+- Refreshed Studio preview automatically when export options or attached assets change, instead of waiting for the next Markdown edit.
+
+### Tests
+- Added regression coverage for Studio preview page dimensions, injected preview CSS and scaling script, exact-PDF preview wiring, option/asset-triggered preview refreshes, and the live Studio visual-audit preview path.
+
 ## 1.13.28 - 2026-06-29
 
 ### Fixed

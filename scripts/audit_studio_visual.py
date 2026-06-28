@@ -47,17 +47,71 @@ def _chromium_executable() -> str | None:
     return None
 
 
-def _capture_studio(html_text: str, screenshot_path: Path, timeout_ms: int) -> dict[str, Any]:
+def _fetch_studio_html(url: str, timeout: float) -> str:
+    with urllib.request.urlopen(url, timeout=timeout) as response:  # noqa: S310 - local Studio URL only.
+        html_text = response.read().decode("utf-8")
+    base_href = url.rstrip("/") + "/"
+    html_text = html_text.replace("<head>", f'<head>\n<base href="{base_href}">', 1)
+    asset_url = base_href + "assets/mardas-md2pdf-logo.png"
     try:
+        with urllib.request.urlopen(asset_url, timeout=timeout) as response:  # noqa: S310 - local Studio URL only.
+            logo_data = base64.b64encode(response.read()).decode("ascii")
+        html_text = html_text.replace("/assets/mardas-md2pdf-logo.png", f"data:image/png;base64,{logo_data}")
+    except Exception:
+        pass
+    return html_text
+
+
+def _proxy_local_studio_api(url: str, path: str, *, body: bytes | None, content_type: str, timeout: float) -> tuple[int, bytes, str]:
+    request = urllib.request.Request(
+        url.rstrip("/") + path,
+        data=body,
+        headers={"Content-Type": content_type},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:  # noqa: S310 - local Studio URL only.
+            return response.status, response.read(), response.headers.get_content_type()
+    except Exception as exc:
+        return 502, str(exc).encode("utf-8", errors="replace"), "text/plain"
+
+
+def _capture_studio(html_text: str, url: str, screenshot_path: Path, timeout_ms: int) -> dict[str, Any]:
+    try:
+        from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
         from playwright.sync_api import sync_playwright
     except ImportError as exc:  # pragma: no cover - exercised by users without dev/browser deps.
         raise RuntimeError("Playwright is required for Studio visual QA") from exc
 
+    preview_ready_script = """
+        () => {
+          const status = document.querySelector('#previewStatus')?.textContent || '';
+          return /preview (updated|failed)/i.test(status);
+        }
+    """
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(executable_path=_chromium_executable())
         try:
             page = browser.new_page(viewport={"width": 1440, "height": 1000}, device_scale_factor=1)
+
+            def proxy_render_html(route: Any, request: Any) -> None:
+                status, body, content_type = _proxy_local_studio_api(
+                    url,
+                    "/api/render-html",
+                    body=request.post_data_buffer,
+                    content_type=request.headers.get("content-type", "application/json"),
+                    timeout=max(timeout_ms / 1000, 1),
+                )
+                route.fulfill(status=status, body=body, content_type=content_type)
+
+            page.route("**/api/render-html", proxy_render_html)
             page.set_content(html_text, wait_until="domcontentloaded", timeout=timeout_ms)
+            try:
+                page.wait_for_function(preview_ready_script, timeout=timeout_ms)
+            except PlaywrightTimeoutError:
+                pass
+            preview_status = page.locator("#previewStatus").inner_text(timeout=timeout_ms)
+            preview_mode = page.locator("#previewModeInput").input_value(timeout=timeout_ms)
             page.screenshot(path=str(screenshot_path), full_page=True)
             checks = {
                 "title": page.title(),
@@ -66,23 +120,15 @@ def _capture_studio(html_text: str, screenshot_path: Path, timeout_ms: int) -> d
                 "appearance_section_visible": page.locator('[data-choice-group="style"]').count() > 0,
                 "branding_section_visible": page.locator('[data-choice-group="branding"]').count() > 0,
                 "settings_badge": page.locator("#appearanceName").inner_text(),
+                "preview_status": preview_status,
+                "preview_mode": preview_mode,
+                "preview_failed": "failed" in preview_status.lower(),
+                "preview_frame_visible": page.locator("#accuratePreviewFrame").is_visible(),
+                "pdf_like_preview_loaded": "pdf-like preview updated" in preview_status.lower(),
             }
         finally:
             browser.close()
     return checks
-
-
-def _fetch_studio_html(url: str, timeout: float) -> str:
-    with urllib.request.urlopen(url, timeout=timeout) as response:  # noqa: S310 - local Studio URL only.
-        html_text = response.read().decode("utf-8")
-    asset_url = url.rstrip("/") + "/assets/mardas-md2pdf-logo.png"
-    try:
-        with urllib.request.urlopen(asset_url, timeout=timeout) as response:  # noqa: S310 - local Studio URL only.
-            logo_data = base64.b64encode(response.read()).decode("ascii")
-        html_text = html_text.replace('/assets/mardas-md2pdf-logo.png', f'data:image/png;base64,{logo_data}')
-    except Exception:
-        pass
-    return html_text
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -122,7 +168,7 @@ def main(argv: list[str] | None = None) -> int:
         url = _read_server_url(process, timeout=args.timeout)
         screenshot_path = args.output_dir / "studio-default.png"
         html_text = _fetch_studio_html(url, timeout=args.timeout)
-        checks = _capture_studio(html_text, screenshot_path, timeout_ms=args.browser_timeout_ms)
+        checks = _capture_studio(html_text, url, screenshot_path, timeout_ms=args.browser_timeout_ms)
         payload = {
             "url": url,
             "screenshot": screenshot_path.name,
@@ -142,6 +188,12 @@ def main(argv: list[str] | None = None) -> int:
     for key in ["export_button_visible", "document_section_visible", "appearance_section_visible", "branding_section_visible"]:
         if not checks.get(key):
             raise SystemExit(f"Studio visual check failed: {key}")
+    if checks.get("preview_mode") != "accurate":
+        raise SystemExit("unexpected Studio preview mode")
+    if checks.get("preview_failed"):
+        raise SystemExit(f"Studio preview check failed: {checks.get('preview_status')}")
+    if not checks.get("preview_frame_visible"):
+        raise SystemExit("Studio preview frame is not visible")
     print(f"Studio screenshot written to {screenshot_path}")
     return 0
 

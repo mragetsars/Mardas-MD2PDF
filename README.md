@@ -2,7 +2,7 @@
 
 > **Professional Markdown to PDF converter for Persian, English, and mixed RTL/LTR technical documents**
 
-![Language](https://img.shields.io/badge/Language-Python-blue) ![Renderer](https://img.shields.io/badge/Renderer-Playwright%20%2B%20Chromium-green) ![Math](https://img.shields.io/badge/Math-MathJax-purple) ![Version](https://img.shields.io/badge/Version-v1.13.28-success) ![Status](https://img.shields.io/badge/Status-Stable-success) ![CI](https://github.com/mragetsars/Mardas-MD2PDF/actions/workflows/ci.yml/badge.svg)
+![Language](https://img.shields.io/badge/Language-Python-blue) ![Renderer](https://img.shields.io/badge/Renderer-Playwright%20%2B%20Chromium-green) ![Math](https://img.shields.io/badge/Math-MathJax-purple) ![Version](https://img.shields.io/badge/Version-v1.13.29-success) ![Status](https://img.shields.io/badge/Status-Stable-success) ![CI](https://github.com/mragetsars/Mardas-MD2PDF/actions/workflows/ci.yml/badge.svg)
 
 ## Overview
 
@@ -92,7 +92,7 @@ Launch the GUI:
 mrs-md2pdf-gui
 ```
 
-The Studio interface groups export settings into Document, Appearance, Branding, Layout, and Advanced sections. Appearance and branding choices use visual cards, while advanced controls such as watermarks and local assets stay collapsed until needed. Studio can save and reopen `.mardas.json` project files containing Markdown, export options, and attached assets; it also supports drag-and-drop asset management, accurate renderer-backed HTML preview, debug HTML export, and a command palette via **Ctrl/Cmd+K**. Use **Ctrl/Cmd+S** for Markdown, **Ctrl/Cmd+Shift+S** for a project bundle, and **Ctrl/Cmd+Enter** to export the PDF. The complete Studio walkthrough lives in the guides.
+The Studio interface groups export settings into Document, Appearance, Branding, Layout, and Advanced sections. Appearance and branding choices use visual cards, while advanced controls such as watermarks and local assets stay collapsed until needed. Studio can save and reopen `.mardas.json` project files containing Markdown, export options, and attached assets; it also supports drag-and-drop asset management, auto-scaling PDF-like renderer-backed preview, optional exact PDF preview in the browser viewer, debug HTML export, and a command palette via **Ctrl/Cmd+K**. Use **Ctrl/Cmd+S** for Markdown, **Ctrl/Cmd+Shift+S** for a project bundle, and **Ctrl/Cmd+Enter** to export the PDF. The complete Studio walkthrough lives in the guides.
 
 ## Repository Structure
 

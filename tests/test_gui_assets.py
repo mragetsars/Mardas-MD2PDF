@@ -4,14 +4,66 @@ from pathlib import Path
 GUI_HTML = Path(__file__).resolve().parents[1] / "src" / "mardas_md2pdf" / "assets" / "gui.html"
 
 
-def test_gui_marks_preview_as_approximate_and_exposes_custom_page_sizes():
+def test_gui_exposes_pdf_like_preview_modes_and_custom_page_sizes():
     html = GUI_HTML.read_text(encoding="utf-8")
 
-    assert "Approximate preview" in html
-    assert "The exported PDF uses the Python renderer" in html
+    assert "PDF-like preview uses backend renderer HTML" in html
+    assert "Exact PDF preview renders the same PDF" in html
+    assert "Fast preview is browser-local and approximate" in html
+    assert '<option value="accurate" selected>PDF-like</option>' in html
+    assert '<option value="pdf">Exact PDF</option>' in html
     assert "A4 landscape" in html
     assert "210mm 297mm" in html
 
+
+
+
+def test_studio_pdf_like_preview_page_dimensions():
+    from mardas_md2pdf import gui
+
+    assert gui._studio_preview_page_dimensions("A4") == ("210mm", "297mm")
+    assert gui._studio_preview_page_dimensions("A4 landscape") == ("297mm", "210mm")
+    assert gui._studio_preview_page_dimensions("Letter") == ("8.5in", "11in")
+    assert gui._studio_preview_page_dimensions("210mm 297mm") == ("210mm", "297mm")
+
+
+def test_studio_html_preview_injects_pdf_like_screen_css():
+    from mardas_md2pdf import gui
+
+    html = gui._render_studio_html_payload(
+        {
+            "markdown": "# Title\n\n<!-- pagebreak -->\n\nBody",
+            "options": {"toc": False, "noCover": True, "pageSize": "A4 landscape"},
+            "assets": [],
+        }
+    )
+
+    assert 'id="mardas-studio-preview-css"' in html
+    assert "--md2pdf-preview-page-width: 297mm;" in html
+    assert "--md2pdf-preview-page-height: 210mm;" in html
+    assert "padding: var(--page-margin-top) var(--page-margin-x) var(--page-margin-bottom)" in html
+    assert "--md2pdf-preview-scale: 1;" in html
+    assert "zoom: var(--md2pdf-preview-scale);" in html
+    assert 'id="mardas-studio-preview-scale-script"' in html
+    assert "updatePreviewScale" in html
+    assert ".md2pdf-page-break::after" in html
+    assert "PDF page break" in html
+
+
+def test_gui_wires_pdf_like_exact_preview_and_refresh_triggers():
+    html = GUI_HTML.read_text(encoding="utf-8")
+
+    assert "const ACCURATE_PREVIEW_DELAY_MS = 650" in html
+    assert "const PDF_PREVIEW_DELAY_MS = 1200" in html
+    assert "function schedulePreviewRender" in html
+    assert "function requestPdfPreview" in html
+    assert "fetch('/api/render'" in html
+    assert "URL.createObjectURL(blob)" in html
+    assert "previewPdfObjectUrl" in html
+    assert "['fast','accurate','pdf'].includes(state.previewMode)" in html
+    assert "control.addEventListener('input', () =>" in html
+    assert "control.addEventListener('change', () =>" in html
+    assert "setBrandLogoFromAsset" in html
 
 def test_gui_asset_writer_enforces_size_limits(tmp_path, monkeypatch):
     import base64
@@ -390,7 +442,8 @@ def test_gui_preview_exposes_render_status_and_footer_save_state():
 
     assert 'id="previewStatus" class="preview-status"' in html
     assert 'function setPreviewStatus' in html
-    assert "setPreviewStatus('Updating preview...', true)" in html
+    assert 'function schedulePreviewRender' in html
+    assert "setPreviewStatus(activePreviewMode() === 'pdf'" in html
     assert '<span id="savedState">Live preview</span>' in html
     assert 'Markdown source' in html
 
@@ -461,8 +514,9 @@ def test_studio_supports_fast_accurate_preview_and_debug_html_export():
     html = GUI_HTML.read_text(encoding="utf-8")
 
     assert 'id="previewModeInput"' in html
-    assert '<option value="fast" selected>Fast</option>' in html
-    assert '<option value="accurate">Accurate</option>' in html
+    assert '<option value="accurate" selected>PDF-like</option>' in html
+    assert '<option value="pdf">Exact PDF</option>' in html
+    assert '<option value="fast">Fast</option>' in html
     assert 'id="accuratePreviewFrame"' in html
     assert "function requestAccuratePreview" in html
     assert "function renderFastPreview" in html
@@ -495,7 +549,8 @@ def test_studio_exposes_command_palette_and_professional_shortcuts():
     assert "key === 'e'" in html
     assert "Ctrl/Cmd+Shift+S" in html
     assert "command-palette-open" in html
-    assert "Use accurate preview" in html
+    assert "Use PDF-like preview" in html
+    assert "Use exact PDF preview" in html
     assert "Open Studio project" in html
 
 

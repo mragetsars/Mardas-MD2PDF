@@ -78,6 +78,20 @@ def test_appearance_matrix_filter_contract_is_bounded_without_rendering() -> Non
 
 
 
+
+def test_studio_visual_audit_uses_live_server_preview_context() -> None:
+    source = (SCRIPTS / "audit_studio_visual.py").read_text(encoding="utf-8")
+
+    assert '<base href="{base_href}">' in source
+    assert 'page.route("**/api/render-html"' in source
+    assert "_proxy_local_studio_api" in source
+    assert "preview_status" in source
+    assert "preview_failed" in source
+    assert "preview_mode" in source
+    assert "unexpected Studio preview mode" in source
+    assert "Studio preview frame is not visible" in source
+
+
 def test_visual_snapshot_compare_script_writes_summary(tmp_path: Path) -> None:
     from compare_visual_snapshots import main as compare_main
 

@@ -4,6 +4,7 @@ import argparse
 import base64
 import binascii
 import json
+import re
 import tempfile
 import threading
 import webbrowser
@@ -24,6 +25,36 @@ MAX_GUI_MARKDOWN_BYTES = 4 * 1024 * 1024
 MAX_GUI_ASSETS = 250
 MAX_GUI_ASSET_BYTES = 12 * 1024 * 1024
 MAX_GUI_TOTAL_ASSET_BYTES = 32 * 1024 * 1024
+
+STUDIO_PREVIEW_NAMED_PAGE_SIZES: dict[str, tuple[str, str]] = {
+    "letter": ("8.5in", "11in"),
+    "legal": ("8.5in", "14in"),
+    "tabloid": ("11in", "17in"),
+    "ledger": ("17in", "11in"),
+    "a0": ("841mm", "1189mm"),
+    "a1": ("594mm", "841mm"),
+    "a2": ("420mm", "594mm"),
+    "a3": ("297mm", "420mm"),
+    "a4": ("210mm", "297mm"),
+    "a5": ("148mm", "210mm"),
+    "a6": ("105mm", "148mm"),
+    "b0": ("1000mm", "1414mm"),
+    "b1": ("707mm", "1000mm"),
+    "b2": ("500mm", "707mm"),
+    "b3": ("353mm", "500mm"),
+    "b4": ("250mm", "353mm"),
+    "b5": ("176mm", "250mm"),
+    "b6": ("125mm", "176mm"),
+}
+STUDIO_PREVIEW_PAGE_NAME_RE = re.compile(
+    r"^(?P<name>[A-Za-z][A-Za-z0-9-]*)(?:\s+(?P<orientation>portrait|landscape))?$",
+    re.IGNORECASE,
+)
+STUDIO_PREVIEW_DIMENSIONS_RE = re.compile(
+    r"^(?P<width>\d+(?:\.\d+)?(?:mm|cm|in|px|pt))\s+"
+    r"(?P<height>\d+(?:\.\d+)?(?:mm|cm|in|px|pt))$",
+    re.IGNORECASE,
+)
 
 
 class StudioRequestError(ValueError):
@@ -349,6 +380,147 @@ def _studio_pdf_options(
     )
 
 
+def _studio_preview_page_dimensions(page_size: str | None) -> tuple[str, str]:
+    """Return CSS width and height for Studio's screen-side PDF preview sheet."""
+    try:
+        page_size = validate_page_size(page_size)
+    except ValueError:
+        page_size = "A4"
+
+    dimension_match = STUDIO_PREVIEW_DIMENSIONS_RE.fullmatch(page_size)
+    if dimension_match:
+        return dimension_match.group("width"), dimension_match.group("height")
+
+    name_match = STUDIO_PREVIEW_PAGE_NAME_RE.fullmatch(page_size)
+    if not name_match:
+        return STUDIO_PREVIEW_NAMED_PAGE_SIZES["a4"]
+
+    width, height = STUDIO_PREVIEW_NAMED_PAGE_SIZES.get(
+        name_match.group("name").lower(), STUDIO_PREVIEW_NAMED_PAGE_SIZES["a4"]
+    )
+    if (name_match.group("orientation") or "").lower() == "landscape":
+        width, height = height, width
+    return width, height
+
+
+def _studio_pdf_like_preview_css(page_size: str | None) -> str:
+    """Inject screen-only CSS that makes renderer HTML read like a PDF page."""
+    page_width, page_height = _studio_preview_page_dimensions(page_size)
+    return f"""
+  <style id="mardas-studio-preview-css">
+    @media screen {{
+      :root {{
+        --md2pdf-preview-page-width: {page_width};
+        --md2pdf-preview-page-height: {page_height};
+        --md2pdf-preview-page-gap: 28px;
+        --md2pdf-preview-scale: 1;
+        --md2pdf-preview-shell-bg: #d8dde6;
+        --md2pdf-preview-shell-bg-dark: #050505;
+      }}
+      html {{
+        min-height: 100%;
+        background: var(--md2pdf-preview-shell-bg) !important;
+        overflow-x: hidden;
+      }}
+      body {{
+        min-height: 100%;
+        min-width: 0;
+        margin: 0 !important;
+        padding: var(--md2pdf-preview-page-gap) 0 !important;
+        background: var(--md2pdf-preview-shell-bg) !important;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        overflow-x: hidden;
+      }}
+      body.md2pdf-mode-dark {{
+        background: var(--md2pdf-preview-shell-bg-dark) !important;
+      }}
+      .md2pdf-document {{
+        width: var(--md2pdf-preview-page-width);
+        min-height: var(--md2pdf-preview-page-height);
+        margin: 0 auto var(--md2pdf-preview-page-gap) !important;
+        padding: var(--page-margin-top) var(--page-margin-x) var(--page-margin-bottom) !important;
+        box-shadow: 0 24px 74px rgba(15, 23, 42, .28), 0 0 0 1px rgba(15, 23, 42, .14);
+        overflow: visible;
+        flex: 0 0 auto;
+        zoom: var(--md2pdf-preview-scale);
+      }}
+      @supports not (zoom: 1) {{
+        .md2pdf-document {{
+          transform: scale(var(--md2pdf-preview-scale));
+          transform-origin: top center;
+        }}
+      }}
+      body:not(.md2pdf-mode-dark) .md2pdf-document {{
+        background: #ffffff !important;
+      }}
+      body.md2pdf-mode-dark .md2pdf-document {{
+        box-shadow: 0 24px 74px rgba(0, 0, 0, .72), 0 0 0 1px rgba(255, 255, 255, .12);
+      }}
+      .md2pdf-article {{
+        max-width: none !important;
+        margin: 0 !important;
+      }}
+      .md2pdf-page-break {{
+        display: block !important;
+        height: auto !important;
+        min-height: 0 !important;
+        margin: 18mm 0 !important;
+        border: 0 !important;
+        border-top: 1px dashed color-mix(in srgb, var(--accent, #2563eb) 48%, var(--line, #dbe3ef));
+        overflow: visible !important;
+        break-after: auto !important;
+        page-break-after: auto !important;
+        position: relative;
+      }}
+      .md2pdf-page-break::after {{
+        content: "PDF page break";
+        position: absolute;
+        left: 50%;
+        top: -.85em;
+        transform: translateX(-50%);
+        padding: .1em .55em;
+        border-radius: 999px;
+        background: var(--md2pdf-preview-shell-bg);
+        color: var(--muted, #64748b);
+        font: 700 9px/1.4 var(--font-en, Arial, sans-serif);
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }}
+      body.md2pdf-mode-dark .md2pdf-page-break::after {{
+        background: var(--md2pdf-preview-shell-bg-dark);
+      }}
+    }}
+  </style>
+  <script id="mardas-studio-preview-scale-script">
+    (() => {{
+      const updatePreviewScale = () => {{
+        const root = document.documentElement;
+        const page = document.querySelector('.md2pdf-document');
+        if (!page) return;
+        root.style.setProperty('--md2pdf-preview-scale', '1');
+        const pageWidth = page.getBoundingClientRect().width;
+        const viewportWidth = document.documentElement.clientWidth || window.innerWidth || pageWidth;
+        const scale = Math.min(1, Math.max(0.28, (viewportWidth - 32) / Math.max(pageWidth, 1)));
+        root.style.setProperty('--md2pdf-preview-scale', scale.toFixed(4));
+      }};
+      window.addEventListener('resize', updatePreviewScale);
+      if (document.readyState === 'loading') {{
+        document.addEventListener('DOMContentLoaded', updatePreviewScale, {{ once: true }});
+      }} else {{
+        requestAnimationFrame(updatePreviewScale);
+      }}
+    }})();
+  </script>"""
+
+
+def _inject_studio_preview_css(html_text: str, *, page_size: str | None) -> str:
+    preview_css = _studio_pdf_like_preview_css(page_size)
+    return html_text.replace("</head>", f"{preview_css}\n</head>", 1)
+
+
 def _render_studio_html_payload(payload: dict[str, Any]) -> str:
     markdown, options, assets, render_options, _filename = _validate_studio_payload(payload)
     with tempfile.TemporaryDirectory(prefix="mardas-md2pdf-gui-html-") as tmpdir:
@@ -379,6 +551,7 @@ def _render_studio_html_payload(payload: dict[str, Any]) -> str:
             include_content=True,
             include_watermark=True,
         )
+        html_text = _inject_studio_preview_css(html_text, page_size=render_options["page_size"])
         html_path.write_text(html_text, encoding="utf-8")
         return html_text
 

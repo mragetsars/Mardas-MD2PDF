@@ -525,7 +525,7 @@
       </section>
       <div class="gutter preview-gutter" id="previewGutter" title="Drag to resize editor and preview" aria-label="Resize editor and preview panels"></div>
       <section class="pane preview-pane">
-        <div class="pane-head"><strong>Preview</strong><span class="preview-tools"><span id="previewStatus" class="preview-status" title="Approximate preview is instant; Accurate preview uses the Python renderer HTML without starting Chromium. The exported PDF uses the Python renderer, MathJax, appearance CSS, TOC, page breaks, and Chromium print layout.">Fast preview</span><select id="previewModeInput" class="preview-mode-select" title="Preview mode"><option value="fast" selected>Fast</option><option value="accurate">Accurate</option></select><button class="btn" onclick="toggleDirection()" id="dirBtn" title="Toggle preview direction"><svg class="icon" aria-hidden="true"><use href="#icon-arrow-left-right"></use></svg><span id="dirBtnLabel">RTL</span></button></span></div>
+        <div class="pane-head"><strong>Preview</strong><span class="preview-tools"><span id="previewStatus" class="preview-status" title="PDF-like preview uses backend renderer HTML with page-size and margin simulation. Exact PDF preview renders the same PDF in the browser viewer but is slower. Fast preview is browser-local and approximate.">PDF-like preview</span><select id="previewModeInput" class="preview-mode-select" title="Preview mode"><option value="accurate" selected>PDF-like</option><option value="pdf">Exact PDF</option><option value="fast">Fast</option></select><button class="btn" onclick="toggleDirection()" id="dirBtn" title="Toggle preview direction"><svg class="icon" aria-hidden="true"><use href="#icon-arrow-left-right"></use></svg><span id="dirBtnLabel">RTL</span></button></span></div>
         <div id="preview" class="preview" dir="auto"></div>
         <iframe id="accuratePreviewFrame" class="accurate-preview-frame" title="Accurate renderer HTML preview" hidden></iframe>
       </section>
@@ -570,6 +570,10 @@ const SETTINGS_MAX_WIDTH = 520;
 const EDITOR_MIN_WIDTH = 280;
 let renderTimer = null;
 let accuratePreviewToken = 0;
+let previewPdfObjectUrl = null;
+const FAST_PREVIEW_DELAY_MS = 140;
+const ACCURATE_PREVIEW_DELAY_MS = 650;
+const PDF_PREVIEW_DELAY_MS = 1200;
 let exportProgressTimer = null;
 let exportProgressValue = 0;
 let activeResizePane = null;
@@ -730,6 +734,7 @@ function setChoice(group, value, options={}){
   if (!exists) return;
   field.value = value;
   updateAppearanceName();
+  schedulePreviewRender();
   if (options.persist !== false) scheduleStudioStateSave();
 }
 
@@ -831,7 +836,7 @@ function getStudioState(){
     markdown,
     lightMode: document.body.classList.contains('light-mode'),
     previewDirection: preview.getAttribute('dir') || 'auto',
-    previewMode: previewModeInput ? previewModeInput.value : 'fast',
+    previewMode: previewModeInput ? previewModeInput.value : 'accurate',
     editorWidth: getComputedStyle(document.documentElement).getPropertyValue('--editor-width').trim(),
     sidebarWidth: getComputedStyle(document.documentElement).getPropertyValue('--sidebar-width').trim(),
     settingsCollapsed
@@ -873,7 +878,7 @@ function loadStudioState(){
       editor.setAttribute('dir', state.previewDirection);
       updateDirectionButton(state.previewDirection);
     }
-    if (previewModeInput && ['fast','accurate'].includes(state.previewMode)) {
+    if (previewModeInput && ['fast','accurate','pdf'].includes(state.previewMode)) {
       previewModeInput.value = state.previewMode;
     }
     if (/^[0-9.]+px$/.test(state.sidebarWidth || '')) {
@@ -903,8 +908,14 @@ function clearStudioState(){
 
 function attachOptionPersistence(){
   document.querySelectorAll('.sidebar input, .sidebar select').forEach(control => {
-    control.addEventListener('input', scheduleStudioStateSave);
-    control.addEventListener('change', scheduleStudioStateSave);
+    control.addEventListener('input', () => {
+      scheduleStudioStateSave();
+      schedulePreviewRender();
+    });
+    control.addEventListener('change', () => {
+      scheduleStudioStateSave();
+      schedulePreviewRender();
+    });
   });
 }
 
@@ -1270,18 +1281,52 @@ function insertMarkdown(kind){
   if (kind === 'pagebreak') return insertAtCursor('<!-- pagebreak -->\n');
 }
 
-function renderFastPreview(text){
+function activePreviewMode(){
+  const mode = previewModeInput ? previewModeInput.value : 'accurate';
+  return ['fast', 'accurate', 'pdf'].includes(mode) ? mode : 'accurate';
+}
+
+function activePreviewDelay(){
+  const mode = activePreviewMode();
+  if (mode === 'pdf') return PDF_PREVIEW_DELAY_MS;
+  if (mode === 'accurate') return ACCURATE_PREVIEW_DELAY_MS;
+  return FAST_PREVIEW_DELAY_MS;
+}
+
+function schedulePreviewRender(){
+  clearTimeout(renderTimer);
+  setPreviewStatus(activePreviewMode() === 'pdf' ? 'Updating exact PDF preview...' : 'Updating preview...', true);
+  renderTimer = setTimeout(renderPreview, activePreviewDelay());
+}
+
+function clearPreviewPdfObjectUrl(){
+  if (!previewPdfObjectUrl) return;
+  URL.revokeObjectURL(previewPdfObjectUrl);
+  previewPdfObjectUrl = null;
+}
+
+function showFramePreview(){
+  preview.hidden = true;
+  if (accuratePreviewFrame) accuratePreviewFrame.hidden = false;
+}
+
+function showFastPreview(){
   preview.hidden = false;
   if (accuratePreviewFrame) accuratePreviewFrame.hidden = true;
+}
+
+function renderFastPreview(text){
+  clearPreviewPdfObjectUrl();
+  showFastPreview();
   preview.innerHTML = renderMarkdownPreview(text);
   setPreviewStatus('Fast preview updated', false);
 }
 
 async function requestAccuratePreview(text){
   const token = ++accuratePreviewToken;
-  preview.hidden = true;
-  if (accuratePreviewFrame) accuratePreviewFrame.hidden = false;
-  setPreviewStatus('Rendering accurate preview...', true);
+  clearPreviewPdfObjectUrl();
+  showFramePreview();
+  setPreviewStatus('Rendering PDF-like preview...', true);
   try {
     const response = await fetch('/api/render-html', {
       method: 'POST',
@@ -1291,14 +1336,40 @@ async function requestAccuratePreview(text){
     if (!response.ok) throw new Error(await readRenderError(response));
     const html = await response.text();
     if (token !== accuratePreviewToken) return;
+    accuratePreviewFrame.removeAttribute('src');
     accuratePreviewFrame.srcdoc = html;
-    setPreviewStatus('Accurate preview updated', false);
+    setPreviewStatus('PDF-like preview updated', false);
   } catch (error) {
     if (token !== accuratePreviewToken) return;
-    preview.hidden = false;
-    if (accuratePreviewFrame) accuratePreviewFrame.hidden = true;
-    preview.innerHTML = '<blockquote>Accurate preview failed: ' + escapeHtml(error.message) + '</blockquote>' + renderMarkdownPreview(text);
-    setPreviewStatus('Accurate preview failed', false);
+    showFastPreview();
+    preview.innerHTML = '<blockquote>PDF-like preview failed: ' + escapeHtml(error.message) + '</blockquote>' + renderMarkdownPreview(text);
+    setPreviewStatus('PDF-like preview failed', false);
+  }
+}
+
+async function requestPdfPreview(text){
+  const token = ++accuratePreviewToken;
+  showFramePreview();
+  setPreviewStatus('Rendering exact PDF preview...', true);
+  try {
+    const response = await fetch('/api/render', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ markdown: text, options: getOptions(), assets: attachedAssets })
+    });
+    if (!response.ok) throw new Error(await readRenderError(response));
+    const blob = await response.blob();
+    if (token !== accuratePreviewToken) return;
+    clearPreviewPdfObjectUrl();
+    previewPdfObjectUrl = URL.createObjectURL(blob);
+    accuratePreviewFrame.srcdoc = '';
+    accuratePreviewFrame.src = previewPdfObjectUrl;
+    setPreviewStatus('Exact PDF preview updated', false);
+  } catch (error) {
+    if (token !== accuratePreviewToken) return;
+    showFastPreview();
+    preview.innerHTML = '<blockquote>Exact PDF preview failed: ' + escapeHtml(error.message) + '</blockquote>' + renderMarkdownPreview(text);
+    setPreviewStatus('Exact PDF preview failed', false);
   }
 }
 
@@ -1307,7 +1378,10 @@ function renderPreview(){
   statusWords.textContent = 'Words: ' + (text.trim() ? text.trim().split(/\s+/).length : 0);
   statusChars.textContent = 'Chars: ' + text.length;
   syncLineNumbers();
-  if (previewModeInput && previewModeInput.value === 'accurate') {
+  const mode = activePreviewMode();
+  if (mode === 'pdf') {
+    requestPdfPreview(text);
+  } else if (mode === 'accurate') {
     requestAccuratePreview(text);
   } else {
     renderFastPreview(text);
@@ -1315,10 +1389,8 @@ function renderPreview(){
 }
 
 editor.addEventListener('input', () => {
-  clearTimeout(renderTimer);
-  setPreviewStatus('Updating preview...', true);
   syncLineNumbers();
-  renderTimer = setTimeout(renderPreview, 140);
+  schedulePreviewRender();
   scheduleStudioStateSave();
 });
 
@@ -1334,8 +1406,8 @@ editor.addEventListener('keydown', (event) => {
     const end = editor.selectionEnd;
     editor.value = editor.value.slice(0, start) + '    ' + editor.value.slice(end);
     editor.selectionStart = editor.selectionEnd = start + 4;
-    renderPreview();
     syncLineNumbers();
+    schedulePreviewRender();
   }
 });
 
@@ -1344,13 +1416,14 @@ editor.addEventListener('keydown', (event) => {
   if (!field) return;
   field.addEventListener('change', () => {
     updateAppearanceName();
+    schedulePreviewRender();
     scheduleStudioStateSave();
   });
 });
 
 function setPreviewMode(mode){
   if (!previewModeInput) return;
-  previewModeInput.value = mode === 'accurate' ? 'accurate' : 'fast';
+  previewModeInput.value = ['accurate', 'pdf'].includes(mode) ? mode : 'fast';
   renderPreview();
   scheduleStudioStateSave();
 }
@@ -1434,6 +1507,7 @@ async function handleAssetFiles(fileList, options={}){
   const next = await Promise.all(selected.map(readAssetFile));
   attachedAssets = existing.concat(next);
   renderAssetList();
+  schedulePreviewRender();
   scheduleStudioStateSave();
   serverStatus.textContent = 'Assets attached: ' + attachedAssets.length + (skipped ? ' · skipped ' + skipped + ' duplicate/over limit' : '');
   return { added: next.length, skipped };
@@ -1442,6 +1516,7 @@ async function handleAssetFiles(fileList, options={}){
 function removeAsset(index){
   attachedAssets.splice(index, 1);
   renderAssetList();
+  schedulePreviewRender();
   scheduleStudioStateSave();
   serverStatus.textContent = 'Asset removed';
 }
@@ -1449,6 +1524,7 @@ function removeAsset(index){
 function clearAssets(){
   attachedAssets = [];
   renderAssetList();
+  schedulePreviewRender();
   scheduleStudioStateSave();
   serverStatus.textContent = 'Assets cleared';
 }
@@ -1457,6 +1533,7 @@ function setBrandLogoFromAsset(index){
   const asset = attachedAssets[index];
   if (!asset) return;
   $('brandLogoInput').value = asset.path;
+  schedulePreviewRender();
   scheduleStudioStateSave();
   serverStatus.textContent = 'Brand logo set to ' + asset.path;
 }
@@ -1754,7 +1831,8 @@ const COMMANDS = [
   { id:'copy-cli', title:'Copy CLI command', hint:'Copy a command matching the current export settings.', shortcut:'', run:copyCommand },
   { id:'settings', title:'Toggle settings panel', hint:'Collapse or restore the export settings sidebar.', shortcut:'Ctrl/Cmd+,', run:() => settingsCollapsed ? expandSettingsPane() : collapseSettingsPane() },
   { id:'preview-fast', title:'Use fast preview', hint:'Switch back to the browser-local Markdown preview.', shortcut:'', run:() => setPreviewMode('fast') },
-  { id:'preview-accurate', title:'Use accurate preview', hint:'Preview server-rendered HTML from the Python renderer.', shortcut:'', run:() => setPreviewMode('accurate') },
+  { id:'preview-accurate', title:'Use PDF-like preview', hint:'Preview server-rendered HTML with a page-sized sheet and margins.', shortcut:'', run:() => setPreviewMode('accurate') },
+  { id:'preview-pdf', title:'Use exact PDF preview', hint:'Render the PDF and show it in the browser viewer for closest output fidelity.', shortcut:'', run:() => setPreviewMode('pdf') },
   { id:'direction', title:'Toggle preview direction', hint:'Switch editor and preview direction between RTL and LTR.', shortcut:'', run:toggleDirection }
 ];
 
