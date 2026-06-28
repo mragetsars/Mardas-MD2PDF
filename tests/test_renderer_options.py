@@ -505,6 +505,11 @@ def test_numbered_code_css_aligns_line_numbers_with_code_rows(tmp_path):
     assert "line-height: var(--md2pdf-code-line-height, 1.65) !important;" in html
     assert "padding: var(--md2pdf-code-pre-padding-block, 4.2mm)" in html
     assert "font-variant-numeric: tabular-nums;" in html
+    assert "width: auto;" in html
+    assert "white-space: nowrap;" in html
+    assert "white-space: pre !important;" in html
+    assert "overflow-wrap: normal !important;" in html
+    assert "word-break: normal !important;" in html
     assert ".code-block--numbered td.linenos .normal" in html
     assert "background: transparent !important;" in html
     assert "box-shadow: none !important;" in html

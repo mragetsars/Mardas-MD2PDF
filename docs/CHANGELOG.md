@@ -4,6 +4,15 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.13.28 - 2026-06-29
+
+### Fixed
+- Prevented multi-digit numbered-code gutters from wrapping one digit per visual row in print/PDF output, especially for `linenostart` values above 9 in dark academic/textbook visual QA cases.
+
+### Tests
+- Added regression coverage for numbered-code gutter CSS so print wrapping rules cannot reapply to line-number cells.
+- Verified the final visual QA matrix across all 56 style/palette/mode combinations for both appearance and feature-heavy samples, plus the Studio browser screenshot audit.
+
 ## 1.13.27 - 2026-06-29
 
 ### Fixed

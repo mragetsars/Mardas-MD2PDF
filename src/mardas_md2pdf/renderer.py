@@ -1594,11 +1594,13 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
         vertical-align: top;
       }}
       .code-block--numbered .linenos {{
-        width: 1%;
+        width: auto;
+        min-width: calc(2ch + var(--md2pdf-code-gutter-padding-inline-start, 4mm) + var(--md2pdf-code-gutter-padding-inline-end, 2.2mm));
         color: color-mix(in srgb, var(--code-ink, #e2e8f0) 46%, transparent) !important;
         text-align: right;
         user-select: none;
         font-family: var(--font-code);
+        white-space: nowrap;
       }}
       .code-block--numbered .linenos pre,
       .code-block--numbered .code pre {{
@@ -1612,6 +1614,9 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
         color: inherit !important;
         text-align: right;
         font-variant-numeric: tabular-nums;
+        white-space: pre !important;
+        overflow-wrap: normal !important;
+        word-break: normal !important;
       }}
       .code-block--numbered .linenodiv,
       .code-block--numbered td.linenos .normal,
