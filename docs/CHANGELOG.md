@@ -4,6 +4,15 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.13.27 - 2026-06-29
+
+### Fixed
+- Blocked remote Markdown images in the direct `render_markdown` API by default, matching the file-based renderer and CLI privacy boundary while still honoring `allow_remote_images=True`.
+- Preserved Studio attached asset paths with spaces and Unicode characters so Markdown image references and custom brand logos resolve to the uploaded browser asset names instead of dash-renamed sanitized paths.
+
+### Tests
+- Added regression coverage for direct remote-image blocking, direct remote-image opt-in, and Studio attached assets with whitespace/Unicode path segments.
+
 ## 1.13.26 - 2026-06-21
 
 ### Fixed

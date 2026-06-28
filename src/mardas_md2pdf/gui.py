@@ -225,14 +225,20 @@ def _safe_filename(value: str | None, default: str = "mardas-document") -> str:
     return name or default
 
 
+def _safe_asset_path_part(value: str) -> str:
+    """Preserve browser-provided asset names while removing path-control bytes."""
+    cleaned = "".join(
+        char for char in value if char not in {"/", "\\"} and ord(char) >= 32 and ord(char) != 127
+    )
+    cleaned = cleaned.strip()
+    return "" if cleaned in {"", ".", ".."} else cleaned
+
+
 def _safe_asset_relative_path(value: str | None, fallback: str = "asset") -> Path:
-    raw = str(value or fallback).replace("\\", "/").strip("/")
-    parts = []
-    for part in raw.split("/"):
-        safe = _safe_filename(part, default="")
-        if safe and safe not in {".", ".."}:
-            parts.append(safe)
-    return Path(*parts) if parts else Path(_safe_filename(fallback))
+    raw = str(value or fallback).replace("\\", "/").strip()
+    parts = [_safe_asset_path_part(part) for part in raw.split("/")]
+    safe_parts = [part for part in parts if part]
+    return Path(*safe_parts) if safe_parts else Path(_safe_filename(fallback))
 
 
 def _write_gui_assets(tmp: Path, assets: Any) -> None:

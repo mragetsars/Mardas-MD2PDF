@@ -1841,6 +1841,21 @@ def _block_image_reference(soup: BeautifulSoup, img: Tag, src: str, *, reason: s
     img.replace_with(placeholder)
 
 
+def block_remote_images(body_html: str) -> str:
+    """Replace remote image sources with visible placeholders.
+
+    ``render_markdown_file`` resolves local files later because it knows the
+    Markdown file location.  ``render_markdown`` has no filesystem boundary, but
+    it still exposes the same privacy boundary for network images by default.
+    """
+    soup = BeautifulSoup(body_html, "html.parser")
+    for img in soup.find_all("img"):
+        src = str(img.get("src") or "").strip()
+        if src and _is_remote_image_reference(src):
+            _block_image_reference(soup, img, src, reason="remote")
+    return str(soup)
+
+
 def embed_local_images(body_html: str, base_dir: str | Path, *, allow_remote_images: bool = False) -> str:
     """Inline document-local images and block unsafe unresolved image reads.
 
@@ -2471,6 +2486,8 @@ def render_markdown(
     text_hint = BeautifulSoup(body_html, "html.parser").get_text(" ", strip=True)
     toc_html = build_toc(toc_entries, toc, lang=lang, text_hint=text_hint)
     body_html = postprocess_html(body_html, code_style=code_style, lang=lang)
+    if not allow_remote_images:
+        body_html = block_remote_images(body_html)
 
     formatter = CodeHtmlFormatter(code_style)
     pygments_css = formatter.get_style_defs(".codehilite")
@@ -2501,6 +2518,7 @@ def render_markdown_file(
         toc_depth=toc_depth,
         code_style=code_style,
         unsafe_html=unsafe_html,
+        allow_remote_images=allow_remote_images,
     )
     result.body_html = embed_local_images(
         result.body_html,

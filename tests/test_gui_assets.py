@@ -34,6 +34,46 @@ def test_gui_asset_writer_enforces_size_limits(tmp_path, monkeypatch):
 
 
 
+def test_studio_asset_paths_preserve_spaces_and_unicode(tmp_path):
+    from mardas_md2pdf import gui
+
+    gui._write_gui_assets(
+        tmp_path,
+        [
+            {
+                "path": "images/my chart ۱۴۰۵.png",
+                "data": "data:image/png;base64,eA==",
+            }
+        ],
+    )
+
+    assert (tmp_path / "images" / "my chart ۱۴۰۵.png").read_bytes() == b"x"
+    assert (tmp_path / "my chart ۱۴۰۵.png").read_bytes() == b"x"
+    assert gui._safe_asset_relative_path("images/my chart ۱۴۰۵.png").as_posix() == "images/my chart ۱۴۰۵.png"
+
+
+def test_studio_html_render_embeds_attached_assets_with_spaces_in_paths():
+    from mardas_md2pdf import gui
+
+    html = gui._render_studio_html_payload(
+        {
+            "markdown": "![Chart](<images/my chart ۱۴۰۵.png>)\n",
+            "options": {"toc": False, "noCover": True},
+            "assets": [
+                {
+                    "path": "images/my chart ۱۴۰۵.png",
+                    "data": "data:image/png;base64,eA==",
+                }
+            ],
+        }
+    )
+
+    assert "data:image/png;base64,eA==" in html
+    assert 'data-md2pdf-source="images/my%20chart%20%DB%B1%DB%B4%DB%B0%DB%B5.png"' in html
+    assert "data-md2pdf-blocked-reason" not in html
+    assert "Image blocked or missing" not in html
+
+
 def test_studio_brand_logo_path_uses_attached_assets(tmp_path):
     from mardas_md2pdf import gui
 
