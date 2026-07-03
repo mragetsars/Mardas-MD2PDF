@@ -404,7 +404,7 @@ def _studio_preview_page_dimensions(page_size: str | None) -> tuple[str, str]:
 
 
 def _studio_pdf_like_preview_css(page_size: str | None) -> str:
-    """Inject screen-only CSS that makes renderer HTML read like a PDF page."""
+    """Inject screen-only CSS that makes renderer HTML read like a paged PDF preview."""
     page_width, page_height = _studio_preview_page_dimensions(page_size)
     return f"""
   <style id="mardas-studio-preview-css">
@@ -413,9 +413,11 @@ def _studio_pdf_like_preview_css(page_size: str | None) -> str:
         --md2pdf-preview-page-width: {page_width};
         --md2pdf-preview-page-height: {page_height};
         --md2pdf-preview-page-gap: 28px;
+        --md2pdf-preview-page-count: 1;
         --md2pdf-preview-scale: 1;
         --md2pdf-preview-shell-bg: #d8dde6;
         --md2pdf-preview-shell-bg-dark: #050505;
+        --md2pdf-preview-boundary: color-mix(in srgb, var(--accent, #2563eb) 42%, rgba(100, 116, 139, .5));
       }}
       html {{
         min-height: 100%;
@@ -438,12 +440,13 @@ def _studio_pdf_like_preview_css(page_size: str | None) -> str:
       }}
       .md2pdf-document {{
         width: var(--md2pdf-preview-page-width);
-        min-height: var(--md2pdf-preview-page-height);
+        min-height: calc(var(--md2pdf-preview-page-height) * var(--md2pdf-preview-page-count, 1));
         margin: 0 auto var(--md2pdf-preview-page-gap) !important;
         padding: var(--page-margin-top) var(--page-margin-x) var(--page-margin-bottom) !important;
         box-shadow: 0 24px 74px rgba(15, 23, 42, .28), 0 0 0 1px rgba(15, 23, 42, .14);
         overflow: visible;
         flex: 0 0 auto;
+        position: relative;
         zoom: var(--md2pdf-preview-scale);
       }}
       @supports not (zoom: 1) {{
@@ -461,6 +464,42 @@ def _studio_pdf_like_preview_css(page_size: str | None) -> str:
       .md2pdf-article {{
         max-width: none !important;
         margin: 0 !important;
+        position: relative;
+        z-index: 1;
+      }}
+      .md2pdf-preview-page-markers {{
+        position: absolute;
+        inset: 0;
+        height: calc(var(--md2pdf-preview-page-height) * var(--md2pdf-preview-page-count, 1));
+        pointer-events: none;
+        z-index: 25;
+        overflow: hidden;
+      }}
+      .md2pdf-preview-page-boundary {{
+        position: absolute;
+        left: 0;
+        right: 0;
+        border-top: 1px dashed var(--md2pdf-preview-boundary);
+        opacity: .82;
+      }}
+      .md2pdf-preview-page-boundary span {{
+        position: absolute;
+        left: 50%;
+        top: -10px;
+        transform: translateX(-50%);
+        padding: 2px 9px;
+        border: 1px solid color-mix(in srgb, var(--md2pdf-preview-boundary) 60%, transparent);
+        border-radius: 999px;
+        background: var(--md2pdf-preview-shell-bg);
+        color: var(--muted, #64748b);
+        font: 800 9px/1.35 var(--font-en, Arial, sans-serif);
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        white-space: nowrap;
+        box-shadow: 0 1px 4px rgba(15, 23, 42, .12);
+      }}
+      body.md2pdf-mode-dark .md2pdf-preview-page-boundary span {{
+        background: var(--md2pdf-preview-shell-bg-dark);
       }}
       .md2pdf-page-break {{
         display: block !important;
@@ -475,7 +514,7 @@ def _studio_pdf_like_preview_css(page_size: str | None) -> str:
         position: relative;
       }}
       .md2pdf-page-break::after {{
-        content: "PDF page break";
+        content: "Explicit page break";
         position: absolute;
         left: 50%;
         top: -.85em;
@@ -496,6 +535,53 @@ def _studio_pdf_like_preview_css(page_size: str | None) -> str:
   </style>
   <script id="mardas-studio-preview-scale-script">
     (() => {{
+      let refreshHandle = 0;
+      const measureCssHeight = (cssHeight) => {{
+        const probe = document.createElement('div');
+        probe.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none;left:-9999px;top:-9999px;height:' + cssHeight + ';width:0;padding:0;border:0;margin:0;';
+        document.body.appendChild(probe);
+        const height = probe.getBoundingClientRect().height;
+        probe.remove();
+        return Number.isFinite(height) && height > 0 ? height : 1122;
+      }};
+      const contentBottom = (page, overlay) => {{
+        let bottom = 0;
+        for (const child of page.children) {{
+          if (child === overlay || child.classList.contains('md2pdf-preview-page-markers')) continue;
+          bottom = Math.max(bottom, child.offsetTop + Math.max(child.scrollHeight, child.offsetHeight));
+        }}
+        return Math.max(bottom, page.clientHeight);
+      }};
+      const refreshPageMarkers = () => {{
+        const root = document.documentElement;
+        const page = document.querySelector('.md2pdf-document');
+        if (!page) return;
+        let overlay = page.querySelector(':scope > .md2pdf-preview-page-markers');
+        if (!overlay) {{
+          overlay = document.createElement('div');
+          overlay.className = 'md2pdf-preview-page-markers';
+          overlay.setAttribute('aria-hidden', 'true');
+          page.appendChild(overlay);
+        }}
+        const styles = getComputedStyle(root);
+        const pageHeightCss = styles.getPropertyValue('--md2pdf-preview-page-height').trim() || '297mm';
+        const pageHeight = measureCssHeight(pageHeightCss);
+        const pages = Math.max(1, Math.ceil((contentBottom(page, overlay) + 1) / pageHeight));
+        page.style.setProperty('--md2pdf-preview-page-count', String(pages));
+        if (overlay.dataset.pageCount === String(pages) && overlay.dataset.pageHeight === String(Math.round(pageHeight))) return;
+        overlay.dataset.pageCount = String(pages);
+        overlay.dataset.pageHeight = String(Math.round(pageHeight));
+        overlay.replaceChildren();
+        for (let index = 1; index < pages; index += 1) {{
+          const marker = document.createElement('div');
+          marker.className = 'md2pdf-preview-page-boundary';
+          marker.style.top = (index * pageHeight) + 'px';
+          const label = document.createElement('span');
+          label.textContent = 'Page ' + index + ' ends · Page ' + (index + 1) + ' starts';
+          marker.appendChild(label);
+          overlay.appendChild(marker);
+        }}
+      }};
       const updatePreviewScale = () => {{
         const root = document.documentElement;
         const page = document.querySelector('.md2pdf-document');
@@ -506,12 +592,22 @@ def _studio_pdf_like_preview_css(page_size: str | None) -> str:
         const scale = Math.min(1, Math.max(0.28, (viewportWidth - 32) / Math.max(pageWidth, 1)));
         root.style.setProperty('--md2pdf-preview-scale', scale.toFixed(4));
       }};
-      window.addEventListener('resize', updatePreviewScale);
+      const refreshPreviewPageChrome = () => {{
+        updatePreviewScale();
+        refreshPageMarkers();
+      }};
+      const queueRefresh = () => {{
+        if (refreshHandle) cancelAnimationFrame(refreshHandle);
+        refreshHandle = requestAnimationFrame(refreshPreviewPageChrome);
+      }};
+      window.addEventListener('resize', queueRefresh);
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(queueRefresh).catch(() => {{}});
       if (document.readyState === 'loading') {{
-        document.addEventListener('DOMContentLoaded', updatePreviewScale, {{ once: true }});
+        document.addEventListener('DOMContentLoaded', queueRefresh, {{ once: true }});
       }} else {{
-        requestAnimationFrame(updatePreviewScale);
+        queueRefresh();
       }}
+      setTimeout(queueRefresh, 200);
     }})();
   </script>"""
 

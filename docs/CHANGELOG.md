@@ -4,6 +4,18 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.13.30 - 2026-07-03
+
+### Changed
+- Removed the Studio Exact PDF preview mode because the renderer-backed PDF-like preview provides the useful workflow with far less latency and fewer browser-viewer failure modes.
+- Added visible page-boundary markers to the Studio PDF-like preview so users can see where one simulated PDF page ends and the next page starts while editing.
+- Virtualized Markdown editor line numbers so long documents continue numbering correctly beyond several thousand lines without rendering a huge line-number text node.
+- Synchronized editor scroll with the renderer-backed preview iframe when PDF-like preview is active.
+
+### Tests
+- Expanded Studio visual audit checks to verify PDF-like page markers and long-editor line numbering through a browser session.
+- Updated GUI regression tests for the two-mode preview model and the paged PDF-like preview CSS/JavaScript.
+
 ## 1.13.29 - 2026-06-29
 
 ### Changed

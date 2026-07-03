@@ -285,7 +285,9 @@
     .format-btn{height:28px;min-width:30px;border:0;border-radius:9px;background:transparent;color:var(--muted);font:850 12px/1 var(--font);cursor:pointer;display:inline-grid;place-items:center;padding:0 8px}
     .format-btn:hover{color:var(--text);background:color-mix(in srgb, var(--panel-3) 68%, transparent)}
     .editor-shell{min-height:0;display:grid;grid-template-columns:var(--line-number-width,56px) minmax(0,1fr);background:var(--editor)}
-    .line-numbers{overflow:hidden;min-width:var(--line-number-width,56px);padding:20px 10px 20px 0;border-right:1px solid var(--border);background:color-mix(in srgb, var(--editor) 82%, var(--panel) 18%);color:var(--faint);font:14px/1.72 var(--code);text-align:right;user-select:none;white-space:pre;direction:ltr}
+    .line-numbers{overflow:hidden;position:relative;min-width:var(--line-number-width,56px);border-right:1px solid var(--border);background:color-mix(in srgb, var(--editor) 82%, var(--panel) 18%);color:var(--faint);font:14px/1.72 var(--code);text-align:right;user-select:none;direction:ltr;font-variant-numeric:tabular-nums}
+    .line-number-spacer{position:relative;min-height:100%;width:100%}
+    .line-number-content{position:absolute;top:0;left:0;right:10px;white-space:pre;will-change:transform}
     textarea{height:100%;padding:20px;border-radius:0;line-height:1.72;scrollbar-width:thin}
     .preview{height:calc(100% - 46px);border-left:1px solid color-mix(in srgb, var(--border) 60%, transparent)}
     .preview-tools{min-width:0}
@@ -519,13 +521,13 @@
           <button class="format-btn" type="button" onclick="insertMarkdown('pagebreak')" title="Page break marker" aria-label="Page break"><svg class="icon" aria-hidden="true"><use href="#icon-page-break"></use></svg></button>
         </div>
         <div class="editor-shell">
-          <div id="lineNumbers" class="line-numbers" aria-hidden="true">1</div>
+          <div id="lineNumbers" class="line-numbers" aria-hidden="true"><div id="lineNumberSpacer" class="line-number-spacer"><div id="lineNumberContent" class="line-number-content">1</div></div></div>
           <textarea id="editor" dir="auto" spellcheck="false"></textarea>
         </div>
       </section>
       <div class="gutter preview-gutter" id="previewGutter" title="Drag to resize editor and preview" aria-label="Resize editor and preview panels"></div>
       <section class="pane preview-pane">
-        <div class="pane-head"><strong>Preview</strong><span class="preview-tools"><span id="previewStatus" class="preview-status" title="PDF-like preview uses backend renderer HTML with page-size and margin simulation. Exact PDF preview renders the same PDF in the browser viewer but is slower. Fast preview is browser-local and approximate.">PDF-like preview</span><select id="previewModeInput" class="preview-mode-select" title="Preview mode"><option value="accurate" selected>PDF-like</option><option value="pdf">Exact PDF</option><option value="fast">Fast</option></select><button class="btn" onclick="toggleDirection()" id="dirBtn" title="Toggle preview direction"><svg class="icon" aria-hidden="true"><use href="#icon-arrow-left-right"></use></svg><span id="dirBtnLabel">RTL</span></button></span></div>
+        <div class="pane-head"><strong>Preview</strong><span class="preview-tools"><span id="previewStatus" class="preview-status" title="PDF-like preview uses backend renderer HTML with page-size, margin, and page-boundary simulation. Fast preview is browser-local and approximate.">PDF-like preview</span><select id="previewModeInput" class="preview-mode-select" title="Preview mode"><option value="accurate" selected>PDF-like</option><option value="fast">Fast</option></select><button class="btn" onclick="toggleDirection()" id="dirBtn" title="Toggle preview direction"><svg class="icon" aria-hidden="true"><use href="#icon-arrow-left-right"></use></svg><span id="dirBtnLabel">RTL</span></button></span></div>
         <div id="preview" class="preview" dir="auto"></div>
         <iframe id="accuratePreviewFrame" class="accurate-preview-frame" title="Accurate renderer HTML preview" hidden></iframe>
       </section>
@@ -558,6 +560,8 @@ const exportProgressBar = $('exportProgressBar');
 const exportProgressLabel = $('exportProgressLabel');
 const interfaceBtn = $('interfaceBtn');
 const lineNumbers = $('lineNumbers');
+const lineNumberSpacer = $('lineNumberSpacer');
+const lineNumberContent = $('lineNumberContent');
 const previewStatus = $('previewStatus');
 const workspace = $('workspace');
 const settingsGutter = $('settingsGutter');
@@ -570,10 +574,8 @@ const SETTINGS_MAX_WIDTH = 520;
 const EDITOR_MIN_WIDTH = 280;
 let renderTimer = null;
 let accuratePreviewToken = 0;
-let previewPdfObjectUrl = null;
 const FAST_PREVIEW_DELAY_MS = 140;
 const ACCURATE_PREVIEW_DELAY_MS = 650;
-const PDF_PREVIEW_DELAY_MS = 1200;
 let exportProgressTimer = null;
 let exportProgressValue = 0;
 let activeResizePane = null;
@@ -878,7 +880,7 @@ function loadStudioState(){
       editor.setAttribute('dir', state.previewDirection);
       updateDirectionButton(state.previewDirection);
     }
-    if (previewModeInput && ['fast','accurate','pdf'].includes(state.previewMode)) {
+    if (previewModeInput && ['fast','accurate'].includes(state.previewMode)) {
       previewModeInput.value = state.previewMode;
     }
     if (/^[0-9.]+px$/.test(state.sidebarWidth || '')) {
@@ -1228,23 +1230,63 @@ function setPreviewStatus(message, rendering=false){
   previewStatus.classList.toggle('rendering', rendering);
 }
 
+function editorLineHeight(){
+  const style = window.getComputedStyle(editor);
+  const explicit = parseFloat(style.lineHeight);
+  if (Number.isFinite(explicit) && explicit > 0) return explicit;
+  const fontSize = parseFloat(style.fontSize);
+  return (Number.isFinite(fontSize) && fontSize > 0) ? fontSize * 1.72 : 24;
+}
+
+function editorVerticalPadding(){
+  const style = window.getComputedStyle(editor);
+  return {
+    top: parseFloat(style.paddingTop) || 0,
+    bottom: parseFloat(style.paddingBottom) || 0,
+  };
+}
+
 function syncLineNumbers(){
-  if (!lineNumbers) return;
+  if (!lineNumbers || !lineNumberSpacer || !lineNumberContent) return;
   const lineCount = Math.max(1, editor.value.split('\n').length);
   const digits = String(lineCount).length;
-  const width = Math.max(56, Math.min(96, digits * 10 + 30));
+  const width = Math.max(56, Math.min(110, digits * 10 + 30));
+  const lineHeight = editorLineHeight();
+  const padding = editorVerticalPadding();
+  const viewportLines = Math.max(1, Math.ceil(editor.clientHeight / lineHeight));
+  const firstVisible = Math.max(1, Math.floor(editor.scrollTop / lineHeight) + 1);
+  const buffer = 80;
+  const startLine = Math.max(1, firstVisible - buffer);
+  const endLine = Math.min(lineCount, firstVisible + viewportLines + buffer);
+  const numbers = [];
+  for (let i = startLine; i <= endLine; i++) numbers.push(String(i));
   document.documentElement.style.setProperty('--line-number-width', width + 'px');
-  let numbers = '';
-  for (let i = 1; i <= lineCount; i++) numbers += i + (i === lineCount ? '' : '\n');
-  lineNumbers.textContent = numbers;
+  lineNumberSpacer.style.height = Math.ceil(padding.top + padding.bottom + lineCount * lineHeight) + 'px';
+  lineNumberContent.textContent = numbers.join('\n');
+  lineNumberContent.style.transform = 'translateY(' + (padding.top + (startLine - 1) * lineHeight) + 'px)';
   lineNumbers.scrollTop = editor.scrollTop;
+}
+
+function syncFramePreviewScroll(ratio){
+  if (!accuratePreviewFrame || accuratePreviewFrame.hidden) return false;
+  const doc = accuratePreviewFrame.contentDocument;
+  if (!doc) return false;
+  const target = doc.scrollingElement || doc.documentElement || doc.body;
+  if (!target) return false;
+  const max = target.scrollHeight - target.clientHeight;
+  if (max <= 0) return false;
+  target.scrollTop = ratio * max;
+  return true;
 }
 
 function syncPreviewScroll(){
   const editorMax = editor.scrollHeight - editor.clientHeight;
+  if (editorMax <= 0) return;
+  const ratio = editor.scrollTop / editorMax;
+  if (syncFramePreviewScroll(ratio)) return;
   const previewMax = preview.scrollHeight - preview.clientHeight;
-  if (editorMax <= 0 || previewMax <= 0) return;
-  preview.scrollTop = (editor.scrollTop / editorMax) * previewMax;
+  if (previewMax <= 0) return;
+  preview.scrollTop = ratio * previewMax;
 }
 
 function wrapSelection(prefix, suffix, fallback){
@@ -1283,26 +1325,17 @@ function insertMarkdown(kind){
 
 function activePreviewMode(){
   const mode = previewModeInput ? previewModeInput.value : 'accurate';
-  return ['fast', 'accurate', 'pdf'].includes(mode) ? mode : 'accurate';
+  return ['fast', 'accurate'].includes(mode) ? mode : 'accurate';
 }
 
 function activePreviewDelay(){
-  const mode = activePreviewMode();
-  if (mode === 'pdf') return PDF_PREVIEW_DELAY_MS;
-  if (mode === 'accurate') return ACCURATE_PREVIEW_DELAY_MS;
-  return FAST_PREVIEW_DELAY_MS;
+  return activePreviewMode() === 'accurate' ? ACCURATE_PREVIEW_DELAY_MS : FAST_PREVIEW_DELAY_MS;
 }
 
 function schedulePreviewRender(){
   clearTimeout(renderTimer);
-  setPreviewStatus(activePreviewMode() === 'pdf' ? 'Updating exact PDF preview...' : 'Updating preview...', true);
+  setPreviewStatus('Updating preview...', true);
   renderTimer = setTimeout(renderPreview, activePreviewDelay());
-}
-
-function clearPreviewPdfObjectUrl(){
-  if (!previewPdfObjectUrl) return;
-  URL.revokeObjectURL(previewPdfObjectUrl);
-  previewPdfObjectUrl = null;
 }
 
 function showFramePreview(){
@@ -1316,7 +1349,6 @@ function showFastPreview(){
 }
 
 function renderFastPreview(text){
-  clearPreviewPdfObjectUrl();
   showFastPreview();
   preview.innerHTML = renderMarkdownPreview(text);
   setPreviewStatus('Fast preview updated', false);
@@ -1324,7 +1356,6 @@ function renderFastPreview(text){
 
 async function requestAccuratePreview(text){
   const token = ++accuratePreviewToken;
-  clearPreviewPdfObjectUrl();
   showFramePreview();
   setPreviewStatus('Rendering PDF-like preview...', true);
   try {
@@ -1347,41 +1378,13 @@ async function requestAccuratePreview(text){
   }
 }
 
-async function requestPdfPreview(text){
-  const token = ++accuratePreviewToken;
-  showFramePreview();
-  setPreviewStatus('Rendering exact PDF preview...', true);
-  try {
-    const response = await fetch('/api/render', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ markdown: text, options: getOptions(), assets: attachedAssets })
-    });
-    if (!response.ok) throw new Error(await readRenderError(response));
-    const blob = await response.blob();
-    if (token !== accuratePreviewToken) return;
-    clearPreviewPdfObjectUrl();
-    previewPdfObjectUrl = URL.createObjectURL(blob);
-    accuratePreviewFrame.srcdoc = '';
-    accuratePreviewFrame.src = previewPdfObjectUrl;
-    setPreviewStatus('Exact PDF preview updated', false);
-  } catch (error) {
-    if (token !== accuratePreviewToken) return;
-    showFastPreview();
-    preview.innerHTML = '<blockquote>Exact PDF preview failed: ' + escapeHtml(error.message) + '</blockquote>' + renderMarkdownPreview(text);
-    setPreviewStatus('Exact PDF preview failed', false);
-  }
-}
-
 function renderPreview(){
   const text = editor.value;
   statusWords.textContent = 'Words: ' + (text.trim() ? text.trim().split(/\s+/).length : 0);
   statusChars.textContent = 'Chars: ' + text.length;
   syncLineNumbers();
   const mode = activePreviewMode();
-  if (mode === 'pdf') {
-    requestPdfPreview(text);
-  } else if (mode === 'accurate') {
+  if (mode === 'accurate') {
     requestAccuratePreview(text);
   } else {
     renderFastPreview(text);
@@ -1408,6 +1411,7 @@ editor.addEventListener('keydown', (event) => {
     editor.selectionStart = editor.selectionEnd = start + 4;
     syncLineNumbers();
     schedulePreviewRender();
+    scheduleStudioStateSave();
   }
 });
 
@@ -1423,13 +1427,17 @@ editor.addEventListener('keydown', (event) => {
 
 function setPreviewMode(mode){
   if (!previewModeInput) return;
-  previewModeInput.value = ['accurate', 'pdf'].includes(mode) ? mode : 'fast';
+  previewModeInput.value = mode === 'accurate' ? 'accurate' : 'fast';
   renderPreview();
   scheduleStudioStateSave();
 }
 
 if (previewModeInput) {
   previewModeInput.addEventListener('change', () => setPreviewMode(previewModeInput.value));
+}
+
+if (accuratePreviewFrame) {
+  accuratePreviewFrame.addEventListener('load', () => syncPreviewScroll());
 }
 
 let attachedAssets = [];
@@ -1832,7 +1840,6 @@ const COMMANDS = [
   { id:'settings', title:'Toggle settings panel', hint:'Collapse or restore the export settings sidebar.', shortcut:'Ctrl/Cmd+,', run:() => settingsCollapsed ? expandSettingsPane() : collapseSettingsPane() },
   { id:'preview-fast', title:'Use fast preview', hint:'Switch back to the browser-local Markdown preview.', shortcut:'', run:() => setPreviewMode('fast') },
   { id:'preview-accurate', title:'Use PDF-like preview', hint:'Preview server-rendered HTML with a page-sized sheet and margins.', shortcut:'', run:() => setPreviewMode('accurate') },
-  { id:'preview-pdf', title:'Use exact PDF preview', hint:'Render the PDF and show it in the browser viewer for closest output fidelity.', shortcut:'', run:() => setPreviewMode('pdf') },
   { id:'direction', title:'Toggle preview direction', hint:'Switch editor and preview direction between RTL and LTR.', shortcut:'', run:toggleDirection }
 ];
 

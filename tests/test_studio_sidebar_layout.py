@@ -470,4 +470,6 @@ def test_studio_editor_line_numbers_scale_beyond_three_digits() -> None:
     assert "font:14px/1.72 var(--code)" in line_number_rule
     assert "const digits = String(lineCount).length" in html
     assert "--line-number-width" in html
-    assert "Math.min(96" in html
+    assert "Math.min(110" in html
+    assert "lineNumberContent.textContent = numbers.join" in html
+    assert "const buffer = 80" in html

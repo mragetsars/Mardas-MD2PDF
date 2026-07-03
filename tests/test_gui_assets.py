@@ -4,14 +4,16 @@ from pathlib import Path
 GUI_HTML = Path(__file__).resolve().parents[1] / "src" / "mardas_md2pdf" / "assets" / "gui.html"
 
 
-def test_gui_exposes_pdf_like_preview_modes_and_custom_page_sizes():
+def test_gui_exposes_pdf_like_and_fast_preview_modes_and_custom_page_sizes():
     html = GUI_HTML.read_text(encoding="utf-8")
 
     assert "PDF-like preview uses backend renderer HTML" in html
-    assert "Exact PDF preview renders the same PDF" in html
+    assert "page-boundary simulation" in html
     assert "Fast preview is browser-local and approximate" in html
+    assert "Exact PDF" not in html
     assert '<option value="accurate" selected>PDF-like</option>' in html
-    assert '<option value="pdf">Exact PDF</option>' in html
+    assert '<option value="pdf">' not in html
+    assert '<option value="fast">Fast</option>' in html
     assert "A4 landscape" in html
     assert "210mm 297mm" in html
 
@@ -46,21 +48,23 @@ def test_studio_html_preview_injects_pdf_like_screen_css():
     assert "zoom: var(--md2pdf-preview-scale);" in html
     assert 'id="mardas-studio-preview-scale-script"' in html
     assert "updatePreviewScale" in html
+    assert "refreshPageMarkers" in html
+    assert ".md2pdf-preview-page-markers" in html
+    assert ".md2pdf-preview-page-boundary" in html
+    assert "Page " in html
     assert ".md2pdf-page-break::after" in html
-    assert "PDF page break" in html
+    assert "Explicit page break" in html
 
 
-def test_gui_wires_pdf_like_exact_preview_and_refresh_triggers():
+def test_gui_wires_pdf_like_and_fast_preview_refresh_triggers():
     html = GUI_HTML.read_text(encoding="utf-8")
 
     assert "const ACCURATE_PREVIEW_DELAY_MS = 650" in html
-    assert "const PDF_PREVIEW_DELAY_MS = 1200" in html
     assert "function schedulePreviewRender" in html
-    assert "function requestPdfPreview" in html
-    assert "fetch('/api/render'" in html
-    assert "URL.createObjectURL(blob)" in html
-    assert "previewPdfObjectUrl" in html
-    assert "['fast','accurate','pdf'].includes(state.previewMode)" in html
+    assert "function requestAccuratePreview" in html
+    assert "function requestPdfPreview" not in html
+    assert "previewPdfObjectUrl" not in html
+    assert "['fast','accurate'].includes(state.previewMode)" in html
     assert "control.addEventListener('input', () =>" in html
     assert "control.addEventListener('change', () =>" in html
     assert "setBrandLogoFromAsset" in html
@@ -431,8 +435,10 @@ def test_gui_editor_has_formatting_toolbar_line_numbers_and_sync_scroll():
     assert "onclick=\"insertMarkdown('bold')\"" in html
     assert "onclick=\"insertMarkdown('table')\"" in html
     assert 'id="lineNumbers" class="line-numbers"' in html
+    assert 'id="lineNumberContent" class="line-number-content"' in html
     assert 'function insertMarkdown' in html
     assert 'function syncLineNumbers' in html
+    assert 'function syncFramePreviewScroll' in html
     assert 'function syncPreviewScroll' in html
     assert "editor.addEventListener('scroll'" in html
 
@@ -443,7 +449,7 @@ def test_gui_preview_exposes_render_status_and_footer_save_state():
     assert 'id="previewStatus" class="preview-status"' in html
     assert 'function setPreviewStatus' in html
     assert 'function schedulePreviewRender' in html
-    assert "setPreviewStatus(activePreviewMode() === 'pdf'" in html
+    assert "setPreviewStatus('Updating preview...', true)" in html
     assert '<span id="savedState">Live preview</span>' in html
     assert 'Markdown source' in html
 
@@ -515,7 +521,7 @@ def test_studio_supports_fast_accurate_preview_and_debug_html_export():
 
     assert 'id="previewModeInput"' in html
     assert '<option value="accurate" selected>PDF-like</option>' in html
-    assert '<option value="pdf">Exact PDF</option>' in html
+    assert '<option value="pdf">' not in html
     assert '<option value="fast">Fast</option>' in html
     assert 'id="accuratePreviewFrame"' in html
     assert "function requestAccuratePreview" in html
@@ -550,7 +556,7 @@ def test_studio_exposes_command_palette_and_professional_shortcuts():
     assert "Ctrl/Cmd+Shift+S" in html
     assert "command-palette-open" in html
     assert "Use PDF-like preview" in html
-    assert "Use exact PDF preview" in html
+    assert "Use exact PDF preview" not in html
     assert "Open Studio project" in html
 
 

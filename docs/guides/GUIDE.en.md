@@ -12,7 +12,7 @@ summary: |
   This document also acts as a live rendering sample for cover pages, tables of contents, mixed RTL/LTR text, formulas, code, Mermaid flowcharts, images, tables, footnotes, page breaks, and safe HTML.
 institution: "Mardas Lab"
 course: "Markdown Publishing"
-version: "1.13.29"
+version: "1.13.30"
 status: "Stable"
 keywords:
   - Markdown
@@ -214,7 +214,7 @@ department: "Department name"
 course: "Course or project title"
 supervisor: "Supervisor name"
 date: "2026-05-20"
-version: "1.13.29"
+version: "1.13.30"
 status: "Draft"
 keywords: [Markdown, PDF, RTL, MathJax]
 cover_label: "Technical Report"
@@ -314,12 +314,12 @@ Inline code remains stable: `mrs-md2pdf input.md -o output.pdf --toc`.
 
 This compact sample is intentionally part of the guide because the guide is both user documentation and a live renderer test case.[^rtl-smoke] It keeps Persian punctuation, Latin package names, Persian digits, semantic table captions, and mixed-direction cells in the official PDF examples.
 
-آیا خروجی PDF برای `version 1.13.29` و شماره ۱۴۰۵ پایدار است؟ پاسخ: بله؛ جدول زیر باید RTL، mixed-script، و mixed-number hooks را فعال کند.
+آیا خروجی PDF برای `version 1.13.30` و شماره ۱۴۰۵ پایدار است؟ پاسخ: بله؛ جدول زیر باید RTL، mixed-script، و mixed-number hooks را فعال کند.
 
 | بخش نمونه | مقدار | انتظار در PDF |
 | :--- | :--- | :--- |
 | شماره فارسی | ۱۴۰۵ | عدد فارسی با متن RTL پایدار بماند. |
-| نسخه فنی | version 1.13.29 و ۱.۹.۹ | Latin/Persian numerals در یک سلول خوانا بمانند. |
+| نسخه فنی | version 1.13.30 و ۱.۹.۹ | Latin/Persian numerals در یک سلول خوانا بمانند. |
 | شناسه انگلیسی | `PDF`, `TOC`, `MathJax` | identifierهای English داخل جدول فارسی جابه‌جا نشوند. |
 
 جدول ۱۲. نمونه جدول فارسی/RTL با عددهای ترکیبی.
@@ -846,7 +846,7 @@ The GUI is useful for users who prefer a visual workflow:
 4. Choose **Branding** only when the PDF should show a product, organization, or lab mark.
 5. Use **Layout** for TOC, cover, and page-flow choices.
 6. Open **Advanced** only when you need watermarks, hidden page numbers, or attached local assets.
-7. Use the default PDF-like preview for renderer-backed HTML with page-size, margin, and fitted-sheet simulation; switch to Exact PDF preview when you need the browser PDF viewer to show the closest match before export.
+7. Use the default PDF-like preview for renderer-backed HTML with page size, margins, auto-fit scaling, and visible page-boundary markers; switch to Fast preview when you need instant browser-local feedback while editing.
 8. Use **Ctrl/Cmd+S** to save Markdown and **Ctrl/Cmd+Enter** to export quickly.
 
 Studio stores the current draft, layout, interface mode, direction toggle, editor width, and export settings in browser local storage. This makes accidental refreshes less disruptive during long editing sessions. Use **Reset State** when you want to clear the saved local draft and return to a clean workspace. This section is the Studio workflow reference for users.
@@ -854,7 +854,7 @@ Studio stores the current draft, layout, interface mode, direction toggle, edito
 If an export fails, Studio shows the HTTP status and stable backend error code, such as `invalid_json`, `invalid_page_size`, `invalid_toc_depth`, `invalid_watermark_opacity`, `markdown_too_large`, or `render_failed`. If you bind Studio to a non-local host, the backend prints a warning because other users on the reachable network can submit Markdown and attached assets.
 
 > [!IMPORTANT]
-> Studio now defaults to an auto-scaling PDF-like renderer preview and also offers an Exact PDF preview mode. Fast preview remains useful for instant editing, but the final PDF is still produced by the backend renderer and Chromium print layout.
+> Studio now defaults to an auto-scaling PDF-like renderer preview with visible page-boundary markers. Fast preview remains useful for instant editing, but the final PDF is still produced by the backend renderer and Chromium print layout.
 
 # CLI Reference
 

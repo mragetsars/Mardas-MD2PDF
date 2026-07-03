@@ -112,7 +112,43 @@ def _capture_studio(html_text: str, url: str, screenshot_path: Path, timeout_ms:
                 pass
             preview_status = page.locator("#previewStatus").inner_text(timeout=timeout_ms)
             preview_mode = page.locator("#previewModeInput").input_value(timeout=timeout_ms)
+            preview_frame_visible = page.locator("#accuratePreviewFrame").is_visible()
+            page_marker_ready_script = """
+                () => {
+                  const frame = document.querySelector('#accuratePreviewFrame');
+                  const doc = frame && frame.contentDocument;
+                  return Boolean(doc && doc.querySelector('.md2pdf-preview-page-markers'));
+                }
+            """
+            try:
+                page.wait_for_function(page_marker_ready_script, timeout=timeout_ms)
+            except PlaywrightTimeoutError:
+                pass
+            page_markers = page.evaluate(page_marker_ready_script)
             page.screenshot(path=str(screenshot_path), full_page=True)
+            line_number_check = page.evaluate(
+                """
+                () => {
+                  const editor = document.querySelector('#editor');
+                  const content = document.querySelector('#lineNumberContent') || document.querySelector('#lineNumbers');
+                  if (!editor || !content || typeof syncLineNumbers !== 'function') {
+                    return { ok: false, visibleTail: '', renderedLineNumbers: 0 };
+                  }
+                  editor.value = Array.from({ length: 3005 }, (_, index) => 'line ' + (index + 1)).join('\\n');
+                  editor.dispatchEvent(new Event('input', { bubbles: true }));
+                  editor.scrollTop = editor.scrollHeight;
+                  editor.dispatchEvent(new Event('scroll'));
+                  syncLineNumbers();
+                  const visibleTail = content.textContent.split('\\n').slice(-12).join(' ');
+                  return {
+                    ok: content.textContent.includes('3005'),
+                    visibleTail,
+                    renderedLineNumbers: content.textContent.split('\\n').filter(Boolean).length,
+                    editorScrollTop: editor.scrollTop,
+                  };
+                }
+                """
+            )
             checks = {
                 "title": page.title(),
                 "export_button_visible": page.locator("#exportPdfBtn").is_visible(),
@@ -123,8 +159,12 @@ def _capture_studio(html_text: str, url: str, screenshot_path: Path, timeout_ms:
                 "preview_status": preview_status,
                 "preview_mode": preview_mode,
                 "preview_failed": "failed" in preview_status.lower(),
-                "preview_frame_visible": page.locator("#accuratePreviewFrame").is_visible(),
+                "preview_frame_visible": preview_frame_visible,
                 "pdf_like_preview_loaded": "pdf-like preview updated" in preview_status.lower(),
+                "pdf_like_page_markers": page_markers,
+                "long_editor_line_numbers_ok": bool(line_number_check.get("ok")),
+                "long_editor_line_number_tail": line_number_check.get("visibleTail"),
+                "long_editor_rendered_line_numbers": line_number_check.get("renderedLineNumbers"),
             }
         finally:
             browser.close()
@@ -194,6 +234,10 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit(f"Studio preview check failed: {checks.get('preview_status')}")
     if not checks.get("preview_frame_visible"):
         raise SystemExit("Studio preview frame is not visible")
+    if not checks.get("pdf_like_page_markers"):
+        raise SystemExit("Studio PDF-like preview page markers were not attached")
+    if not checks.get("long_editor_line_numbers_ok"):
+        raise SystemExit("Studio editor line-number virtualization failed for long documents")
     print(f"Studio screenshot written to {screenshot_path}")
     return 0
 
