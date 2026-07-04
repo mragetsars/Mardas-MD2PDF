@@ -4,6 +4,15 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.13.32 - 2026-07-04
+
+### Changed
+- Removed the experimental automatic page-boundary guides from Studio PDF-like preview because screen-side DOM height simulation could not reliably match Chromium's print/PDF pagination across covers, TOCs, tables, images, code blocks, and font loading.
+- Kept the lighter PDF-like preview as a renderer-backed page-sized sheet with margins, auto-fit scaling, and explicit Markdown page-break indicators only.
+
+### Tests
+- Updated Studio GUI regression and browser visual-audit checks to verify the PDF-like preview CSS is injected while deprecated page-guide overlays are absent.
+
 ## 1.13.31 - 2026-07-04
 
 ### Changed

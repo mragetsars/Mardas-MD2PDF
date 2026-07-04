@@ -8,7 +8,8 @@ def test_gui_exposes_pdf_like_and_fast_preview_modes_and_custom_page_sizes():
     html = GUI_HTML.read_text(encoding="utf-8")
 
     assert "PDF-like preview uses backend renderer HTML" in html
-    assert "non-intrusive page guides" in html
+    assert "page size and margins" in html
+    assert "page guides" not in html
     assert "Fast preview is browser-local and approximate" in html
     assert "Exact PDF" not in html
     assert '<option value="accurate" selected>PDF-like</option>' in html
@@ -48,10 +49,9 @@ def test_studio_html_preview_injects_pdf_like_screen_css():
     assert "zoom: var(--md2pdf-preview-scale);" in html
     assert 'id="mardas-studio-preview-scale-script"' in html
     assert "updatePreviewScale" in html
-    assert "refreshPageGuides" in html
-    assert ".md2pdf-preview-page-guides" in html
-    assert ".md2pdf-preview-page-guide" in html
-    assert "Page " in html
+    assert "refreshPageGuides" not in html
+    assert ".md2pdf-preview-page-guides" not in html
+    assert ".md2pdf-preview-page-guide" not in html
     assert ".md2pdf-page-break::after" in html
     assert "Explicit page break" in html
 

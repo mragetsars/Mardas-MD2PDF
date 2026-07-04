@@ -86,7 +86,7 @@ def _capture_studio(html_text: str, url: str, screenshot_path: Path, timeout_ms:
     preview_ready_script = """
         () => {
           const status = document.querySelector('#previewStatus')?.textContent || '';
-          return /preview (updated|failed)/i.test(status);
+          return /^(?:updated|failed|fast preview updated)$/i.test(status);
         }
     """
     with sync_playwright() as playwright:
@@ -113,18 +113,27 @@ def _capture_studio(html_text: str, url: str, screenshot_path: Path, timeout_ms:
             preview_status = page.locator("#previewStatus").inner_text(timeout=timeout_ms)
             preview_mode = page.locator("#previewModeInput").input_value(timeout=timeout_ms)
             preview_frame_visible = page.locator("#accuratePreviewFrame").is_visible()
-            page_guide_ready_script = """
+            preview_css_ready_script = """
                 () => {
                   const frame = document.querySelector('#accuratePreviewFrame');
                   const doc = frame && frame.contentDocument;
-                  return Boolean(doc && doc.querySelector('.md2pdf-preview-page-guides'));
+                  return Boolean(doc && doc.querySelector('#mardas-studio-preview-css'));
                 }
             """
             try:
-                page.wait_for_function(page_guide_ready_script, timeout=timeout_ms)
+                page.wait_for_function(preview_css_ready_script, timeout=timeout_ms)
             except PlaywrightTimeoutError:
                 pass
-            page_guides = page.evaluate(page_guide_ready_script)
+            preview_css_loaded = page.evaluate(preview_css_ready_script)
+            page_guides_removed = page.evaluate(
+                """
+                () => {
+                  const frame = document.querySelector('#accuratePreviewFrame');
+                  const doc = frame && frame.contentDocument;
+                  return Boolean(doc && !doc.querySelector('.md2pdf-preview-page-guides'));
+                }
+                """
+            )
             page.screenshot(path=str(screenshot_path), full_page=True)
             line_number_check = page.evaluate(
                 """
@@ -160,8 +169,9 @@ def _capture_studio(html_text: str, url: str, screenshot_path: Path, timeout_ms:
                 "preview_mode": preview_mode,
                 "preview_failed": "failed" in preview_status.lower(),
                 "preview_frame_visible": preview_frame_visible,
-                "pdf_like_preview_loaded": "pdf-like preview updated" in preview_status.lower(),
-                "pdf_like_page_guides": page_guides,
+                "pdf_like_preview_loaded": preview_status.strip().lower() == "updated",
+                "pdf_like_preview_css_loaded": preview_css_loaded,
+                "pdf_like_page_guides_removed": page_guides_removed,
                 "long_editor_line_numbers_ok": bool(line_number_check.get("ok")),
                 "long_editor_line_number_tail": line_number_check.get("visibleTail"),
                 "long_editor_rendered_line_numbers": line_number_check.get("renderedLineNumbers"),
@@ -234,8 +244,10 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit(f"Studio preview check failed: {checks.get('preview_status')}")
     if not checks.get("preview_frame_visible"):
         raise SystemExit("Studio preview frame is not visible")
-    if not checks.get("pdf_like_page_guides"):
-        raise SystemExit("Studio PDF-like preview page guides were not attached")
+    if not checks.get("pdf_like_preview_css_loaded"):
+        raise SystemExit("Studio PDF-like preview CSS was not injected")
+    if not checks.get("pdf_like_page_guides_removed"):
+        raise SystemExit("Studio PDF-like preview still contains deprecated page guides")
     if not checks.get("long_editor_line_numbers_ok"):
         raise SystemExit("Studio editor line-number virtualization failed for long documents")
     print(f"Studio screenshot written to {screenshot_path}")

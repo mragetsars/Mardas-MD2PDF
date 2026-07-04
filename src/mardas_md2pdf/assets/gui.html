@@ -185,7 +185,7 @@
     .drop-zone{margin-top:10px;border:1px dashed color-mix(in srgb, var(--accent) 38%, var(--border));border-radius:14px;padding:12px;color:var(--faint);background:color-mix(in srgb, var(--accent) 5%, transparent);font-size:10px;font-weight:800;line-height:1.5;text-align:center;transition:border-color .16s,background .16s,color .16s}
     body.asset-dragging .drop-zone{border-color:var(--accent);background:color-mix(in srgb, var(--accent) 13%, transparent);color:var(--text)}
     .editor-tools{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:11px;font-weight:800}
-    .preview-tools{display:flex;align-items:center;gap:8px}
+    .preview-tools{display:flex;align-items:center;gap:8px;flex-wrap:nowrap}
     .preview-note{font-size:10px;font-weight:800;color:var(--faint);letter-spacing:.02em;text-transform:none}
     textarea{width:100%;height:calc(100% - 46px);border:0;outline:0;background:var(--editor);color:var(--text);padding:20px;resize:none;font:14px/1.72 var(--code);tab-size:4}
     .preview{height:calc(100% - 46px);overflow:auto;background:var(--preview);padding:32px;line-height:1.85;font-size:15px;scrollbar-width:thin}
@@ -291,7 +291,7 @@
     textarea{height:100%;padding:20px;border-radius:0;line-height:1.72;scrollbar-width:thin}
     .preview{height:calc(100% - 46px);border-left:1px solid color-mix(in srgb, var(--border) 60%, transparent)}
     .preview-tools{min-width:0}
-    .preview-status{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:850;color:var(--faint)}
+    .preview-status{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:850;color:var(--faint);white-space:nowrap;max-width:148px;overflow:hidden;text-overflow:ellipsis}
     .preview-status::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--ok);display:inline-block}
     .preview-status.rendering::before{background:transparent;border:2px solid var(--border-strong);border-top-color:var(--accent);animation:spin .7s linear infinite;width:10px;height:10px}
     .preview-mode-select{height:30px;min-width:118px;border-radius:10px;padding-left:10px;padding-right:34px;background-color:var(--panel);font-size:10px;text-transform:uppercase;letter-spacing:.06em}
@@ -527,7 +527,7 @@
       </section>
       <div class="gutter preview-gutter" id="previewGutter" title="Drag to resize editor and preview" aria-label="Resize editor and preview panels"></div>
       <section class="pane preview-pane">
-        <div class="pane-head"><strong>Preview</strong><span class="preview-tools"><span id="previewStatus" class="preview-status" title="PDF-like preview uses backend renderer HTML with page-size, margin, and non-intrusive page guides. Fast preview is browser-local and approximate.">PDF-like preview</span><select id="previewModeInput" class="preview-mode-select" title="Preview mode"><option value="accurate" selected>PDF-like</option><option value="fast">Fast</option></select><button class="btn" onclick="toggleDirection()" id="dirBtn" title="Toggle preview direction"><svg class="icon" aria-hidden="true"><use href="#icon-arrow-left-right"></use></svg><span id="dirBtnLabel">RTL</span></button></span></div>
+        <div class="pane-head"><strong>Preview</strong><span class="preview-tools"><span id="previewStatus" class="preview-status" title="PDF-like preview uses backend renderer HTML with page size and margins. Fast preview is browser-local and approximate.">PDF-like preview</span><select id="previewModeInput" class="preview-mode-select" title="Preview mode"><option value="accurate" selected>PDF-like</option><option value="fast">Fast</option></select><button class="btn" onclick="toggleDirection()" id="dirBtn" title="Toggle preview direction"><svg class="icon" aria-hidden="true"><use href="#icon-arrow-left-right"></use></svg><span id="dirBtnLabel">RTL</span></button></span></div>
         <div id="preview" class="preview" dir="auto"></div>
         <iframe id="accuratePreviewFrame" class="accurate-preview-frame" title="Accurate renderer HTML preview" hidden></iframe>
       </section>
@@ -1451,7 +1451,7 @@ async function requestAccuratePreview(text){
   const requestKey = accuratePreviewRequestKey(text);
   if (requestKey === lastAccuratePreviewKey && accuratePreviewFrame && accuratePreviewFrame.srcdoc) {
     showFramePreview();
-    setPreviewStatus('PDF-like preview updated', false);
+    setPreviewStatus('Updated', false);
     return;
   }
   const token = ++accuratePreviewToken;
@@ -1459,7 +1459,7 @@ async function requestAccuratePreview(text){
   const controller = new AbortController();
   accuratePreviewAbortController = controller;
   showFramePreview();
-  setPreviewStatus('Rendering PDF-like preview...', true);
+  setPreviewStatus('Rendering...', true);
   try {
     const response = await fetch('/api/render-html', {
       method: 'POST',
@@ -1473,12 +1473,12 @@ async function requestAccuratePreview(text){
     accuratePreviewFrame.removeAttribute('src');
     accuratePreviewFrame.srcdoc = html;
     lastAccuratePreviewKey = requestKey;
-    setPreviewStatus('PDF-like preview updated', false);
+    setPreviewStatus('Updated', false);
   } catch (error) {
     if (controller.signal.aborted || token !== accuratePreviewToken) return;
     showFastPreview();
     preview.innerHTML = '<blockquote>PDF-like preview failed: ' + escapeHtml(error.message) + '</blockquote>' + renderMarkdownPreview(text);
-    setPreviewStatus('PDF-like preview failed', false);
+    setPreviewStatus('Failed', false);
   } finally {
     if (accuratePreviewAbortController === controller) accuratePreviewAbortController = null;
   }
