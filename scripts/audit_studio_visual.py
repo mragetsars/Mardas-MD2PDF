@@ -164,19 +164,46 @@ def _capture_studio(html_text: str, url: str, screenshot_path: Path, timeout_ms:
                   const editor = document.querySelector('#editor');
                   const content = document.querySelector('#lineNumberContent') || document.querySelector('#lineNumbers');
                   if (!editor || !content || typeof syncLineNumbers !== 'function') {
-                    return { ok: false, visibleTail: '', renderedLineNumbers: 0 };
+                    return { ok: false, visibleTail: '', renderedLineNumbers: 0, wrap: '' };
                   }
-                  editor.value = Array.from({ length: 3005 }, (_, index) => 'line ' + (index + 1)).join('\\n');
+                  editor.value = Array.from({ length: 3005 }, (_, index) => 'line ' + (index + 1)).join(String.fromCharCode(10));
                   editor.dispatchEvent(new Event('input', { bubbles: true }));
                   editor.scrollTop = editor.scrollHeight;
                   editor.dispatchEvent(new Event('scroll'));
                   syncLineNumbers();
-                  const visibleTail = content.textContent.split('\\n').slice(-12).join(' ');
+                  const rows = Array.from(content.querySelectorAll('.line-number-row'))
+                    .map(row => row.textContent.trim())
+                    .filter(Boolean);
+                  const fallbackRows = content.textContent.trim() ? [content.textContent.trim()] : [];
+                  const visibleRows = rows.length ? rows : fallbackRows;
+                  const visibleTail = visibleRows.slice(-12).join(' ');
                   return {
-                    ok: content.textContent.includes('3005'),
+                    ok: visibleRows.includes('3005') && editor.getAttribute('wrap') === 'off',
                     visibleTail,
-                    renderedLineNumbers: content.textContent.split('\\n').filter(Boolean).length,
+                    renderedLineNumbers: visibleRows.length,
                     editorScrollTop: editor.scrollTop,
+                    wrap: editor.getAttribute('wrap') || '',
+                  };
+                }
+                """
+            )
+            pdf_like_scroll_sync_check = page.evaluate(
+                """
+                () => ({
+                  removedFrameSync: typeof syncFramePreviewScroll === 'undefined',
+                  fastOnlyGuard: typeof schedulePreviewScrollSync === 'function' && String(schedulePreviewScrollSync).includes("activePreviewMode() !== 'fast'"),
+                })
+                """
+            )
+            preview_scrollbar_check = page.evaluate(
+                """
+                () => {
+                  const frame = document.querySelector('#accuratePreviewFrame');
+                  const doc = frame && frame.contentDocument;
+                  const root = doc && doc.documentElement;
+                  return {
+                    hasDarkClass: Boolean(root && root.classList.contains('md2pdf-preview-dark')),
+                    scrollbarColor: root ? getComputedStyle(root).scrollbarColor : '',
                   };
                 }
                 """
@@ -198,6 +225,10 @@ def _capture_studio(html_text: str, url: str, screenshot_path: Path, timeout_ms:
                 "long_editor_line_numbers_ok": bool(line_number_check.get("ok")),
                 "long_editor_line_number_tail": line_number_check.get("visibleTail"),
                 "long_editor_rendered_line_numbers": line_number_check.get("renderedLineNumbers"),
+                "long_editor_wrap": line_number_check.get("wrap"),
+                "pdf_like_scroll_sync_removed": bool(pdf_like_scroll_sync_check.get("removedFrameSync")),
+                "fast_scroll_sync_guarded": bool(pdf_like_scroll_sync_check.get("fastOnlyGuard")),
+                "pdf_like_scrollbar_color": preview_scrollbar_check.get("scrollbarColor"),
             }
         finally:
             browser.close()
@@ -273,6 +304,8 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit("Studio PDF-like preview still contains deprecated page guides")
     if not checks.get("long_editor_line_numbers_ok"):
         raise SystemExit("Studio editor line-number virtualization failed for long documents")
+    if not checks.get("pdf_like_scroll_sync_removed") or not checks.get("fast_scroll_sync_guarded"):
+        raise SystemExit("Studio PDF-like preview still has editor-to-frame scroll synchronization")
     print(f"Studio screenshot written to {screenshot_path}")
     return 0
 

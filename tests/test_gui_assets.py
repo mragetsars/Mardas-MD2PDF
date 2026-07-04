@@ -61,6 +61,23 @@ def test_studio_html_preview_injects_pdf_like_screen_css():
     assert "Explicit page break" in html
 
 
+def test_studio_html_preview_styles_scrollbars_for_dark_pdf_like_frames():
+    from mardas_md2pdf import gui
+
+    html = gui._render_studio_html_payload(
+        {
+            "markdown": "# Dark preview\n\n" + "Body\n\n" * 80,
+            "options": {"toc": False, "noCover": True, "mode": "dark"},
+            "assets": [],
+        }
+    )
+
+    assert "scrollbar-color: #4a4a4a transparent" in html
+    assert "*::-webkit-scrollbar-thumb" in html
+    assert "md2pdf-preview-dark" in html
+    assert "syncPreviewShellTheme" in html
+
+
 def test_gui_wires_pdf_like_and_fast_preview_refresh_triggers():
     html = GUI_HTML.read_text(encoding="utf-8")
 
@@ -79,6 +96,20 @@ def test_gui_wires_pdf_like_and_fast_preview_refresh_triggers():
     assert "control.addEventListener('input', () =>" in html
     assert "control.addEventListener('change', () =>" in html
     assert "setBrandLogoFromAsset" in html
+
+
+def test_gui_limits_scroll_sync_to_fast_preview_and_hardens_editor_gutter():
+    html = GUI_HTML.read_text(encoding="utf-8")
+
+    assert 'spellcheck="false" wrap="off"' in html
+    assert "function buildLineNumberRows" in html
+    assert "line-number-row" in html
+    assert "lineNumberContent.innerHTML = buildLineNumberRows" in html
+    assert "editor.scrollTop - padding.top" in html
+    assert "activePreviewMode() !== 'fast'" in html
+    assert "function syncFramePreviewScroll" not in html
+    assert "accuratePreviewFrame.addEventListener('load', () => syncPreviewScroll())" not in html
+    assert "Fast is an approximate browser-local editing preview with editor scroll sync" in html
 
 
 def test_gui_direction_toggle_updates_document_options_for_pdf_like_preview():
@@ -750,7 +781,8 @@ def test_gui_editor_has_formatting_toolbar_line_numbers_and_sync_scroll():
     assert 'function syncLineNumbers' in html
     assert 'function scheduleLineNumberSync' in html
     assert 'function countTextLines' in html
-    assert 'function syncFramePreviewScroll' in html
+    assert 'function syncFramePreviewScroll' not in html
+    assert "activePreviewMode() !== 'fast'" in html
     assert 'function syncPreviewScroll' in html
     assert 'function schedulePreviewScrollSync' in html
     assert "editor.addEventListener('scroll'" in html

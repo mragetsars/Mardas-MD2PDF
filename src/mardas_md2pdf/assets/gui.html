@@ -287,15 +287,17 @@
     .editor-shell{min-height:0;display:grid;grid-template-columns:var(--line-number-width,56px) minmax(0,1fr);background:var(--editor)}
     .line-numbers{overflow:hidden;position:relative;min-width:var(--line-number-width,56px);border-right:1px solid var(--border);background:color-mix(in srgb, var(--editor) 82%, var(--panel) 18%);color:var(--faint);font:14px/1.72 var(--code);text-align:right;user-select:none;direction:ltr;font-variant-numeric:tabular-nums}
     .line-number-spacer{position:relative;min-height:100%;width:100%}
-    .line-number-content{position:absolute;top:0;left:0;right:10px;white-space:pre;will-change:transform}
-    textarea{height:100%;padding:20px;border-radius:0;line-height:1.72;scrollbar-width:thin}
+    .line-number-content{position:absolute;top:0;left:0;right:0;white-space:normal;will-change:transform}
+    .line-number-row{height:var(--editor-line-height,24px);line-height:var(--editor-line-height,24px);padding:0 10px 0 4px;overflow:hidden;white-space:nowrap}
+    textarea{height:100%;padding:20px;border-radius:0;line-height:1.72;scrollbar-width:thin;white-space:pre;overflow:auto;overflow-wrap:normal;word-break:normal}
     .preview{height:calc(100% - 46px);border-left:1px solid color-mix(in srgb, var(--border) 60%, transparent)}
     .preview-tools{min-width:0}
     .preview-status{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:850;color:var(--faint);white-space:nowrap;max-width:148px;overflow:hidden;text-overflow:ellipsis}
     .preview-status::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--ok);display:inline-block}
     .preview-status.rendering::before{background:transparent;border:2px solid var(--border-strong);border-top-color:var(--accent);animation:spin .7s linear infinite;width:10px;height:10px}
     .preview-mode-select{height:30px;min-width:118px;border-radius:10px;padding-left:10px;padding-right:34px;background-color:var(--panel);font-size:10px;text-transform:uppercase;letter-spacing:.06em}
-    .accurate-preview-frame{height:calc(100% - 46px);width:100%;border:0;border-left:1px solid color-mix(in srgb, var(--border) 60%, transparent);background:#ffffff;color-scheme:light}
+    .accurate-preview-frame{height:calc(100% - 46px);width:100%;border:0;border-left:1px solid color-mix(in srgb, var(--border) 60%, transparent);background:var(--preview);color-scheme:dark}
+    body.light-mode .accurate-preview-frame{background:#ffffff;color-scheme:light}
     [hidden]{display:none!important}
     @keyframes spin{to{transform:rotate(360deg)}}
     .footer #savedState{color:var(--muted);font-weight:850}
@@ -522,12 +524,12 @@
         </div>
         <div class="editor-shell">
           <div id="lineNumbers" class="line-numbers" aria-hidden="true"><div id="lineNumberSpacer" class="line-number-spacer"><div id="lineNumberContent" class="line-number-content">1</div></div></div>
-          <textarea id="editor" dir="auto" spellcheck="false"></textarea>
+          <textarea id="editor" dir="auto" spellcheck="false" wrap="off"></textarea>
         </div>
       </section>
       <div class="gutter preview-gutter" id="previewGutter" title="Drag to resize editor and preview" aria-label="Resize editor and preview panels"></div>
       <section class="pane preview-pane">
-        <div class="pane-head"><strong>Preview</strong><span class="preview-tools"><span id="previewStatus" class="preview-status" title="PDF-like preview uses backend renderer HTML with page size and margins. Fast is an approximate browser-local editing preview.">PDF-like preview</span><select id="previewModeInput" class="preview-mode-select" title="Preview mode"><option value="accurate" selected>PDF-like</option><option value="fast">Fast (approx)</option></select><button id="refreshPreviewBtn" class="btn btn-icon btn-quiet" onclick="forceAccuratePreview()" title="Refresh PDF-like preview now" aria-label="Refresh PDF-like preview"><svg class="icon" aria-hidden="true"><use href="#icon-rotate-ccw"></use></svg><span class="sr-only">Refresh preview</span></button><button class="btn" onclick="toggleDirection()" id="dirBtn" title="Toggle preview direction"><svg class="icon" aria-hidden="true"><use href="#icon-arrow-left-right"></use></svg><span id="dirBtnLabel">RTL</span></button></span></div>
+        <div class="pane-head"><strong>Preview</strong><span class="preview-tools"><span id="previewStatus" class="preview-status" title="PDF-like preview uses backend renderer HTML with page size and margins. Fast is an approximate browser-local editing preview with editor scroll sync.">PDF-like preview</span><select id="previewModeInput" class="preview-mode-select" title="Preview mode"><option value="accurate" selected>PDF-like</option><option value="fast">Fast (approx)</option></select><button id="refreshPreviewBtn" class="btn btn-icon btn-quiet" onclick="forceAccuratePreview()" title="Refresh PDF-like preview now" aria-label="Refresh PDF-like preview"><svg class="icon" aria-hidden="true"><use href="#icon-rotate-ccw"></use></svg><span class="sr-only">Refresh preview</span></button><button class="btn" onclick="toggleDirection()" id="dirBtn" title="Toggle preview direction"><svg class="icon" aria-hidden="true"><use href="#icon-arrow-left-right"></use></svg><span id="dirBtnLabel">RTL</span></button></span></div>
         <div id="preview" class="preview" dir="auto"></div>
         <iframe id="accuratePreviewFrame" class="accurate-preview-frame" title="Accurate renderer HTML preview" hidden></iframe>
       </section>
@@ -1395,25 +1397,33 @@ function editorVerticalPadding(){
   };
 }
 
+function buildLineNumberRows(startLine, endLine){
+  const rows = [];
+  for (let line = startLine; line <= endLine; line += 1) {
+    rows.push('<div class="line-number-row">' + line + '</div>');
+  }
+  return rows.join('');
+}
+
 function syncLineNumbers(){
   lineNumberSyncFrame = 0;
   if (!lineNumbers || !lineNumberSpacer || !lineNumberContent) return;
   const lineCount = currentEditorLineCount();
   const digits = String(lineCount).length;
-  const width = Math.max(56, Math.min(110, digits * 10 + 30));
+  const width = Math.max(56, Math.min(128, digits * 10 + 30));
   const lineHeight = editorLineHeight();
   const padding = editorVerticalPadding();
   const viewportLines = Math.max(1, Math.ceil(editor.clientHeight / lineHeight));
-  const firstVisible = Math.max(1, Math.floor(editor.scrollTop / lineHeight) + 1);
-  const buffer = 80;
+  const scrolledPastTopPadding = Math.max(0, editor.scrollTop - padding.top);
+  const firstVisible = Math.max(1, Math.floor(scrolledPastTopPadding / lineHeight) + 1);
+  const buffer = Math.max(80, viewportLines * 2);
   const startLine = Math.max(1, firstVisible - buffer);
   const endLine = Math.min(lineCount, firstVisible + viewportLines + buffer);
-  const numbers = [];
-  for (let i = startLine; i <= endLine; i += 1) numbers.push(String(i));
   document.documentElement.style.setProperty('--line-number-width', width + 'px');
+  lineNumberContent.style.setProperty('--editor-line-height', lineHeight.toFixed(3) + 'px');
   lineNumberSpacer.style.height = Math.ceil(padding.top + padding.bottom + lineCount * lineHeight) + 'px';
-  lineNumberContent.textContent = numbers.join('\n');
-  lineNumberContent.style.transform = 'translateY(' + (padding.top + (startLine - 1) * lineHeight) + 'px)';
+  lineNumberContent.innerHTML = buildLineNumberRows(startLine, endLine);
+  lineNumberContent.style.transform = 'translateY(' + (padding.top + (startLine - 1) * lineHeight).toFixed(3) + 'px)';
   lineNumbers.scrollTop = editor.scrollTop;
 }
 
@@ -1422,30 +1432,19 @@ function scheduleLineNumberSync(){
   lineNumberSyncFrame = requestAnimationFrame(syncLineNumbers);
 }
 
-function syncFramePreviewScroll(ratio){
-  if (!accuratePreviewFrame || accuratePreviewFrame.hidden) return false;
-  const doc = accuratePreviewFrame.contentDocument;
-  if (!doc) return false;
-  const target = doc.scrollingElement || doc.documentElement || doc.body;
-  if (!target) return false;
-  const max = target.scrollHeight - target.clientHeight;
-  if (max <= 0) return false;
-  target.scrollTop = ratio * max;
-  return true;
-}
-
 function syncPreviewScroll(){
   previewScrollFrame = 0;
+  if (activePreviewMode() !== 'fast') return;
   const editorMax = editor.scrollHeight - editor.clientHeight;
   if (editorMax <= 0) return;
   const ratio = editor.scrollTop / editorMax;
-  if (syncFramePreviewScroll(ratio)) return;
   const previewMax = preview.scrollHeight - preview.clientHeight;
   if (previewMax <= 0) return;
   preview.scrollTop = ratio * previewMax;
 }
 
 function schedulePreviewScrollSync(){
+  if (activePreviewMode() !== 'fast') return;
   if (previewScrollFrame) return;
   previewScrollFrame = requestAnimationFrame(syncPreviewScroll);
 }
@@ -1675,9 +1674,10 @@ if (previewModeInput) {
   previewModeInput.addEventListener('change', () => setPreviewMode(previewModeInput.value));
 }
 
-if (accuratePreviewFrame) {
-  accuratePreviewFrame.addEventListener('load', () => syncPreviewScroll());
-}
+window.addEventListener('resize', () => {
+  scheduleLineNumberSync();
+  schedulePreviewScrollSync();
+});
 
 let attachedAssets = [];
 const MAX_GUI_ASSETS = 250;

@@ -4,6 +4,18 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.13.37 - 2026-07-04
+
+### Changed
+- Limited Studio editor-to-preview scroll synchronization to Fast preview only, because PDF-like preview includes renderer-only cover, TOC, and page geometry that cannot stay ratio-synchronized with the Markdown source pane.
+- Tuned PDF-like preview scrollbars so dark PDF previews inside the dark Studio interface no longer show a bright native scrollbar.
+
+### Fixed
+- Reworked Markdown editor line numbers into explicit virtualized rows with physical-line wrapping disabled, padding-aware scroll calculations, and resize-aware gutter refreshes for long documents.
+
+### Tests
+- Added regression coverage for Fast-only scroll synchronization, hardened long-document line-number gutter behavior, PDF-like preview scrollbar styling, and updated Studio browser audit checks.
+
 ## 1.13.36 - 2026-07-04
 
 ### Changed

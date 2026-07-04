@@ -559,6 +559,49 @@ def _studio_pdf_like_preview_css(page_size: str | None) -> str:
         min-height: 100%;
         background: var(--md2pdf-preview-shell-bg) !important;
         overflow-x: hidden;
+        color-scheme: light;
+        scrollbar-width: thin;
+        scrollbar-color: #aab3c1 transparent;
+      }}
+      html.md2pdf-preview-dark,
+      html:has(body.md2pdf-mode-dark) {{
+        color-scheme: dark;
+        scrollbar-color: #4a4a4a transparent;
+      }}
+      * {{
+        scrollbar-width: thin;
+        scrollbar-color: #aab3c1 transparent;
+      }}
+      html.md2pdf-preview-dark *,
+      html:has(body.md2pdf-mode-dark) * {{
+        scrollbar-color: #4a4a4a transparent;
+      }}
+      *::-webkit-scrollbar {{
+        width: 10px;
+        height: 10px;
+      }}
+      *::-webkit-scrollbar-track {{
+        background: transparent;
+      }}
+      *::-webkit-scrollbar-thumb {{
+        background: #aab3c1;
+        border: 3px solid transparent;
+        border-radius: 999px;
+        background-clip: padding-box;
+      }}
+      html.md2pdf-preview-dark *::-webkit-scrollbar-thumb,
+      html:has(body.md2pdf-mode-dark) *::-webkit-scrollbar-thumb {{
+        background: #4a4a4a;
+        background-clip: padding-box;
+      }}
+      *::-webkit-scrollbar-thumb:hover {{
+        background: #7f8da3;
+        background-clip: padding-box;
+      }}
+      html.md2pdf-preview-dark *::-webkit-scrollbar-thumb:hover,
+      html:has(body.md2pdf-mode-dark) *::-webkit-scrollbar-thumb:hover {{
+        background: #666666;
+        background-clip: padding-box;
       }}
       body {{
         min-height: 100%;
@@ -637,8 +680,15 @@ def _studio_pdf_like_preview_css(page_size: str | None) -> str:
   <script id="mardas-studio-preview-scale-script">
     (() => {{
       let refreshHandle = 0;
+      const syncPreviewShellTheme = () => {{
+        document.documentElement.classList.toggle(
+          'md2pdf-preview-dark',
+          Boolean(document.body && document.body.classList.contains('md2pdf-mode-dark'))
+        );
+      }};
       const updatePreviewScale = () => {{
         const root = document.documentElement;
+        syncPreviewShellTheme();
         const page = document.querySelector('.md2pdf-document');
         if (!page) return;
         root.style.setProperty('--md2pdf-preview-scale', '1');
