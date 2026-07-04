@@ -108,7 +108,7 @@ def _capture_studio(html_text: str, url: str, screenshot_path: Path, timeout_ms:
     preview_ready_script = """
         () => {
           const status = document.querySelector('#previewStatus')?.textContent || '';
-          return /^(?:updated|failed|fast preview updated)$/i.test(status);
+          return /^(?:ready|updated|failed|fast ready|fast preview updated)$/i.test(status);
         }
     """
     with sync_playwright() as playwright:
@@ -134,6 +134,10 @@ def _capture_studio(html_text: str, url: str, screenshot_path: Path, timeout_ms:
             except PlaywrightTimeoutError:
                 pass
             preview_status = page.locator("#previewStatus").inner_text(timeout=timeout_ms)
+            preview_status_box = page.locator("#previewStatus").evaluate(
+                "node => ({ text: node.textContent || '', clientWidth: node.clientWidth, scrollWidth: node.scrollWidth })",
+                timeout=timeout_ms,
+            )
             preview_mode = page.locator("#previewModeInput").input_value(timeout=timeout_ms)
             preview_frame_visible = page.locator("#accuratePreviewFrame").is_visible()
             preview_css_ready_script = """
@@ -208,6 +212,18 @@ def _capture_studio(html_text: str, url: str, screenshot_path: Path, timeout_ms:
                 }
                 """
             )
+            ui_polish_check = page.evaluate(
+                """
+                () => ({
+                  toastRegion: Boolean(document.querySelector('#toastRegion')),
+                  commandPaletteNavigation: typeof setCommandPaletteActive === 'function' && typeof activeCommandPaletteId === 'function',
+                  previewStatusUnclipped: (() => {
+                    const node = document.querySelector('#previewStatus');
+                    return Boolean(node && node.scrollWidth <= node.clientWidth + 1);
+                  })(),
+                })
+                """
+            )
             checks = {
                 "title": page.title(),
                 "export_button_visible": page.locator("#exportPdfBtn").is_visible(),
@@ -216,10 +232,11 @@ def _capture_studio(html_text: str, url: str, screenshot_path: Path, timeout_ms:
                 "branding_section_visible": page.locator('[data-choice-group="branding"]').count() > 0,
                 "settings_badge": page.locator("#appearanceName").inner_text(),
                 "preview_status": preview_status,
+                "preview_status_unclipped": bool(preview_status_box.get("scrollWidth", 0) <= preview_status_box.get("clientWidth", 0) + 1),
                 "preview_mode": preview_mode,
                 "preview_failed": "failed" in preview_status.lower(),
                 "preview_frame_visible": preview_frame_visible,
-                "pdf_like_preview_loaded": preview_status.strip().lower() == "updated",
+                "pdf_like_preview_loaded": preview_status.strip().lower() in {"ready", "updated"},
                 "pdf_like_preview_css_loaded": preview_css_loaded,
                 "pdf_like_page_guides_removed": page_guides_removed,
                 "long_editor_line_numbers_ok": bool(line_number_check.get("ok")),
@@ -229,6 +246,9 @@ def _capture_studio(html_text: str, url: str, screenshot_path: Path, timeout_ms:
                 "pdf_like_scroll_sync_removed": bool(pdf_like_scroll_sync_check.get("removedFrameSync")),
                 "fast_scroll_sync_guarded": bool(pdf_like_scroll_sync_check.get("fastOnlyGuard")),
                 "pdf_like_scrollbar_color": preview_scrollbar_check.get("scrollbarColor"),
+                "toast_region_present": bool(ui_polish_check.get("toastRegion")),
+                "command_palette_navigation": bool(ui_polish_check.get("commandPaletteNavigation")),
+                "preview_status_unclipped_live": bool(ui_polish_check.get("previewStatusUnclipped")),
             }
         finally:
             browser.close()
@@ -306,6 +326,12 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit("Studio editor line-number virtualization failed for long documents")
     if not checks.get("pdf_like_scroll_sync_removed") or not checks.get("fast_scroll_sync_guarded"):
         raise SystemExit("Studio PDF-like preview still has editor-to-frame scroll synchronization")
+    if not checks.get("toast_region_present"):
+        raise SystemExit("Studio toast status region is missing")
+    if not checks.get("command_palette_navigation"):
+        raise SystemExit("Studio command palette keyboard navigation helpers are missing")
+    if not checks.get("preview_status_unclipped") or not checks.get("preview_status_unclipped_live"):
+        raise SystemExit("Studio preview status is visually clipped")
     print(f"Studio screenshot written to {screenshot_path}")
     return 0
 

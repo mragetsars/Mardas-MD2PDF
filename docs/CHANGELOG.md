@@ -4,6 +4,16 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.13.38 - 2026-07-04
+
+### Changed
+- Polished Studio UI/UX for final-workflow maturity with clearer Preview status pills, less-clipped header controls, and non-blocking toast feedback for high-signal actions.
+- Improved command palette keyboard navigation with active-item tracking, Arrow/Home/End movement, and `aria-selected` state.
+
+### Fixed
+- Prevented the Preview status badge from visually clipping short status labels in narrow preview panes.
+- Replaced the confusing first-run restore failure message with a neutral local-state reset status.
+
 ## 1.13.37 - 2026-07-04
 
 ### Changed

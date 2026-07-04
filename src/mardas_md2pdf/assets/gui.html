@@ -130,7 +130,7 @@
     .sidebar-head strong,.pane-head strong{font-size:11px;font-weight:900;letter-spacing:.11em;line-height:1;text-transform:uppercase;color:var(--muted);text-rendering:geometricPrecision}
     .sidebar-head{flex-wrap:nowrap}
     .sidebar-head strong{flex:0 0 auto;min-width:0}
-    .sidebar-head #appearanceName{display:block;flex:0 1 auto;max-width:clamp(112px,42%,168px);padding:5px 8px;border:1px solid var(--border);border-radius:999px;background:var(--panel);color:var(--text);font-size:11px;font-weight:900;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .sidebar-head #appearanceName{display:block;flex:1 1 auto;max-width:180px;min-width:0;padding:5px 8px;border:1px solid var(--border);border-radius:999px;background:var(--panel);color:var(--text);font-size:10px;font-weight:900;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
     .card{border:1px solid var(--border);background:var(--panel);border-radius:18px;padding:12px;margin-bottom:12px}
     .card h3{margin:0 0 12px;font-size:13px;color:var(--text);display:flex;align-items:center;gap:8px}
     .field{display:grid;gap:6px;margin-bottom:11px}
@@ -291,11 +291,14 @@
     .line-number-row{height:var(--editor-line-height,24px);line-height:var(--editor-line-height,24px);padding:0 10px 0 4px;overflow:hidden;white-space:nowrap}
     textarea{height:100%;padding:20px;border-radius:0;line-height:1.72;scrollbar-width:thin;white-space:pre;overflow:auto;overflow-wrap:normal;word-break:normal}
     .preview{height:calc(100% - 46px);border-left:1px solid color-mix(in srgb, var(--border) 60%, transparent)}
-    .preview-tools{min-width:0}
-    .preview-status{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:850;color:var(--faint);white-space:nowrap;max-width:148px;overflow:hidden;text-overflow:ellipsis}
-    .preview-status::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--ok);display:inline-block}
+    .preview-pane .pane-head{gap:8px;padding-right:10px}
+    .preview-pane .pane-head strong{flex:0 0 auto}
+    .preview-tools{min-width:0;display:flex;align-items:center;gap:7px;flex:0 1 auto;justify-content:flex-end}
+    .preview-status{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:72px;max-width:none;min-height:26px;padding:0 9px;border:1px solid var(--border);border-radius:999px;background:color-mix(in srgb, var(--panel) 84%, transparent);font-size:10px;font-weight:900;color:var(--muted);white-space:nowrap;overflow:visible;text-overflow:clip;letter-spacing:.015em;flex:0 0 auto}
+    .preview-status::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--ok);display:inline-block;flex:0 0 auto}
+    .preview-status.rendering{color:var(--text);border-color:color-mix(in srgb, var(--accent) 48%, var(--border));background:color-mix(in srgb, var(--accent) 10%, var(--panel))}
     .preview-status.rendering::before{background:transparent;border:2px solid var(--border-strong);border-top-color:var(--accent);animation:spin .7s linear infinite;width:10px;height:10px}
-    .preview-mode-select{height:30px;min-width:118px;border-radius:10px;padding-left:10px;padding-right:34px;background-color:var(--panel);font-size:10px;text-transform:uppercase;letter-spacing:.06em}
+    .preview-mode-select{height:30px;min-width:112px;border-radius:10px;padding-left:10px;padding-right:34px;background-color:var(--panel);font-size:10px;text-transform:uppercase;letter-spacing:.06em;flex:0 0 auto}
     .accurate-preview-frame{height:calc(100% - 46px);width:100%;border:0;border-left:1px solid color-mix(in srgb, var(--border) 60%, transparent);background:var(--preview);color-scheme:dark}
     body.light-mode .accurate-preview-frame{background:#ffffff;color-scheme:light}
     [hidden]{display:none!important}
@@ -313,9 +316,15 @@
     .command-palette{width:min(640px,calc(100vw - 32px));border:1px solid var(--border);border-radius:20px;background:var(--panel);box-shadow:0 24px 70px rgba(0,0,0,.5);overflow:hidden;color:var(--text)}
     .command-palette input{width:100%;height:52px;border:0;border-bottom:1px solid var(--border);border-radius:0;background:var(--panel-2);color:var(--text);padding:0 18px;font-size:15px;font-weight:800;outline:none}
     .command-list{max-height:360px;overflow:auto;padding:8px}
-    .command-item{width:100%;display:flex;align-items:center;justify-content:space-between;gap:14px;border:0;border-radius:14px;background:transparent;color:var(--text);padding:12px 13px;text-align:left;cursor:pointer}
-    .command-item:hover,.command-item.active{background:color-mix(in srgb, var(--accent) 12%, var(--panel-2))}
+    .command-item{width:100%;display:flex;align-items:center;justify-content:space-between;gap:14px;border:0;border-radius:14px;background:transparent;color:var(--text);padding:12px 13px;text-align:left;cursor:pointer;outline:none}
+    .command-item:hover,.command-item.active,.command-item[aria-selected="true"]{background:color-mix(in srgb, var(--accent) 12%, var(--panel-2))}
+    .command-item:focus-visible{outline:2px solid color-mix(in srgb, var(--accent) 70%, #ffffff);outline-offset:2px}
     .command-item strong{display:block;font-size:13px}.command-item small{display:block;margin-top:3px;color:var(--faint);font-size:10px;font-weight:750}.command-shortcut{font:850 10px/1 var(--code);color:var(--muted);border:1px solid var(--border);border-radius:8px;padding:5px 7px;white-space:nowrap}
+    .toast-region{position:fixed;right:18px;bottom:46px;z-index:140;display:flex;flex-direction:column;align-items:flex-end;gap:8px;pointer-events:none}
+    .toast{max-width:min(420px,calc(100vw - 36px));border:1px solid color-mix(in srgb, var(--accent) 28%, var(--border));border-radius:16px;background:color-mix(in srgb, var(--panel) 94%, transparent);color:var(--text);box-shadow:0 18px 48px rgba(0,0,0,.38);padding:11px 13px;font-size:12px;font-weight:850;line-height:1.45;opacity:0;transform:translateY(8px) scale(.98);transition:opacity .18s ease-out,transform .18s ease-out;backdrop-filter:blur(14px)}
+    .toast.show{opacity:1;transform:translateY(0) scale(1)}
+    .toast[data-tone="danger"]{border-color:color-mix(in srgb, var(--danger) 52%, var(--border))}
+    .toast[data-tone="success"]{border-color:color-mix(in srgb, var(--ok) 48%, var(--border))}
     @media(max-width:1160px){
       .app{min-width:0}.brand-copy span{display:none}.toolbar{gap:6px}.workspace{grid-template-columns:290px 7px 1fr}.preview-gutter,.preview-pane{display:none}.editor-pane{border-radius:0;border-right:0}
     }
@@ -529,7 +538,7 @@
       </section>
       <div class="gutter preview-gutter" id="previewGutter" title="Drag to resize editor and preview" aria-label="Resize editor and preview panels"></div>
       <section class="pane preview-pane">
-        <div class="pane-head"><strong>Preview</strong><span class="preview-tools"><span id="previewStatus" class="preview-status" title="PDF-like preview uses backend renderer HTML with page size and margins. Fast is an approximate browser-local editing preview with editor scroll sync.">PDF-like preview</span><select id="previewModeInput" class="preview-mode-select" title="Preview mode"><option value="accurate" selected>PDF-like</option><option value="fast">Fast (approx)</option></select><button id="refreshPreviewBtn" class="btn btn-icon btn-quiet" onclick="forceAccuratePreview()" title="Refresh PDF-like preview now" aria-label="Refresh PDF-like preview"><svg class="icon" aria-hidden="true"><use href="#icon-rotate-ccw"></use></svg><span class="sr-only">Refresh preview</span></button><button class="btn" onclick="toggleDirection()" id="dirBtn" title="Toggle preview direction"><svg class="icon" aria-hidden="true"><use href="#icon-arrow-left-right"></use></svg><span id="dirBtnLabel">RTL</span></button></span></div>
+        <div class="pane-head"><strong>Preview</strong><span class="preview-tools"><span id="previewStatus" class="preview-status" title="PDF-like preview uses backend renderer HTML with page size and margins. Fast is an approximate browser-local editing preview with editor scroll sync.">Ready</span><select id="previewModeInput" class="preview-mode-select" title="Preview mode" aria-label="Preview mode"><option value="accurate" selected>PDF-like</option><option value="fast">Fast (approx)</option></select><button id="refreshPreviewBtn" class="btn btn-icon btn-quiet" onclick="forceAccuratePreview()" title="Refresh PDF-like preview now" aria-label="Refresh PDF-like preview"><svg class="icon" aria-hidden="true"><use href="#icon-rotate-ccw"></use></svg><span class="sr-only">Refresh preview</span></button><button class="btn" onclick="toggleDirection()" id="dirBtn" title="Toggle preview direction"><svg class="icon" aria-hidden="true"><use href="#icon-arrow-left-right"></use></svg><span id="dirBtnLabel">RTL</span></button></span></div>
         <div id="preview" class="preview" dir="auto"></div>
         <iframe id="accuratePreviewFrame" class="accurate-preview-frame" title="Accurate renderer HTML preview" hidden></iframe>
       </section>
@@ -545,6 +554,7 @@
       <div id="commandPaletteList" class="command-list" role="listbox"></div>
     </section>
   </div>
+  <div id="toastRegion" class="toast-region" aria-live="polite" aria-atomic="true"></div>
 <script>
 const $ = (id) => document.getElementById(id);
 const editor = $('editor');
@@ -554,6 +564,7 @@ const previewModeInput = $('previewModeInput');
 const commandPaletteBackdrop = $('commandPaletteBackdrop');
 const commandPaletteInput = $('commandPaletteInput');
 const commandPaletteList = $('commandPaletteList');
+const toastRegion = $('toastRegion');
 const statusWords = $('statusWords');
 const statusChars = $('statusChars');
 const serverStatus = $('serverStatus');
@@ -583,6 +594,8 @@ let editorLineCountCache = 1;
 let editorLineCountDirty = true;
 let lineNumberSyncFrame = 0;
 let previewScrollFrame = 0;
+let toastTimer = null;
+let commandPaletteActiveIndex = 0;
 const FAST_PREVIEW_DELAY_MS = 140;
 const ACCURATE_PREVIEW_DELAY_MS = 720;
 let exportProgressTimer = null;
@@ -914,7 +927,7 @@ function applyProjectBundle(bundle){
   renderAssetList();
   renderPreview();
   scheduleStudioStateSave();
-  serverStatus.textContent = 'Studio project loaded' + (validation.skipped ? ' · skipped ' + validation.skipped + ' unsafe/oversized assets' : '');
+  setServerStatus('Studio project loaded' + (validation.skipped ? ' · skipped ' + validation.skipped + ' unsafe/oversized assets' : ''), { toast: true, tone: validation.skipped ? 'danger' : 'success' });
 }
 
 function newDocument(){
@@ -925,12 +938,12 @@ function newDocument(){
   renderAssetList();
   renderPreview();
   scheduleStudioStateSave();
-  serverStatus.textContent = 'New document started';
+  setServerStatus('New document started', { toast: true, tone: 'success' });
 }
 
 function downloadProject(){
   downloadBlob(projectFilename(), JSON.stringify(buildProjectBundle(), null, 2), 'application/json');
-  serverStatus.textContent = 'Studio project saved';
+  setServerStatus('Studio project saved', { toast: true, tone: 'success' });
 }
 
 function openProject(){ $('projectInput').click(); }
@@ -1007,7 +1020,8 @@ function loadStudioState(){
     $('savedState').textContent = typeof state.markdown === 'string' ? 'Restored local draft' : 'Settings restored · draft was too large';
     return true;
   } catch (error) {
-    $('savedState').textContent = 'Saved state ignored';
+    try { localStorage.removeItem(MARDAS_STUDIO_STATE_KEY); } catch (storageError) {}
+    $('savedState').textContent = 'Ready';
     return false;
   }
 }
@@ -1015,7 +1029,7 @@ function loadStudioState(){
 function clearStudioState(){
   try { localStorage.removeItem(MARDAS_STUDIO_STATE_KEY); } catch (error) {}
   $('savedState').textContent = 'Local state cleared';
-  serverStatus.textContent = 'Local Studio state cleared';
+  setServerStatus('Local Studio state cleared', { toast: true });
 }
 
 function attachOptionPersistence(){
@@ -1336,9 +1350,29 @@ function renderMarkdownPreview(markdown){
   return out.join('\n');
 }
 
+function notify(message, tone='info'){
+  if (!toastRegion || !message) return;
+  clearTimeout(toastTimer);
+  toastRegion.innerHTML = '<div class="toast" data-tone="' + escapeHtml(tone) + '">' + escapeHtml(message) + '</div>';
+  const toast = toastRegion.firstElementChild;
+  requestAnimationFrame(() => toast && toast.classList.add('show'));
+  toastTimer = setTimeout(() => {
+    if (toast) toast.classList.remove('show');
+    toastTimer = setTimeout(() => { if (toastRegion) toastRegion.innerHTML = ''; }, 220);
+  }, 2600);
+}
+
+function setServerStatus(message, options={}){
+  if (serverStatus) serverStatus.textContent = message;
+  if (options.toast) notify(message, options.tone || 'info');
+}
+
 function setPreviewStatus(message, rendering=false){
   if (!previewStatus) return;
   previewStatus.textContent = message;
+  previewStatus.title = rendering
+    ? 'Preview is rendering in the background.'
+    : 'PDF-like preview uses backend renderer HTML with page size and margins. Fast is an approximate browser-local editing preview with editor scroll sync.';
   previewStatus.classList.toggle('rendering', rendering);
 }
 
@@ -1523,7 +1557,7 @@ function renderFastPreview(text){
     return;
   }
   preview.innerHTML = renderMarkdownPreview(text);
-  setPreviewStatus('Fast approx preview updated', false);
+  setPreviewStatus('Fast ready', false);
 }
 
 function assetPreviewFingerprint(asset){
@@ -1563,13 +1597,13 @@ async function requestAccuratePreview(text, options={}){
     showFastPreview();
     preview.innerHTML = largeDocumentPreviewNotice(text, 'Automatic PDF-like refresh is paused for large drafts. Use the refresh button when you need a renderer-backed preview snapshot.');
     setPreviewStatus('Large draft · manual refresh', false);
-    serverStatus.textContent = 'Large draft: PDF-like preview paused until manual refresh';
+    setServerStatus('Large draft: PDF-like preview paused until manual refresh');
     return;
   }
   const requestKey = accuratePreviewRequestKey(text);
   if (!force && requestKey === lastAccuratePreviewKey && accuratePreviewFrame && accuratePreviewFrame.srcdoc) {
     showFramePreview();
-    setPreviewStatus('Updated', false);
+    setPreviewStatus('Ready', false);
     return;
   }
   const token = ++accuratePreviewToken;
@@ -1596,7 +1630,7 @@ async function requestAccuratePreview(text, options={}){
     accuratePreviewFrame.removeAttribute('src');
     accuratePreviewFrame.srcdoc = html;
     lastAccuratePreviewKey = requestKey;
-    setPreviewStatus('Updated', false);
+    setPreviewStatus('Ready', false);
   } catch (error) {
     if (controller.signal.aborted || token !== accuratePreviewToken) return;
     showFastPreview();
@@ -1757,7 +1791,7 @@ async function handleAssetFiles(fileList, options={}){
   renderAssetList();
   schedulePreviewRender();
   scheduleStudioStateSave();
-  serverStatus.textContent = 'Assets attached: ' + attachedAssets.length + (skipped ? ' · skipped ' + skipped + ' duplicate/over limit' : '');
+  setServerStatus('Assets attached: ' + attachedAssets.length + (skipped ? ' · skipped ' + skipped + ' duplicate/over limit' : ''), { toast: true, tone: skipped ? 'danger' : 'success' });
   return { added: next.length, skipped };
 }
 
@@ -1766,7 +1800,7 @@ function removeAsset(index){
   renderAssetList();
   schedulePreviewRender();
   scheduleStudioStateSave();
-  serverStatus.textContent = 'Asset removed';
+  setServerStatus('Asset removed', { toast: true });
 }
 
 function clearAssets(){
@@ -1774,7 +1808,7 @@ function clearAssets(){
   renderAssetList();
   schedulePreviewRender();
   scheduleStudioStateSave();
-  serverStatus.textContent = 'Assets cleared';
+  setServerStatus('Assets cleared', { toast: true });
 }
 
 function setBrandLogoFromAsset(index){
@@ -1783,7 +1817,7 @@ function setBrandLogoFromAsset(index){
   $('brandLogoInput').value = asset.path;
   schedulePreviewRender();
   scheduleStudioStateSave();
-  serverStatus.textContent = 'Brand logo set to ' + asset.path;
+  setServerStatus('Brand logo set to ' + asset.path, { toast: true, tone: 'success' });
 }
 
 $('assetInput').addEventListener('change', async (event) => {
@@ -1831,7 +1865,7 @@ $('projectInput').addEventListener('change', (event) => {
   const file = event.target.files[0];
   if (!file) return;
   if (file.size > MAX_PROJECT_BUNDLE_BYTES) {
-    serverStatus.textContent = 'Project file too large';
+    setServerStatus('Project file too large', { toast: true, tone: 'danger' });
     alert('Studio project is too large to open safely. Use a smaller .mardas.json bundle.');
     event.target.value = '';
     return;
@@ -1842,7 +1876,7 @@ $('projectInput').addEventListener('change', (event) => {
       applyProjectBundle(JSON.parse(String(ev.target.result || '{}')));
       $('filenameInput').value = file.name.replace(/\.mardas\.json$/i, '.pdf');
     } catch (error) {
-      serverStatus.textContent = 'Project open failed';
+      setServerStatus('Project open failed', { toast: true, tone: 'danger' });
       alert(error.message);
     }
   };
@@ -1906,7 +1940,7 @@ async function readRenderError(response){
 
 async function exportDebugHTML(){
   if (editor.value.length > MAX_DEBUG_HTML_WARNING_CHARS && !confirm('This debug HTML export is large and may make the browser work hard. Continue?')) {
-    serverStatus.textContent = 'Debug HTML export cancelled';
+    setServerStatus('Debug HTML export cancelled');
     return;
   }
   document.body.classList.add('busy');
@@ -1994,7 +2028,7 @@ function copyCommand(){
     cmd.push('--watermark-opacity', shellQuote(options.watermarkOpacity));
   }
   navigator.clipboard.writeText(cmd.join(' '));
-  serverStatus.textContent = 'CLI command copied';
+  setServerStatus('CLI command copied', { toast: true, tone: 'success' });
 }
 
 function toggleInterfaceMode(){
@@ -2114,17 +2148,40 @@ function filteredCommands(){
   return COMMANDS.filter(command => !query || (command.title + ' ' + command.hint + ' ' + command.id).toLowerCase().includes(query));
 }
 
+function setCommandPaletteActive(index){
+  const items = Array.from(commandPaletteList ? commandPaletteList.querySelectorAll('.command-item[data-command-id]') : []);
+  if (!items.length) {
+    commandPaletteActiveIndex = 0;
+    return;
+  }
+  commandPaletteActiveIndex = ((index % items.length) + items.length) % items.length;
+  items.forEach((item, itemIndex) => {
+    const active = itemIndex === commandPaletteActiveIndex;
+    item.classList.toggle('active', active);
+    item.setAttribute('aria-selected', active ? 'true' : 'false');
+    if (active) item.scrollIntoView({ block: 'nearest' });
+  });
+}
+
+function activeCommandPaletteId(){
+  const items = Array.from(commandPaletteList ? commandPaletteList.querySelectorAll('.command-item[data-command-id]') : []);
+  const active = items[commandPaletteActiveIndex] || items[0];
+  return active ? active.dataset.commandId : '';
+}
+
 function renderCommandPalette(){
   if (!commandPaletteList) return;
   const commands = filteredCommands();
+  commandPaletteActiveIndex = Math.min(commandPaletteActiveIndex, Math.max(0, commands.length - 1));
   commandPaletteList.innerHTML = commands.length
-    ? commands.map((command, index) => '<button type="button" class="command-item' + (index === 0 ? ' active' : '') + '" data-command-id="' + escapeHtml(command.id) + '" role="option"><span><strong>' + escapeHtml(command.title) + '</strong><small>' + escapeHtml(command.hint) + '</small></span>' + (command.shortcut ? '<span class="command-shortcut">' + escapeHtml(command.shortcut) + '</span>' : '') + '</button>').join('')
+    ? commands.map((command, index) => '<button type="button" class="command-item' + (index === commandPaletteActiveIndex ? ' active' : '') + '" data-command-id="' + escapeHtml(command.id) + '" role="option" aria-selected="' + (index === commandPaletteActiveIndex ? 'true' : 'false') + '"><span><strong>' + escapeHtml(command.title) + '</strong><small>' + escapeHtml(command.hint) + '</small></span>' + (command.shortcut ? '<span class="command-shortcut">' + escapeHtml(command.shortcut) + '</span>' : '') + '</button>').join('')
     : '<div class="command-item"><span><strong>No commands found</strong><small>Try export, preview, assets, or settings.</small></span></div>';
 }
 
 function openCommandPalette(){
   document.body.classList.add('command-palette-open');
   if (commandPaletteInput) commandPaletteInput.value = '';
+  commandPaletteActiveIndex = 0;
   renderCommandPalette();
   setTimeout(() => commandPaletteInput && commandPaletteInput.focus(), 0);
 }
@@ -2138,21 +2195,35 @@ function runCommand(id){
   if (!command) return;
   closeCommandPalette();
   command.run();
-  serverStatus.textContent = 'Command: ' + command.title;
+  setServerStatus('Command: ' + command.title);
 }
 
 if (commandPaletteInput) {
-  commandPaletteInput.addEventListener('input', renderCommandPalette);
+  commandPaletteInput.addEventListener('input', () => {
+    commandPaletteActiveIndex = 0;
+    renderCommandPalette();
+  });
   commandPaletteInput.addEventListener('keydown', event => {
+    const items = Array.from(commandPaletteList ? commandPaletteList.querySelectorAll('.command-item[data-command-id]') : []);
     if (event.key === 'Escape') { event.preventDefault(); closeCommandPalette(); }
+    if (event.key === 'ArrowDown' && items.length) { event.preventDefault(); setCommandPaletteActive(commandPaletteActiveIndex + 1); }
+    if (event.key === 'ArrowUp' && items.length) { event.preventDefault(); setCommandPaletteActive(commandPaletteActiveIndex - 1); }
+    if (event.key === 'Home' && items.length) { event.preventDefault(); setCommandPaletteActive(0); }
+    if (event.key === 'End' && items.length) { event.preventDefault(); setCommandPaletteActive(items.length - 1); }
     if (event.key === 'Enter') {
       event.preventDefault();
-      const active = commandPaletteList && commandPaletteList.querySelector('.command-item.active[data-command-id]');
-      if (active) runCommand(active.dataset.commandId);
+      runCommand(activeCommandPaletteId());
     }
   });
 }
 if (commandPaletteList) {
+  commandPaletteList.addEventListener('mousemove', event => {
+    const button = event.target.closest('[data-command-id]');
+    if (!button) return;
+    const items = Array.from(commandPaletteList.querySelectorAll('.command-item[data-command-id]'));
+    const index = items.indexOf(button);
+    if (index >= 0) setCommandPaletteActive(index);
+  });
   commandPaletteList.addEventListener('click', event => {
     const button = event.target.closest('[data-command-id]');
     if (button) runCommand(button.dataset.commandId);

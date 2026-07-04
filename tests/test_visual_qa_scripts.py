@@ -91,6 +91,9 @@ def test_studio_visual_audit_uses_live_server_preview_context() -> None:
     assert "preview_status" in source
     assert "preview_failed" in source
     assert "preview_mode" in source
+    assert "preview_status_unclipped" in source
+    assert "toast_region_present" in source
+    assert "command_palette_navigation" in source
     assert "pdf_like_scroll_sync_removed" in source
     assert "fast_scroll_sync_guarded" in source
     assert "pdf_like_scrollbar_color" in source

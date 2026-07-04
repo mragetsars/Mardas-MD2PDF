@@ -795,8 +795,20 @@ def test_gui_preview_exposes_render_status_and_footer_save_state():
     assert 'function setPreviewStatus' in html
     assert 'function schedulePreviewRender' in html
     assert "setPreviewStatus('Updating preview...', true)" in html
+    assert "setPreviewStatus('Ready', false)" in html
     assert '<span id="savedState">Live preview</span>' in html
     assert 'Markdown source' in html
+
+
+def test_gui_has_toast_feedback_region_and_stable_status_helpers():
+    html = GUI_HTML.read_text(encoding="utf-8")
+
+    assert 'id="toastRegion" class="toast-region"' in html
+    assert 'aria-live="polite"' in html
+    assert 'function notify(message' in html
+    assert 'function setServerStatus' in html
+    assert '.toast.show' in html
+    assert "setServerStatus('CLI command copied'" in html
 
 
 def test_gui_sidebar_scrolls_and_palette_uses_compact_swatches():
@@ -915,6 +927,11 @@ def test_studio_exposes_command_palette_and_professional_shortcuts():
     assert "function openCommandPalette" in html
     assert "function closeCommandPalette" in html
     assert "function runCommand" in html
+    assert "function setCommandPaletteActive" in html
+    assert "function activeCommandPaletteId" in html
+    assert "ArrowDown" in html
+    assert "ArrowUp" in html
+    assert "aria-selected" in html
     assert "key === 'k'" in html
     assert "key === 'o'" in html
     assert "key === 'e'" in html
@@ -931,4 +948,5 @@ def test_studio_first_run_state_is_not_reported_as_error():
 
     assert "$('savedState').textContent = 'Ready';" in html
     assert "Could not restore state" not in html
-    assert "Saved state ignored" in html
+    assert "Saved state ignored" not in html
+    assert "localStorage.removeItem(MARDAS_STUDIO_STATE_KEY)" in html
