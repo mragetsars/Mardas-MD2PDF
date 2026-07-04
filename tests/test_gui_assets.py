@@ -415,6 +415,79 @@ def test_studio_http_preview_requests_are_latest_only(monkeypatch):
     assert responses["new"] == (200, "<html><body>new</body></html>")
 
 
+
+def test_studio_html_preview_allows_empty_draft_but_pdf_export_still_requires_content():
+    import pytest
+
+    from mardas_md2pdf import gui
+
+    html = gui._render_studio_html_payload(
+        {"markdown": "   ", "options": {"toc": False, "noCover": True}, "assets": []}
+    )
+
+    assert 'id="mardas-studio-preview-css"' in html
+    assert "Markdown content is empty" not in html
+
+    with pytest.raises(gui.StudioRequestError) as exc_info:
+        gui._validate_studio_payload({"markdown": "   ", "options": {}, "assets": []})
+
+    assert exc_info.value.code == "empty_markdown"
+
+
+def test_studio_get_routes_ignore_query_strings():
+    from mardas_md2pdf import gui
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), gui.GuiRequestHandler)
+    server.studio_bind_host = "127.0.0.1"  # type: ignore[attr-defined]
+    server.studio_csrf_token = "secret"  # type: ignore[attr-defined]
+    thread = Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        connection = HTTPConnection("127.0.0.1", server.server_port, timeout=10)
+        connection.request("GET", "/index.html?v=cache-bust")
+        response = connection.getresponse()
+        body = response.read().decode("utf-8")
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=10)
+
+    assert response.status == 200
+    assert "Mardas MD2PDF Studio" in body
+
+
+def test_studio_safe_filenames_are_bounded_and_content_disposition_is_utf8_safe():
+    from mardas_md2pdf import gui
+
+    filename = gui._safe_filename("x" * 240 + ".pdf")
+    assert len(filename) <= gui.MAX_GUI_FILENAME_CHARS
+    assert filename.endswith(".pdf")
+    assert filename != "x" * 240 + ".pdf"
+
+    rel_path = gui._safe_asset_relative_path("images/" + "نمودار" * 80 + ".png")
+    assert len(rel_path.name) <= gui.MAX_GUI_ASSET_PATH_PART_CHARS
+    assert rel_path.name.endswith(".png")
+
+    disposition = gui._attachment_disposition("گزارش نهایی.pdf")
+    assert 'filename="mardas-document.pdf"' in disposition
+    assert "filename*=UTF-8''" in disposition
+    disposition.encode("latin-1")
+
+
+def test_gui_large_document_preview_and_local_save_warnings_are_explicit():
+    html = GUI_HTML.read_text(encoding="utf-8")
+
+    assert "MAX_AUTO_ACCURATE_PREVIEW_CHARS" in html
+    assert "MAX_FAST_PREVIEW_CHARS" in html
+    assert "MAX_DEBUG_HTML_WARNING_CHARS" in html
+    assert "function forceAccuratePreview" in html
+    assert "Large draft · manual refresh" in html
+    assert "Automatic PDF-like refresh is paused for large drafts" in html
+    assert "Fast browser preview is skipped to keep Studio responsive" in html
+    assert "Draft too large for local save" in html
+    assert "Settings saved · draft too large for local save" in html
+    assert "Refresh PDF-like preview" in html
+
 def test_studio_bind_warning_only_for_non_local_hosts():
     from mardas_md2pdf import gui
 

@@ -4,6 +4,22 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.13.36 - 2026-07-04
+
+### Changed
+- Kept Studio PDF-like preview responsive on very large drafts by pausing automatic renderer-backed refreshes above the large-document threshold and exposing an explicit manual refresh action.
+- Made local auto-save messaging more explicit when a draft is too large to persist in browser storage.
+
+### Fixed
+- Allowed empty Studio drafts to render as a blank PDF-like preview instead of surfacing a backend error while keeping PDF export validation strict.
+- Made Studio static GET routing ignore query strings so cache-busted `/index.html?...` and asset requests resolve correctly.
+- Bounded generated Studio filenames and asset path segments with hash suffixes while preserving file extensions.
+- Emitted UTF-8-safe `Content-Disposition` filenames for Studio PDF downloads so non-ASCII filenames do not break HTTP headers.
+- Added a large debug-HTML export confirmation and retained delayed object-URL cleanup for browser download stability.
+
+### Tests
+- Added regression coverage for empty draft previews, query-string GET routing, filename/path length bounds, UTF-8-safe attachment headers, and large-document Studio preview safeguards.
+
 ## 1.13.35 - 2026-07-04
 
 ### Changed

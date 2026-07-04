@@ -527,7 +527,7 @@
       </section>
       <div class="gutter preview-gutter" id="previewGutter" title="Drag to resize editor and preview" aria-label="Resize editor and preview panels"></div>
       <section class="pane preview-pane">
-        <div class="pane-head"><strong>Preview</strong><span class="preview-tools"><span id="previewStatus" class="preview-status" title="PDF-like preview uses backend renderer HTML with page size and margins. Fast is an approximate browser-local editing preview.">PDF-like preview</span><select id="previewModeInput" class="preview-mode-select" title="Preview mode"><option value="accurate" selected>PDF-like</option><option value="fast">Fast (approx)</option></select><button class="btn" onclick="toggleDirection()" id="dirBtn" title="Toggle preview direction"><svg class="icon" aria-hidden="true"><use href="#icon-arrow-left-right"></use></svg><span id="dirBtnLabel">RTL</span></button></span></div>
+        <div class="pane-head"><strong>Preview</strong><span class="preview-tools"><span id="previewStatus" class="preview-status" title="PDF-like preview uses backend renderer HTML with page size and margins. Fast is an approximate browser-local editing preview.">PDF-like preview</span><select id="previewModeInput" class="preview-mode-select" title="Preview mode"><option value="accurate" selected>PDF-like</option><option value="fast">Fast (approx)</option></select><button id="refreshPreviewBtn" class="btn btn-icon btn-quiet" onclick="forceAccuratePreview()" title="Refresh PDF-like preview now" aria-label="Refresh PDF-like preview"><svg class="icon" aria-hidden="true"><use href="#icon-rotate-ccw"></use></svg><span class="sr-only">Refresh preview</span></button><button class="btn" onclick="toggleDirection()" id="dirBtn" title="Toggle preview direction"><svg class="icon" aria-hidden="true"><use href="#icon-arrow-left-right"></use></svg><span id="dirBtnLabel">RTL</span></button></span></div>
         <div id="preview" class="preview" dir="auto"></div>
         <iframe id="accuratePreviewFrame" class="accurate-preview-frame" title="Accurate renderer HTML preview" hidden></iframe>
       </section>
@@ -591,6 +591,9 @@ const MARDAS_STUDIO_STATE_KEY = 'mardas-md2pdf-studio-state-v1';
 const MARDAS_PROJECT_SCHEMA = 'mardas-md2pdf-studio-project-v1';
 const MARDAS_STUDIO_TOKEN = '__MARDAS_STUDIO_TOKEN__';
 const MAX_STORED_MARKDOWN_CHARS = 250000;
+const MAX_AUTO_ACCURATE_PREVIEW_CHARS = 180000;
+const MAX_FAST_PREVIEW_CHARS = 350000;
+const MAX_DEBUG_HTML_WARNING_CHARS = 350000;
 const DEFAULT_MARKDOWN = `---
 title: "نمونه سند Mardas MD2PDF"
 author: "mragetsars"
@@ -809,9 +812,21 @@ function downloadBlob(filename, content, type){
   setTimeout(() => URL.revokeObjectURL(objectUrl), 30000);
 }
 
+function shortenUiFilename(name, maxLength=120){
+  const text = String(name || '').trim();
+  if (text.length <= maxLength) return text;
+  let hash = 0;
+  for (let index = 0; index < text.length; index += 1) hash = ((hash << 5) - hash + text.charCodeAt(index)) | 0;
+  const suffix = '-' + Math.abs(hash).toString(36);
+  const dot = text.lastIndexOf('.');
+  const ext = dot > 0 && text.length - dot <= 17 ? text.slice(dot) : '';
+  const stem = ext ? text.slice(0, dot) : text;
+  return stem.slice(0, Math.max(1, maxLength - suffix.length - ext.length)).replace(/[-_. ]+$/g, '') + suffix + ext;
+}
+
 function projectFilename(){
   const base = ($('filenameInput').value || 'mardas-document.pdf').replace(/\.pdf$/i, '').replace(/[^\w.-]+/g, '-').replace(/^-+|-+$/g, '') || 'mardas-document';
-  return base + '.mardas.json';
+  return shortenUiFilename(base + '.mardas.json', 140);
 }
 
 function buildProjectBundle(){
@@ -940,7 +955,7 @@ function saveStudioState(){
     const state = getStudioState();
     if (state.markdown === null) delete state.markdown;
     localStorage.setItem(MARDAS_STUDIO_STATE_KEY, JSON.stringify(state));
-    $('savedState').textContent = state.markdown === undefined ? 'Settings saved · draft too large' : 'Saved locally';
+    $('savedState').textContent = state.markdown === undefined ? 'Settings saved · draft too large for local save' : 'Saved locally';
   } catch (error) {
     $('savedState').textContent = 'Local save unavailable';
   }
@@ -948,7 +963,7 @@ function saveStudioState(){
 
 function scheduleStudioStateSave(){
   clearTimeout(saveStateTimer);
-  $('savedState').textContent = 'Unsaved changes';
+  $('savedState').textContent = markdownTooLargeForLocalSave() ? 'Draft too large for local save' : 'Unsaved changes';
   saveStateTimer = setTimeout(saveStudioState, 500);
 }
 
@@ -987,7 +1002,7 @@ function loadStudioState(){
     } else {
       expandSettingsPane({ persist: false });
     }
-    $('savedState').textContent = 'Restored local draft';
+    $('savedState').textContent = typeof state.markdown === 'string' ? 'Restored local draft' : 'Settings restored · draft was too large';
     return true;
   } catch (error) {
     $('savedState').textContent = 'Saved state ignored';
@@ -1494,9 +1509,20 @@ function showFastPreview(){
   if (accuratePreviewFrame) accuratePreviewFrame.hidden = true;
 }
 
+function largeDocumentPreviewNotice(text, detail){
+  return '<blockquote><strong>Large document preview paused.</strong><br>' +
+    escapeHtml(detail) + '<br>' +
+    'Chars: ' + text.length + ' · Lines: ' + countTextLines(text) + '</blockquote>';
+}
+
 function renderFastPreview(text){
   cancelAccuratePreviewRequest();
   showFastPreview();
+  if (text.length > MAX_FAST_PREVIEW_CHARS) {
+    preview.innerHTML = largeDocumentPreviewNotice(text, 'Fast browser preview is skipped to keep Studio responsive. Export PDF or save Markdown for the full document.');
+    setPreviewStatus('Large draft · fast preview paused', false);
+    return;
+  }
   preview.innerHTML = renderMarkdownPreview(text);
   setPreviewStatus('Fast approx preview updated', false);
 }
@@ -1531,9 +1557,18 @@ function cancelAccuratePreviewRequest(){
   }
 }
 
-async function requestAccuratePreview(text){
+async function requestAccuratePreview(text, options={}){
+  const force = Boolean(options.force);
+  if (!force && text.length > MAX_AUTO_ACCURATE_PREVIEW_CHARS) {
+    cancelAccuratePreviewRequest();
+    showFastPreview();
+    preview.innerHTML = largeDocumentPreviewNotice(text, 'Automatic PDF-like refresh is paused for large drafts. Use the refresh button when you need a renderer-backed preview snapshot.');
+    setPreviewStatus('Large draft · manual refresh', false);
+    serverStatus.textContent = 'Large draft: PDF-like preview paused until manual refresh';
+    return;
+  }
   const requestKey = accuratePreviewRequestKey(text);
-  if (requestKey === lastAccuratePreviewKey && accuratePreviewFrame && accuratePreviewFrame.srcdoc) {
+  if (!force && requestKey === lastAccuratePreviewKey && accuratePreviewFrame && accuratePreviewFrame.srcdoc) {
     showFramePreview();
     setPreviewStatus('Updated', false);
     return;
@@ -1573,17 +1608,24 @@ async function requestAccuratePreview(text){
   }
 }
 
-function renderPreview(){
+function renderPreview(options={}){
   const text = editor.value;
   statusWords.textContent = 'Words: ' + countWords(text);
   statusChars.textContent = 'Chars: ' + text.length;
   syncLineNumbers();
   const mode = activePreviewMode();
   if (mode === 'accurate') {
-    requestAccuratePreview(text);
+    requestAccuratePreview(text, { force: Boolean(options.forceAccurate) });
   } else {
     renderFastPreview(text);
   }
+}
+
+function forceAccuratePreview(){
+  clearTimeout(renderTimer);
+  if (previewModeInput) previewModeInput.value = 'accurate';
+  renderPreview({ forceAccurate: true });
+  scheduleStudioStateSave();
 }
 
 editor.addEventListener('input', () => {
@@ -1863,6 +1905,10 @@ async function readRenderError(response){
 }
 
 async function exportDebugHTML(){
+  if (editor.value.length > MAX_DEBUG_HTML_WARNING_CHARS && !confirm('This debug HTML export is large and may make the browser work hard. Continue?')) {
+    serverStatus.textContent = 'Debug HTML export cancelled';
+    return;
+  }
   document.body.classList.add('busy');
   setExportProgress(0.2, 'Building debug HTML...');
   exportProgress.classList.add('active');

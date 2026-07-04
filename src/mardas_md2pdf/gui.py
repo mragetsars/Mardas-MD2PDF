@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import base64
 import binascii
+import hashlib
 import json
 import re
 import secrets
@@ -13,7 +14,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from importlib import resources
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlsplit
+from urllib.parse import quote, urlsplit
 
 from . import __version__
 from .brand_assets import asset_content_type, gui_brand_asset_filename, packaged_asset_path
@@ -27,6 +28,8 @@ MAX_GUI_MARKDOWN_BYTES = 4 * 1024 * 1024
 MAX_GUI_ASSETS = 250
 MAX_GUI_ASSET_BYTES = 12 * 1024 * 1024
 MAX_GUI_TOTAL_ASSET_BYTES = 32 * 1024 * 1024
+MAX_GUI_FILENAME_CHARS = 120
+MAX_GUI_ASSET_PATH_PART_CHARS = 180
 STUDIO_TOKEN_HEADER = "X-Mardas-Studio-Token"
 STUDIO_PREVIEW_REQUEST_HEADER = "X-Mardas-Studio-Preview-Id"
 STUDIO_PREVIEW_REQUEST_RE = re.compile(r"^[A-Za-z0-9_.:-]{1,96}$")
@@ -335,6 +338,25 @@ def _asset_text(name: str) -> str:
     return (resources.files("mardas_md2pdf") / "assets" / name).read_text(encoding="utf-8")
 
 
+def _shorten_filename(value: str, *, max_chars: int) -> str:
+    """Trim long user-provided names while preserving extensions and uniqueness."""
+    if len(value) <= max_chars:
+        return value
+
+    digest = hashlib.sha1(value.encode("utf-8", "surrogatepass")).hexdigest()[:10]
+    stem = value
+    suffix = ""
+    if "." in value:
+        candidate_stem, candidate_suffix = value.rsplit(".", 1)
+        if candidate_stem and 1 <= len(candidate_suffix) <= 16:
+            stem = candidate_stem
+            suffix = f".{candidate_suffix}"
+
+    marker = f"-{digest}"
+    available = max(1, max_chars - len(marker) - len(suffix))
+    return f"{stem[:available].rstrip('-_. ')}{marker}{suffix}"
+
+
 def _safe_filename(value: str | None, default: str = "mardas-document") -> str:
     if not value:
         return default
@@ -345,7 +367,26 @@ def _safe_filename(value: str | None, default: str = "mardas-document") -> str:
         elif char.isspace():
             keep.append("-")
     name = "".join(keep).strip("-_.")
-    return name or default
+    return _shorten_filename(name, max_chars=MAX_GUI_FILENAME_CHARS) if name else default
+
+
+def _safe_ascii_filename(value: str, default: str = "mardas-document.pdf") -> str:
+    keep = []
+    for char in value.strip():
+        if char.isascii() and (char.isalnum() or char in {"-", "_", "."}):
+            keep.append(char)
+        elif char.isspace():
+            keep.append("-")
+    name = "".join(keep).strip("-_.") or default
+    if name.lower() == "pdf" and str(value).lower().endswith(".pdf"):
+        name = default
+    return _shorten_filename(name, max_chars=MAX_GUI_FILENAME_CHARS)
+
+
+def _attachment_disposition(filename: str) -> str:
+    fallback = _safe_ascii_filename(filename)
+    encoded = quote(filename, safe="")
+    return f"attachment; filename=\"{fallback}\"; filename*=UTF-8''{encoded}"
 
 
 def _safe_asset_path_part(value: str) -> str:
@@ -354,7 +395,9 @@ def _safe_asset_path_part(value: str) -> str:
         char for char in value if char not in {"/", "\\"} and ord(char) >= 32 and ord(char) != 127
     )
     cleaned = cleaned.strip()
-    return "" if cleaned in {"", ".", ".."} else cleaned
+    if cleaned in {"", ".", ".."}:
+        return ""
+    return _shorten_filename(cleaned, max_chars=MAX_GUI_ASSET_PATH_PART_CHARS)
 
 
 def _safe_asset_relative_path(value: str | None, fallback: str = "asset") -> Path:
@@ -405,13 +448,15 @@ def _write_gui_assets(tmp: Path, assets: Any) -> None:
                 fallback_target.write_bytes(data)
 
 
-def _validate_studio_payload(payload: dict[str, Any]) -> tuple[str, dict[str, Any], list[Any], dict[str, Any], str]:
+def _validate_studio_payload(
+    payload: dict[str, Any], *, allow_empty_markdown: bool = False
+) -> tuple[str, dict[str, Any], list[Any], dict[str, Any], str]:
     markdown = str(payload.get("markdown") or "")
     options = payload.get("options") or {}
     assets = payload.get("assets") or []
     if not isinstance(options, dict):
         raise StudioRequestError("Render options must be a JSON object.", code="invalid_options")
-    if not markdown.strip():
+    if not allow_empty_markdown and not markdown.strip():
         raise StudioRequestError("Markdown content is empty.", code="empty_markdown")
     if len(markdown.encode("utf-8")) > MAX_GUI_MARKDOWN_BYTES:
         raise StudioRequestError(
@@ -624,7 +669,9 @@ def _inject_studio_preview_css(html_text: str, *, page_size: str | None) -> str:
 
 
 def _render_studio_html_payload(payload: dict[str, Any]) -> str:
-    markdown, options, assets, render_options, _filename = _validate_studio_payload(payload)
+    markdown, options, assets, render_options, _filename = _validate_studio_payload(
+        payload, allow_empty_markdown=True
+    )
     with tempfile.TemporaryDirectory(prefix="mardas-md2pdf-gui-html-") as tmpdir:
         tmp = Path(tmpdir)
         md_path = tmp / "document.md"
@@ -729,8 +776,12 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
     def _send_error(self, message: str, *, status: int, code: str) -> None:
         self._send_json(_error_payload(message, status=status, code=code), status=status)
 
+    def _request_path(self) -> str:
+        return urlsplit(self.path).path or "/"
+
     def do_GET(self) -> None:  # noqa: N802 - stdlib API
-        if self.path in {"/", "/index.html"}:
+        request_path = self._request_path()
+        if request_path in {"/", "/index.html"}:
             html = (
                 _asset_text("gui.html")
                 .replace("__MARDAS_VERSION__", __version__)
@@ -738,7 +789,7 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
             )
             self._send_text(html)
             return
-        filename = gui_brand_asset_filename(self.path)
+        filename = gui_brand_asset_filename(request_path)
         if filename is not None:
             data = packaged_asset_path(filename).read_bytes()
             content_type = asset_content_type(filename)
@@ -749,13 +800,14 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(data)
             return
-        if self.path == "/api/version":
+        if request_path == "/api/version":
             self._send_json({"version": __version__})
             return
         self._send_text("Not found", status=404, content_type="text/plain; charset=utf-8")
 
     def do_POST(self) -> None:  # noqa: N802 - stdlib API
-        if self.path not in {"/api/render", "/api/render-html"}:
+        request_path = self._request_path()
+        if request_path not in {"/api/render", "/api/render-html"}:
             self._send_error("Unknown endpoint", status=404, code="not_found")
             return
         try:
@@ -779,10 +831,10 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
                     code="request_too_large",
                 )
                 return
-            preview_id = self._register_preview_request() if self.path == "/api/render-html" else None
+            preview_id = self._register_preview_request() if request_path == "/api/render-html" else None
             raw = self.rfile.read(length)
             payload = _decode_json_payload(raw)
-            if self.path == "/api/render-html":
+            if request_path == "/api/render-html":
                 if not self._preview_request_is_current(preview_id):
                     self._send_stale_preview()
                     return
@@ -820,7 +872,7 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Content-Type", "application/pdf")
             self.send_header("X-Content-Type-Options", "nosniff")
-            self.send_header("Content-Disposition", f'attachment; filename="{filename}"')
+            self.send_header("Content-Disposition", _attachment_disposition(filename))
             self.send_header("Content-Length", str(len(data)))
             self.end_headers()
             self.wfile.write(data)
