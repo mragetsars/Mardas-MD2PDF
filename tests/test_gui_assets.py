@@ -8,7 +8,7 @@ def test_gui_exposes_pdf_like_and_fast_preview_modes_and_custom_page_sizes():
     html = GUI_HTML.read_text(encoding="utf-8")
 
     assert "PDF-like preview uses backend renderer HTML" in html
-    assert "page-boundary simulation" in html
+    assert "non-intrusive page guides" in html
     assert "Fast preview is browser-local and approximate" in html
     assert "Exact PDF" not in html
     assert '<option value="accurate" selected>PDF-like</option>' in html
@@ -48,9 +48,9 @@ def test_studio_html_preview_injects_pdf_like_screen_css():
     assert "zoom: var(--md2pdf-preview-scale);" in html
     assert 'id="mardas-studio-preview-scale-script"' in html
     assert "updatePreviewScale" in html
-    assert "refreshPageMarkers" in html
-    assert ".md2pdf-preview-page-markers" in html
-    assert ".md2pdf-preview-page-boundary" in html
+    assert "refreshPageGuides" in html
+    assert ".md2pdf-preview-page-guides" in html
+    assert ".md2pdf-preview-page-guide" in html
     assert "Page " in html
     assert ".md2pdf-page-break::after" in html
     assert "Explicit page break" in html
@@ -59,9 +59,13 @@ def test_studio_html_preview_injects_pdf_like_screen_css():
 def test_gui_wires_pdf_like_and_fast_preview_refresh_triggers():
     html = GUI_HTML.read_text(encoding="utf-8")
 
-    assert "const ACCURATE_PREVIEW_DELAY_MS = 650" in html
+    assert "const ACCURATE_PREVIEW_DELAY_MS = 720" in html
     assert "function schedulePreviewRender" in html
     assert "function requestAccuratePreview" in html
+    assert "accuratePreviewAbortController" in html
+    assert "lastAccuratePreviewKey" in html
+    assert "function cancelAccuratePreviewRequest" in html
+    assert "function assetPreviewFingerprint" in html
     assert "function requestPdfPreview" not in html
     assert "previewPdfObjectUrl" not in html
     assert "['fast','accurate'].includes(state.previewMode)" in html
@@ -438,8 +442,11 @@ def test_gui_editor_has_formatting_toolbar_line_numbers_and_sync_scroll():
     assert 'id="lineNumberContent" class="line-number-content"' in html
     assert 'function insertMarkdown' in html
     assert 'function syncLineNumbers' in html
+    assert 'function scheduleLineNumberSync' in html
+    assert 'function countTextLines' in html
     assert 'function syncFramePreviewScroll' in html
     assert 'function syncPreviewScroll' in html
+    assert 'function schedulePreviewScrollSync' in html
     assert "editor.addEventListener('scroll'" in html
 
 

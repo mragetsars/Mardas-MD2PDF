@@ -527,7 +527,7 @@
       </section>
       <div class="gutter preview-gutter" id="previewGutter" title="Drag to resize editor and preview" aria-label="Resize editor and preview panels"></div>
       <section class="pane preview-pane">
-        <div class="pane-head"><strong>Preview</strong><span class="preview-tools"><span id="previewStatus" class="preview-status" title="PDF-like preview uses backend renderer HTML with page-size, margin, and page-boundary simulation. Fast preview is browser-local and approximate.">PDF-like preview</span><select id="previewModeInput" class="preview-mode-select" title="Preview mode"><option value="accurate" selected>PDF-like</option><option value="fast">Fast</option></select><button class="btn" onclick="toggleDirection()" id="dirBtn" title="Toggle preview direction"><svg class="icon" aria-hidden="true"><use href="#icon-arrow-left-right"></use></svg><span id="dirBtnLabel">RTL</span></button></span></div>
+        <div class="pane-head"><strong>Preview</strong><span class="preview-tools"><span id="previewStatus" class="preview-status" title="PDF-like preview uses backend renderer HTML with page-size, margin, and non-intrusive page guides. Fast preview is browser-local and approximate.">PDF-like preview</span><select id="previewModeInput" class="preview-mode-select" title="Preview mode"><option value="accurate" selected>PDF-like</option><option value="fast">Fast</option></select><button class="btn" onclick="toggleDirection()" id="dirBtn" title="Toggle preview direction"><svg class="icon" aria-hidden="true"><use href="#icon-arrow-left-right"></use></svg><span id="dirBtnLabel">RTL</span></button></span></div>
         <div id="preview" class="preview" dir="auto"></div>
         <iframe id="accuratePreviewFrame" class="accurate-preview-frame" title="Accurate renderer HTML preview" hidden></iframe>
       </section>
@@ -574,8 +574,14 @@ const SETTINGS_MAX_WIDTH = 520;
 const EDITOR_MIN_WIDTH = 280;
 let renderTimer = null;
 let accuratePreviewToken = 0;
+let accuratePreviewAbortController = null;
+let lastAccuratePreviewKey = '';
+let editorLineCountCache = 1;
+let editorLineCountDirty = true;
+let lineNumberSyncFrame = 0;
+let previewScrollFrame = 0;
 const FAST_PREVIEW_DELAY_MS = 140;
-const ACCURATE_PREVIEW_DELAY_MS = 650;
+const ACCURATE_PREVIEW_DELAY_MS = 720;
 let exportProgressTimer = null;
 let exportProgressValue = 0;
 let activeResizePane = null;
@@ -795,6 +801,7 @@ function applyProjectBundle(bundle){
   if (!bundle || typeof bundle !== 'object') throw new Error('Project file must contain a JSON object.');
   if (bundle.schema !== MARDAS_PROJECT_SCHEMA) throw new Error('Unsupported Studio project schema.');
   editor.value = String(bundle.markdown || '');
+  markLineNumbersDirty();
   setOptions(bundle.options || {});
   if (Array.isArray(bundle.assets)) {
     attachedAssets = bundle.assets
@@ -816,6 +823,7 @@ function applyProjectBundle(bundle){
 
 function newDocument(){
   editor.value = DEFAULT_MARKDOWN;
+  markLineNumbersDirty();
   $('filenameInput').value = 'mardas-document.pdf';
   attachedAssets = [];
   renderAssetList();
@@ -871,7 +879,10 @@ function loadStudioState(){
     }
     const state = JSON.parse(raw);
     if (!state || typeof state !== 'object') return false;
-    if (typeof state.markdown === 'string') editor.value = state.markdown;
+    if (typeof state.markdown === 'string') {
+      editor.value = state.markdown;
+      markLineNumbersDirty();
+    }
     setOptions(state.options || {});
     document.body.classList.toggle('light-mode', Boolean(state.lightMode));
     updateInterfaceButton();
@@ -1230,6 +1241,45 @@ function setPreviewStatus(message, rendering=false){
   previewStatus.classList.toggle('rendering', rendering);
 }
 
+function countTextLines(value){
+  let count = 1;
+  for (let index = 0; index < value.length; index += 1) {
+    if (value.charCodeAt(index) === 10) count += 1;
+  }
+  return count;
+}
+
+function isWhitespaceCode(code){
+  return code <= 32 || code === 160 || (code >= 0x2000 && code <= 0x200a) || code === 0x2028 || code === 0x2029 || code === 0x202f || code === 0x205f || code === 0x3000;
+}
+
+function countWords(value){
+  let count = 0;
+  let inWord = false;
+  for (let index = 0; index < value.length; index += 1) {
+    const whitespace = isWhitespaceCode(value.charCodeAt(index));
+    if (whitespace) {
+      inWord = false;
+    } else if (!inWord) {
+      count += 1;
+      inWord = true;
+    }
+  }
+  return count;
+}
+
+function markLineNumbersDirty(){
+  editorLineCountDirty = true;
+}
+
+function currentEditorLineCount(){
+  if (editorLineCountDirty) {
+    editorLineCountCache = Math.max(1, countTextLines(editor.value));
+    editorLineCountDirty = false;
+  }
+  return editorLineCountCache;
+}
+
 function editorLineHeight(){
   const style = window.getComputedStyle(editor);
   const explicit = parseFloat(style.lineHeight);
@@ -1247,8 +1297,9 @@ function editorVerticalPadding(){
 }
 
 function syncLineNumbers(){
+  lineNumberSyncFrame = 0;
   if (!lineNumbers || !lineNumberSpacer || !lineNumberContent) return;
-  const lineCount = Math.max(1, editor.value.split('\n').length);
+  const lineCount = currentEditorLineCount();
   const digits = String(lineCount).length;
   const width = Math.max(56, Math.min(110, digits * 10 + 30));
   const lineHeight = editorLineHeight();
@@ -1259,12 +1310,17 @@ function syncLineNumbers(){
   const startLine = Math.max(1, firstVisible - buffer);
   const endLine = Math.min(lineCount, firstVisible + viewportLines + buffer);
   const numbers = [];
-  for (let i = startLine; i <= endLine; i++) numbers.push(String(i));
+  for (let i = startLine; i <= endLine; i += 1) numbers.push(String(i));
   document.documentElement.style.setProperty('--line-number-width', width + 'px');
   lineNumberSpacer.style.height = Math.ceil(padding.top + padding.bottom + lineCount * lineHeight) + 'px';
   lineNumberContent.textContent = numbers.join('\n');
   lineNumberContent.style.transform = 'translateY(' + (padding.top + (startLine - 1) * lineHeight) + 'px)';
   lineNumbers.scrollTop = editor.scrollTop;
+}
+
+function scheduleLineNumberSync(){
+  if (lineNumberSyncFrame) return;
+  lineNumberSyncFrame = requestAnimationFrame(syncLineNumbers);
 }
 
 function syncFramePreviewScroll(ratio){
@@ -1280,6 +1336,7 @@ function syncFramePreviewScroll(ratio){
 }
 
 function syncPreviewScroll(){
+  previewScrollFrame = 0;
   const editorMax = editor.scrollHeight - editor.clientHeight;
   if (editorMax <= 0) return;
   const ratio = editor.scrollTop / editorMax;
@@ -1287,6 +1344,11 @@ function syncPreviewScroll(){
   const previewMax = preview.scrollHeight - preview.clientHeight;
   if (previewMax <= 0) return;
   preview.scrollTop = ratio * previewMax;
+}
+
+function schedulePreviewScrollSync(){
+  if (previewScrollFrame) return;
+  previewScrollFrame = requestAnimationFrame(syncPreviewScroll);
 }
 
 function wrapSelection(prefix, suffix, fallback){
@@ -1349,38 +1411,82 @@ function showFastPreview(){
 }
 
 function renderFastPreview(text){
+  cancelAccuratePreviewRequest();
   showFastPreview();
   preview.innerHTML = renderMarkdownPreview(text);
   setPreviewStatus('Fast preview updated', false);
 }
 
+function assetPreviewFingerprint(asset){
+  const data = asset && asset.data ? String(asset.data) : '';
+  const middle = Math.max(0, Math.floor(data.length / 2) - 48);
+  return [
+    asset && asset.path || '',
+    asset && asset.type || '',
+    assetSize(asset),
+    data.length,
+    data.slice(0, 96),
+    data.slice(middle, middle + 96),
+    data.slice(-96),
+  ];
+}
+
+function accuratePreviewRequestKey(text){
+  return JSON.stringify({
+    markdown: text,
+    options: getOptions(),
+    assets: attachedAssets.map(assetPreviewFingerprint),
+  });
+}
+
+function cancelAccuratePreviewRequest(){
+  accuratePreviewToken += 1;
+  if (accuratePreviewAbortController) {
+    accuratePreviewAbortController.abort();
+    accuratePreviewAbortController = null;
+  }
+}
+
 async function requestAccuratePreview(text){
+  const requestKey = accuratePreviewRequestKey(text);
+  if (requestKey === lastAccuratePreviewKey && accuratePreviewFrame && accuratePreviewFrame.srcdoc) {
+    showFramePreview();
+    setPreviewStatus('PDF-like preview updated', false);
+    return;
+  }
   const token = ++accuratePreviewToken;
+  if (accuratePreviewAbortController) accuratePreviewAbortController.abort();
+  const controller = new AbortController();
+  accuratePreviewAbortController = controller;
   showFramePreview();
   setPreviewStatus('Rendering PDF-like preview...', true);
   try {
     const response = await fetch('/api/render-html', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ markdown: text, options: getOptions(), assets: attachedAssets })
+      body: JSON.stringify({ markdown: text, options: getOptions(), assets: attachedAssets }),
+      signal: controller.signal,
     });
     if (!response.ok) throw new Error(await readRenderError(response));
     const html = await response.text();
     if (token !== accuratePreviewToken) return;
     accuratePreviewFrame.removeAttribute('src');
     accuratePreviewFrame.srcdoc = html;
+    lastAccuratePreviewKey = requestKey;
     setPreviewStatus('PDF-like preview updated', false);
   } catch (error) {
-    if (token !== accuratePreviewToken) return;
+    if (controller.signal.aborted || token !== accuratePreviewToken) return;
     showFastPreview();
     preview.innerHTML = '<blockquote>PDF-like preview failed: ' + escapeHtml(error.message) + '</blockquote>' + renderMarkdownPreview(text);
     setPreviewStatus('PDF-like preview failed', false);
+  } finally {
+    if (accuratePreviewAbortController === controller) accuratePreviewAbortController = null;
   }
 }
 
 function renderPreview(){
   const text = editor.value;
-  statusWords.textContent = 'Words: ' + (text.trim() ? text.trim().split(/\s+/).length : 0);
+  statusWords.textContent = 'Words: ' + countWords(text);
   statusChars.textContent = 'Chars: ' + text.length;
   syncLineNumbers();
   const mode = activePreviewMode();
@@ -1392,14 +1498,15 @@ function renderPreview(){
 }
 
 editor.addEventListener('input', () => {
-  syncLineNumbers();
+  markLineNumbersDirty();
+  scheduleLineNumberSync();
   schedulePreviewRender();
   scheduleStudioStateSave();
 });
 
 editor.addEventListener('scroll', () => {
-  syncLineNumbers();
-  syncPreviewScroll();
+  scheduleLineNumberSync();
+  schedulePreviewScrollSync();
 });
 
 editor.addEventListener('keydown', (event) => {
@@ -1409,6 +1516,7 @@ editor.addEventListener('keydown', (event) => {
     const end = editor.selectionEnd;
     editor.value = editor.value.slice(0, start) + '    ' + editor.value.slice(end);
     editor.selectionStart = editor.selectionEnd = start + 4;
+    markLineNumbersDirty();
     syncLineNumbers();
     schedulePreviewRender();
     scheduleStudioStateSave();
@@ -1579,6 +1687,7 @@ $('fileInput').addEventListener('change', (event) => {
   const reader = new FileReader();
   reader.onload = (ev) => {
     editor.value = ev.target.result;
+    markLineNumbersDirty();
     $('filenameInput').value = file.name.replace(/\.(md|markdown|txt)$/i, '.pdf');
     renderPreview();
     scheduleStudioStateSave();
@@ -1932,6 +2041,7 @@ window.addEventListener('keydown', (event) => {
 });
 
 editor.value = DEFAULT_MARKDOWN;
+markLineNumbersDirty();
 attachChoiceCards();
 attachOptionPersistence();
 loadStudioState();

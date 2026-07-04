@@ -4,6 +4,16 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.13.31 - 2026-07-04
+
+### Changed
+- Reworked Studio PDF-like page indicators from intrusive center-page boundary overlays to non-intrusive page guides that stay in the page margins and no longer cover document content.
+- Reduced Studio editing overhead by caching Markdown line counts, virtualizing gutter updates through animation frames, throttling editor-to-preview scroll synchronization, and replacing split-based word/line counting with allocation-light counters.
+- Added cancellation and request-key caching for renderer-backed PDF-like preview refreshes so stale preview requests do not update the UI and repeated unchanged renders are skipped.
+
+### Tests
+- Updated Studio GUI regression and browser visual-audit checks for the margin-based PDF-like page guides and long-document editor behavior.
+
 ## 1.13.30 - 2026-07-03
 
 ### Changed

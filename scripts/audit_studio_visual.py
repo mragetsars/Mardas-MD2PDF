@@ -113,18 +113,18 @@ def _capture_studio(html_text: str, url: str, screenshot_path: Path, timeout_ms:
             preview_status = page.locator("#previewStatus").inner_text(timeout=timeout_ms)
             preview_mode = page.locator("#previewModeInput").input_value(timeout=timeout_ms)
             preview_frame_visible = page.locator("#accuratePreviewFrame").is_visible()
-            page_marker_ready_script = """
+            page_guide_ready_script = """
                 () => {
                   const frame = document.querySelector('#accuratePreviewFrame');
                   const doc = frame && frame.contentDocument;
-                  return Boolean(doc && doc.querySelector('.md2pdf-preview-page-markers'));
+                  return Boolean(doc && doc.querySelector('.md2pdf-preview-page-guides'));
                 }
             """
             try:
-                page.wait_for_function(page_marker_ready_script, timeout=timeout_ms)
+                page.wait_for_function(page_guide_ready_script, timeout=timeout_ms)
             except PlaywrightTimeoutError:
                 pass
-            page_markers = page.evaluate(page_marker_ready_script)
+            page_guides = page.evaluate(page_guide_ready_script)
             page.screenshot(path=str(screenshot_path), full_page=True)
             line_number_check = page.evaluate(
                 """
@@ -161,7 +161,7 @@ def _capture_studio(html_text: str, url: str, screenshot_path: Path, timeout_ms:
                 "preview_failed": "failed" in preview_status.lower(),
                 "preview_frame_visible": preview_frame_visible,
                 "pdf_like_preview_loaded": "pdf-like preview updated" in preview_status.lower(),
-                "pdf_like_page_markers": page_markers,
+                "pdf_like_page_guides": page_guides,
                 "long_editor_line_numbers_ok": bool(line_number_check.get("ok")),
                 "long_editor_line_number_tail": line_number_check.get("visibleTail"),
                 "long_editor_rendered_line_numbers": line_number_check.get("renderedLineNumbers"),
@@ -234,8 +234,8 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit(f"Studio preview check failed: {checks.get('preview_status')}")
     if not checks.get("preview_frame_visible"):
         raise SystemExit("Studio preview frame is not visible")
-    if not checks.get("pdf_like_page_markers"):
-        raise SystemExit("Studio PDF-like preview page markers were not attached")
+    if not checks.get("pdf_like_page_guides"):
+        raise SystemExit("Studio PDF-like preview page guides were not attached")
     if not checks.get("long_editor_line_numbers_ok"):
         raise SystemExit("Studio editor line-number virtualization failed for long documents")
     print(f"Studio screenshot written to {screenshot_path}")
