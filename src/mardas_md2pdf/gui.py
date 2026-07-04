@@ -5,6 +5,7 @@ import base64
 import binascii
 import json
 import re
+import secrets
 import tempfile
 import threading
 import webbrowser
@@ -12,6 +13,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from importlib import resources
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 from . import __version__
 from .brand_assets import asset_content_type, gui_brand_asset_filename, packaged_asset_path
@@ -25,6 +27,7 @@ MAX_GUI_MARKDOWN_BYTES = 4 * 1024 * 1024
 MAX_GUI_ASSETS = 250
 MAX_GUI_ASSET_BYTES = 12 * 1024 * 1024
 MAX_GUI_TOTAL_ASSET_BYTES = 32 * 1024 * 1024
+STUDIO_TOKEN_HEADER = "X-Mardas-Studio-Token"
 
 STUDIO_PREVIEW_NAMED_PAGE_SIZES: dict[str, tuple[str, str]] = {
     "letter": ("8.5in", "11in"),
@@ -108,6 +111,93 @@ def _studio_bind_warning(host: str) -> str | None:
         "Studio is binding to a non-local host. Only use this on trusted networks, "
         "because anyone who can reach the server can submit Markdown and attached assets."
     )
+
+
+def _header_host_name(value: str | None) -> str:
+    """Extract and normalize the host name from an HTTP Host header."""
+    raw = (value or "").strip()
+    if not raw:
+        return ""
+    if raw.startswith("["):
+        end = raw.find("]")
+        return raw[1:end].lower() if end > 0 else raw.strip("[]").lower()
+    return raw.rsplit(":", 1)[0].lower()
+
+
+def _host_header_is_trusted(host_header: str | None, bind_host: str | None) -> bool:
+    """Return whether a request Host header is acceptable for the Studio bind mode."""
+    host = _header_host_name(host_header)
+    if not host:
+        return False
+    if _is_local_bind_host(host):
+        return True
+
+    # The default local bind must never accept DNS-rebound or LAN Host headers.
+    # If the user intentionally binds Studio to a non-local interface, the CSRF
+    # token and same-origin checks below still gate render access.
+    bind = (bind_host or "").strip().lower().strip("[]")
+    return bool(bind and not _is_local_bind_host(bind) and (bind in {"0.0.0.0", "::"} or host == bind))
+
+
+def _same_origin_request(origin: str | None, host_header: str | None) -> bool:
+    """Validate an Origin header against the request Host header."""
+    if not origin:
+        return True
+    parsed = urlsplit(origin)
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        return False
+    return parsed.netloc.lower() == (host_header or "").strip().lower()
+
+
+def _content_type_is_json(value: str | None) -> bool:
+    return (value or "").split(";", 1)[0].strip().lower() == "application/json"
+
+
+def _validate_studio_post_headers(
+    headers: Any,
+    *,
+    bind_host: str | None,
+    csrf_token: str | None,
+) -> None:
+    """Reject browser-originated Studio API requests that did not come from Studio."""
+    host = headers.get("Host")
+    if not _host_header_is_trusted(host, bind_host):
+        raise StudioRequestError(
+            "Studio API requests must use a trusted local Host header.",
+            status=403,
+            code="untrusted_host",
+        )
+
+    if not _same_origin_request(headers.get("Origin"), host):
+        raise StudioRequestError(
+            "Studio API requests must come from the active Studio page origin.",
+            status=403,
+            code="untrusted_origin",
+        )
+
+    sec_fetch_site = (headers.get("Sec-Fetch-Site") or "").strip().lower()
+    if sec_fetch_site in {"cross-site", "same-site"}:
+        raise StudioRequestError(
+            "Cross-site Studio API requests are not accepted.",
+            status=403,
+            code="untrusted_fetch_site",
+        )
+
+    if not _content_type_is_json(headers.get("Content-Type")):
+        raise StudioRequestError(
+            "Studio render requests must use Content-Type: application/json.",
+            status=415,
+            code="unsupported_media_type",
+        )
+
+    if csrf_token:
+        submitted = headers.get(STUDIO_TOKEN_HEADER)
+        if not submitted or not secrets.compare_digest(str(submitted), csrf_token):
+            raise StudioRequestError(
+                "Studio API token is missing or invalid.",
+                status=403,
+                code="invalid_studio_token",
+            )
 
 
 
@@ -569,10 +659,17 @@ def _render_studio_html_payload(payload: dict[str, Any]) -> str:
 class GuiRequestHandler(BaseHTTPRequestHandler):
     server_version = f"MardasMD2PDFGUI/{__version__}"
 
+    def _studio_csrf_token(self) -> str:
+        return str(getattr(self.server, "studio_csrf_token", ""))
+
+    def _studio_bind_host(self) -> str:
+        return str(getattr(self.server, "studio_bind_host", self.server.server_address[0]))
+
     def _send_text(self, content: str, *, status: int = 200, content_type: str = "text/html; charset=utf-8") -> None:
         data = content.encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", content_type)
+        self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Content-Length", str(len(data)))
         self.end_headers()
         self.wfile.write(data)
@@ -581,6 +678,7 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
         data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Content-Length", str(len(data)))
         self.end_headers()
         self.wfile.write(data)
@@ -590,7 +688,11 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:  # noqa: N802 - stdlib API
         if self.path in {"/", "/index.html"}:
-            html = _asset_text("gui.html").replace("__MARDAS_VERSION__", __version__)
+            html = (
+                _asset_text("gui.html")
+                .replace("__MARDAS_VERSION__", __version__)
+                .replace("__MARDAS_STUDIO_TOKEN__", self._studio_csrf_token())
+            )
             self._send_text(html)
             return
         filename = gui_brand_asset_filename(self.path)
@@ -599,6 +701,7 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
             content_type = asset_content_type(filename)
             self.send_response(200)
             self.send_header("Content-Type", content_type)
+            self.send_header("X-Content-Type-Options", "nosniff")
             self.send_header("Content-Length", str(len(data)))
             self.end_headers()
             self.wfile.write(data)
@@ -613,6 +716,11 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
             self._send_error("Unknown endpoint", status=404, code="not_found")
             return
         try:
+            _validate_studio_post_headers(
+                self.headers,
+                bind_host=self._studio_bind_host(),
+                csrf_token=self._studio_csrf_token(),
+            )
             try:
                 length = int(self.headers.get("Content-Length", "0"))
             except ValueError:
@@ -654,6 +762,7 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
 
             self.send_response(200)
             self.send_header("Content-Type", "application/pdf")
+            self.send_header("X-Content-Type-Options", "nosniff")
             self.send_header("Content-Disposition", f'attachment; filename="{filename}"')
             self.send_header("Content-Length", str(len(data)))
             self.end_headers()
@@ -682,6 +791,8 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     server = ThreadingHTTPServer((args.host, args.port), GuiRequestHandler)
+    server.studio_bind_host = args.host  # type: ignore[attr-defined]
+    server.studio_csrf_token = secrets.token_urlsafe(32)  # type: ignore[attr-defined]
     url = f"http://{args.host}:{server.server_port}/"
     print(f"Mardas MD2PDF Studio is running at {url}")
     warning = _studio_bind_warning(args.host)

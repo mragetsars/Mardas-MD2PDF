@@ -588,6 +588,7 @@ let activeResizePane = null;
 let settingsCollapsed = false;
 const MARDAS_STUDIO_STATE_KEY = 'mardas-md2pdf-studio-state-v1';
 const MARDAS_PROJECT_SCHEMA = 'mardas-md2pdf-studio-project-v1';
+const MARDAS_STUDIO_TOKEN = '__MARDAS_STUDIO_TOKEN__';
 const MAX_STORED_MARKDOWN_CHARS = 250000;
 const DEFAULT_MARKDOWN = `---
 title: "نمونه سند Mardas MD2PDF"
@@ -616,6 +617,13 @@ print("Hello Mardas")
 | PDF Export | OK |
 `;
 let saveStateTimer = null;
+
+function studioApiHeaders(){
+  return {
+    'Content-Type': 'application/json',
+    'X-Mardas-Studio-Token': MARDAS_STUDIO_TOKEN
+  };
+}
 
 function setIconUse(button, iconName){
   const use = button && button.querySelector('use');
@@ -1463,7 +1471,7 @@ async function requestAccuratePreview(text){
   try {
     const response = await fetch('/api/render-html', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: studioApiHeaders(),
       body: JSON.stringify({ markdown: text, options: getOptions(), assets: attachedAssets }),
       signal: controller.signal,
     });
@@ -1774,7 +1782,7 @@ async function exportDebugHTML(){
   try {
     const response = await fetch('/api/render-html', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: studioApiHeaders(),
       body: JSON.stringify({ markdown: editor.value, options: getOptions(), assets: attachedAssets })
     });
     if (!response.ok) throw new Error(await readRenderError(response));
@@ -1796,7 +1804,7 @@ async function renderPDF(){
   try {
     const response = await fetch('/api/render', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: studioApiHeaders(),
       body: JSON.stringify({ markdown: editor.value, options: getOptions(), assets: attachedAssets })
     });
     if (!response.ok) {

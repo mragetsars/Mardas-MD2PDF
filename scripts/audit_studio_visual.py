@@ -62,11 +62,19 @@ def _fetch_studio_html(url: str, timeout: float) -> str:
     return html_text
 
 
-def _proxy_local_studio_api(url: str, path: str, *, body: bytes | None, content_type: str, timeout: float) -> tuple[int, bytes, str]:
+def _proxy_local_studio_api(
+    url: str,
+    path: str,
+    *,
+    body: bytes | None,
+    content_type: str,
+    studio_token: str,
+    timeout: float,
+) -> tuple[int, bytes, str]:
     request = urllib.request.Request(
         url.rstrip("/") + path,
         data=body,
-        headers={"Content-Type": content_type},
+        headers={"Content-Type": content_type, "X-Mardas-Studio-Token": studio_token},
         method="POST",
     )
     try:
@@ -100,6 +108,7 @@ def _capture_studio(html_text: str, url: str, screenshot_path: Path, timeout_ms:
                     "/api/render-html",
                     body=request.post_data_buffer,
                     content_type=request.headers.get("content-type", "application/json"),
+                    studio_token=request.headers.get("x-mardas-studio-token", ""),
                     timeout=max(timeout_ms / 1000, 1),
                 )
                 route.fulfill(status=status, body=body, content_type=content_type)

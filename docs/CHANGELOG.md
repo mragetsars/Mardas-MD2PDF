@@ -4,6 +4,15 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.13.33 - 2026-07-04
+
+### Fixed
+- Hardened Studio render endpoints so `/api/render` and `/api/render-html` require same-origin requests, trusted local Host headers, `Content-Type: application/json`, and a per-session Studio API token.
+- Added `X-Content-Type-Options: nosniff` to Studio text, JSON, asset, and PDF responses to reduce browser content-type ambiguity.
+
+### Tests
+- Added regression coverage for Studio API Host, Origin, Fetch Metadata, media-type, and token rejection paths, including an HTTP-level cross-origin POST check.
+
 ## 1.13.32 - 2026-07-04
 
 ### Changed

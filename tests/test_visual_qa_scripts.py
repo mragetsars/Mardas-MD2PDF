@@ -85,6 +85,8 @@ def test_studio_visual_audit_uses_live_server_preview_context() -> None:
     assert '<base href="{base_href}">' in source
     assert 'page.route("**/api/render-html"' in source
     assert "_proxy_local_studio_api" in source
+    assert "X-Mardas-Studio-Token" in source
+    assert 'request.headers.get("x-mardas-studio-token", "")' in source
     assert "preview_status" in source
     assert "preview_failed" in source
     assert "preview_mode" in source

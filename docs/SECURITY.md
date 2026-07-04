@@ -61,6 +61,11 @@ binding Studio to a non-local host, remember that reachable users can submit
 Markdown and attached assets. Use host-level access controls or a private network
 if you expose it beyond `127.0.0.1`.
 
+Studio render endpoints accept only JSON requests from the active Studio page:
+the local browser session receives a per-run API token, and `/api/render` plus
+`/api/render-html` reject untrusted Host/Origin headers, cross-site Fetch
+Metadata, missing tokens, and non-JSON media types before rendering begins.
+
 ## Chromium sandboxing
 
 The CLI option `--chromium-sandbox` controls Chromium sandbox behavior:

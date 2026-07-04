@@ -1,4 +1,8 @@
+from email.message import Message
+from http.client import HTTPConnection
+from http.server import ThreadingHTTPServer
 from pathlib import Path
+from threading import Thread
 
 
 GUI_HTML = Path(__file__).resolve().parents[1] / "src" / "mardas_md2pdf" / "assets" / "gui.html"
@@ -182,6 +186,128 @@ def test_studio_error_payload_includes_code_and_status():
         "status": 413,
         "code": "too_large",
     }
+
+
+def _headers(**items: str) -> Message:
+    headers = Message()
+    for key, value in items.items():
+        headers[key.replace("_", "-")] = value
+    return headers
+
+
+def test_studio_api_headers_require_same_origin_json_and_token():
+    from mardas_md2pdf import gui
+
+    gui._validate_studio_post_headers(
+        _headers(
+            Host="127.0.0.1:8765",
+            Origin="http://127.0.0.1:8765",
+            Content_Type="application/json; charset=utf-8",
+            Sec_Fetch_Site="same-origin",
+            X_Mardas_Studio_Token="secret",
+        ),
+        bind_host="127.0.0.1",
+        csrf_token="secret",
+    )
+
+    for headers, expected_code in [
+        (
+            _headers(
+                Host="evil.example",
+                Origin="http://evil.example",
+                Content_Type="application/json",
+                X_Mardas_Studio_Token="secret",
+            ),
+            "untrusted_host",
+        ),
+        (
+            _headers(
+                Host="127.0.0.1:8765",
+                Origin="https://evil.example",
+                Content_Type="application/json",
+                X_Mardas_Studio_Token="secret",
+            ),
+            "untrusted_origin",
+        ),
+        (
+            _headers(
+                Host="127.0.0.1:8765",
+                Origin="http://127.0.0.1:8765",
+                Content_Type="text/plain",
+                X_Mardas_Studio_Token="secret",
+            ),
+            "unsupported_media_type",
+        ),
+        (
+            _headers(
+                Host="127.0.0.1:8765",
+                Origin="http://127.0.0.1:8765",
+                Content_Type="application/json",
+                Sec_Fetch_Site="cross-site",
+                X_Mardas_Studio_Token="secret",
+            ),
+            "untrusted_fetch_site",
+        ),
+        (
+            _headers(
+                Host="127.0.0.1:8765",
+                Origin="http://127.0.0.1:8765",
+                Content_Type="application/json",
+                X_Mardas_Studio_Token="wrong",
+            ),
+            "invalid_studio_token",
+        ),
+    ]:
+        try:
+            gui._validate_studio_post_headers(headers, bind_host="127.0.0.1", csrf_token="secret")
+        except gui.StudioRequestError as exc:
+            assert exc.status in {403, 415}
+            assert exc.code == expected_code
+        else:  # pragma: no cover - defensive assertion branch
+            raise AssertionError(f"expected StudioRequestError for {expected_code}")
+
+
+def test_gui_wires_studio_api_token_into_render_fetches():
+    html = GUI_HTML.read_text(encoding="utf-8")
+    gui_source = (GUI_HTML.parents[1] / "gui.py").read_text(encoding="utf-8")
+
+    assert "__MARDAS_STUDIO_TOKEN__" in html
+    assert "function studioApiHeaders" in html
+    assert "X-Mardas-Studio-Token" in html
+    assert "headers: studioApiHeaders()" in html
+    assert ".replace(\"__MARDAS_STUDIO_TOKEN__\", self._studio_csrf_token())" in gui_source
+    assert "secrets.token_urlsafe(32)" in gui_source
+
+
+def test_studio_http_api_rejects_cross_origin_render_post():
+    from mardas_md2pdf import gui
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), gui.GuiRequestHandler)
+    server.studio_bind_host = "127.0.0.1"  # type: ignore[attr-defined]
+    server.studio_csrf_token = "secret"  # type: ignore[attr-defined]
+    thread = Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        connection = HTTPConnection("127.0.0.1", server.server_port, timeout=10)
+        connection.request(
+            "POST",
+            "/api/render-html",
+            body='{"markdown":"# Bad"}',
+            headers={
+                "Content-Type": "application/json",
+                "Origin": "https://evil.example",
+                "X-Mardas-Studio-Token": "secret",
+            },
+        )
+        response = connection.getresponse()
+        body = response.read().decode("utf-8")
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=10)
+
+    assert response.status == 403
+    assert "untrusted_origin" in body
 
 
 def test_studio_bind_warning_only_for_non_local_hosts():
