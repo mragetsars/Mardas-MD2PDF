@@ -432,7 +432,7 @@ def test_studio_preview_renders_export_like_markdown_features() -> None:
 
     assert "if (meta.lang === 'mermaid') return renderMermaidPreview(source);" in html
     assert "preview uses renderer" not in html
-    assert "export uses renderer" in html
+    assert "export uses offline subset" in html
 
 
 def test_studio_editor_toolbar_exposes_project_features() -> None:

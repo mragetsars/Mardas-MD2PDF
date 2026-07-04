@@ -512,7 +512,7 @@
           <button class="format-btn" type="button" onclick="insertMarkdown('image')" title="Image" aria-label="Image"><svg class="icon" aria-hidden="true"><use href="#icon-image"></use></svg></button>
           <span class="format-divider" aria-hidden="true"></span>
           <button class="format-btn" type="button" onclick="insertMarkdown('code')" title="Code block with title, highlights, and line numbers" aria-label="Code block"><svg class="icon" aria-hidden="true"><use href="#icon-code"></use></svg></button>
-          <button class="format-btn" type="button" onclick="insertMarkdown('mermaid')" title="Mermaid diagram" aria-label="Mermaid diagram"><svg class="icon" aria-hidden="true"><use href="#icon-diagram"></use></svg></button>
+          <button class="format-btn" type="button" onclick="insertMarkdown('mermaid')" title="Mermaid flowchart subset" aria-label="Mermaid flowchart subset"><svg class="icon" aria-hidden="true"><use href="#icon-diagram"></use></svg></button>
           <button class="format-btn" type="button" onclick="insertMarkdown('table')" title="Table" aria-label="Table"><svg class="icon" aria-hidden="true"><use href="#icon-table"></use></svg></button>
           <span class="format-divider" aria-hidden="true"></span>
           <button class="format-btn" type="button" onclick="insertMarkdown('math')" title="Math block" aria-label="Math block"><svg class="icon" aria-hidden="true"><use href="#icon-sigma"></use></svg></button>
@@ -575,6 +575,7 @@ const EDITOR_MIN_WIDTH = 280;
 let renderTimer = null;
 let accuratePreviewToken = 0;
 let accuratePreviewAbortController = null;
+let accuratePreviewSequence = 0;
 let lastAccuratePreviewKey = '';
 let editorLineCountCache = 1;
 let editorLineCountDirty = true;
@@ -618,11 +619,11 @@ print("Hello Mardas")
 `;
 let saveStateTimer = null;
 
-function studioApiHeaders(){
-  return {
+function studioApiHeaders(extraHeaders={}){
+  return Object.assign({
     'Content-Type': 'application/json',
     'X-Mardas-Studio-Token': MARDAS_STUDIO_TOKEN
-  };
+  }, extraHeaders || {});
 }
 
 function setIconUse(button, iconName){
@@ -638,13 +639,33 @@ function updateInterfaceButton(){
   interfaceBtn.setAttribute('aria-label', label);
 }
 
-function updateDirectionButton(direction){
+function activeDocumentDirection(){
+  const field = $('directionInput');
+  return field && ['auto','rtl','ltr'].includes(field.value) ? field.value : 'auto';
+}
+
+function resolvedEditorDirection(direction){
+  return direction === 'rtl' || direction === 'ltr' ? direction : 'auto';
+}
+
+function updateDirectionButton(direction=activeDocumentDirection()){
   const normalized = direction === 'rtl' ? 'rtl' : 'ltr';
   const label = normalized === 'rtl' ? 'LTR' : 'RTL';
+  const target = normalized === 'rtl' ? 'LTR' : 'RTL';
   const button = $('dirBtn');
   const labelNode = $('dirBtnLabel');
   if (labelNode) labelNode.textContent = label;
-  if (button) button.setAttribute('title', 'Switch preview direction to ' + label);
+  if (button) {
+    button.setAttribute('title', 'Set document direction to ' + target + ' and refresh PDF-like preview');
+    button.setAttribute('aria-label', 'Set document direction to ' + target + ' and refresh PDF-like preview');
+  }
+}
+
+function applyDocumentDirection(direction=activeDocumentDirection()){
+  const next = resolvedEditorDirection(direction);
+  preview.setAttribute('dir', next);
+  editor.setAttribute('dir', next);
+  updateDirectionButton(direction);
 }
 
 function getOptions(){
@@ -720,6 +741,7 @@ function setOptions(options){
   if (hasOwnOption(options, 'watermark')) setFieldValue('watermarkInput', options.watermark);
   if (hasOwnOption(options, 'watermarkOpacity')) setFieldValue('watermarkOpacityInput', options.watermarkOpacity);
   updateAppearanceName();
+  applyDocumentDirection();
 }
 
 const CHOICE_GROUP_FIELDS = { style: 'styleInput', palette: 'paletteInput', mode: 'modeInput', branding: 'brandingInput' };
@@ -853,7 +875,6 @@ function getStudioState(){
     options: getOptions(),
     markdown,
     lightMode: document.body.classList.contains('light-mode'),
-    previewDirection: preview.getAttribute('dir') || 'auto',
     previewMode: previewModeInput ? previewModeInput.value : 'accurate',
     editorWidth: getComputedStyle(document.documentElement).getPropertyValue('--editor-width').trim(),
     sidebarWidth: getComputedStyle(document.documentElement).getPropertyValue('--sidebar-width').trim(),
@@ -894,11 +915,11 @@ function loadStudioState(){
     setOptions(state.options || {});
     document.body.classList.toggle('light-mode', Boolean(state.lightMode));
     updateInterfaceButton();
-    if (['auto','rtl','ltr'].includes(state.previewDirection)) {
-      preview.setAttribute('dir', state.previewDirection);
-      editor.setAttribute('dir', state.previewDirection);
-      updateDirectionButton(state.previewDirection);
+    if (!state.options && ['auto','rtl','ltr'].includes(state.previewDirection)) {
+      const directionField = $('directionInput');
+      if (directionField) directionField.value = state.previewDirection;
     }
+    applyDocumentDirection();
     if (previewModeInput && ['fast','accurate'].includes(state.previewMode)) {
       previewModeInput.value = state.previewMode;
     }
@@ -930,10 +951,12 @@ function clearStudioState(){
 function attachOptionPersistence(){
   document.querySelectorAll('.sidebar input, .sidebar select').forEach(control => {
     control.addEventListener('input', () => {
+      if (control.id === 'directionInput') applyDocumentDirection();
       scheduleStudioStateSave();
       schedulePreviewRender();
     });
     control.addEventListener('change', () => {
+      if (control.id === 'directionInput') applyDocumentDirection();
       scheduleStudioStateSave();
       schedulePreviewRender();
     });
@@ -1062,7 +1085,7 @@ function renderMermaidPreview(source){
       ? '<div class="mermaid-flow">' + nodes.slice(0, 12).map((node, index) => '<span class="mermaid-node">' + escapeHtml(node) + '</span>' + (index < Math.min(nodes.length, 12) - 1 ? '<span class="mermaid-arrow">→</span>' : '')).join('') + '</div>'
       : '<pre>' + escapeHtml(raw) + '</pre>';
   }
-  return '<div class="mermaid-preview" data-diagram="mermaid"><div class="mermaid-preview__head"><span>Mermaid Preview</span><span>export uses renderer</span></div><div class="mermaid-canvas">' + body + '</div></div>';
+  return '<div class="mermaid-preview" data-diagram="mermaid"><div class="mermaid-preview__head"><span>Mermaid flowchart preview</span><span>export uses offline subset</span></div><div class="mermaid-canvas">' + body + '</div></div>';
 }
 
 function renderMathBlock(source){
@@ -1463,6 +1486,7 @@ async function requestAccuratePreview(text){
     return;
   }
   const token = ++accuratePreviewToken;
+  const previewRequestId = 'preview-' + (++accuratePreviewSequence) + '-' + Date.now().toString(36);
   if (accuratePreviewAbortController) accuratePreviewAbortController.abort();
   const controller = new AbortController();
   accuratePreviewAbortController = controller;
@@ -1471,10 +1495,14 @@ async function requestAccuratePreview(text){
   try {
     const response = await fetch('/api/render-html', {
       method: 'POST',
-      headers: studioApiHeaders(),
+      headers: studioApiHeaders({ 'X-Mardas-Studio-Preview-Id': previewRequestId }),
       body: JSON.stringify({ markdown: text, options: getOptions(), assets: attachedAssets }),
       signal: controller.signal,
     });
+    if (response.status === 409) {
+      if (token === accuratePreviewToken) setPreviewStatus('Updating preview...', true);
+      return;
+    }
     if (!response.ok) throw new Error(await readRenderError(response));
     const html = await response.text();
     if (token !== accuratePreviewToken) return;
@@ -1825,26 +1853,44 @@ async function renderPDF(){
   }
 }
 
+function shellQuote(value){
+  const text = String(value ?? '');
+  if (/^[A-Za-z0-9_./:@%+=,-]+$/.test(text)) return text;
+  return "'" + text.replace(/'/g, "'\\''") + "'";
+}
+
+function pushOption(cmd, flag, value){
+  if (value === undefined || value === null || String(value) === '') return;
+  cmd.push(flag, shellQuote(value));
+}
+
 function copyCommand(){
   const options = getOptions();
   const cmd = [
-    'mrs-md2pdf input.md',
-    '-o ' + (options.filename || 'output.pdf'),
-    '--style ' + options.style,
-    '--palette ' + options.palette,
-    '--mode ' + options.mode
+    'mrs-md2pdf',
+    shellQuote('input.md'),
+    '-o', shellQuote(options.filename || 'output.pdf'),
+    '--page-size', shellQuote(options.pageSize || 'A4'),
+    '--style', shellQuote(options.style),
+    '--palette', shellQuote(options.palette),
+    '--mode', shellQuote(options.mode)
   ];
-  if (options.toc) cmd.push('--toc', '--toc-depth ' + options.tocDepth);
+  pushOption(cmd, '--title', options.title);
+  pushOption(cmd, '--author', options.author);
+  if (options.toc) cmd.push('--toc', '--toc-depth', shellQuote(options.tocDepth));
   if (options.tocPageBreak) cmd.push('--toc-page-break');
   if (options.h1PageBreak) cmd.push('--h1-page-break');
   if (options.noCover) cmd.push('--no-cover');
   if (options.noHeaderFooter) cmd.push('--no-header-footer');
-  if (options.direction && options.direction !== 'auto') cmd.push('--dir ' + options.direction);
-  if (options.branding && options.branding !== 'off') cmd.push('--branding ' + options.branding);
-  if (options.brandName) cmd.push('--brand-name "' + options.brandName.replace(/"/g, '\"') + '"');
-  if (options.brandLogo) cmd.push('--brand-logo "' + options.brandLogo.replace(/"/g, '\"') + '"');
-  if (options.brandFooter) cmd.push('--brand-footer "' + options.brandFooter.replace(/"/g, '\"') + '"');
-  if (options.watermark) cmd.push('--watermark "' + options.watermark.replace(/"/g, '\"') + '"');
+  if (options.direction && options.direction !== 'auto') cmd.push('--dir', shellQuote(options.direction));
+  if (options.branding && options.branding !== 'off') cmd.push('--branding', shellQuote(options.branding));
+  pushOption(cmd, '--brand-name', options.brandName);
+  pushOption(cmd, '--brand-logo', options.brandLogo);
+  pushOption(cmd, '--brand-footer', options.brandFooter);
+  pushOption(cmd, '--watermark', options.watermark);
+  if (options.watermark && Number.isFinite(options.watermarkOpacity)) {
+    cmd.push('--watermark-opacity', shellQuote(options.watermarkOpacity));
+  }
   navigator.clipboard.writeText(cmd.join(' '));
   serverStatus.textContent = 'CLI command copied';
 }
@@ -1888,10 +1934,11 @@ function expandSettingsPane(options={}){
 }
 
 function toggleDirection(){
-  const next = preview.getAttribute('dir') === 'rtl' ? 'ltr' : 'rtl';
-  preview.setAttribute('dir', next);
-  editor.setAttribute('dir', next);
-  updateDirectionButton(next);
+  const field = $('directionInput');
+  const next = activeDocumentDirection() === 'rtl' ? 'ltr' : 'rtl';
+  if (field) field.value = next;
+  applyDocumentDirection(next);
+  renderPreview();
   scheduleStudioStateSave();
 }
 
@@ -2054,6 +2101,7 @@ attachChoiceCards();
 attachOptionPersistence();
 loadStudioState();
 updateAppearanceName();
+applyDocumentDirection();
 renderAssetList();
 renderPreview();
 </script>

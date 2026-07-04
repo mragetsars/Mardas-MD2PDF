@@ -4,6 +4,19 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.13.34 - 2026-07-04
+
+### Fixed
+- Made the Studio direction toggle update the real document direction option and rerender PDF-like preview, so the visible renderer-backed preview matches the exported RTL/LTR setting instead of only flipping the legacy fast-preview container.
+- Rebuilt the Studio “Copy CLI command” workflow around POSIX shell quoting so filenames, metadata, brand labels, watermarks, spaces, quotes, and Persian text produce a safer command line.
+- Added latest-only request coordination for renderer-backed Studio previews so stale PDF-like preview requests return `stale_preview` instead of updating the UI after newer edits.
+
+### Documentation
+- Clarified Studio Mermaid wording so the fast browser preview is described as an approximate flowchart preview while exported PDFs continue to use the offline Mermaid flowchart renderer subset.
+
+### Tests
+- Added regression coverage for Studio direction/export synchronization, CLI command quoting, and latest-only backend preview request handling.
+
 ## 1.13.33 - 2026-07-04
 
 ### Fixed

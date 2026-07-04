@@ -1,8 +1,9 @@
+import time
 from email.message import Message
 from http.client import HTTPConnection
 from http.server import ThreadingHTTPServer
 from pathlib import Path
-from threading import Thread
+from threading import Event, Lock, Thread
 
 
 GUI_HTML = Path(__file__).resolve().parents[1] / "src" / "mardas_md2pdf" / "assets" / "gui.html"
@@ -67,6 +68,8 @@ def test_gui_wires_pdf_like_and_fast_preview_refresh_triggers():
     assert "function schedulePreviewRender" in html
     assert "function requestAccuratePreview" in html
     assert "accuratePreviewAbortController" in html
+    assert "accuratePreviewSequence" in html
+    assert "X-Mardas-Studio-Preview-Id" in html
     assert "lastAccuratePreviewKey" in html
     assert "function cancelAccuratePreviewRequest" in html
     assert "function assetPreviewFingerprint" in html
@@ -76,6 +79,41 @@ def test_gui_wires_pdf_like_and_fast_preview_refresh_triggers():
     assert "control.addEventListener('input', () =>" in html
     assert "control.addEventListener('change', () =>" in html
     assert "setBrandLogoFromAsset" in html
+
+
+def test_gui_direction_toggle_updates_document_options_for_pdf_like_preview():
+    html = GUI_HTML.read_text(encoding="utf-8")
+
+    assert "function activeDocumentDirection" in html
+    assert "function applyDocumentDirection" in html
+    assert "const next = activeDocumentDirection() === 'rtl' ? 'ltr' : 'rtl';" in html
+    assert "if (field) field.value = next;" in html
+    assert "renderPreview();" in html
+    assert "state.previewDirection" in html  # backward-compatible migration only
+    assert "previewDirection: preview.getAttribute" not in html
+
+
+def test_gui_copy_command_uses_shell_quoting_for_paths_and_metadata():
+    html = GUI_HTML.read_text(encoding="utf-8")
+
+    assert "function shellQuote" in html
+    assert "text.replace(/'/g" in html
+    assert "\\''" in html
+    assert "function pushOption" in html
+    assert "'mrs-md2pdf'," in html
+    assert "'--page-size', shellQuote(options.pageSize || 'A4')" in html
+    assert "pushOption(cmd, '--title', options.title)" in html
+    assert "pushOption(cmd, '--brand-name', options.brandName)" in html
+    assert "pushOption(cmd, '--watermark', options.watermark)" in html
+    assert '--brand-name "' not in html
+
+
+def test_gui_clarifies_fast_mermaid_preview_is_subset_based():
+    html = GUI_HTML.read_text(encoding="utf-8")
+
+    assert 'title="Mermaid flowchart subset"' in html
+    assert "Mermaid flowchart preview" in html
+    assert "export uses offline subset" in html
 
 def test_gui_asset_writer_enforces_size_limits(tmp_path, monkeypatch):
     import base64
@@ -310,6 +348,73 @@ def test_studio_http_api_rejects_cross_origin_render_post():
     assert "untrusted_origin" in body
 
 
+def test_studio_http_preview_requests_are_latest_only(monkeypatch):
+    from mardas_md2pdf import gui
+
+    entered_old_render = Event()
+    release_old_render = Event()
+
+    def fake_render(payload: dict[str, object]) -> str:
+        if payload.get("markdown") == "# Old":
+            entered_old_render.set()
+            assert release_old_render.wait(timeout=10)
+            return "<html><body>old</body></html>"
+        return "<html><body>new</body></html>"
+
+    monkeypatch.setattr(gui, "_render_studio_html_payload", fake_render)
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), gui.GuiRequestHandler)
+    server.studio_bind_host = "127.0.0.1"  # type: ignore[attr-defined]
+    server.studio_csrf_token = "secret"  # type: ignore[attr-defined]
+    server.studio_preview_state_lock = Lock()  # type: ignore[attr-defined]
+    server.studio_preview_render_lock = Lock()  # type: ignore[attr-defined]
+    server.studio_latest_preview_id = ""  # type: ignore[attr-defined]
+    thread = Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    responses: dict[str, tuple[int, str]] = {}
+
+    def post_preview(name: str, preview_id: str, markdown: str) -> None:
+        connection = HTTPConnection("127.0.0.1", server.server_port, timeout=20)
+        try:
+            connection.request(
+                "POST",
+                "/api/render-html",
+                body='{"markdown":"' + markdown + '"}',
+                headers={
+                    "Content-Type": "application/json",
+                    "Origin": f"http://127.0.0.1:{server.server_port}",
+                    "X-Mardas-Studio-Token": "secret",
+                    "X-Mardas-Studio-Preview-Id": preview_id,
+                },
+            )
+            response = connection.getresponse()
+            responses[name] = (response.status, response.read().decode("utf-8"))
+        finally:
+            connection.close()
+
+    old_thread = Thread(target=post_preview, args=("old", "old-preview", "# Old"), daemon=True)
+    new_thread = Thread(target=post_preview, args=("new", "new-preview", "# New"), daemon=True)
+    try:
+        old_thread.start()
+        assert entered_old_render.wait(timeout=10)
+        new_thread.start()
+        deadline = time.monotonic() + 10
+        while getattr(server, "studio_latest_preview_id", "") != "new-preview" and time.monotonic() < deadline:
+            time.sleep(0.01)
+        assert getattr(server, "studio_latest_preview_id", "") == "new-preview"
+        release_old_render.set()
+        old_thread.join(timeout=20)
+        new_thread.join(timeout=20)
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=10)
+
+    assert responses["old"][0] == 409
+    assert "stale_preview" in responses["old"][1]
+    assert responses["new"] == (200, "<html><body>new</body></html>")
+
+
 def test_studio_bind_warning_only_for_non_local_hosts():
     from mardas_md2pdf import gui
 
@@ -447,7 +552,7 @@ def test_gui_uses_visual_choice_cards_for_appearance_workflow():
 def test_gui_copy_command_includes_branding_options():
     html = GUI_HTML.read_text(encoding="utf-8")
 
-    assert "--branding " in html
+    assert "--branding" in html
     assert "--brand-name" in html
     assert "--brand-logo" in html
     assert "--brand-footer" in html

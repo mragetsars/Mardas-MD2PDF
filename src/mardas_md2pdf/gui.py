@@ -28,6 +28,8 @@ MAX_GUI_ASSETS = 250
 MAX_GUI_ASSET_BYTES = 12 * 1024 * 1024
 MAX_GUI_TOTAL_ASSET_BYTES = 32 * 1024 * 1024
 STUDIO_TOKEN_HEADER = "X-Mardas-Studio-Token"
+STUDIO_PREVIEW_REQUEST_HEADER = "X-Mardas-Studio-Preview-Id"
+STUDIO_PREVIEW_REQUEST_RE = re.compile(r"^[A-Za-z0-9_.:-]{1,96}$")
 
 STUDIO_PREVIEW_NAMED_PAGE_SIZES: dict[str, tuple[str, str]] = {
     "letter": ("8.5in", "11in"),
@@ -665,6 +667,47 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
     def _studio_bind_host(self) -> str:
         return str(getattr(self.server, "studio_bind_host", self.server.server_address[0]))
 
+    def _studio_preview_render_lock(self) -> threading.Lock:
+        lock = getattr(self.server, "studio_preview_render_lock", None)
+        if lock is None:
+            lock = threading.Lock()
+            self.server.studio_preview_render_lock = lock  # type: ignore[attr-defined]
+        return lock
+
+    def _studio_preview_state_lock(self) -> threading.Lock:
+        lock = getattr(self.server, "studio_preview_state_lock", None)
+        if lock is None:
+            lock = threading.Lock()
+            self.server.studio_preview_state_lock = lock  # type: ignore[attr-defined]
+        return lock
+
+    def _register_preview_request(self) -> str | None:
+        preview_id = (self.headers.get(STUDIO_PREVIEW_REQUEST_HEADER) or "").strip()
+        if not preview_id:
+            return None
+        if not STUDIO_PREVIEW_REQUEST_RE.fullmatch(preview_id):
+            raise StudioRequestError(
+                "Studio preview request id is invalid.",
+                status=400,
+                code="invalid_preview_request_id",
+            )
+        with self._studio_preview_state_lock():
+            self.server.studio_latest_preview_id = preview_id  # type: ignore[attr-defined]
+        return preview_id
+
+    def _preview_request_is_current(self, preview_id: str | None) -> bool:
+        if not preview_id:
+            return True
+        with self._studio_preview_state_lock():
+            return getattr(self.server, "studio_latest_preview_id", "") == preview_id
+
+    def _send_stale_preview(self) -> None:
+        self._send_error(
+            "A newer Studio PDF-like preview request superseded this one.",
+            status=409,
+            code="stale_preview",
+        )
+
     def _send_text(self, content: str, *, status: int = 200, content_type: str = "text/html; charset=utf-8") -> None:
         data = content.encode("utf-8")
         self.send_response(status)
@@ -736,10 +779,24 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
                     code="request_too_large",
                 )
                 return
+            preview_id = self._register_preview_request() if self.path == "/api/render-html" else None
             raw = self.rfile.read(length)
             payload = _decode_json_payload(raw)
             if self.path == "/api/render-html":
-                html_text = _render_studio_html_payload(payload)
+                if not self._preview_request_is_current(preview_id):
+                    self._send_stale_preview()
+                    return
+                if preview_id:
+                    with self._studio_preview_render_lock():
+                        if not self._preview_request_is_current(preview_id):
+                            self._send_stale_preview()
+                            return
+                        html_text = _render_studio_html_payload(payload)
+                        if not self._preview_request_is_current(preview_id):
+                            self._send_stale_preview()
+                            return
+                else:
+                    html_text = _render_studio_html_payload(payload)
                 self._send_text(html_text, content_type="text/html; charset=utf-8")
                 return
 
@@ -793,6 +850,9 @@ def main(argv: list[str] | None = None) -> int:
     server = ThreadingHTTPServer((args.host, args.port), GuiRequestHandler)
     server.studio_bind_host = args.host  # type: ignore[attr-defined]
     server.studio_csrf_token = secrets.token_urlsafe(32)  # type: ignore[attr-defined]
+    server.studio_preview_state_lock = threading.Lock()  # type: ignore[attr-defined]
+    server.studio_preview_render_lock = threading.Lock()  # type: ignore[attr-defined]
+    server.studio_latest_preview_id = ""  # type: ignore[attr-defined]
     url = f"http://{args.host}:{server.server_port}/"
     print(f"Mardas MD2PDF Studio is running at {url}")
     warning = _studio_bind_warning(args.host)

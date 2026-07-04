@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mardas-md2pdf"
-version = "1.13.33"
+version = "1.13.34"
 description = "Persian/English Markdown to PDF converter with RTL/LTR typography, diagrams, MathJax, appearance presets, GUI workflow, and PDF-ready documentation features."
 readme = "README.md"
 requires-python = ">=3.10"

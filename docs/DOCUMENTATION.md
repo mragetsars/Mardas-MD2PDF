@@ -52,7 +52,7 @@ The guides must cover at least these user-facing areas:
 - Markdown feature support, GitHub-style alerts, details, links, lists, tables, and page breaks;
 - MathJax formulas;
 - fenced, indented, titled, numbered, highlighted, and advanced code blocks;
-- Mermaid flowcharts with node and edge labels;
+- Mermaid `flowchart` / `graph` diagrams with node and edge labels; advanced Mermaid diagram types are intentionally outside the offline subset;
 - local images, safe HTML images, blocked placeholders, and semantic captions;
 - page flow, margins, page sizes, wide tables, code blocks, captions, footnotes, and final checklist;
 - Studio GUI workflow, CLI workflow, automation, and preflight checks.
