@@ -82,6 +82,31 @@ def test_build_dist_supports_no_isolation_mode() -> None:
     assert "python -m build --no-isolation" in script
 
 
+
+
+def test_pytest_can_import_src_from_checkout() -> None:
+    pyproject = _read("pyproject.toml")
+
+    assert 'pythonpath = ["src"]' in pyproject
+    assert 'testpaths = ["tests"]' in pyproject
+
+
+def test_source_distribution_manifest_includes_release_support_files() -> None:
+    manifest = _read("MANIFEST.in")
+
+    for expected in [
+        "recursive-include docs *.md *.png",
+        "recursive-include examples *.pdf",
+        "recursive-include scripts *.py *.sh",
+        "recursive-include tests *.py",
+        "recursive-include .github *.yml",
+        "prune build",
+        "prune dist",
+        "prune patches",
+    ]:
+        assert expected in manifest
+
+
 def test_release_gate_consolidates_release_checks() -> None:
     script = ROOT.joinpath("scripts", "release_gate.sh").read_text(encoding="utf-8")
     release_doc = _read("docs/RELEASE.md")

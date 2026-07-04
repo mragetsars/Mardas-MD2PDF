@@ -15,9 +15,23 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
-from visual_qa import ensure_clean_dir, write_json
+ROOT = Path(__file__).resolve().parents[1]
+SRC = ROOT / "src"
+if SRC.is_dir() and str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))
+
+from visual_qa import ensure_clean_dir, write_json  # noqa: E402
 
 URL_RE = re.compile(r"https?://[^\s]+")
+
+
+def _studio_process_env() -> dict[str, str]:
+    env = os.environ.copy()
+    if SRC.is_dir():
+        existing = env.get("PYTHONPATH", "")
+        parts = [str(SRC), *(part for part in existing.split(os.pathsep) if part)]
+        env["PYTHONPATH"] = os.pathsep.join(dict.fromkeys(parts))
+    return env
 
 
 def _read_server_url(process: subprocess.Popen[str], timeout: float) -> str:
@@ -205,7 +219,7 @@ def main(argv: list[str] | None = None) -> int:
     else:
         args.output_dir.mkdir(parents=True, exist_ok=True)
 
-    env = os.environ.copy()
+    env = _studio_process_env()
     env["PYTHONUNBUFFERED"] = "1"
     process = subprocess.Popen(
         [

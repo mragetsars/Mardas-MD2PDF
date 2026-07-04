@@ -15,11 +15,11 @@ def test_gui_exposes_pdf_like_and_fast_preview_modes_and_custom_page_sizes():
     assert "PDF-like preview uses backend renderer HTML" in html
     assert "page size and margins" in html
     assert "page guides" not in html
-    assert "Fast preview is browser-local and approximate" in html
+    assert "Fast is an approximate browser-local editing preview" in html
     assert "Exact PDF" not in html
     assert '<option value="accurate" selected>PDF-like</option>' in html
     assert '<option value="pdf">' not in html
-    assert '<option value="fast">Fast</option>' in html
+    assert '<option value="fast">Fast (approx)</option>' in html
     assert "A4 landscape" in html
     assert "210mm 297mm" in html
 
@@ -437,6 +437,8 @@ def test_gui_persists_studio_workspace_state():
     assert "function saveStudioState" in html
     assert "Reset State" in html
     assert "MAX_STORED_MARKDOWN_CHARS" in html
+    assert "markdownTooLargeForLocalSave" in html
+    assert "Settings saved · draft too large" in html
 
 
 def test_gui_exposes_keyboard_shortcuts_for_local_workflow():
@@ -752,6 +754,26 @@ def test_studio_asset_manager_supports_drag_drop_and_asset_actions():
     assert "window.addEventListener('drop'" in html
     assert "body.asset-dragging .drop-zone" in html
     assert "duplicate/over limit" in html
+    assert "MAX_PROJECT_BUNDLE_BYTES" in html
+    assert "function validateProjectAssets" in html
+    assert "normalizeBundleAssetPath" in html
+    assert "unsafe/oversized assets" in html
+
+
+
+
+def test_studio_project_bundle_loader_validates_embedded_assets():
+    html = GUI_HTML.read_text(encoding="utf-8")
+
+    assert "function validateProjectAssets(rawAssets)" in html
+    assert "estimatedDataUrlBytes" in html
+    assert "data.startsWith('data:')" in html
+    assert "parts.includes('..')" in html
+    assert "seen.has(path)" in html
+    assert "MAX_GUI_TOTAL_ASSET_BYTES" in html
+    assert "MAX_PROJECT_BUNDLE_BYTES" in html
+    assert "Project file too large" in html
+    assert "unsafe/oversized assets" in html
 
 
 def test_studio_supports_fast_accurate_preview_and_debug_html_export():
@@ -760,7 +782,7 @@ def test_studio_supports_fast_accurate_preview_and_debug_html_export():
     assert 'id="previewModeInput"' in html
     assert '<option value="accurate" selected>PDF-like</option>' in html
     assert '<option value="pdf">' not in html
-    assert '<option value="fast">Fast</option>' in html
+    assert '<option value="fast">Fast (approx)</option>' in html
     assert 'id="accuratePreviewFrame"' in html
     assert "function requestAccuratePreview" in html
     assert "function renderFastPreview" in html
@@ -794,6 +816,7 @@ def test_studio_exposes_command_palette_and_professional_shortcuts():
     assert "Ctrl/Cmd+Shift+S" in html
     assert "command-palette-open" in html
     assert "Use PDF-like preview" in html
+    assert "Use fast approximate preview" in html
     assert "Use exact PDF preview" not in html
     assert "Open Studio project" in html
 

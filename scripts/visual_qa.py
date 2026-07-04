@@ -20,7 +20,9 @@ import struct
 import subprocess
 import sys
 import tempfile
+import time
 import zlib
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any, Iterable, Sequence
 
@@ -231,6 +233,19 @@ def compare_pngs(baseline: Path, candidate: Path) -> PngDiff:
 
 
 
+def _command_env(extra_env: dict[str, str] | None = None) -> dict[str, str]:
+    """Return an environment that can import the checkout-local ``src`` tree."""
+    env = os.environ.copy()
+    if extra_env:
+        env.update(extra_env)
+    src = repo_root() / "src"
+    if src.is_dir():
+        existing = env.get("PYTHONPATH", "")
+        parts = [str(src), *(part for part in existing.split(os.pathsep) if part)]
+        env["PYTHONPATH"] = os.pathsep.join(dict.fromkeys(parts))
+    return env
+
+
 def _process_group_kwargs() -> dict[str, object]:
     """Return subprocess kwargs that make timeout cleanup kill child processes too."""
     if os.name == "nt":
@@ -276,6 +291,9 @@ def run_command(
     *,
     timeout: float,
     description: str,
+    heartbeat: Callable[[float], None] | None = None,
+    heartbeat_interval: float = 30.0,
+    env: dict[str, str] | None = None,
 ) -> subprocess.CompletedProcess[str]:
     """Run a command with process-tree cleanup and captured output.
 
@@ -284,7 +302,8 @@ def run_command(
     if any grandchild remains alive, the audit matrix can hang indefinitely.
     This helper starts a process group/session and terminates the whole tree on
     timeout so a single broken render becomes a reported failure instead of a
-    blocked batch job.
+    blocked batch job.  Long runners may pass ``heartbeat`` so wrapper scripts can
+    update a summary file while a child audit is still active.
     """
     with tempfile.TemporaryFile(mode="w+t", encoding="utf-8") as stdout_file, tempfile.TemporaryFile(
         mode="w+t", encoding="utf-8"
@@ -294,20 +313,32 @@ def run_command(
             stdout=stdout_file,
             stderr=stderr_file,
             text=True,
+            env=_command_env(env),
             **_process_group_kwargs(),
         )
-        try:
-            process.wait(timeout=timeout)
-        except subprocess.TimeoutExpired as exc:
-            _terminate_process_tree(process)
-            stdout_file.seek(0)
-            stderr_file.seek(0)
-            stdout = stdout_file.read()
-            stderr = stderr_file.read()
-            output = "\n".join(part for part in [stdout, stderr] if part).strip()
-            if output:
-                output = "\n" + output
-            raise RuntimeError(f"{description} timed out after {timeout:g}s{output}") from exc
+        started = time.monotonic()
+        deadline = started + timeout
+        next_heartbeat = started + max(0.5, heartbeat_interval)
+        while True:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                _terminate_process_tree(process)
+                stdout_file.seek(0)
+                stderr_file.seek(0)
+                stdout = stdout_file.read()
+                stderr = stderr_file.read()
+                output = "\n".join(part for part in [stdout, stderr] if part).strip()
+                if output:
+                    output = "\n" + output
+                raise RuntimeError(f"{description} timed out after {timeout:g}s{output}")
+            try:
+                process.wait(timeout=min(remaining, max(0.5, heartbeat_interval)))
+                break
+            except subprocess.TimeoutExpired:
+                now = time.monotonic()
+                if heartbeat is not None and now >= next_heartbeat:
+                    heartbeat(now - started)
+                    next_heartbeat = now + max(0.5, heartbeat_interval)
         stdout_file.seek(0)
         stderr_file.seek(0)
         stdout = stdout_file.read()

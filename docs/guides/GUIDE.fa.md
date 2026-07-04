@@ -12,7 +12,7 @@ summary: |
   همین سند به عنوان نمونه زنده رندر نیز استفاده می‌شود و جلد، فهرست مطالب، متن ترکیبی فارسی/English، فرمول، کد، نمودار Mermaid، تصویر، جدول، پانویس، شکست صفحه و HTML امن را نمایش می‌دهد.
 institution: "Mardas Lab"
 course: "انتشار حرفه‌ای Markdown"
-version: "1.13.34"
+version: "1.13.35"
 status: "Stable"
 keywords:
   - Markdown
@@ -212,7 +212,7 @@ department: "نام دانشکده یا دپارتمان"
 course: "نام درس یا پروژه"
 supervisor: "نام استاد یا راهنما"
 date: "۱۴۰۵-۰۲-۳۰"
-version: "1.13.34"
+version: "1.13.35"
 status: "Draft"
 keywords: [Markdown, PDF, RTL, MathJax]
 cover_label: "گزارش فنی"
@@ -312,12 +312,12 @@ mrs-md2pdf input.md -o output.pdf --no-cover-logo
 
 این نمونه کوچک عمداً داخل guide مانده است، چون guide هم راهنمای کاربر است و هم test case زنده renderer.[^rtl-smoke] این بخش نشانه‌گذاری فارسی، نام‌های لاتین، عدد فارسی، caption جدول، و سلول‌های mixed-direction را در PDF رسمی نگه می‌دارد.
 
-آیا خروجی PDF برای `version 1.13.34` و شماره ۱۴۰۵ پایدار است؟ پاسخ: بله؛ جدول زیر باید hookهای RTL، mixed-script و mixed-number را فعال کند.
+آیا خروجی PDF برای `version 1.13.35` و شماره ۱۴۰۵ پایدار است؟ پاسخ: بله؛ جدول زیر باید hookهای RTL، mixed-script و mixed-number را فعال کند.
 
 | بخش نمونه | مقدار | انتظار در PDF |
 | :--- | :--- | :--- |
 | شماره فارسی | ۱۴۰۵ | عدد فارسی کنار متن RTL پایدار بماند. |
-| نسخه فنی | version 1.13.34 و ۱.۹.۹ | عددهای Latin/Persian در یک سلول خوانا بمانند. |
+| نسخه فنی | version 1.13.35 و ۱.۹.۹ | عددهای Latin/Persian در یک سلول خوانا بمانند. |
 | شناسه انگلیسی | `PDF`, `TOC`, `MathJax` | identifierهای English داخل جدول فارسی جابه‌جا نشوند. |
 
 جدول ۱۲. نمونه جدول فارسی/RTL با عددهای ترکیبی.
@@ -765,7 +765,7 @@ mrs-md2pdf-gui
 4. استفاده از **Branding** فقط وقتی PDF باید نشان سازمان، محصول یا آزمایشگاه داشته باشد.
 5. استفاده از **Layout** برای فهرست مطالب، جلد و جریان صفحه‌ها.
 6. باز کردن **Advanced** فقط برای watermark، حذف شماره صفحه یا attach کردن assetهای محلی.
-7. استفاده از preview پیش‌فرض PDF-like برای HTML تولیدشده توسط renderer با شبیه‌سازی اندازه صفحه، margin و scale شدن صفحه؛ برای بازخورد بسیار سریع هنگام ویرایش، استفاده از Fast preview.
+7. استفاده از preview پیش‌فرض PDF-like برای HTML تولیدشده توسط renderer با شبیه‌سازی اندازه صفحه، margin و scale شدن صفحه؛ Fast preview فقط برای بازخورد بسیار سریع هنگام ویرایش است و parsing آن تقریبی است.
 8. استفاده از **Ctrl/Cmd+S** برای ذخیره Markdown و **Ctrl/Cmd+Enter** برای export سریع PDF.
 
 Studio پیش‌نویس فعلی، layout، حالت روشن/تاریک، جهت preview، عرض editor و گزینه‌های export را در local storage مرورگر نگه می‌دارد. این کار باعث می‌شود refresh ناخواسته صفحه در جلسه‌های ویرایش طولانی کمتر آزاردهنده باشد. برای پاک کردن پیش‌نویس محلی و برگشتن به حالت تمیز از **Reset State** استفاده کنید. همین بخش مرجع روند کار با Studio برای کاربر است.
@@ -773,7 +773,7 @@ Studio پیش‌نویس فعلی، layout، حالت روشن/تاریک، جه
 اگر export با خطا روبه‌رو شود، Studio وضعیت HTTP و کد پایدار backend مثل `invalid_json`، `invalid_page_size`، `invalid_toc_depth`، `invalid_watermark_opacity`، `markdown_too_large` یا `render_failed` را نشان می‌دهد. اگر GUI را روی host غیرلوکال bind کنید، backend هشدار می‌دهد؛ چون کاربران قابل دسترس در شبکه می‌توانند Markdown و asset بفرستند.
 
 > [!IMPORTANT]
-> Studio اکنون به‌صورت پیش‌فرض preview نوع PDF-like با scale خودکار صفحه، اندازه صفحه و margin را نشان می‌دهد. Fast preview هنوز برای ویرایش فوری مفید است و محل نهایی شکست صفحه همچنان هنگام export توسط backend renderer و layout چاپی Chromium تعیین می‌شود.
+> Studio اکنون به‌صورت پیش‌فرض preview نوع PDF-like با scale خودکار صفحه، اندازه صفحه و margin را نشان می‌دهد. Fast preview برای ویرایش فوری مفید است، اما parser محلی مرورگر آن تقریبی است؛ fidelity نهایی و محل شکست صفحه همچنان هنگام export توسط backend renderer و layout چاپی Chromium تعیین می‌شود.
 
 # مرجع CLI
 

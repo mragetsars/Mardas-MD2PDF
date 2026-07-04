@@ -6,10 +6,16 @@ from __future__ import annotations
 import argparse
 import dataclasses
 import json
+import sys
 from pathlib import Path
 
-from mardas_md2pdf.appearance import MODES, PALETTES_ORDER, STYLES
-from visual_qa import (
+ROOT = Path(__file__).resolve().parents[1]
+SRC = ROOT / "src"
+if SRC.is_dir() and str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))
+
+from mardas_md2pdf.appearance import MODES, PALETTES_ORDER, STYLES  # noqa: E402
+from visual_qa import (  # noqa: E402
     ensure_clean_dir,
     png_stats,
     relative_to,

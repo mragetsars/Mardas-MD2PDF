@@ -47,9 +47,17 @@ python scripts/audit_appearance_matrix.py --output-dir build/appearance-audit --
 ```
 
 Review the cover and content PNGs for contrast, palette accents, code blocks,
-callouts, tables, formulas, and dark-mode background consistency.  This audit is
+callouts, tables, formulas, and dark-mode background consistency. This audit is
 intentionally not part of the default CI path because it launches Chromium for
 every combination.
+
+For the complete style/palette/mode and feature-heavy matrix, use the chunked
+runner. It skips already completed child manifests when `--resume` is set and
+writes active-chunk heartbeat data to `summary.json` while long chunks run:
+
+```bash
+python scripts/run_visual_qa_matrix.py --output-dir build/visual-qa/full --render-png --resume
+```
 
 ## Python distributions
 

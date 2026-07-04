@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
-from visual_qa import compare_pngs, png_stats  # noqa: E402
+from visual_qa import compare_pngs, png_stats, write_json  # noqa: E402
 
 
 def _png_chunk(kind: bytes, payload: bytes) -> bytes:
@@ -85,6 +85,7 @@ def test_studio_visual_audit_uses_live_server_preview_context() -> None:
     assert '<base href="{base_href}">' in source
     assert 'page.route("**/api/render-html"' in source
     assert "_proxy_local_studio_api" in source
+    assert "_studio_process_env" in source
     assert "X-Mardas-Studio-Token" in source
     assert 'request.headers.get("x-mardas-studio-token", "")' in source
     assert "preview_status" in source
@@ -127,6 +128,7 @@ def test_visual_qa_commands_are_process_tree_timeout_safe() -> None:
     source = (SCRIPTS / "visual_qa.py").read_text(encoding="utf-8")
 
     assert "start_new_session" in source or "CREATE_NEW_PROCESS_GROUP" in source
+    assert "_command_env" in source
     assert "os.killpg" in source
     assert "SIGKILL" in source
     assert "timed out after" in source
@@ -213,3 +215,43 @@ def test_chunked_visual_qa_runner_reports_child_failures_without_crashing() -> N
     assert result["command"]
     assert "before failure" in result["stderr_tail"]
     assert "bad" in result["stderr_tail"]
+
+
+def test_run_command_supports_heartbeat_callbacks() -> None:
+    from visual_qa import run_command
+
+    heartbeats: list[float] = []
+    completed = run_command(
+        [sys.executable, "-c", "import time; time.sleep(1.2); print('done')"],
+        timeout=5,
+        description="heartbeat smoke",
+        heartbeat=heartbeats.append,
+        heartbeat_interval=0.5,
+    )
+
+    assert completed.returncode == 0
+    assert "done" in completed.stdout
+    assert heartbeats
+
+
+def test_visual_matrix_resume_detects_complete_child_manifest(tmp_path: Path) -> None:
+    from run_visual_qa_matrix import _child_manifest_complete
+
+    chunk = tmp_path / "chunk-001"
+    write_json(chunk / "manifest.json", {"counts": {"requested": 2, "completed": 2, "failed": 0}})
+
+    assert _child_manifest_complete(chunk, expected_count=2)
+    assert not _child_manifest_complete(chunk, expected_count=3)
+
+    write_json(chunk / "manifest.json", {"matrix": {"count": 56, "completed": 1, "failed": 0}})
+    assert _child_manifest_complete(chunk, expected_count=1)
+
+
+def test_visual_matrix_runner_exposes_heartbeat_and_resume_controls() -> None:
+    source = (SCRIPTS / "run_visual_qa_matrix.py").read_text(encoding="utf-8")
+
+    assert "--chunk-heartbeat-seconds" in source
+    assert "active_chunk" in source
+    assert "last_heartbeat_at" in source
+    assert "completed manifest reused" in source
+    assert "duration_seconds" in source

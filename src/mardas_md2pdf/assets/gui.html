@@ -527,7 +527,7 @@
       </section>
       <div class="gutter preview-gutter" id="previewGutter" title="Drag to resize editor and preview" aria-label="Resize editor and preview panels"></div>
       <section class="pane preview-pane">
-        <div class="pane-head"><strong>Preview</strong><span class="preview-tools"><span id="previewStatus" class="preview-status" title="PDF-like preview uses backend renderer HTML with page size and margins. Fast preview is browser-local and approximate.">PDF-like preview</span><select id="previewModeInput" class="preview-mode-select" title="Preview mode"><option value="accurate" selected>PDF-like</option><option value="fast">Fast</option></select><button class="btn" onclick="toggleDirection()" id="dirBtn" title="Toggle preview direction"><svg class="icon" aria-hidden="true"><use href="#icon-arrow-left-right"></use></svg><span id="dirBtnLabel">RTL</span></button></span></div>
+        <div class="pane-head"><strong>Preview</strong><span class="preview-tools"><span id="previewStatus" class="preview-status" title="PDF-like preview uses backend renderer HTML with page size and margins. Fast is an approximate browser-local editing preview.">PDF-like preview</span><select id="previewModeInput" class="preview-mode-select" title="Preview mode"><option value="accurate" selected>PDF-like</option><option value="fast">Fast (approx)</option></select><button class="btn" onclick="toggleDirection()" id="dirBtn" title="Toggle preview direction"><svg class="icon" aria-hidden="true"><use href="#icon-arrow-left-right"></use></svg><span id="dirBtnLabel">RTL</span></button></span></div>
         <div id="preview" class="preview" dir="auto"></div>
         <iframe id="accuratePreviewFrame" class="accurate-preview-frame" title="Accurate renderer HTML preview" hidden></iframe>
       </section>
@@ -798,11 +798,15 @@ function updateAppearanceName(){
 
 function downloadBlob(filename, content, type){
   const blob = content instanceof Blob ? content : new Blob([content], { type });
+  const objectUrl = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
+  a.href = objectUrl;
   a.download = filename;
+  a.style.display = 'none';
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(a.href);
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(objectUrl), 30000);
 }
 
 function projectFilename(){
@@ -827,28 +831,73 @@ function buildProjectBundle(){
   };
 }
 
+function normalizeBundleAssetPath(value){
+  const path = String(value || '').replace(/\\/g, '/').trim();
+  if (!path || /[\x00-\x1f\x7f]/.test(path)) return null;
+  if (/^(?:[a-z][a-z0-9+.-]*:|\/)/i.test(path)) return null;
+  const parts = path.split('/').filter(part => part && part !== '.');
+  if (!parts.length || parts.includes('..')) return null;
+  return parts.join('/');
+}
+
+function estimatedDataUrlBytes(data){
+  if (typeof data !== 'string' || !data.startsWith('data:')) return Infinity;
+  const comma = data.indexOf(',');
+  if (comma < 0) return Infinity;
+  const metadata = data.slice(5, comma).toLowerCase();
+  const body = data.slice(comma + 1);
+  if (metadata.includes(';base64')) {
+    const clean = body.replace(/\s/g, '');
+    if (!/^[a-z0-9+/]*={0,2}$/i.test(clean)) return Infinity;
+    return Math.floor(clean.length * 3 / 4);
+  }
+  try {
+    return new Blob([decodeURIComponent(body)]).size;
+  } catch (error) {
+    return body.length;
+  }
+}
+
+function validateProjectAssets(rawAssets){
+  const accepted = [];
+  const seen = new Set();
+  let totalBytes = 0;
+  let skipped = 0;
+  for (const raw of Array.isArray(rawAssets) ? rawAssets : []) {
+    if (!raw || typeof raw !== 'object') { skipped++; continue; }
+    const path = normalizeBundleAssetPath(raw.path);
+    const data = String(raw.data || '');
+    const declaredSize = Number.isFinite(Number(raw.size)) ? Math.max(0, Number(raw.size)) : 0;
+    const estimatedSize = estimatedDataUrlBytes(data);
+    const size = Math.max(declaredSize, estimatedSize);
+    if (!path || seen.has(path) || !Number.isFinite(size) || accepted.length >= MAX_GUI_ASSETS) { skipped++; continue; }
+    if (data.length > Math.ceil(MAX_GUI_ASSET_BYTES * 1.45) + 256) { skipped++; continue; }
+    if (size > MAX_GUI_ASSET_BYTES || totalBytes + size > MAX_GUI_TOTAL_ASSET_BYTES) { skipped++; continue; }
+    accepted.push({
+      path,
+      name: String(raw.name || path).slice(0, 240),
+      type: String(raw.type || 'application/octet-stream').slice(0, 120),
+      size: Math.round(size),
+      data
+    });
+    seen.add(path);
+    totalBytes += size;
+  }
+  return { assets: accepted, skipped };
+}
+
 function applyProjectBundle(bundle){
   if (!bundle || typeof bundle !== 'object') throw new Error('Project file must contain a JSON object.');
   if (bundle.schema !== MARDAS_PROJECT_SCHEMA) throw new Error('Unsupported Studio project schema.');
   editor.value = String(bundle.markdown || '');
   markLineNumbersDirty();
   setOptions(bundle.options || {});
-  if (Array.isArray(bundle.assets)) {
-    attachedAssets = bundle.assets
-      .filter(asset => asset && typeof asset === 'object' && asset.path && asset.data)
-      .slice(0, MAX_GUI_ASSETS)
-      .map(asset => ({
-        path: String(asset.path),
-        name: String(asset.name || asset.path),
-        type: String(asset.type || 'application/octet-stream'),
-        size: Number(asset.size || 0),
-        data: String(asset.data || '')
-      }));
-    renderAssetList();
-  }
+  const validation = validateProjectAssets(bundle.assets);
+  attachedAssets = validation.assets;
+  renderAssetList();
   renderPreview();
   scheduleStudioStateSave();
-  serverStatus.textContent = 'Studio project loaded';
+  serverStatus.textContent = 'Studio project loaded' + (validation.skipped ? ' · skipped ' + validation.skipped + ' unsafe/oversized assets' : '');
 }
 
 function newDocument(){
@@ -869,8 +918,12 @@ function downloadProject(){
 
 function openProject(){ $('projectInput').click(); }
 
+function markdownTooLargeForLocalSave(){
+  return editor.value.length > MAX_STORED_MARKDOWN_CHARS;
+}
+
 function getStudioState(){
-  const markdown = editor.value.length <= MAX_STORED_MARKDOWN_CHARS ? editor.value : null;
+  const markdown = markdownTooLargeForLocalSave() ? null : editor.value;
   return {
     options: getOptions(),
     markdown,
@@ -887,7 +940,7 @@ function saveStudioState(){
     const state = getStudioState();
     if (state.markdown === null) delete state.markdown;
     localStorage.setItem(MARDAS_STUDIO_STATE_KEY, JSON.stringify(state));
-    $('savedState').textContent = state.markdown === undefined ? 'Settings saved' : 'Saved locally';
+    $('savedState').textContent = state.markdown === undefined ? 'Settings saved · draft too large' : 'Saved locally';
   } catch (error) {
     $('savedState').textContent = 'Local save unavailable';
   }
@@ -1445,7 +1498,7 @@ function renderFastPreview(text){
   cancelAccuratePreviewRequest();
   showFastPreview();
   preview.innerHTML = renderMarkdownPreview(text);
-  setPreviewStatus('Fast preview updated', false);
+  setPreviewStatus('Fast approx preview updated', false);
 }
 
 function assetPreviewFingerprint(asset){
@@ -1588,6 +1641,7 @@ let attachedAssets = [];
 const MAX_GUI_ASSETS = 250;
 const MAX_GUI_ASSET_BYTES = 12 * 1024 * 1024;
 const MAX_GUI_TOTAL_ASSET_BYTES = 32 * 1024 * 1024;
+const MAX_PROJECT_BUNDLE_BYTES = 48 * 1024 * 1024;
 
 function attachAssets(){ $('assetInput').click(); }
 
@@ -1734,6 +1788,12 @@ $('fileInput').addEventListener('change', (event) => {
 $('projectInput').addEventListener('change', (event) => {
   const file = event.target.files[0];
   if (!file) return;
+  if (file.size > MAX_PROJECT_BUNDLE_BYTES) {
+    serverStatus.textContent = 'Project file too large';
+    alert('Studio project is too large to open safely. Use a smaller .mardas.json bundle.');
+    event.target.value = '';
+    return;
+  }
   const reader = new FileReader();
   reader.onload = (ev) => {
     try {
@@ -1839,11 +1899,7 @@ async function renderPDF(){
       throw new Error(await readRenderError(response));
     }
     const blob = await response.blob();
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = $('filenameInput').value || 'mardas-document.pdf';
-    a.click();
-    URL.revokeObjectURL(a.href);
+    downloadBlob($('filenameInput').value || 'mardas-document.pdf', blob, 'application/pdf');
     finishExportProgress('PDF downloaded');
   } catch (error) {
     finishExportProgress('Error: ' + error.message, false);
@@ -2002,7 +2058,7 @@ const COMMANDS = [
   { id:'clear-assets', title:'Clear assets', hint:'Remove all currently attached browser-side assets.', shortcut:'', run:clearAssets },
   { id:'copy-cli', title:'Copy CLI command', hint:'Copy a command matching the current export settings.', shortcut:'', run:copyCommand },
   { id:'settings', title:'Toggle settings panel', hint:'Collapse or restore the export settings sidebar.', shortcut:'Ctrl/Cmd+,', run:() => settingsCollapsed ? expandSettingsPane() : collapseSettingsPane() },
-  { id:'preview-fast', title:'Use fast preview', hint:'Switch back to the browser-local Markdown preview.', shortcut:'', run:() => setPreviewMode('fast') },
+  { id:'preview-fast', title:'Use fast approximate preview', hint:'Switch to the browser-local approximate Markdown preview for low-latency editing.', shortcut:'', run:() => setPreviewMode('fast') },
   { id:'preview-accurate', title:'Use PDF-like preview', hint:'Preview server-rendered HTML with a page-sized sheet and margins.', shortcut:'', run:() => setPreviewMode('accurate') },
   { id:'direction', title:'Toggle preview direction', hint:'Switch editor and preview direction between RTL and LTR.', shortcut:'', run:toggleDirection }
 ];

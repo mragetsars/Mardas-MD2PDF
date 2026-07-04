@@ -4,6 +4,21 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.13.35 - 2026-07-04
+
+### Changed
+- Improved developer and release workflow reliability by letting `python -m pytest` find the `src/` package directly from a checkout and by documenting the full-source distribution intent.
+- Made the full visual QA matrix more resumable and observable by skipping already completed child chunks, writing active-chunk heartbeat data, and preserving elapsed-time metadata in the matrix summary.
+- Clarified Studio Fast preview as an approximate, browser-local editing preview while keeping PDF-like preview as the renderer-backed fidelity path.
+
+### Fixed
+- Hardened Studio project-bundle loading so oversized, duplicate, malformed, or unsafe embedded assets are skipped before they enter browser state, with a clear skipped-asset warning.
+- Delayed browser object-URL revocation for Studio downloads to avoid download races in stricter browsers.
+- Warned when Markdown is too large for local auto-save instead of implying that the full draft was saved locally.
+
+### Tests
+- Added regression coverage for checkout-local pytest configuration, source-distribution manifest policy, visual-QA resumability/heartbeat controls, Fast-preview wording, and Studio project-bundle asset validation.
+
 ## 1.13.34 - 2026-07-04
 
 ### Fixed

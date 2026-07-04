@@ -2,21 +2,29 @@
 """Run the full visual QA matrix in bounded, resumable chunks.
 
 This wrapper is the release-grade entry point for exhaustive visual QA.  It keeps
-individual subprocesses small, writes a summary after each phase, and delegates
-actual rendering to the focused audit scripts.  A single slow or broken case can
-be retried with ``--resume`` without restarting the whole matrix.
+individual subprocesses small, writes active-chunk heartbeat data, skips already
+completed chunks when ``--resume`` is enabled, and delegates actual rendering to
+the focused audit scripts.
 """
 
 from __future__ import annotations
 
 import argparse
 import dataclasses
+import json
 import sys
+import time
 from pathlib import Path
+from collections.abc import Callable
 from typing import Iterable, Sequence
 
-from mardas_md2pdf.appearance import MODES, PALETTES_ORDER, STYLES
-from visual_qa import ensure_clean_dir, run_command, write_json
+ROOT = Path(__file__).resolve().parents[1]
+SRC = ROOT / "src"
+if SRC.is_dir() and str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))
+
+from mardas_md2pdf.appearance import MODES, PALETTES_ORDER, STYLES  # noqa: E402
+from visual_qa import ensure_clean_dir, run_command, write_json  # noqa: E402
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -49,28 +57,68 @@ def build_cases(
     return tuple(AppearanceCase(style, palette, mode) for style in styles for palette in palettes for mode in modes)
 
 
-def _run(command: list[str], *, timeout: int) -> dict[str, object]:
-    """Run a child audit chunk without pipe-related process hangs.
+def _utc_timestamp() -> str:
+    return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
 
-    The chunk runner is itself part of the visual QA reliability boundary.  The
-    child audit scripts can launch Python, Playwright/Chromium, and Poppler
-    helpers; using pipe-captured subprocess calls here can block if a grandchild
-    inherits a pipe after the direct child exits.  Reuse
-    the shared ``visual_qa.run_command`` helper so output is captured through
-    temporary files and timeout cleanup targets the process tree.
-    """
+
+def _read_json(path: Path) -> dict[str, object]:
     try:
-        completed = run_command(command, timeout=timeout, description="visual QA chunk")
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def _child_manifest_complete(output_dir: Path, *, expected_count: int) -> bool:
+    """Return whether a child audit chunk has a complete success manifest."""
+    payload = _read_json(output_dir / "manifest.json")
+    counts = payload.get("counts")
+    if isinstance(counts, dict):
+        return (
+            counts.get("requested") == expected_count
+            and counts.get("completed") == expected_count
+            and counts.get("failed") == 0
+        )
+    matrix = payload.get("matrix")
+    if isinstance(matrix, dict):
+        return matrix.get("completed") == expected_count and matrix.get("failed") == 0
+    return False
+
+
+def _run(
+    command: list[str],
+    *,
+    timeout: int,
+    heartbeat_interval: float = 30.0,
+    on_heartbeat: Callable[[float], None] | None = None,
+) -> dict[str, object]:
+    """Run a child audit chunk without pipe-related process hangs."""
+    started = time.monotonic()
+
+    def heartbeat(elapsed: float) -> None:
+        if on_heartbeat is not None:
+            on_heartbeat(elapsed)
+
+    try:
+        completed = run_command(
+            command,
+            timeout=timeout,
+            description="visual QA chunk",
+            heartbeat=heartbeat,
+            heartbeat_interval=heartbeat_interval,
+        )
     except RuntimeError as exc:
         return {
             "command": command,
             "returncode": 1,
+            "duration_seconds": round(time.monotonic() - started, 3),
             "stdout_tail": "",
             "stderr_tail": str(exc)[-4000:],
         }
     return {
         "command": command,
         "returncode": completed.returncode,
+        "duration_seconds": round(time.monotonic() - started, 3),
         "stdout_tail": completed.stdout[-4000:],
         "stderr_tail": completed.stderr[-4000:],
     }
@@ -87,7 +135,16 @@ def _append_common_args(
     resume: bool,
     fail_fast: bool,
 ) -> list[str]:
-    command.extend(["--output-dir", str(output_dir), "--timeout", str(render_timeout), "--raster-timeout", str(raster_timeout)])
+    command.extend(
+        [
+            "--output-dir",
+            str(output_dir),
+            "--timeout",
+            str(render_timeout),
+            "--raster-timeout",
+            str(raster_timeout),
+        ]
+    )
     if render_png:
         command.extend(["--render-png", "--png-dpi", str(png_dpi)])
     if resume:
@@ -105,7 +162,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output-dir", type=Path, default=Path("build/visual-qa/full"))
     parser.add_argument("--clean", action="store_true", help="Delete output directory before running")
-    parser.add_argument("--resume", action="store_true", help="Reuse completed child audit records")
+    parser.add_argument("--resume", action="store_true", help="Skip completed child audit chunks")
     parser.add_argument("--fail-fast", action="store_true", help="Stop after the first failed chunk")
     parser.add_argument("--render-png", action="store_true", help="Raster representative pages for galleries")
     parser.add_argument("--png-dpi", type=int, default=72)
@@ -115,6 +172,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--render-timeout", type=int, default=120, help="Seconds per child PDF render")
     parser.add_argument("--raster-timeout", type=int, default=60, help="Seconds per child raster command")
     parser.add_argument("--chunk-timeout", type=int, default=900, help="Seconds allowed for each child audit chunk")
+    parser.add_argument(
+        "--chunk-heartbeat-seconds",
+        type=float,
+        default=30.0,
+        help="Seconds between active-chunk heartbeat summary updates",
+    )
     parser.add_argument("--skip-appearance", action="store_true")
     parser.add_argument("--skip-features", action="store_true")
     args = parser.parse_args(argv)
@@ -133,15 +196,75 @@ def main(argv: list[str] | None = None) -> int:
         "case_count": len(cases),
         "appearance_chunk_count": 0 if args.skip_appearance else len(appearance_chunks),
         "feature_chunk_count": 0 if args.skip_features else len(feature_chunks),
+        "started_at": _utc_timestamp(),
         "records": [],
     }
     summary_path = args.output_dir / "summary.json"
 
-    def run_child(kind: str, index: int, total: int, command: list[str]) -> bool:
-        print(f"{kind} chunk {index}/{total}")
-        result = _run(command, timeout=args.chunk_timeout)
-        result.update({"kind": kind, "chunk": index, "total": total})
+    def run_child(
+        kind: str,
+        index: int,
+        total: int,
+        output_dir: Path,
+        command: list[str],
+        *,
+        expected_count: int,
+    ) -> bool:
+        print(f"{kind} chunk {index}/{total}", flush=True)
+        if args.resume and _child_manifest_complete(output_dir, expected_count=expected_count):
+            result = {
+                "kind": kind,
+                "chunk": index,
+                "total": total,
+                "command": command,
+                "returncode": 0,
+                "skipped": True,
+                "reason": "completed manifest reused",
+                "started_at": _utc_timestamp(),
+                "finished_at": _utc_timestamp(),
+                "duration_seconds": 0,
+                "stdout_tail": "",
+                "stderr_tail": "",
+            }
+            summary["records"].append(result)  # type: ignore[index]
+            _write_summary(summary_path, summary)
+            return True
+
+        started_at = _utc_timestamp()
+        summary["active_chunk"] = {
+            "kind": kind,
+            "chunk": index,
+            "total": total,
+            "started_at": started_at,
+            "last_heartbeat_at": started_at,
+            "elapsed_seconds": 0,
+            "command": command,
+        }
+        _write_summary(summary_path, summary)
+
+        def heartbeat(elapsed: float) -> None:
+            active = dict(summary.get("active_chunk") or {})
+            active.update({"last_heartbeat_at": _utc_timestamp(), "elapsed_seconds": round(elapsed, 3)})
+            summary["active_chunk"] = active
+            _write_summary(summary_path, summary)
+
+        result = _run(
+            command,
+            timeout=args.chunk_timeout,
+            heartbeat_interval=args.chunk_heartbeat_seconds,
+            on_heartbeat=heartbeat,
+        )
+        result.update(
+            {
+                "kind": kind,
+                "chunk": index,
+                "total": total,
+                "started_at": started_at,
+                "finished_at": _utc_timestamp(),
+            }
+        )
         summary["records"].append(result)  # type: ignore[index]
+        summary.pop("active_chunk", None)
         _write_summary(summary_path, summary)
         ok = result["returncode"] == 0
         if not ok and args.fail_fast:
@@ -152,7 +275,12 @@ def main(argv: list[str] | None = None) -> int:
     if not args.skip_appearance:
         for index, chunk in enumerate(appearance_chunks, start=1):
             output_dir = args.output_dir / "appearance" / f"chunk-{index:03d}"
-            command = [sys.executable, str(script_dir / "audit_appearance_matrix.py"), "--appearances", ",".join(case.triple for case in chunk)]
+            command = [
+                sys.executable,
+                str(script_dir / "audit_appearance_matrix.py"),
+                "--appearances",
+                ",".join(case.triple for case in chunk),
+            ]
             _append_common_args(
                 command,
                 output_dir=output_dir,
@@ -163,13 +291,20 @@ def main(argv: list[str] | None = None) -> int:
                 resume=args.resume,
                 fail_fast=args.fail_fast,
             )
-            if not run_child("appearance", index, len(appearance_chunks), command):
+            if not run_child(
+                "appearance", index, len(appearance_chunks), output_dir, command, expected_count=len(chunk)
+            ):
                 return 1
 
     if not args.skip_features:
         for index, chunk in enumerate(feature_chunks, start=1):
             output_dir = args.output_dir / "features" / f"chunk-{index:03d}"
-            command = [sys.executable, str(script_dir / "audit_pdf_features.py"), "--appearances", ",".join(case.triple for case in chunk)]
+            command = [
+                sys.executable,
+                str(script_dir / "audit_pdf_features.py"),
+                "--appearances",
+                ",".join(case.triple for case in chunk),
+            ]
             _append_common_args(
                 command,
                 output_dir=output_dir,
@@ -182,10 +317,13 @@ def main(argv: list[str] | None = None) -> int:
             )
             if args.render_png:
                 command.extend(["--pages", "1,2,3"])
-            if not run_child("features", index, len(feature_chunks), command):
+            if not run_child(
+                "features", index, len(feature_chunks), output_dir, command, expected_count=len(chunk)
+            ):
                 return 1
 
     failures = [record for record in summary["records"] if record["returncode"] != 0]  # type: ignore[index]
+    summary["finished_at"] = _utc_timestamp()
     summary["failed_chunks"] = len(failures)
     _write_summary(summary_path, summary)
     return 1 if failures else 0
