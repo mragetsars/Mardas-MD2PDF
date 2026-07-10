@@ -8,6 +8,7 @@ Run the default quality gate before creating a patch or tag:
 
 ```bash
 ./scripts/check.sh
+python -m pytest -q tests/test_project_config.py
 ```
 
 The script runs Ruff and pytest from the repository root. It disables third-party pytest plugin autoload by default so local virtualenv plugins cannot change release-gate behavior; set `MARDAS_ALLOW_PYTEST_PLUGINS=1` only when intentionally debugging pytest plugins. To include real Chromium render smoke tests, including PDF metadata and outline inspection, enable the optional environment flag:

@@ -16,6 +16,7 @@ Run the local checks before tagging. The check helper keeps pytest isolated from
 
 ```bash
 ./scripts/check.sh
+python -m pytest -q tests/test_project_config.py
 ```
 
 For a full release verification, use the consolidated release gate:

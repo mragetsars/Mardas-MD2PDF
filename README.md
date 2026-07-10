@@ -72,6 +72,17 @@ Render a PDF:
 mrs-md2pdf input.md -o output.pdf --toc --style modern --palette emerald --mode light
 ```
 
+Create a reusable project configuration and validate it without opening Chromium:
+
+```bash
+mrs-md2pdf init
+mrs-md2pdf validate input.md
+mrs-md2pdf explain-config input.md
+mrs-md2pdf doctor input.md
+```
+
+The nearest `mardas.toml` is discovered from the document directory upward. Command-line options override project values, which override equivalent front-matter values. Use `--config`, `--no-config`, and `--format json` for explicit automation workflows.
+
 Cover branding is off by default so exported PDFs belong to the document owner. Enable explicit branding only when desired:
 
 ```bash
@@ -104,7 +115,10 @@ Mardas-MD2PDF/
 │   ├── markdown.py         # Markdown parsing, front matter, TOC, math, Mermaid, footnotes, safe HTML
 │   ├── mermaid.py          # Offline Mermaid flowchart-subset-to-SVG renderer
 │   ├── renderer.py         # HTML assembly, appearance CSS, MathJax, Chromium PDF rendering
-│   ├── cli.py              # Command-line interface
+│   ├── cli.py              # Conversion command-line interface
+│   ├── config.py           # Versioned mardas.toml discovery, validation, and resolution
+│   ├── diagnostics.py      # Stable text/JSON diagnostic records
+│   ├── project_commands.py # init, validate, doctor, and explain-config workflows
 │   ├── gui.py              # Local browser-based GUI backend
 │   └── assets/             # Style CSS, GUI shell, logo, and vendored MathJax files
 ├── docs/                   # Guides, changelog, release, maintenance, security, and documentation policy

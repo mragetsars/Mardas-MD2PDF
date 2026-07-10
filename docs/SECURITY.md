@@ -37,6 +37,21 @@ network policy.
 - Blocked or missing images render as visible placeholders, so authors can see
   what was skipped.
 
+### Project configuration
+
+`mardas.toml` is a trusted local project input. The CLI discovers the nearest file
+from the Markdown directory upward unless `--config` selects a specific file or
+`--no-config` disables discovery. Relative paths are resolved from the configuration
+directory. Unknown sections, unknown keys, unsupported schema versions, invalid
+values, and missing configured assets are rejected before Chromium starts.
+
+Project configuration can explicitly enable `security.unsafe_html` or
+`security.allow_remote_assets`. Both settings expand the trust boundary and are
+reported by `mrs-md2pdf validate` and `mrs-md2pdf doctor` as stable warning
+diagnostics. Keep both disabled for untrusted documents and reproducible offline
+builds. Command-line safety overrides such as `--safe-html` and
+`--block-remote-assets` take precedence over the project file.
+
 ### Remote assets
 
 Remote `http(s)` image assets are blocked by default for privacy,

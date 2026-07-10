@@ -47,8 +47,6 @@ def test_guides_share_mardas_appearance_contract():
     assert not (ROOT / "docs/guides/images/brand-mark.svg").exists()
 
 
-
-
 def _png_dimensions(path: Path) -> tuple[int, int]:
     data = path.read_bytes()
     assert data.startswith(b"\x89PNG\r\n\x1a\n")
@@ -103,7 +101,9 @@ def test_project_logo_assets_are_packaged_and_documented():
     assert "mardas-md2pdf-mark-white.svg" in documentation_docs
     assert "mardas-md2pdf-app-icon.svg" in documentation_docs
     assert "mardas-md2pdf-mark-gui-mask.svg" in documentation_docs
-    assert "should use `brand.logo` only for their own organization or lab logo" in documentation_docs
+    assert (
+        "should use `brand.logo` only for their own organization or lab logo" in documentation_docs
+    )
     assert "Asset layout policy" in documentation_docs
     assert "`src/mardas_md2pdf/assets/`" in documentation_docs
     assert "`docs/guides/images/`" in documentation_docs
@@ -114,8 +114,14 @@ def test_guides_reuse_architecture_banner_for_safe_html_examples():
     en = (ROOT / "docs/guides/GUIDE.en.md").read_text(encoding="utf-8")
     fa = (ROOT / "docs/guides/GUIDE.fa.md").read_text(encoding="utf-8")
 
-    assert '<img src="images/architecture.png" width="760" alt="Architecture diagram rendered from safe HTML with explicit width">' in en
-    assert '<img src="images/architecture.png" width="760" alt="نمودار معماری با اندازه مشخص در HTML امن">' in fa
+    assert (
+        '<img src="images/architecture.png" width="760" alt="Architecture diagram rendered from safe HTML with explicit width">'
+        in en
+    )
+    assert (
+        '<img src="images/architecture.png" width="760" alt="نمودار معماری با اندازه مشخص در HTML امن">'
+        in fa
+    )
     assert '<img src="images/logo.svg"' not in en
     assert '<img src="images/logo.svg"' not in fa
 
@@ -192,8 +198,6 @@ def test_advanced_code_samples_keep_highlight_ranges_visible():
         assert "return pdf" in text
 
 
-
-
 def test_obsolete_feature_reference_docs_are_removed():
     removed_docs = [
         "APPEARANCE.md",
@@ -244,8 +248,6 @@ def test_guides_include_persian_rtl_live_smoke_samples():
     assert "[^footnote-demo]" in fa
 
 
-
-
 def test_guides_render_callouts_without_raw_alert_markers():
     for guide in GUIDES:
         result = render_markdown_file(guide, toc=True)
@@ -263,6 +265,7 @@ def test_guides_render_callouts_without_raw_alert_markers():
         else:
             assert '<strong class="callout-title">Note</strong>' in html
             assert '<strong class="callout-title">Important</strong>' in html
+
 
 def test_guides_render_persian_rtl_samples_as_semantic_audit_html():
     for guide in GUIDES:
@@ -290,7 +293,11 @@ def test_ci_uploads_visual_qa_artifacts():
 
 
 def test_guides_cover_retired_feature_reference_topics():
-    combined = (ROOT / "docs/guides/GUIDE.en.md").read_text(encoding="utf-8") + "\n" + (ROOT / "docs/guides/GUIDE.fa.md").read_text(encoding="utf-8")
+    combined = (
+        (ROOT / "docs/guides/GUIDE.en.md").read_text(encoding="utf-8")
+        + "\n"
+        + (ROOT / "docs/guides/GUIDE.fa.md").read_text(encoding="utf-8")
+    )
 
     required = [
         "Appearance",
@@ -333,3 +340,19 @@ def test_guides_document_pdf_preflight_smoke_checks():
     assert "scripts/check_pdf_preflight.py" in fa
     assert "build/pdf-preflight.json" in en
     assert "build/pdf-preflight.json" in fa
+
+
+def test_guides_document_project_configuration_and_diagnostics() -> None:
+    en = (ROOT / "docs/guides/GUIDE.en.md").read_text(encoding="utf-8")
+    fa = (ROOT / "docs/guides/GUIDE.fa.md").read_text(encoding="utf-8")
+
+    for text in (en, fa):
+        assert "mardas.toml" in text
+        assert "schema_version = 1" in text
+        assert "mrs-md2pdf init" in text
+        assert "mrs-md2pdf validate" in text
+        assert "mrs-md2pdf doctor" in text
+        assert "mrs-md2pdf explain-config" in text
+        assert "--format json" in text
+        assert "MARDAS-E103" in text
+        assert "MARDAS-W301" in text

@@ -836,6 +836,89 @@ Discover choices with `--list-styles`, `--list-palettes`, and `--list-modes`.
 
 Dark mode is style-aware. `modern` uses a deep navy surface, `github` follows a GitHub-like dark surface, `textbook` keeps the nearly black screen/cover look, and `academic` uses a warm charcoal surface. Palettes still control accent colors in both light and dark modes, including cover decorations and callouts.
 
+# Project Configuration and Diagnostics
+
+Use a versioned `mardas.toml` when a document or repository needs repeatable settings without a long command line. Create the initial file in the current directory:
+
+```bash
+mrs-md2pdf init
+```
+
+The generated configuration is deliberately conservative: safe HTML, blocked remote assets, an ordinary A4 page, explicit appearance settings, and schema version `1`. Relative paths in the configuration are resolved from the directory containing `mardas.toml`, not from the shell working directory.
+
+A compact project configuration can look like this:
+
+```toml
+schema_version = 1
+
+[project]
+title = "Numerical Methods Report"
+author = "Research Team"
+direction = "auto"
+
+[output]
+page_size = "A4"
+toc = true
+toc_depth = 3
+toc_page_break = true
+cover = true
+header_footer = true
+mathjax = true
+margin_top = "18mm"
+margin_bottom = "20mm"
+margin_x = "16mm"
+
+[appearance]
+style = "academic"
+palette = "emerald"
+mode = "light"
+
+[branding]
+mode = "off"
+# logo = "assets/lab-logo.png"
+
+[security]
+unsafe_html = false
+allow_remote_assets = false
+
+[browser]
+chromium_sandbox = "auto"
+timeout_ms = 120000
+```
+
+The CLI discovers the nearest `mardas.toml` by starting beside the Markdown file and walking toward the filesystem root. Use `--config path/to/mardas.toml` for an explicit file or `--no-config` to disable discovery. Precedence is deterministic:
+
+```text
+explicit CLI option > mardas.toml > equivalent front matter > built-in default
+```
+
+Negative overrides such as `--no-toc`, `--cover`, `--header-footer`, `--mathjax`, `--safe-html`, and `--block-remote-assets` make it possible to override enabled or disabled project settings from automation scripts.
+
+Validate configuration and Markdown without launching Chromium:
+
+```bash
+mrs-md2pdf validate report.md
+mrs-md2pdf validate report.md --format json
+```
+
+Validation reports malformed TOML or YAML, unsupported schema versions, unknown keys, invalid values, missing configured assets, blocked images, heading-level jumps, and risky security settings. Diagnostics use stable identifiers such as `MARDAS-E103`, `MARDAS-E109`, `MARDAS-W203`, and `MARDAS-W301`; automation should rely on the code rather than matching the English message.
+
+Inspect the effective values and their sources:
+
+```bash
+mrs-md2pdf explain-config report.md
+mrs-md2pdf explain-config report.md --format json
+```
+
+Check the local runtime, packaged MathJax, required dependencies, Chromium discovery, configuration, and optionally the document itself:
+
+```bash
+mrs-md2pdf doctor
+mrs-md2pdf doctor report.md --format json
+```
+
+Warnings do not make `validate` or `doctor` fail, while error diagnostics return a non-zero exit status. A configuration that enables `unsafe_html` or remote assets is accepted only as an explicit project decision and is surfaced as a warning because it expands the trust boundary and can reduce build reproducibility.
+
 # GUI Workflow
 
 Launch the GUI:

@@ -757,6 +757,89 @@ appearance:
 
 حالت تاریک برای هر style سطح رنگی مخصوص خودش را دارد. `modern` از پس‌زمینه سرمه‌ای عمیق استفاده می‌کند، `github` به سطح تاریک شبیه GitHub نزدیک است، `textbook` ظاهر تقریباً سیاه و هماهنگ با جلد قدیمی را نگه می‌دارد و `academic` پس‌زمینه ذغالی گرم دارد. Palette همچنان رنگ accent را در حالت روشن و تاریک، از جمله تزئینات جلد و calloutها، کنترل می‌کند.
 
+# پیکربندی پروژه و Diagnosticهای ساخت‌یافته
+
+وقتی یک سند یا repository باید با تنظیمات ثابت و بدون فرمان طولانی ساخته شود، از فایل نسخه‌دار `mardas.toml` استفاده کنید. برای ایجاد فایل اولیه در پوشه فعلی بنویسید:
+
+```bash
+mrs-md2pdf init
+```
+
+پیکربندی تولیدشده عمداً محافظه‌کارانه است: HTML امن، asset راه‌دور مسدود، صفحه A4 معمولی، appearance صریح و `schema_version = 1`. مسیر نسبی موجود در config نسبت به پوشه خود `mardas.toml` resolve می‌شود، نه نسبت به working directory ترمینال.
+
+یک پیکربندی فشرده می‌تواند چنین باشد:
+
+```toml
+schema_version = 1
+
+[project]
+title = "گزارش روش‌های عددی"
+author = "گروه پژوهشی"
+direction = "auto"
+
+[output]
+page_size = "A4"
+toc = true
+toc_depth = 3
+toc_page_break = true
+cover = true
+header_footer = true
+mathjax = true
+margin_top = "18mm"
+margin_bottom = "20mm"
+margin_x = "16mm"
+
+[appearance]
+style = "academic"
+palette = "emerald"
+mode = "light"
+
+[branding]
+mode = "off"
+# logo = "assets/lab-logo.png"
+
+[security]
+unsafe_html = false
+allow_remote_assets = false
+
+[browser]
+chromium_sandbox = "auto"
+timeout_ms = 120000
+```
+
+CLI از کنار فایل Markdown شروع می‌کند و نزدیک‌ترین `mardas.toml` را در مسیر پوشه‌های والد پیدا می‌کند. برای انتخاب صریح از `--config path/to/mardas.toml` و برای غیرفعال‌کردن discovery از `--no-config` استفاده کنید. ترتیب تقدم قطعی است:
+
+```text
+گزینه صریح CLI > mardas.toml > front matter معادل > مقدار پیش‌فرض داخلی
+```
+
+گزینه‌های معکوس مثل `--no-toc`، `--cover`، `--header-footer`، `--mathjax`، `--safe-html` و `--block-remote-assets` اجازه می‌دهند مقدار فعال یا غیرفعال موجود در پروژه از داخل scriptهای automation override شود.
+
+برای اعتبارسنجی config و Markdown بدون اجرای Chromium بنویسید:
+
+```bash
+mrs-md2pdf validate report.md
+mrs-md2pdf validate report.md --format json
+```
+
+اعتبارسنجی، TOML یا YAML خراب، نسخه schema پشتیبانی‌نشده، کلید ناشناخته، مقدار نامعتبر، asset تنظیم‌شده ولی مفقود، تصویر blockشده، پرش سطح heading و گزینه امنیتی پرریسک را گزارش می‌کند. Diagnosticها شناسه پایدار مثل `MARDAS-E103`، `MARDAS-E109`، `MARDAS-W203` و `MARDAS-W301` دارند؛ automation باید به code تکیه کند، نه متن انگلیسی پیام.
+
+برای مشاهده مقدار مؤثر و منبع هر تنظیم بنویسید:
+
+```bash
+mrs-md2pdf explain-config report.md
+mrs-md2pdf explain-config report.md --format json
+```
+
+برای بررسی runtime محلی، MathJax بسته‌بندی‌شده، dependencyهای لازم، پیدا شدن Chromium، config و در صورت ارائه فایل، خود سند بنویسید:
+
+```bash
+mrs-md2pdf doctor
+mrs-md2pdf doctor report.md --format json
+```
+
+Warning باعث fail شدن `validate` یا `doctor` نمی‌شود، اما diagnostic سطح error کد خروج غیرصفر تولید می‌کند. فعال‌کردن `unsafe_html` یا asset راه‌دور تصمیم صریح پروژه است و به شکل warning نمایش داده می‌شود، چون trust boundary را بزرگ‌تر می‌کند و می‌تواند reproducibility ساخت را کاهش دهد.
+
 # روند کار با GUI
 
 اجرای GUI:
