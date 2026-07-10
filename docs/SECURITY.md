@@ -127,6 +127,12 @@ churn PDF metadata timestamps. User-generated PDFs may still include author,
 title, keyword, and date metadata from front matter; avoid placing sensitive data
 in front matter when producing public PDFs.
 
+## Cross-reference and numbering boundary
+
+Semantic labels such as `{#fig:model}` and reference tokens such as `@fig:model` are document-internal identifiers. They do not resolve filesystem paths, fetch URLs, execute code, or weaken the existing Markdown image, safe-HTML, Book Mode project-root, and remote-asset policies. The renderer accepts only the supported `fig`, `tbl`, `eq`, and `lst` kinds with bounded ASCII label names.
+
+Duplicate labels, unresolved references, kind mismatches, malformed labels, and ambiguous multiple-label markers are rejected before Chromium starts. References inside code, existing links, scripts, styles, and other literal contexts are not expanded. Generated reference lists contain only sanitized text and internal `#xref-*` destinations derived from validated labels.
+
 ## Reporting issues
 
 For security-related issues, use a private report when available. Share minimal

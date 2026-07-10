@@ -308,9 +308,47 @@ def test_guides_cover_retired_feature_reference_topics():
         "GUI Workflow",
         "PDF Preflight Checks",
         "Mermaid Flowcharts",
+        "Cross-references and Numbering",
+        "ارجاع متقابل و شماره‌گذاری",
     ]
     for marker in required:
         assert marker in combined
+
+
+def test_guides_include_live_cross_reference_samples():
+    en = (ROOT / "docs/guides/GUIDE.en.md").read_text(encoding="utf-8")
+    fa = (ROOT / "docs/guides/GUIDE.fa.md").read_text(encoding="utf-8")
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+
+    for guide in [en, fa]:
+        assert "list_of_figures: true" in guide
+        assert "list_of_tables: true" in guide
+        assert "list_of_equations: true" in guide
+        assert "list_of_listings: true" in guide
+        assert "{#fig:guide-reference-flow}" in guide
+        assert "{#tbl:guide-reference-kinds}" in guide
+        assert "{#eq:guide-reference-energy}" in guide
+        assert "{#lst:guide-reference-code}" in guide
+
+    assert "references.py" in readme
+    assert "@fig:architecture" in readme
+
+
+def test_guides_render_cross_reference_destinations_and_lists():
+    for guide in GUIDES:
+        result = render_markdown_file(guide, toc=True)
+        html = result.body_html + result.reference_lists_html
+        assert not [item for item in result.diagnostics if item.severity == "error"]
+        assert len(result.reference_objects) == 4
+        for target in [
+            "xref-fig-guide-reference-flow",
+            "xref-tbl-guide-reference-kinds",
+            "xref-eq-guide-reference-energy",
+            "xref-lst-guide-reference-code",
+        ]:
+            assert f'id="{target}"' in html
+            assert f'href="#{target}"' in html
+        assert "md2pdf-reference-list" in result.reference_lists_html
 
 
 def test_readme_has_no_stale_feature_reference_links():

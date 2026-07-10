@@ -8,7 +8,7 @@ Run the default quality gate before creating a patch or tag:
 
 ```bash
 ./scripts/check.sh
-python -m pytest -q tests/test_project_config.py tests/test_book_mode.py
+python -m pytest -q tests/test_project_config.py tests/test_book_mode.py tests/test_cross_references.py
 ```
 
 The script runs Ruff and pytest from the repository root. It disables third-party pytest plugin autoload by default so local virtualenv plugins cannot change release-gate behavior; set `MARDAS_ALLOW_PYTEST_PLUGINS=1` only when intentionally debugging pytest plugins. To include real Chromium render smoke tests, including PDF metadata and outline inspection, enable the optional environment flag:
@@ -32,6 +32,16 @@ python -m pytest -q tests/test_book_mode.py tests/test_pdf_toc_destinations.py
 ```
 
 Before release, create a representative book with at least two chapters, duplicate heading text, a shared project-root image, and a link from one chapter to a heading in another. Verify the combined HTML contains no absolute machine paths and inspect the PDF TOC, outline, page breaks, named destinations, and link annotations. The consolidated release gate also builds the starter Book Mode project from the cleanly installed wheel.
+
+## Cross-reference checks
+
+Changes to semantic labels, caption normalization, reference localization, generated lists, Book Mode assembly, or PDF destination writing require the focused suite:
+
+```bash
+python -m pytest -q tests/test_cross_references.py tests/test_book_mode.py tests/test_pdf_toc_destinations.py
+```
+
+Before release, render a representative English/Persian book containing a labeled figure, table, display equation, and code listing. Verify global and chapter-scoped numbering, a reference that crosses chapter boundaries, duplicate/unresolved diagnostics, all requested generated lists, and the corresponding `xref-*` named destinations and link annotations in the PDF. Official guide builds also enable all four reference lists as live renderer samples.
 
 ## Generated examples
 

@@ -8,7 +8,7 @@
 
 This repository contains **Mardas MD2PDF**, a Markdown-to-PDF publishing tool designed for clean Persian, English, and mixed-language documents.
 
-The project converts single Markdown documents or ordered multi-file books into print-ready PDF files with support for RTL/LTR direction handling, Persian-friendly typography, cover pages, tables of contents, PDF outline bookmarks, GitHub-style Markdown features, MathJax formulas, enhanced syntax-highlighted code, offline Mermaid flowchart-subset diagrams, local images, footnotes, callouts, safe HTML, watermarks, and a clean appearance system built around styles, palettes, and light/dark modes.
+The project converts single Markdown documents or ordered multi-file books into print-ready PDF files with support for RTL/LTR direction handling, Persian-friendly typography, cover pages, tables of contents, PDF outline bookmarks, deterministic figure/table/equation/listing numbering, semantic cross-references, generated reference lists, GitHub-style Markdown features, MathJax formulas, enhanced syntax-highlighted code, offline Mermaid flowchart-subset diagrams, local images, footnotes, callouts, safe HTML, watermarks, and a clean appearance system built around styles, palettes, and light/dark modes.
 
 The main goal of the project is to make technical Markdown documents publishable as polished PDF outputs without forcing the author to leave the Markdown workflow.
 
@@ -24,7 +24,7 @@ The system is organized around a browser-based rendering pipeline. Markdown is f
 
 ### Markdown Processing
 
-The Markdown layer also normalizes visual captions for images, tables, code listings, and Mermaid diagrams so the PDF layer can keep each caption with its associated print block.
+The Markdown layer also normalizes visual captions for images, tables, code listings, and Mermaid diagrams so the PDF layer can keep each caption with its associated print block. The reference engine assigns stable numbers and destinations to labeled objects, resolves semantic references before bidi isolation, and can generate lists of figures, tables, equations, and listings.
 
 The Markdown layer handles front matter, heading collection, table of contents and PDF outline generation, GitHub-style task lists, alerts, autolinks, heading anchors, image captions, enhanced code blocks with titles, line numbers, line highlights, and line-start metadata, Mermaid flowchart-subset diagrams, extended callouts, footnotes, safe HTML, local image embedding with blocked placeholders, print-fit wide tables, math protection, and direction-aware document metadata.
 
@@ -94,6 +94,32 @@ mrs-md2pdf build-book my-book
 
 Book Mode keeps chapter order in `[book].chapters`, namespaces heading and footnote IDs, embeds chapter-local or shared project-root assets, restores links between listed chapters, and produces one TOC, outline, cover, metadata set, and PDF artifact.
 
+Enable semantic numbering and cross-references in a single document or book:
+
+```toml
+[references]
+enabled = true
+numbering_scope = "chapter"
+list_of_figures = true
+list_of_tables = true
+```
+
+```markdown
+See @fig:architecture and @tbl:metrics.
+
+![Architecture](assets/architecture.svg)
+
+*Figure. Processing architecture.* {#fig:architecture}
+
+| Metric | Value |
+| :--- | ---: |
+| Accuracy | 0.98 |
+
+Table: Evaluation metrics {#tbl:metrics}
+```
+
+The supported semantic object prefixes are `fig`, `tbl`, `eq`, and `lst`. Labels are unique across the complete rendered document, including all chapters in Book Mode.
+
 Cover branding is off by default so exported PDFs belong to the document owner. Enable explicit branding only when desired:
 
 ```bash
@@ -126,6 +152,7 @@ Mardas-MD2PDF/
 │   ├── markdown.py         # Markdown parsing, front matter, TOC, math, Mermaid, footnotes, safe HTML
 │   ├── mermaid.py          # Offline Mermaid flowchart-subset-to-SVG renderer
 │   ├── renderer.py         # HTML assembly, appearance CSS, MathJax, Chromium PDF rendering
+│   ├── references.py       # Numbered objects, semantic labels, cross-references, and generated lists
 │   ├── book.py             # Ordered chapter manifest, namespacing, cross-links, and book assembly
 │   ├── cli.py              # Conversion command-line interface
 │   ├── config.py           # Versioned mardas.toml discovery, validation, and resolution
@@ -163,13 +190,14 @@ Mardas MD2PDF is intended for local publishing workflows. Local Markdown images 
 
 Remote `http(s)` images are blocked by default for privacy; use `--allow-remote-assets` only for trusted documents that intentionally fetch network images. Studio Fast Preview follows the same privacy boundary: it does not fetch remote or local image paths, and it disables unsafe or filesystem link schemes. Raw HTML is sanitized unless `--unsafe-html` is used, and safe `data:` image URLs are limited to common raster formats.
 
-Chromium sandboxing is configurable with `--chromium-sandbox auto|on|off`; the default `auto` keeps sandboxing enabled for normal users and disables it only when running as root in container-style environments. Output PDF and debug HTML files are committed atomically, and the CLI rejects input/output/debug paths that resolve to the same file. See [docs/SECURITY.md](./docs/SECURITY.md) for the full trust boundary.
+Chromium sandboxing is configurable with `--chromium-sandbox auto|on|off`; the default `auto` keeps sandboxing enabled for normal users and disables it only when running as root in container-style environments. Output PDF and debug HTML files are committed atomically, and the CLI rejects input/output/debug paths that resolve to the same file. Reference labels are document-internal identifiers only: they do not expand filesystem access, enable scripts, or bypass the existing asset and HTML trust boundaries. See [docs/SECURITY.md](./docs/SECURITY.md) for the full trust boundary.
 
 ## Testing
 
 ```bash
 pip install -e .[dev]
 ./scripts/check.sh
+python -m pytest -q tests/test_cross_references.py tests/test_book_mode.py
 ```
 
 Clean local build and patch artifacts when the working tree starts to feel noisy:

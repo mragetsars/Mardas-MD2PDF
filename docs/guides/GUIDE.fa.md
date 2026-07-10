@@ -29,6 +29,13 @@ appearance:
   mode: light
 branding:
   mode: full
+references:
+  enabled: true
+  numbering_scope: global
+  list_of_figures: true
+  list_of_tables: true
+  list_of_equations: true
+  list_of_listings: true
 ---
 
 # معرفی
@@ -915,7 +922,84 @@ mrs-md2pdf build-book my-book --debug-html build/handbook.html --progress on
 6. وقتی `chapter_page_break = true` باشد، بین فصل‌ها شکست صفحه درج می‌شود.
 7. خروجی نهایی یک جلد، یک فهرست کلی، یک outline تودرتوی PDF، یک مجموعه metadata، named destinationهای پایدار و یک فایل PDF دارد.
 
-در این نسخه شماره‌گذاری خودکار شکل، جدول و معادله، پردازش bibliography و cross-reference معنایی با syntaxهایی مانند `@label` عمداً وارد نشده‌اند. این قابلیت‌ها به مدل symbol مستقل نیاز دارند و در فازهای جداگانه و قابل آزمون پیاده‌سازی خواهند شد.
+حالت Book Mode از یک symbol table مشترک برای تمام فصل‌های manifest استفاده می‌کند. وقتی `numbering_scope = "chapter"` باشد، نخستین شیء فصل دوم شماره‌ای مثل `۲.۱` می‌گیرد؛ در حالت `global` شماره‌گذاری در کل کتاب پیوسته است. پردازش bibliography همچنان یک فاز مستقل است.
+
+# ارجاع متقابل و شماره‌گذاری
+
+قابلیت ارجاع متقابل به‌صورت opt-in فعال می‌شود. آن را در `mardas.toml` یا front matter فعال کنید:
+
+```toml
+[references]
+enabled = true
+numbering_scope = "global"
+list_of_figures = true
+list_of_tables = true
+list_of_equations = true
+list_of_listings = true
+```
+
+همین گزینه‌ها را می‌توان در mapping با نام `references:` در front matter نوشت. در اتوماسیون خط فرمان نیز گزینه‌های `--references`، `--no-references`، `--numbering-scope global|chapter` و جفت گزینه‌های `--list-of-*` / `--no-list-of-*` قابل استفاده‌اند.
+
+نوع‌های معنایی پشتیبانی‌شده عبارت‌اند از:
+
+| پیشوند | شیء | محل label |
+| :--- | :--- | :--- |
+| `fig` | تصویر Markdown و شکل Mermaid | در caption یا marker مستقل بلافاصله بعد از شیء. |
+| `tbl` | جدول Markdown | انتهای caption با شروع `Table:`. |
+| `eq` | معادله نمایشی MathJax | marker مستقل بلافاصله بعد از معادله. |
+| `lst` | code listing از نوع fenced | داخل metadata خط آغاز fence. |
+
+Table: نوع‌های معنایی ارجاع {#tbl:guide-reference-kinds}
+
+برای ارجاع به هر شیء، label معنایی تعریف کنید و از token متناظر `@kind:name` استفاده کنید:
+
+````markdown
+شکل @fig:processing-flow، جدول @tbl:metrics، معادله @eq:energy و کد @lst:training-loop را ببینید.
+
+![معماری](assets/architecture.svg)
+
+*شکل. معماری پردازش.* {#fig:processing-flow}
+
+| معیار | مقدار |
+| :--- | ---: |
+| دقت | ۰٫۹۸ |
+
+Table: معیارهای ارزیابی {#tbl:metrics}
+
+$$
+E = mc^2
+$$
+
+{#eq:energy}
+
+```python title="حلقه آموزش" {#lst:training-loop}
+print("train")
+```
+````
+
+نمونه‌های بعدی test case زنده renderer در همین راهنما هستند. ارجاع‌های @fig:guide-reference-flow، @tbl:guide-reference-kinds، @eq:guide-reference-energy و @lst:guide-reference-code باید در PDF به لینک‌های داخلی با شماره فارسی پایدار تبدیل شوند.
+
+```mermaid title="جریان پردازش ارجاع" {#fig:guide-reference-flow}
+flowchart LR
+  A[Label objects] --> B[Assign numbers]
+  B --> C[Resolve references]
+  C --> D[Create PDF destinations]
+```
+
+$$
+E = mc^2
+$$
+
+{#eq:guide-reference-energy}
+
+```python title="اعتبارسنجی ارجاع" {#lst:guide-reference-code}
+labels = {"fig:flow", "tbl:metrics"}
+assert len(labels) == 2
+```
+
+Labelها باید در کل خروجی یکتا باشند. Book Mode پس از ترکیب همه فصل‌ها ارجاع‌ها را resolve می‌کند؛ بنابراین فصل اول می‌تواند به شیء labelدار در فصل بعدی اشاره کند. label تکراری، reference حل‌نشده، عدم تطابق نوع، label نامعتبر و marker جداافتاده پیش از شروع Chromium diagnosticهای پایدار `MARDAS-E60x` یا `MARDAS-W603` ایجاد می‌کنند. tokenهای داخل code، لینک موجود، script، style و contextهای literal تغییر نمی‌کنند.
+
+فهرست‌های تولیدشده بعد از فهرست مطالب و پیش از بدنه سند قرار می‌گیرند و فقط شیءهایی را شامل می‌شوند که label صریح دارند. این راهنما هر چهار فهرست را به‌عنوان نمونه زنده release فعال می‌کند.
 
 # روند کار با GUI
 
@@ -951,6 +1035,9 @@ Studio پیش‌نویس فعلی، layout، حالت روشن/تاریک، جه
 | `-o`, `--output` | مسیر PDF خروجی. |
 | `--title`, `--author`, `--description` | override کردن metadata موجود در front matter. |
 | `--toc`, `--toc-depth` | فعال‌سازی و تنظیم فهرست مطالب. |
+| `--references`, `--no-references` | فعال یا غیرفعال کردن شماره‌گذاری و ارجاع معنایی. |
+| `--numbering-scope` | انتخاب شماره‌گذاری پیوسته `global` یا شماره‌گذاری فصل‌محور `chapter` در Book Mode. |
+| `--list-of-figures`, `--list-of-tables`, `--list-of-equations`, `--list-of-listings` | ساخت فهرست‌های انتخابی؛ هر گزینه جفت `--no-list-of-*` نیز دارد. |
 | `--toc-page-break`, `--h1-page-break` | کنترل صفحه‌بندی چاپی. |
 | `--style` | انتخاب `modern`، `github`، `textbook` یا `academic`. |
 | `--palette` | انتخاب `blue`، `emerald`، `violet`، `amber`، `rose`، `slate` یا `neutral`. |

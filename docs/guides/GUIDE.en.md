@@ -29,6 +29,13 @@ appearance:
   mode: light
 branding:
   mode: full
+references:
+  enabled: true
+  numbering_scope: global
+  list_of_figures: true
+  list_of_tables: true
+  list_of_equations: true
+  list_of_listings: true
 ---
 
 # Introduction
@@ -994,7 +1001,84 @@ Book Mode applies these rules:
 6. A page break is inserted between chapters when `chapter_page_break = true`.
 7. The final PDF contains one cover, one global TOC, one nested PDF outline, one metadata set, stable named destinations, and one output artifact.
 
-Book Mode intentionally does not yet implement automatic figure/table/equation numbering, bibliography processing, or semantic `@label` cross-references. Those features require a separate document-symbol model and are planned as later, independently testable phases.
+Book Mode shares the same reference symbol table across all listed chapters. With `numbering_scope = "chapter"`, an object in chapter 2 receives a number such as `2.1`; with `global`, numbering remains continuous across the complete book. Bibliography processing remains a separate phase.
+
+# Cross-references and Numbering
+
+Cross-references are opt-in. Enable them in `mardas.toml` or front matter:
+
+```toml
+[references]
+enabled = true
+numbering_scope = "global"
+list_of_figures = true
+list_of_tables = true
+list_of_equations = true
+list_of_listings = true
+```
+
+The same fields may be written under a front-matter `references:` mapping. Command-line automation can override them with `--references`, `--no-references`, `--numbering-scope global|chapter`, and paired `--list-of-*` / `--no-list-of-*` options.
+
+Supported semantic object kinds are:
+
+| Prefix | Object | Label placement |
+| :--- | :--- | :--- |
+| `fig` | Markdown images and Mermaid figures | In the caption or as a standalone marker immediately after the object. |
+| `tbl` | Markdown tables | At the end of the `Table:` caption. |
+| `eq` | Display MathJax equations | As a standalone marker immediately after the equation. |
+| `lst` | Fenced code listings | In the opening fence metadata. |
+
+Table: Supported semantic reference objects {#tbl:guide-reference-kinds}
+
+Use a semantic label and refer to it with the matching `@kind:name` token:
+
+````markdown
+See @fig:processing-flow, @tbl:metrics, @eq:energy, and @lst:training-loop.
+
+![Architecture](assets/architecture.svg)
+
+*Figure. Processing architecture.* {#fig:processing-flow}
+
+| Metric | Value |
+| :--- | ---: |
+| Accuracy | 0.98 |
+
+Table: Evaluation metrics {#tbl:metrics}
+
+$$
+E = mc^2
+$$
+
+{#eq:energy}
+
+```python title="Training loop" {#lst:training-loop}
+print("train")
+```
+````
+
+The next examples are live renderer checks in this guide. The references @fig:guide-reference-flow, @tbl:guide-reference-kinds, @eq:guide-reference-energy, and @lst:guide-reference-code must become internal PDF links with stable localized numbers.
+
+```mermaid title="Reference processing flow" {#fig:guide-reference-flow}
+flowchart LR
+  A[Label objects] --> B[Assign numbers]
+  B --> C[Resolve references]
+  C --> D[Create PDF destinations]
+```
+
+$$
+E = mc^2
+$$
+
+{#eq:guide-reference-energy}
+
+```python title="Reference validation" {#lst:guide-reference-code}
+labels = {"fig:flow", "tbl:metrics"}
+assert len(labels) == 2
+```
+
+Labels must be unique across the complete output. Book Mode resolves references only after all chapters are assembled, so a reference in one chapter can target a labeled object in another. Duplicate labels, unresolved references, kind mismatches, malformed labels, and unattached label markers produce stable `MARDAS-E60x` / `MARDAS-W603` diagnostics before Chromium starts. References inside code, existing links, scripts, styles, and other literal contexts remain untouched.
+
+Generated reference lists are placed after the table of contents and before the document body. Only explicitly labeled objects are included. This guide enables all four lists as a live release sample.
 
 # GUI Workflow
 
@@ -1030,6 +1114,9 @@ If an export fails, Studio shows the HTTP status and stable backend error code, 
 | `-o`, `--output` | Output PDF path. |
 | `--title`, `--author`, `--description` | Override metadata from front matter. |
 | `--toc`, `--toc-depth` | Enable and configure the table of contents. |
+| `--references`, `--no-references` | Enable or disable semantic object numbering and cross-references. |
+| `--numbering-scope` | Use continuous `global` numbering or `chapter` numbering in Book Mode. |
+| `--list-of-figures`, `--list-of-tables`, `--list-of-equations`, `--list-of-listings` | Generate selected reference lists; each option also has a paired `--no-list-of-*` override. |
 | `--toc-page-break`, `--h1-page-break` | Control printed page flow. |
 | `--style` | Choose `modern`, `github`, `textbook`, or `academic`. |
 | `--palette` | Choose `blue`, `emerald`, `violet`, `amber`, `rose`, `slate`, or `neutral`. |

@@ -174,6 +174,8 @@ def test_release_gate_verifies_installed_project_commands() -> None:
     assert "xref-tbl-metrics" in script
     assert "xref-eq-energy" in script
     assert "xref-lst-loop" in script
+    assert "tests/test_cross_references.py" in _read("docs/RELEASE.md")
+    assert "tests/test_cross_references.py" in _read("docs/MAINTENANCE.md")
 
 
 def test_release_gate_verifies_current_packaged_asset_names() -> None:

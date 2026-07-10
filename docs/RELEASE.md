@@ -16,7 +16,7 @@ Run the local checks before tagging. The check helper keeps pytest isolated from
 
 ```bash
 ./scripts/check.sh
-python -m pytest -q tests/test_project_config.py tests/test_book_mode.py
+python -m pytest -q tests/test_project_config.py tests/test_book_mode.py tests/test_cross_references.py
 ```
 
 For a full release verification, use the consolidated release gate:
@@ -25,7 +25,7 @@ For a full release verification, use the consolidated release gate:
 ./scripts/release_gate.sh
 ```
 
-The gate runs the complete release contract: Ruff and pytest, real Chromium render smoke, guide regeneration, PDF preflight, representative or full Visual QA, deterministic wheel/sdist construction, clean-wheel installation, console-entry-point checks, packaged-asset checks, a clean-wheel multi-file Book Mode build, and distribution checksums. The tag workflow invokes this same gate instead of maintaining a weaker parallel command list.
+The gate runs the complete release contract: Ruff and pytest, real Chromium render smoke, guide regeneration, PDF preflight, representative or full Visual QA, deterministic wheel/sdist construction, clean-wheel installation, console-entry-point checks, packaged-asset checks, a clean-wheel multi-file Book Mode build with all four numbered reference-object kinds and verified PDF destinations, and distribution checksums. The tag workflow invokes this same gate instead of maintaining a weaker parallel command list.
 
 For targeted diagnosis, the underlying helpers remain available individually:
 
@@ -50,7 +50,7 @@ Use `./scripts/clean_workspace.sh --patches` after local patch application if te
 
 The release gate writes PDF preflight data to `build/release/pdf-preflight.json` and one-case Visual QA smoke artifacts to `build/release/visual-qa-smoke/` unless `MARDAS_RELEASE_VISUAL_QA=1` is set. The full visual matrix is chunked and resumable: rerun `python scripts/run_visual_qa_matrix.py --output-dir build/release/visual-qa --render-png --resume` to skip chunks whose manifests are already complete. The matrix summary records active-chunk heartbeat data so a slow runner can be inspected while it is still running.
 
-Open the generated PDFs and visually check the cover, table of contents, page numbers, code blocks, formulas, Mermaid diagrams, local images, wide tables, blocked-image placeholders, watermarks, and footnotes. When changing appearance CSS or palette behavior, also run `python scripts/audit_appearance_matrix.py --output-dir build/appearance-audit --render-png --resume` and review the full style/palette/mode matrix. Guide builds and Python distributions honor a deterministic `SOURCE_DATE_EPOCH`; the distribution helper additionally normalizes source-archive metadata so repeated builds from one commit are byte-identical. In offline or pre-provisioned release environments, `MARDAS_BUILD_NO_ISOLATION=1 ./scripts/build_dist.sh` reuses the current environment instead of creating an isolated build environment.
+Open the generated PDFs and visually check the cover, table of contents, generated reference lists, numbered figures/tables/equations/listings, cross-reference links, page numbers, code blocks, formulas, Mermaid diagrams, local images, wide tables, blocked-image placeholders, watermarks, and footnotes. When changing appearance CSS or palette behavior, also run `python scripts/audit_appearance_matrix.py --output-dir build/appearance-audit --render-png --resume` and review the full style/palette/mode matrix. Guide builds and Python distributions honor a deterministic `SOURCE_DATE_EPOCH`; the distribution helper additionally normalizes source-archive metadata so repeated builds from one commit are byte-identical. In offline or pre-provisioned release environments, `MARDAS_BUILD_NO_ISOLATION=1 ./scripts/build_dist.sh` reuses the current environment instead of creating an isolated build environment.
 
 ## Commit style
 
