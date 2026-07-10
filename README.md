@@ -151,13 +151,21 @@ mrs-md2pdf --list-palettes
 mrs-md2pdf --list-modes
 ```
 
-Launch the GUI:
+Launch the GUI for an independent document:
 
 ```bash
 mrs-md2pdf-gui
 ```
 
-The Studio interface groups export settings into Document, Appearance, Branding, Layout, and Advanced sections. Appearance and branding choices use visual cards, while advanced controls such as watermarks and local assets stay collapsed until needed. Studio can save and reopen `.mardas.json` project files containing Markdown, export options, and attached assets; it also supports drag-and-drop asset management, auto-scaling PDF-like renderer-backed preview, Fast approximate browser-local preview, debug HTML export, and a command palette via **Ctrl/Cmd+K**. Use **Ctrl/Cmd+S** for Markdown, **Ctrl/Cmd+Shift+S** for a project bundle, and **Ctrl/Cmd+Enter** to export the PDF. The complete Studio walkthrough lives in the guides.
+Open a real `mardas.toml` project workspace:
+
+```bash
+mrs-md2pdf-gui --project path/to/project
+```
+
+Project Workspace mode adds a project file tree, Book Mode chapter badges, a Problems panel backed by the same structured diagnostics as the CLI, safe file opening/saving, renderer-backed preview for the active Markdown file, and full-book preview/export. Problem entries navigate to the responsible project file and line. Saves use content hashes and atomic replacement, so Studio rejects stale edits when a file changes externally.
+
+The Studio interface groups export settings into Document, Appearance, Branding, Layout, and Advanced sections. Appearance and branding choices use visual cards, while advanced controls such as watermarks and local assets stay collapsed until needed. The **Open Bundle** and **Save Bundle** controls handle portable `.mardas.json` snapshots containing Markdown, export options, and attached assets; they are separate from the live on-disk Project Workspace opened with `--project`. Studio also supports drag-and-drop asset management, auto-scaling PDF-like renderer-backed preview, Fast approximate browser-local preview, debug HTML export, and a command palette via **Ctrl/Cmd+K**. In Project Workspace mode, **Ctrl/Cmd+S** saves the active project file; **Ctrl/Cmd+Shift+S** saves a portable bundle, and **Ctrl/Cmd+Enter** exports the normal single-document PDF. The complete Studio walkthrough lives in the guides.
 
 ## Repository Structure
 
@@ -176,6 +184,7 @@ Mardas-MD2PDF/
 │   ├── config.py           # Versioned mardas.toml discovery, validation, and resolution
 │   ├── diagnostics.py      # Stable text/JSON diagnostic records
 │   ├── project_commands.py # Project diagnostics plus init/build/validate/explain Book Mode workflows
+│   ├── workspace.py        # Safe Studio project tree, file I/O, diagnostics, preview, and Book export
 │   ├── gui.py              # Local browser-based GUI backend
 │   └── assets/             # Style CSS, GUI shell, logo, and vendored MathJax files
 ├── docs/                   # Guides, changelog, release, maintenance, security, and documentation policy

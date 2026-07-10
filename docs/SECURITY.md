@@ -91,6 +91,14 @@ media types before rendering begins. Preview freshness is isolated per browser
 tab, and PDF exports are concurrency-bounded so repeated clients cannot launch an
 unlimited number of Chromium jobs.
 
+### Studio Project Workspace
+
+`mrs-md2pdf-gui --project PATH` explicitly grants the local Studio process access to the `mardas.toml` project rooted at `PATH`. The Project Explorer exposes only supported UTF-8 text files below that resolved project root. Hidden/generated directories, unsupported extensions, absolute paths, parent escapes, symbolic links, non-regular files, and files larger than 4 MiB are not editable through the API.
+
+Project file reads and writes require the same per-run Studio token and Host/Origin checks as render requests. A save must include the SHA-256 hash returned when the file was opened; if another tool changes the file first, Studio returns a conflict instead of overwriting the external edit. Successful writes use a sibling temporary file, flush it, preserve the original mode, and atomically replace the target. Diagnostic paths returned to the browser are project-relative and do not expose host paths outside the workspace. Book preview and export validate the saved project and retain the existing project-root, bibliography, cross-reference, citation, and output-integrity boundaries.
+
+The portable `.mardas.json` Studio bundle workflow is separate from Project Workspace mode. Loading a bundle does not grant arbitrary filesystem access, and live project editing is never enabled merely by opening the normal Studio page.
+
 ## Output integrity
 
 The CLI rejects input, PDF output, and debug-HTML paths that resolve to the same

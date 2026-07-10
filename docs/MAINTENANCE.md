@@ -58,6 +58,30 @@ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest -q \
 
 Also rebuild both guides. They load `docs/guides/GUIDE.references.bib` as a live offline source and must produce author-year disambiguation, narrative/grouped citation links, one generated bibliography, and stable `/bib-*` PDF destinations. No release check may require DOI lookup or network metadata retrieval.
 
+## Studio Project Workspace checks
+
+Changes to `src/mardas_md2pdf/workspace.py`, project API routes, Project Explorer, Problems Panel, safe file saving, or Book preview/export require:
+
+```bash
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest -q \
+  tests/test_studio_project_workspace.py \
+  tests/test_gui_assets.py \
+  tests/test_studio_sidebar_layout.py \
+  tests/test_visual_qa_scripts.py
+```
+
+Run both the ordinary Studio browser audit and the project-aware audit against a representative Book Mode project:
+
+```bash
+python scripts/audit_studio_visual.py --output-dir build/studio-audit --clean
+python scripts/audit_studio_visual.py \
+  --project path/to/book-project \
+  --output-dir build/studio-project-audit \
+  --clean
+```
+
+Verify project-relative diagnostics, safe navigation to a chapter line, external-change conflict handling, UTF-8/size boundaries, project-root and symlink rejection, renderer-backed active-file preview, and saved full-book preview/export. The installed-wheel release gate also imports `mardas_md2pdf.workspace`, performs a hash-guarded atomic save, checks `mrs-md2pdf-gui --help` for `--project`, and captures a Chromium project-workspace audit.
+
 ## Generated examples
 
 The guide PDFs in `examples/` are generated artifacts that should match the current Markdown guides. The helper sets a default `SOURCE_DATE_EPOCH` so PDF metadata dates stay deterministic across repeat builds. Regenerate them with:

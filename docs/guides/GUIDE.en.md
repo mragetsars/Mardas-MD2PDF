@@ -1126,11 +1126,21 @@ Validation rejects missing sources, invalid BibTeX/CSL JSON, duplicate keys, und
 
 # GUI Workflow
 
-Launch the GUI:
+Launch the GUI for a standalone document:
 
 ```bash
 mrs-md2pdf-gui
 ```
+
+Open a live project workspace rooted at `mardas.toml`:
+
+```bash
+mrs-md2pdf-gui --project path/to/project
+```
+
+Project Workspace mode shows the ordered Book Mode chapters and supported project text files in a Project Explorer. The Problems panel uses the same `MARDAS-*` diagnostics as `validate` and `validate-book`; selecting a problem opens the responsible file and moves the editor to its line and column when available. The active Markdown file uses renderer-backed project configuration, bibliography, cross-references, and project-root asset rules. **Preview Book** and **Export Book** operate on the saved complete project, so save the active file before running either action.
+
+Project files are edited in place only after an explicit `--project` launch. Studio accepts supported UTF-8 text files inside the project root, rejects hidden/generated paths and symbolic links, limits each editable file to 4 MiB, and uses the previously opened SHA-256 value to reject an external-change conflict. Successful saves use atomic replacement and preserve the existing file mode. The legacy **Open Bundle** and **Save Bundle** controls remain available for portable `.mardas.json` snapshots; a bundle is not the same as a live project workspace.
 
 The GUI is useful for users who prefer a visual workflow:
 
@@ -1141,7 +1151,7 @@ The GUI is useful for users who prefer a visual workflow:
 5. Use **Layout** for TOC, cover, and page-flow choices.
 6. Open **Advanced** only when you need watermarks, hidden page numbers, or attached local assets.
 7. Use the default PDF-like preview for renderer-backed HTML with page size, margins, and auto-fit scaling; switch to Fast preview only when you need instant browser-local feedback and can accept approximate Markdown parsing. Fast Preview does not fetch remote/local image paths and disables unsafe or filesystem link schemes.
-8. Use **Ctrl/Cmd+S** to save Markdown and **Ctrl/Cmd+Enter** to export quickly.
+8. Use **Ctrl/Cmd+S** to save Markdown or the active Project Workspace file, **Ctrl/Cmd+Shift+S** to save a portable `.mardas.json` bundle, and **Ctrl/Cmd+Enter** to export quickly.
 
 Studio stores the current draft, layout, interface mode, direction toggle, editor width, and export settings in browser local storage. This makes accidental refreshes less disruptive during long editing sessions. Use **Reset State** when you want to clear the saved local draft and return to a clean workspace. This section is the Studio workflow reference for users.
 

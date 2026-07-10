@@ -145,7 +145,7 @@ def test_changelog_is_descending_and_has_single_intro():
     versions = [tuple(map(int, match.groups())) for match in VERSION_RE.finditer(changelog)]
     assert versions == sorted(versions, reverse=True)
     assert len(versions) == len(set(versions))
-    assert versions[0] == (1, 17, 0)
+    assert versions[0] == (1, 18, 0)
     assert (1, 8, 6) in versions
     assert (1, 8, 5) in versions
     assert (1, 5, 0) in versions
@@ -247,6 +247,31 @@ def test_guides_include_persian_rtl_live_smoke_samples():
     assert "[^footnote-demo]" in en
     assert "[^rtl-smoke]" in fa
     assert "[^footnote-demo]" in fa
+
+
+def test_docs_describe_live_Studio_project_workspace_boundaries():
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    en = (ROOT / "docs/guides/GUIDE.en.md").read_text(encoding="utf-8")
+    fa = (ROOT / "docs/guides/GUIDE.fa.md").read_text(encoding="utf-8")
+    security = (ROOT / "docs/SECURITY.md").read_text(encoding="utf-8")
+    maintenance = (ROOT / "docs/MAINTENANCE.md").read_text(encoding="utf-8")
+    release = (ROOT / "docs/RELEASE.md").read_text(encoding="utf-8")
+
+    for source in (readme, en, fa):
+        assert "mrs-md2pdf-gui --project path/to/project" in source
+        assert "Project Workspace" in source
+        assert "Open Bundle" in source
+        assert "Save Bundle" in source
+        assert ".mardas.json" in source
+    assert "SHA-256" in en
+    assert "SHA-256" in fa
+    assert "files larger than 4 MiB" in security
+    assert "symbolic links" in security
+    assert "project-relative" in security
+    assert "tests/test_studio_project_workspace.py" in maintenance
+    assert "--project path/to/book-project" in maintenance
+    assert "tests/test_studio_project_workspace.py" in release
+    assert "build/studio-project-audit" in release
 
 
 def test_guides_render_callouts_without_raw_alert_markers():

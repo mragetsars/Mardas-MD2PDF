@@ -4,6 +4,26 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.18.0 - 2026-07-10
+
+### Added
+- Added `mrs-md2pdf-gui --project PATH` for opening a live `mardas.toml` Project Workspace with a project file tree, Book Mode chapter badges, active-file navigation, and saved full-book preview/export.
+- Added a Problems Panel backed by the existing structured project, Book Mode, cross-reference, and citation diagnostics, including navigation to project-relative files and line/column locations.
+- Added authenticated project GET/save/validate/preview/export API routes and renderer-backed preview for unsaved Markdown content using the actual project configuration, bibliography, references, and project-root assets.
+
+### Changed
+- Renamed the legacy `.mardas.json` toolbar actions to **Open Bundle** and **Save Bundle** so portable snapshots are clearly distinguished from a live on-disk Project Workspace.
+- Extended the release gate and Chromium Studio audit to verify Project Workspace loading, project controls, installed-wheel workspace APIs, hash-guarded saving, and project-relative diagnostics.
+- Preserved chapter source locations when Book Mode cross-reference or citation diagnostics are returned to Studio.
+
+### Security
+- Restricted editable workspace files to bounded UTF-8 text files inside the resolved project root, rejected hidden/generated paths and all symbolic-link traversal, and kept diagnostics free of absolute host paths.
+- Added optimistic SHA-256 concurrency checks plus atomic, permission-preserving project-file replacement so external edits are never silently overwritten.
+- Kept Project Workspace disabled unless Studio is explicitly launched with `--project`; all project APIs retain the per-run token and Host/Origin request boundary.
+
+### Tests
+- Added HTTP, path-boundary, symlink, external-change, file-size, invalid-encoding, atomic-save, Book preview, relative-diagnostic, DOM contract, installed-wheel, and Chromium visual regression coverage for Studio Project Workspace.
+
 ## 1.17.0 - 2026-07-10
 
 ### Added

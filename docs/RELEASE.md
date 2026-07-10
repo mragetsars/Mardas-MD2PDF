@@ -16,7 +16,7 @@ Run the local checks before tagging. The check helper keeps pytest isolated from
 
 ```bash
 ./scripts/check.sh
-python -m pytest -q tests/test_project_config.py tests/test_book_mode.py tests/test_cross_references.py tests/test_citations.py
+python -m pytest -q tests/test_project_config.py tests/test_book_mode.py tests/test_cross_references.py tests/test_citations.py tests/test_studio_project_workspace.py
 ```
 
 For a full release verification, use the consolidated release gate:
@@ -25,7 +25,7 @@ For a full release verification, use the consolidated release gate:
 ./scripts/release_gate.sh
 ```
 
-The gate runs the complete release contract: Ruff and pytest, real Chromium render smoke, guide regeneration, PDF preflight, representative or full Visual QA, deterministic wheel/sdist construction, clean-wheel installation, console-entry-point checks, packaged-asset checks, a clean-wheel multi-file Book Mode build with all four numbered reference-object kinds, offline citations, and verified reference/bibliography PDF destinations, and distribution checksums. The tag workflow invokes this same gate instead of maintaining a weaker parallel command list.
+The gate runs the complete release contract: Ruff and pytest, real Chromium render smoke, guide regeneration, PDF preflight, representative or full Visual QA, deterministic wheel/sdist construction, clean-wheel installation, console-entry-point checks, packaged-asset checks, a clean-wheel multi-file Book Mode build with all four numbered reference-object kinds, offline citations, verified reference/bibliography PDF destinations, an installed-wheel Studio Project Workspace hash-save check, a Chromium Problems Panel/Project Explorer audit, and distribution checksums. The tag workflow invokes this same gate instead of maintaining a weaker parallel command list.
 
 For targeted diagnosis, the underlying helpers remain available individually:
 
@@ -45,6 +45,17 @@ MARDAS_RELEASE_VISUAL_QA=1 ./scripts/release_gate.sh
 ```
 
 When a release runner is slow, use `MARDAS_TIMEOUT_MS` for Chromium's page timeout and `MARDAS_RENDER_SMOKE_TIMEOUT` for the outer `./scripts/check.sh` smoke-render command timeout.
+
+For a targeted Studio Project Workspace review, run:
+
+```bash
+python scripts/audit_studio_visual.py \
+  --project path/to/book-project \
+  --output-dir build/studio-project-audit \
+  --clean
+```
+
+Confirm the Project Explorer, Problems Panel, active project path, renderer-backed preview, Save/Validate controls, and Book Preview/Export controls are present. Also test an external file modification and confirm Studio reports a conflict instead of overwriting it.
 
 Use `./scripts/clean_workspace.sh --patches` after local patch application if temporary patch bundles were unpacked into the repository root.
 
