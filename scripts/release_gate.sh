@@ -101,9 +101,11 @@ from importlib import resources
 assets = resources.files("mardas_md2pdf") / "assets"
 required = [
     "gui.html",
-    "base.css",
-    "style_modern.css",
-    "mardas-logo.svg",
+    "style-modern.css",
+    "style-github.css",
+    "style-textbook.css",
+    "style-academic.css",
+    "mardas-md2pdf-mark.svg",
     "mathjax/tex-svg-full.js",
 ]
 missing = [name for name in required if not (assets / name).is_file()]

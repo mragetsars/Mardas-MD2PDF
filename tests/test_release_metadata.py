@@ -159,3 +159,19 @@ def test_release_gate_verifies_installed_project_commands() -> None:
         assert command in script
     assert "project_smoke" in script
     assert "validate.json" in script
+
+
+def test_release_gate_verifies_current_packaged_asset_names() -> None:
+    script = _read("scripts/release_gate.sh")
+
+    for asset in [
+        "style-modern.css",
+        "style-github.css",
+        "style-textbook.css",
+        "style-academic.css",
+        "mardas-md2pdf-mark.svg",
+        "mathjax/tex-svg-full.js",
+    ]:
+        assert asset in script
+    for obsolete in ["base.css", "style_modern.css", "mardas-logo.svg"]:
+        assert obsolete not in script
