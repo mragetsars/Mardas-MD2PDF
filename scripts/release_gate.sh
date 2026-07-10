@@ -192,6 +192,40 @@ if len([name for name in destinations if name.startswith("/bib-")]) != 2:
     raise SystemExit("Bibliography destinations are missing from the installed-wheel PDF")
 PY_PROJECT
 "$venv_bin/mrs-md2pdf-gui" --version
+"$venv_bin/mrs-md2pdf-gui" --help | grep -F -- "--project" >/dev/null
+"$venv_python" - "$project_smoke" <<'PY_WORKSPACE'
+import sys
+from pathlib import Path
+
+from mardas_md2pdf.workspace import (
+    load_workspace,
+    read_workspace_file,
+    workspace_payload,
+    write_workspace_file,
+)
+
+root = Path(sys.argv[1])
+workspace = load_workspace(root)
+payload = workspace_payload(workspace)
+if not payload.get("enabled") or payload.get("book", {}).get("chapter_count") != 2:
+    raise SystemExit("Installed-wheel Studio workspace did not load the Book Mode project")
+opened = read_workspace_file(workspace, "chapters/01-introduction.md")
+saved = write_workspace_file(
+    workspace,
+    "chapters/01-introduction.md",
+    str(opened["content"]),
+    expected_sha256=str(opened["sha256"]),
+)
+if saved.get("sha256") != opened.get("sha256"):
+    raise SystemExit("Installed-wheel Studio workspace save was not deterministic")
+if any(str(item.get("path", "")).startswith(str(root)) for item in payload.get("diagnostics", [])):
+    raise SystemExit("Studio workspace diagnostics exposed an absolute project path")
+PY_WORKSPACE
+python scripts/audit_studio_visual.py \
+  --project "$project_smoke" \
+  --output-dir build/release/studio-project \
+  --browser-timeout-ms "${MARDAS_TIMEOUT_MS:-180000}" \
+  --clean
 "$venv_python" - <<'PY'
 from importlib import resources
 

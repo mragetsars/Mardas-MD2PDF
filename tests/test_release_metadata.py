@@ -174,6 +174,11 @@ def test_release_gate_verifies_installed_project_commands() -> None:
     assert "bibliography_entries" in script
     assert "references.bib" in script
     assert "bib-" in script
+    assert "mardas_md2pdf.workspace" in script
+    assert "workspace_payload" in script
+    assert 'grep -F -- "--project"' in script
+    assert "scripts/audit_studio_visual.py" in script
+    assert "build/release/studio-project" in script
     assert "xref-fig-model" in script
     assert "xref-tbl-metrics" in script
     assert "xref-eq-energy" in script
