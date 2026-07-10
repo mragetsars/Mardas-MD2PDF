@@ -179,6 +179,11 @@ def test_release_gate_verifies_installed_project_commands() -> None:
     assert 'grep -F -- "--project"' in script
     assert "scripts/audit_studio_visual.py" in script
     assert "build/release/studio-project" in script
+    assert "RenderSession" in script
+    assert "RenderPool" in script
+    assert "Persistent-renderer smoke" in script
+    assert "render_pool.py" in script
+    assert "studio_jobs.py" in script
     assert "xref-fig-model" in script
     assert "xref-tbl-metrics" in script
     assert "xref-eq-energy" in script

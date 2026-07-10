@@ -267,6 +267,8 @@ def _capture_studio(
                 () => ({
                   toastRegion: Boolean(document.querySelector('#toastRegion')),
                   commandPaletteNavigation: typeof setCommandPaletteActive === 'function' && typeof activeCommandPaletteId === 'function',
+                  exportQueueHelpers: typeof runQueuedExport === 'function' && typeof exportJobStatus === 'function' && typeof cancelActiveExport === 'function',
+                  cancelExportButton: Boolean(document.querySelector('#cancelExportBtn')),
                   previewStatusUnclipped: (() => {
                     const node = document.querySelector('#previewStatus');
                     return Boolean(node && node.scrollWidth <= node.clientWidth + 1);
@@ -312,6 +314,8 @@ def _capture_studio(
                 "pdf_like_scrollbar_color": preview_scrollbar_check.get("scrollbarColor"),
                 "toast_region_present": bool(ui_polish_check.get("toastRegion")),
                 "command_palette_navigation": bool(ui_polish_check.get("commandPaletteNavigation")),
+                "export_queue_helpers": bool(ui_polish_check.get("exportQueueHelpers")),
+                "cancel_export_button_present": bool(ui_polish_check.get("cancelExportButton")),
                 "preview_status_unclipped_live": bool(ui_polish_check.get("previewStatusUnclipped")),
                 "project_mode_requested": project_mode,
                 "project_section_visible": bool(project_checks.get("sectionVisible")),
@@ -417,6 +421,8 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit("Studio toast status region is missing")
     if not checks.get("command_palette_navigation"):
         raise SystemExit("Studio command palette keyboard navigation helpers are missing")
+    if not checks.get("export_queue_helpers") or not checks.get("cancel_export_button_present"):
+        raise SystemExit("Studio queued-export progress or cancellation controls are missing")
     if not checks.get("preview_status_unclipped") or not checks.get("preview_status_unclipped_live"):
         raise SystemExit("Studio preview status is visually clipped")
     if args.project is not None:

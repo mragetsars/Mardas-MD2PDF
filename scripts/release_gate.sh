@@ -221,6 +221,32 @@ if saved.get("sha256") != opened.get("sha256"):
 if any(str(item.get("path", "")).startswith(str(root)) for item in payload.get("diagnostics", [])):
     raise SystemExit("Studio workspace diagnostics exposed an absolute project path")
 PY_WORKSPACE
+"$venv_python" - "$project_smoke" <<'PY_PERFORMANCE'
+import sys
+from pathlib import Path
+
+from mardas_md2pdf.render_pool import RenderPool
+from mardas_md2pdf.renderer import PdfOptions, RenderSession, convert
+from pypdf import PdfReader
+
+root = Path(sys.argv[1])
+source = root / "performance-smoke.md"
+source.write_text("# Performance smoke\n\nMixed فارسی English.\n", encoding="utf-8")
+with RenderSession() as session:
+    for index in range(2):
+        output = root / f"performance-smoke-{index + 1}.pdf"
+        convert(PdfOptions(source, output, cover=False, progress=None), session=session)
+        if len(PdfReader(str(output)).pages) != 1:
+            raise SystemExit("Persistent-renderer smoke produced an unexpected page count")
+    if session.launch_count != 1 or session.page_count != 2:
+        raise SystemExit("Persistent-renderer smoke did not reuse one Chromium process")
+
+with RenderPool(workers=1, queue_size=2, idle_timeout=5) as pool:
+    first = pool.submit(lambda session, progress, cancelled: id(session))
+    second = pool.submit(lambda session, progress, cancelled: id(session))
+    if first.result(timeout=10) != second.result(timeout=10):
+        raise SystemExit("Render queue did not preserve its thread-affine session")
+PY_PERFORMANCE
 python scripts/audit_studio_visual.py \
   --project "$project_smoke" \
   --output-dir build/release/studio-project \
@@ -242,6 +268,10 @@ required = [
 missing = [name for name in required if not (assets / name).is_file()]
 if missing:
     raise SystemExit(f"Missing packaged assets: {', '.join(missing)}")
+
+for module in ("render_pool.py", "studio_jobs.py"):
+    if not (resources.files("mardas_md2pdf") / module).is_file():
+        raise SystemExit(f"Missing packaged performance module: {module}")
 PY
 
 (
