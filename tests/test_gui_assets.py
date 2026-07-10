@@ -1,3 +1,4 @@
+import socket
 import time
 from email.message import Message
 from http.client import HTTPConnection
@@ -334,6 +335,95 @@ def test_studio_api_headers_require_same_origin_json_and_token():
             assert exc.code == expected_code
         else:  # pragma: no cover - defensive assertion branch
             raise AssertionError(f"expected StudioRequestError for {expected_code}")
+
+
+
+
+def test_studio_content_length_requires_non_negative_bounded_values():
+    import pytest
+
+    from mardas_md2pdf import gui
+
+    assert gui._studio_content_length(_headers(Content_Length="0")) == 0
+    assert (
+        gui._studio_content_length(_headers(Content_Length=str(gui.MAX_GUI_REQUEST_BYTES)))
+        == gui.MAX_GUI_REQUEST_BYTES
+    )
+
+    cases = [
+        ({}, 411, "length_required"),
+        ({"Content_Length": "not-a-number"}, 400, "invalid_content_length"),
+        ({"Content_Length": "-1"}, 400, "invalid_content_length"),
+        (
+            {"Content_Length": str(gui.MAX_GUI_REQUEST_BYTES + 1)},
+            413,
+            "request_too_large",
+        ),
+    ]
+    for header_values, expected_status, expected_code in cases:
+        with pytest.raises(gui.StudioRequestError) as exc_info:
+            gui._studio_content_length(_headers(**header_values))
+        assert exc_info.value.status == expected_status
+        assert exc_info.value.code == expected_code
+
+
+def test_studio_post_headers_reject_transfer_encoding():
+    import pytest
+
+    from mardas_md2pdf import gui
+
+    headers = _headers(
+        Host="127.0.0.1:8765",
+        Origin="http://127.0.0.1:8765",
+        Content_Type="application/json",
+        Transfer_Encoding="chunked",
+        X_Mardas_Studio_Token="secret",
+    )
+    with pytest.raises(gui.StudioRequestError) as exc_info:
+        gui._validate_studio_post_headers(
+            headers, bind_host="127.0.0.1", csrf_token="secret"
+        )
+
+    assert exc_info.value.status == 400
+    assert exc_info.value.code == "unsupported_transfer_encoding"
+
+
+def test_studio_http_api_rejects_negative_content_length_before_reading_body():
+    from mardas_md2pdf import gui
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), gui.GuiRequestHandler)
+    server.studio_bind_host = "127.0.0.1"  # type: ignore[attr-defined]
+    server.studio_csrf_token = "secret"  # type: ignore[attr-defined]
+    thread = Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        request = (
+            "POST /api/render-html HTTP/1.1\r\n"
+            f"Host: 127.0.0.1:{server.server_port}\r\n"
+            f"Origin: http://127.0.0.1:{server.server_port}\r\n"
+            "Content-Type: application/json\r\n"
+            "X-Mardas-Studio-Token: secret\r\n"
+            "Content-Length: -1\r\n"
+            "Connection: close\r\n"
+            "\r\n"
+            '{"markdown":"# must not be read"}'
+        ).encode("ascii")
+        with socket.create_connection(("127.0.0.1", server.server_port), timeout=10) as connection:
+            connection.sendall(request)
+            response = bytearray()
+            while True:
+                chunk = connection.recv(4096)
+                if not chunk:
+                    break
+                response.extend(chunk)
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=10)
+
+    response_text = response.decode("utf-8")
+    assert " 400 " in response_text.split("\r\n", 1)[0]
+    assert '"code": "invalid_content_length"' in response_text
 
 
 def test_gui_wires_studio_api_token_into_render_fetches():

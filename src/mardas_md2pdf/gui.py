@@ -158,6 +158,35 @@ def _content_type_is_json(value: str | None) -> bool:
     return (value or "").split(";", 1)[0].strip().lower() == "application/json"
 
 
+def _studio_content_length(headers: Any) -> int:
+    """Return a validated, bounded request-body length for Studio POST requests."""
+    raw_value = headers.get("Content-Length")
+    if raw_value is None or not str(raw_value).strip():
+        raise StudioRequestError(
+            "Studio render requests require a Content-Length header.",
+            status=411,
+            code="length_required",
+        )
+    try:
+        length = int(str(raw_value).strip())
+    except ValueError as exc:
+        raise StudioRequestError(
+            "Invalid Content-Length header.", code="invalid_content_length"
+        ) from exc
+    if length < 0:
+        raise StudioRequestError(
+            "Content-Length must not be negative.", code="invalid_content_length"
+        )
+    if length > MAX_GUI_REQUEST_BYTES:
+        raise StudioRequestError(
+            "Render request is too large. "
+            f"Maximum request size is {_format_bytes(MAX_GUI_REQUEST_BYTES)}.",
+            status=413,
+            code="request_too_large",
+        )
+    return length
+
+
 def _validate_studio_post_headers(
     headers: Any,
     *,
@@ -186,6 +215,13 @@ def _validate_studio_post_headers(
             "Cross-site Studio API requests are not accepted.",
             status=403,
             code="untrusted_fetch_site",
+        )
+
+    if headers.get("Transfer-Encoding"):
+        raise StudioRequestError(
+            "Studio render requests do not support Transfer-Encoding.",
+            status=400,
+            code="unsupported_transfer_encoding",
         )
 
     if not _content_type_is_json(headers.get("Content-Type")):
@@ -866,21 +902,7 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
                 bind_host=self._studio_bind_host(),
                 csrf_token=self._studio_csrf_token(),
             )
-            try:
-                length = int(self.headers.get("Content-Length", "0"))
-            except ValueError:
-                self._send_error(
-                    "Invalid Content-Length header.", status=400, code="invalid_content_length"
-                )
-                return
-            if length > MAX_GUI_REQUEST_BYTES:
-                self._send_error(
-                    "Render request is too large. "
-                    f"Maximum request size is {_format_bytes(MAX_GUI_REQUEST_BYTES)}.",
-                    status=413,
-                    code="request_too_large",
-                )
-                return
+            length = _studio_content_length(self.headers)
             preview_id = self._register_preview_request() if request_path == "/api/render-html" else None
             raw = self.rfile.read(length)
             payload = _decode_json_payload(raw)
