@@ -67,11 +67,11 @@ Build wheel and source distribution artifacts with:
 ./scripts/build_dist.sh
 ```
 
-The script removes the previous `dist/` directory before building so stale packages do not get uploaded by mistake.
+The script removes the previous `dist/` directory before building so stale packages do not get uploaded by mistake. It derives `SOURCE_DATE_EPOCH` from the current commit when possible, fixes locale/timezone-sensitive build inputs, and normalizes the source archive so repeated wheel and sdist builds from the same tree are byte-identical.
 
 ## Release artifacts workflow
 
-The `Release Artifacts` GitHub Actions workflow runs on `v*` tags and manual dispatch. It installs the package, runs the quality gate with the Chromium smoke test enabled, rebuilds the guide PDFs, builds Python distributions, and uploads both artifact groups for the release owner to attach to a GitHub Release.
+The `Release Artifacts` GitHub Actions workflow runs on `v*` tags and manual dispatch. It invokes `scripts/release_gate.sh` as the single release contract, including Chromium smoke, guide rebuild and PDF preflight, Visual QA, deterministic distribution builds, clean-wheel installation, packaged-asset and entry-point verification, and checksum generation before uploading artifacts.
 
 ## Patch set hygiene
 
@@ -102,4 +102,4 @@ after patch sets have been applied.
 
 ## Release gate
 
-Run `./scripts/release_gate.sh` before tagging a release. Set `MARDAS_RELEASE_VISUAL_QA=1` when the full chunked visual matrix is required instead of the reduced smoke matrix.
+Run `./scripts/release_gate.sh` before tagging a release. The gate installs the newly built wheel into a fresh virtual environment, verifies both console entry points and required packaged assets, and writes `dist/CHECKSUMS.sha256`. Set `MARDAS_RELEASE_VISUAL_QA=1` when the full chunked visual matrix is required instead of the reduced smoke matrix.

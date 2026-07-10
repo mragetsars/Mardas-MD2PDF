@@ -25,11 +25,15 @@ network policy.
 
 ### Local files and images
 
-- Markdown images and safe-HTML images are resolved relative to the Markdown
-  document.
+- Markdown images, safe-HTML images, and front-matter branding logos are
+  resolved relative to the Markdown document.
+- Branding assets must be regular supported image files inside the document root;
+  absolute paths, parent-directory escapes, and symlink escapes are rejected.
 - Safe local images are embedded as `data:` URLs before Chromium renders the PDF.
 - Absolute paths, `file:` URLs, parent-directory escapes, missing files, and
   over-limit images are not passed to Chromium as live file reads.
+- Relative filesystem links remain visible text but are not exported as local
+  `file:` annotations that reveal the producer's filesystem layout.
 - Blocked or missing images render as visible placeholders, so authors can see
   what was skipped.
 
@@ -37,7 +41,9 @@ network policy.
 
 Remote `http(s)` image assets are blocked by default for privacy,
 reproducibility, and offline builds. Use `--allow-remote-assets` only for trusted
-documents that intentionally fetch network images.
+documents that intentionally fetch network images. Studio Fast Preview does not
+fetch remote or local image paths and disables unsafe or filesystem link schemes;
+PDF-like Preview and export remain the authoritative renderer-backed paths.
 
 ### Raw HTML
 
@@ -64,7 +70,22 @@ if you expose it beyond `127.0.0.1`.
 Studio render endpoints accept only JSON requests from the active Studio page:
 the local browser session receives a per-run API token, and `/api/render` plus
 `/api/render-html` reject untrusted Host/Origin headers, cross-site Fetch
-Metadata, missing tokens, and non-JSON media types before rendering begins.
+Metadata, missing tokens, malformed or unbounded request bodies, and non-JSON
+media types before rendering begins. Preview freshness is isolated per browser
+tab, and PDF exports are concurrency-bounded so repeated clients cannot launch an
+unlimited number of Chromium jobs.
+
+## Output integrity
+
+The CLI rejects input, PDF output, and debug-HTML paths that resolve to the same
+file, including symlink and hardlink aliases. Final PDF and debug-HTML files are
+written to sibling temporary files and atomically replaced only after a complete
+successful write, so an interrupted post-processing step does not truncate a
+previous valid artifact.
+
+Front matter is parsed with bounded depth, node count, and scalar size. Recursive
+YAML aliases and malformed YAML are rejected with controlled diagnostics rather
+than being silently ignored or expanded without limits.
 
 ## Chromium sandboxing
 

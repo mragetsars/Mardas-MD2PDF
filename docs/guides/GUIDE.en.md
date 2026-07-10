@@ -12,7 +12,7 @@ summary: |
   This document also acts as a live rendering sample for cover pages, tables of contents, mixed RTL/LTR text, formulas, code, Mermaid flowcharts, images, tables, footnotes, page breaks, and safe HTML.
 institution: "Mardas Lab"
 course: "Markdown Publishing"
-version: "1.13.39"
+version: "1.13.40"
 status: "Stable"
 keywords:
   - Markdown
@@ -214,7 +214,7 @@ department: "Department name"
 course: "Course or project title"
 supervisor: "Supervisor name"
 date: "2026-05-20"
-version: "1.13.39"
+version: "1.13.40"
 status: "Draft"
 keywords: [Markdown, PDF, RTL, MathJax]
 cover_label: "Technical Report"
@@ -245,7 +245,7 @@ dir: ltr
 | `cover_label` | Small label above the cover title. |
 | `branding.mode` | Cover branding mode: `off`, `subtle`, or `full`. Default is `off`. |
 | `brand.name`, `brand.logo`, `brand.footer` | Optional organization branding shown when branding is enabled. |
-| `cover_logo` / `logo` | Legacy/custom logo path relative to the Markdown file. Prefer `brand.logo` for new documents. |
+| `cover_logo` / `logo` | Legacy/custom logo path relative to the Markdown file. The file must be a supported regular image inside the document root. Prefer `brand.logo` for new documents. |
 | `lang` | Built-in UI language, usually `en` or `fa`. |
 | `dir` | Document shell direction: `auto`, `ltr`, or `rtl`. |
 
@@ -314,12 +314,12 @@ Inline code remains stable: `mrs-md2pdf input.md -o output.pdf --toc`.
 
 This compact sample is intentionally part of the guide because the guide is both user documentation and a live renderer test case.[^rtl-smoke] It keeps Persian punctuation, Latin package names, Persian digits, semantic table captions, and mixed-direction cells in the official PDF examples.
 
-آیا خروجی PDF برای `version 1.13.39` و شماره ۱۴۰۵ پایدار است؟ پاسخ: بله؛ جدول زیر باید RTL، mixed-script، و mixed-number hooks را فعال کند.
+آیا خروجی PDF برای `version 1.13.40` و شماره ۱۴۰۵ پایدار است؟ پاسخ: بله؛ جدول زیر باید RTL، mixed-script، و mixed-number hooks را فعال کند.
 
 | بخش نمونه | مقدار | انتظار در PDF |
 | :--- | :--- | :--- |
 | شماره فارسی | ۱۴۰۵ | عدد فارسی با متن RTL پایدار بماند. |
-| نسخه فنی | version 1.13.39 و ۱.۹.۹ | Latin/Persian numerals در یک سلول خوانا بمانند. |
+| نسخه فنی | version 1.13.40 و ۱.۹.۹ | Latin/Persian numerals در یک سلول خوانا بمانند. |
 | شناسه انگلیسی | `PDF`, `TOC`, `MathJax` | identifierهای English داخل جدول فارسی جابه‌جا نشوند. |
 
 جدول ۱۲. نمونه جدول فارسی/RTL با عددهای ترکیبی.
@@ -688,6 +688,12 @@ Rendered PDFs include standard document metadata from front matter and a viewer 
 
 Use `--toc` when you also want a printed table of contents. The PDF outline is generated from the same heading collection so both navigation surfaces stay in sync.
 
+## Input and output integrity
+
+Malformed, recursive, excessively deep, or oversized YAML front matter is rejected with a controlled diagnostic. UTF-8 files with a BOM are accepted. The CLI also refuses to use the same underlying file for Markdown input, PDF output, or debug HTML, and commits successful PDF/debug output atomically so an interrupted write preserves the previous artifact.
+
+Relative links to local filesystem targets remain readable in the document but are not exported as machine-specific `file:` links. Manual and generated heading identifiers are deduplicated so TOC and PDF destinations remain unambiguous.
+
 # Page Flow and Layout
 
 ## Manual page breaks
@@ -718,7 +724,7 @@ Use explicit dimensions:
 mrs-md2pdf input.md -o output.pdf --page-size "210mm 297mm"
 ```
 
-Unknown page-size names now fail early instead of silently falling back to A4. Studio uses the same validation and reports invalid values with a structured `invalid_page_size` error.
+Named A0-A6, B0-B6, Letter, Legal, Tabloid, and Ledger sizes are converted to explicit Chromium dimensions so unsupported named formats do not silently fall back to A4. Custom dimensions must remain between 10 mm and 5000 mm per side. Unknown or out-of-range values fail early, and Studio uses the same validation with a structured `invalid_page_size` error.
 
 ## Margins
 
@@ -846,7 +852,7 @@ The GUI is useful for users who prefer a visual workflow:
 4. Choose **Branding** only when the PDF should show a product, organization, or lab mark.
 5. Use **Layout** for TOC, cover, and page-flow choices.
 6. Open **Advanced** only when you need watermarks, hidden page numbers, or attached local assets.
-7. Use the default PDF-like preview for renderer-backed HTML with page size, margins, and auto-fit scaling; switch to Fast preview only when you need instant browser-local feedback and can accept approximate Markdown parsing.
+7. Use the default PDF-like preview for renderer-backed HTML with page size, margins, and auto-fit scaling; switch to Fast preview only when you need instant browser-local feedback and can accept approximate Markdown parsing. Fast Preview does not fetch remote/local image paths and disables unsafe or filesystem link schemes.
 8. Use **Ctrl/Cmd+S** to save Markdown and **Ctrl/Cmd+Enter** to export quickly.
 
 Studio stores the current draft, layout, interface mode, direction toggle, editor width, and export settings in browser local storage. This makes accidental refreshes less disruptive during long editing sessions. Use **Reset State** when you want to clear the saved local draft and return to a clean workspace. This section is the Studio workflow reference for users.
@@ -854,7 +860,7 @@ Studio stores the current draft, layout, interface mode, direction toggle, edito
 If an export fails, Studio shows the HTTP status and stable backend error code, such as `invalid_json`, `invalid_page_size`, `invalid_toc_depth`, `invalid_watermark_opacity`, `markdown_too_large`, or `render_failed`. If you bind Studio to a non-local host, the backend prints a warning because other users on the reachable network can submit Markdown and attached assets.
 
 > [!IMPORTANT]
-> Studio now defaults to an auto-scaling PDF-like renderer preview with page size and margins. Fast preview remains useful for instant editing, but it is an approximate browser-local parser; final fidelity and page breaks are still determined by the backend renderer and Chromium print layout during PDF export.
+> Studio defaults to an auto-scaling PDF-like renderer preview with page size and margins. Fast Preview remains useful for instant editing, but it is an approximate browser-local parser with a deliberately restricted URL policy; final fidelity, page breaks, attached assets, MathJax, Mermaid, and security validation are determined by the backend renderer and Chromium print layout during PDF export.
 
 # CLI Reference
 

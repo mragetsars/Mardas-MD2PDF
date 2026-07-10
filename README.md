@@ -2,7 +2,7 @@
 
 > **Professional Markdown to PDF converter for Persian, English, and mixed RTL/LTR technical documents**
 
-![Language](https://img.shields.io/badge/Language-Python-blue) ![Renderer](https://img.shields.io/badge/Renderer-Playwright%20%2B%20Chromium-green) ![Math](https://img.shields.io/badge/Math-MathJax-purple) ![Version](https://img.shields.io/badge/Version-v1.13.39-success) ![Status](https://img.shields.io/badge/Status-Stable-success) ![CI](https://github.com/mragetsars/Mardas-MD2PDF/actions/workflows/ci.yml/badge.svg)
+![Language](https://img.shields.io/badge/Language-Python-blue) ![Renderer](https://img.shields.io/badge/Renderer-Playwright%20%2B%20Chromium-green) ![Math](https://img.shields.io/badge/Math-MathJax-purple) ![Version](https://img.shields.io/badge/Version-v1.13.40-success) ![Status](https://img.shields.io/badge/Status-Stable-success) ![CI](https://github.com/mragetsars/Mardas-MD2PDF/actions/workflows/ci.yml/badge.svg)
 
 ## Overview
 
@@ -133,9 +133,11 @@ These files are intended to show the real PDF output produced by the current doc
 
 ## Security Model
 
-Mardas MD2PDF is intended for local publishing workflows. By default, local images are resolved relative to the Markdown file, embedded before Chromium renders the PDF, and unresolved or out-of-bound image paths are replaced with a visible blocked placeholder instead of being loaded through the document `<base>` URL. Remote `http(s)` images are blocked by default for privacy; use `--allow-remote-assets` only for trusted documents that intentionally fetch network images. Raw HTML is sanitized unless `--unsafe-html` is used, and safe `data:` image URLs are limited to common raster formats.
+Mardas MD2PDF is intended for local publishing workflows. Local Markdown images and all front-matter branding logos are resolved relative to the Markdown document, restricted to regular supported image files inside that document root, and embedded before Chromium renders the PDF. Out-of-bound paths, symlink escapes, unsupported files, and oversized images are rejected or rendered as visible blocked placeholders. Relative filesystem links remain readable text but are not exported as machine-local `file:` annotations.
 
-Chromium sandboxing is configurable with `--chromium-sandbox auto|on|off`; the default `auto` keeps sandboxing enabled for normal users and disables it only when running as root in container-style environments. See [docs/SECURITY.md](./docs/SECURITY.md) for the full trust boundary.
+Remote `http(s)` images are blocked by default for privacy; use `--allow-remote-assets` only for trusted documents that intentionally fetch network images. Studio Fast Preview follows the same privacy boundary: it does not fetch remote or local image paths, and it disables unsafe or filesystem link schemes. Raw HTML is sanitized unless `--unsafe-html` is used, and safe `data:` image URLs are limited to common raster formats.
+
+Chromium sandboxing is configurable with `--chromium-sandbox auto|on|off`; the default `auto` keeps sandboxing enabled for normal users and disables it only when running as root in container-style environments. Output PDF and debug HTML files are committed atomically, and the CLI rejects input/output/debug paths that resolve to the same file. See [docs/SECURITY.md](./docs/SECURITY.md) for the full trust boundary.
 
 ## Testing
 
@@ -154,7 +156,7 @@ Clean local build and patch artifacts when the working tree starts to feel noisy
 
 The official guide PDFs also exercise document-local image embedding with semantic figure captions and safe HTML image sizing.
 
-The release process also audits the generated English and Persian guide PDFs visually, including Mermaid labels, local media samples, TOC navigation, footnotes, running footers, and RTL/LTR code isolation.
+The release workflow runs the consolidated release gate before publishing artifacts. It rebuilds and preflights the English and Persian guide PDFs, performs visual QA, installs the wheel in a clean environment, verifies packaged assets and entry points, and emits checksums for deterministic wheel and source-distribution artifacts.
 
 The test suite covers Markdown transformation, GitHub-style features, direction handling, table of contents and outline generation, enhanced code highlighting, code-fence metadata, Mermaid SVG rendering, MathJax preservation, extended callouts, safe HTML, footnotes, local and remote image boundaries, renderer options, GUI availability, Studio option validation, page-size handling, wide-table print fitting, workspace persistence, deterministic example metadata, appearance validation, and fallback warnings. For visual changes to styles, palettes, or light/dark mode, run `python scripts/audit_appearance_matrix.py --output-dir build/appearance-audit --render-png --resume` and inspect the generated matrix. For complete chunked coverage across every style, palette, and mode plus the feature-heavy sample, run `python scripts/run_visual_qa_matrix.py --output-dir build/visual-qa/full --render-png --resume`; the summary file records active-chunk heartbeat data and skipped completed chunks. For targeted feature-heavy coverage, run `python scripts/audit_pdf_features.py --all-appearances --render-png --resume`.
 

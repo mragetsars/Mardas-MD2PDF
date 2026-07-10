@@ -12,7 +12,7 @@ summary: |
   همین سند به عنوان نمونه زنده رندر نیز استفاده می‌شود و جلد، فهرست مطالب، متن ترکیبی فارسی/English، فرمول، کد، نمودار Mermaid، تصویر، جدول، پانویس، شکست صفحه و HTML امن را نمایش می‌دهد.
 institution: "Mardas Lab"
 course: "انتشار حرفه‌ای Markdown"
-version: "1.13.39"
+version: "1.13.40"
 status: "Stable"
 keywords:
   - Markdown
@@ -212,7 +212,7 @@ department: "نام دانشکده یا دپارتمان"
 course: "نام درس یا پروژه"
 supervisor: "نام استاد یا راهنما"
 date: "۱۴۰۵-۰۲-۳۰"
-version: "1.13.39"
+version: "1.13.40"
 status: "Draft"
 keywords: [Markdown, PDF, RTL, MathJax]
 cover_label: "گزارش فنی"
@@ -243,7 +243,7 @@ dir: rtl
 | `cover_label` | برچسب کوچک بالای عنوان جلد. |
 | `branding.mode` | حالت برندینگ جلد: `off`، `subtle` یا `full`. مقدار پیش‌فرض `off` است. |
 | `brand.name`, `brand.logo`, `brand.footer` | برند سازمانی اختیاری که در صورت فعال بودن branding روی جلد می‌آید. |
-| `cover_logo` / `logo` | مسیر لوگوی سفارشی قدیمی/ساده نسبت به فایل Markdown. برای سندهای جدید `brand.logo` تمیزتر است. |
+| `cover_logo` / `logo` | مسیر لوگوی سفارشی قدیمی/ساده نسبت به فایل Markdown. فایل باید تصویر معمولی پشتیبانی‌شده و داخل ریشه سند باشد. برای سندهای جدید `brand.logo` تمیزتر است. |
 | `lang` | زبان داخلی رابط سند، معمولاً `fa` یا `en`. |
 | `dir` | جهت پوسته سند: `auto`، `ltr` یا `rtl`. |
 
@@ -312,12 +312,12 @@ mrs-md2pdf input.md -o output.pdf --no-cover-logo
 
 این نمونه کوچک عمداً داخل guide مانده است، چون guide هم راهنمای کاربر است و هم test case زنده renderer.[^rtl-smoke] این بخش نشانه‌گذاری فارسی، نام‌های لاتین، عدد فارسی، caption جدول، و سلول‌های mixed-direction را در PDF رسمی نگه می‌دارد.
 
-آیا خروجی PDF برای `version 1.13.39` و شماره ۱۴۰۵ پایدار است؟ پاسخ: بله؛ جدول زیر باید hookهای RTL، mixed-script و mixed-number را فعال کند.
+آیا خروجی PDF برای `version 1.13.40` و شماره ۱۴۰۵ پایدار است؟ پاسخ: بله؛ جدول زیر باید hookهای RTL، mixed-script و mixed-number را فعال کند.
 
 | بخش نمونه | مقدار | انتظار در PDF |
 | :--- | :--- | :--- |
 | شماره فارسی | ۱۴۰۵ | عدد فارسی کنار متن RTL پایدار بماند. |
-| نسخه فنی | version 1.13.39 و ۱.۹.۹ | عددهای Latin/Persian در یک سلول خوانا بمانند. |
+| نسخه فنی | version 1.13.40 و ۱.۹.۹ | عددهای Latin/Persian در یک سلول خوانا بمانند. |
 | شناسه انگلیسی | `PDF`, `TOC`, `MathJax` | identifierهای English داخل جدول فارسی جابه‌جا نشوند. |
 
 جدول ۱۲. نمونه جدول فارسی/RTL با عددهای ترکیبی.
@@ -591,7 +591,7 @@ mrs-md2pdf input.md -o output.pdf --unsafe-html
 
 Mardas MD2PDF یک ابزار انتشار محلی است. فایل Markdown، assetهای attach شده در GUI، لوگوی جلد، watermark و HTML خام را محتوای نویسنده و قابل اعتماد در نظر بگیرید؛ مگر اینکه renderer را داخل محیط جداشده اجرا کنید.
 
-رندر پیش‌فرض یک مرز محافظه‌کارانه برای فایل‌ها نگه می‌دارد: تصویرهای محلی نسبت به محل فایل Markdown resolve می‌شوند، اگر امن باشند به `data:` URL تبدیل می‌شوند و اگر به بیرون از پوشه سند اشاره کنند یا قابل embed نباشند block می‌شوند. HTML خام هم به صورت پیش‌فرض sanitize می‌شود، مگر اینکه `--unsafe-html` را فعال کنید.
+رندر پیش‌فرض یک مرز محافظه‌کارانه برای فایل‌ها نگه می‌دارد: تصویرهای محلی و لوگوهای branding در front matter نسبت به محل فایل Markdown resolve می‌شوند، باید فایل تصویر معمولی پشتیبانی‌شده داخل ریشه سند باشند و پس از کنترل symlink و اندازه به `data:` URL تبدیل می‌شوند. مسیر خارج از پوشه سند، فایل نامعتبر یا asset غیرقابل embed رد یا block می‌شود. لینک نسبی فایل‌سیستم نیز به `file:` وابسته به سیستم تولیدکننده تبدیل نمی‌شود. HTML خام هم به صورت پیش‌فرض sanitize می‌شود، مگر اینکه `--unsafe-html` را فعال کنید.
 
 حالت sandbox کرومیوم با `--chromium-sandbox` کنترل می‌شود:
 
@@ -608,6 +608,12 @@ Mardas MD2PDF یک ابزار انتشار محلی است. فایل Markdown، 
 PDFهای تولیدشده metadata استاندارد سند را از front matter می‌گیرند و از headingهای Markdown یک outline برای PDF viewer می‌سازند. فهرست مطالب چاپی همچنان داخل متن سند دیده می‌شود، اما outline کنار PDF به خواننده کمک می‌کند سریع بین بخش‌ها جابه‌جا شود.
 
 وقتی فهرست مطالب چاپی هم لازم دارید از `--toc` استفاده کنید. outline از همان مجموعه heading ساخته می‌شود تا فهرست چاپی و bookmarkهای PDF با هم هماهنگ بمانند.
+
+## یکپارچگی ورودی و خروجی
+
+front matter خراب، بازگشتی، بیش‌ازحد عمیق یا بزرگ با diagnostic کنترل‌شده رد می‌شود و فایل UTF-8 دارای BOM نیز درست خوانده می‌شود. CLI اجازه نمی‌دهد Markdown ورودی، PDF خروجی یا debug HTML به یک فایل واقعی واحد اشاره کنند و خروجی موفق PDF/debug را به شکل atomic جایگزین می‌کند تا خطای نوشتن، artifact سالم قبلی را truncate نکند.
+
+لینک نسبی به فایل‌سیستم محلی به صورت متن خوانا باقی می‌ماند، اما به لینک `file:` وابسته به سیستم تولیدکننده تبدیل نمی‌شود. شناسه‌های دستی و تولیدشده heading نیز یکتا می‌شوند تا مقصدهای TOC و PDF مبهم نباشند.
 
 # صفحه‌بندی و Layout
 
@@ -638,6 +644,8 @@ mrs-md2pdf input.md -o output.pdf --page-size "A4 landscape"
 ```bash
 mrs-md2pdf input.md -o output.pdf --page-size "210mm 297mm"
 ```
+
+اندازه‌های نام‌گذاری‌شده A0-A6، B0-B6، Letter، Legal، Tabloid و Ledger به ابعاد صریح Chromium تبدیل می‌شوند تا formatهای نام‌گذاری‌شده پشتیبانی‌نشده بی‌صدا به A4 برنگردند. هر ضلع اندازه سفارشی باید بین ۱۰ تا ۵۰۰۰ میلی‌متر باشد. مقدار ناشناخته یا خارج از محدوده زودتر خطا می‌دهد و Studio نیز همان validation را با خطای ساختاریافته `invalid_page_size` به‌کار می‌گیرد.
 
 ## انواع Margin
 
@@ -765,7 +773,7 @@ mrs-md2pdf-gui
 4. استفاده از **Branding** فقط وقتی PDF باید نشان سازمان، محصول یا آزمایشگاه داشته باشد.
 5. استفاده از **Layout** برای فهرست مطالب، جلد و جریان صفحه‌ها.
 6. باز کردن **Advanced** فقط برای watermark، حذف شماره صفحه یا attach کردن assetهای محلی.
-7. استفاده از preview پیش‌فرض PDF-like برای HTML تولیدشده توسط renderer با شبیه‌سازی اندازه صفحه، margin و scale شدن صفحه؛ Fast preview فقط برای بازخورد بسیار سریع هنگام ویرایش است و parsing آن تقریبی است.
+7. استفاده از preview پیش‌فرض PDF-like برای HTML تولیدشده توسط renderer با شبیه‌سازی اندازه صفحه، margin و scale شدن صفحه؛ Fast Preview فقط برای بازخورد بسیار سریع هنگام ویرایش است و parsing آن تقریبی است. Fast Preview مسیر تصویر remote/local را fetch نمی‌کند و schemeهای ناامن یا فایل‌سیستمی لینک را غیرفعال می‌کند.
 8. استفاده از **Ctrl/Cmd+S** برای ذخیره Markdown و **Ctrl/Cmd+Enter** برای export سریع PDF.
 
 Studio پیش‌نویس فعلی، layout، حالت روشن/تاریک، جهت preview، عرض editor و گزینه‌های export را در local storage مرورگر نگه می‌دارد. این کار باعث می‌شود refresh ناخواسته صفحه در جلسه‌های ویرایش طولانی کمتر آزاردهنده باشد. برای پاک کردن پیش‌نویس محلی و برگشتن به حالت تمیز از **Reset State** استفاده کنید. همین بخش مرجع روند کار با Studio برای کاربر است.
@@ -773,7 +781,7 @@ Studio پیش‌نویس فعلی، layout، حالت روشن/تاریک، جه
 اگر export با خطا روبه‌رو شود، Studio وضعیت HTTP و کد پایدار backend مثل `invalid_json`، `invalid_page_size`، `invalid_toc_depth`، `invalid_watermark_opacity`، `markdown_too_large` یا `render_failed` را نشان می‌دهد. اگر GUI را روی host غیرلوکال bind کنید، backend هشدار می‌دهد؛ چون کاربران قابل دسترس در شبکه می‌توانند Markdown و asset بفرستند.
 
 > [!IMPORTANT]
-> Studio اکنون به‌صورت پیش‌فرض preview نوع PDF-like با scale خودکار صفحه، اندازه صفحه و margin را نشان می‌دهد. Fast preview برای ویرایش فوری مفید است، اما parser محلی مرورگر آن تقریبی است؛ fidelity نهایی و محل شکست صفحه همچنان هنگام export توسط backend renderer و layout چاپی Chromium تعیین می‌شود.
+> Studio به‌صورت پیش‌فرض preview نوع PDF-like با scale خودکار صفحه، اندازه صفحه و margin را نشان می‌دهد. Fast Preview برای ویرایش فوری مفید است، اما parser محلی مرورگر آن تقریبی و URL policy آن عمداً محدود است؛ fidelity نهایی، محل شکست صفحه، assetهای متصل، MathJax، Mermaid و validation امنیتی هنگام export توسط backend renderer و layout چاپی Chromium تعیین می‌شوند.
 
 # مرجع CLI
 

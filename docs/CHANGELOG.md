@@ -4,6 +4,27 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.13.40 - 2026-07-10
+
+### Security
+- Restricted Markdown, safe-HTML, and front-matter branding assets to supported regular images inside the document root, including symlink containment, MIME validation, and size limits.
+- Made Studio Fast Preview block remote/local image fetches and unsafe or filesystem link schemes while keeping PDF-like Preview as the authoritative renderer-backed path.
+- Added bounded YAML depth, node-count, scalar-size, and cycle validation; bounded Studio export concurrency; and isolated stale-preview coordination per browser tab.
+
+### Changed
+- Converted A0-A6, B0-B6, Letter, Legal, Tabloid, and Ledger formats to explicit Chromium dimensions and bounded custom page dimensions to 10-5000 mm per side.
+- Made Python wheel and source-distribution builds deterministic and connected the tagged-release workflow to the consolidated release gate.
+- Added IPv6 loopback Studio support and kept duplicate asset basenames in separate directories without ambiguous root-level fallback aliases.
+
+### Fixed
+- Prevented PDF output or debug HTML from overwriting the Markdown source through direct, relative, symlink, hardlink, or case-normalized path aliases.
+- Wrote final PDF and debug HTML artifacts atomically so a failed post-processing/write step preserves the previous valid output.
+- Rejected malformed or recursive front matter with actionable diagnostics, accepted UTF-8 BOM input, and preserved math/footnote-like text inside indented code and multiline code spans.
+- Deduplicated manual and generated heading IDs, blocked machine-local `file:` PDF annotations, and converted common CLI failures to concise messages without default tracebacks.
+
+### Tests
+- Added regression coverage for local-file disclosure, output-path aliases, atomic-write failures, Fast Preview URL policy, bounded YAML, Studio concurrency/tab isolation, page dimensions, deterministic distributions, IPv6, BOM input, code-literal preservation, and controlled CLI diagnostics.
+
 ## 1.13.39 - 2026-07-10
 
 ### Security
