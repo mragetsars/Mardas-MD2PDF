@@ -469,15 +469,29 @@ PLAYWRIGHT_NAMED_PAGE_FORMATS = {
     "a5",
     "a6",
 }
-SUPPORTED_CSS_PAGE_NAMES = PLAYWRIGHT_NAMED_PAGE_FORMATS | {
-    "b0",
-    "b1",
-    "b2",
-    "b3",
-    "b4",
-    "b5",
-    "b6",
+NAMED_PAGE_DIMENSIONS: dict[str, tuple[str, str]] = {
+    "letter": ("8.5in", "11in"),
+    "legal": ("8.5in", "14in"),
+    "tabloid": ("11in", "17in"),
+    "ledger": ("17in", "11in"),
+    "a0": ("841mm", "1189mm"),
+    "a1": ("594mm", "841mm"),
+    "a2": ("420mm", "594mm"),
+    "a3": ("297mm", "420mm"),
+    "a4": ("210mm", "297mm"),
+    "a5": ("148mm", "210mm"),
+    "a6": ("105mm", "148mm"),
+    "b0": ("1000mm", "1414mm"),
+    "b1": ("707mm", "1000mm"),
+    "b2": ("500mm", "707mm"),
+    "b3": ("353mm", "500mm"),
+    "b4": ("250mm", "353mm"),
+    "b5": ("176mm", "250mm"),
+    "b6": ("125mm", "176mm"),
 }
+SUPPORTED_CSS_PAGE_NAMES = set(NAMED_PAGE_DIMENSIONS)
+MIN_PAGE_DIMENSION_MM = 10.0
+MAX_PAGE_DIMENSION_MM = 5000.0
 PAGE_SIZE_NAME_RE = re.compile(
     r"^(?P<name>[A-Za-z][A-Za-z0-9-]*)(?:\s+(?P<orientation>portrait|landscape))?$",
     re.IGNORECASE,
@@ -488,6 +502,40 @@ CUSTOM_PAGE_DIMENSIONS_RE = re.compile(
     r"(?P<height>\d+(?:\.\d+)?(?:mm|cm|in|px|pt))$",
     re.IGNORECASE,
 )
+
+CSS_LENGTH_RE = re.compile(r"^(?P<number>\d+(?:\.\d+)?)(?P<unit>mm|cm|in|px|pt)$", re.IGNORECASE)
+
+
+def _css_length_mm(value: str) -> float:
+    match = CSS_LENGTH_RE.fullmatch(value.strip())
+    if not match:
+        raise ValueError(f"invalid CSS length: {value}")
+    number = float(match.group("number"))
+    unit = match.group("unit").lower()
+    factors = {"mm": 1.0, "cm": 10.0, "in": 25.4, "px": 25.4 / 96.0, "pt": 25.4 / 72.0}
+    return number * factors[unit]
+
+
+def _validate_page_dimension(value: str) -> None:
+    size_mm = _css_length_mm(value)
+    if not MIN_PAGE_DIMENSION_MM <= size_mm <= MAX_PAGE_DIMENSION_MM:
+        raise ValueError(
+            f"page dimensions must be between {MIN_PAGE_DIMENSION_MM:g}mm and "
+            f"{MAX_PAGE_DIMENSION_MM:g}mm"
+        )
+
+
+def _named_page_dimensions(value: str) -> tuple[str, str] | None:
+    match = PAGE_SIZE_NAME_RE.fullmatch(value.strip())
+    if not match:
+        return None
+    dimensions = NAMED_PAGE_DIMENSIONS.get(match.group("name").lower())
+    if not dimensions:
+        return None
+    width, height = dimensions
+    if (match.group("orientation") or "").lower() == "landscape":
+        width, height = height, width
+    return width, height
 
 
 def validate_page_size(value: str | None) -> str:
@@ -504,6 +552,8 @@ def validate_page_size(value: str | None) -> str:
 
     dimension_match = CUSTOM_PAGE_DIMENSIONS_RE.fullmatch(text)
     if dimension_match:
+        _validate_page_dimension(dimension_match.group("width"))
+        _validate_page_dimension(dimension_match.group("height"))
         return text
 
     name_match = PAGE_SIZE_NAME_RE.fullmatch(text)
@@ -536,8 +586,9 @@ def _playwright_page_size_kwargs(value: str | None) -> dict[str, str]:
             "width": dimension_match.group("width"),
             "height": dimension_match.group("height"),
         }
-    if PAGE_SIZE_NAME_RE.fullmatch(text) and " " not in text and text.lower() in PLAYWRIGHT_NAMED_PAGE_FORMATS:
-        return {"format": text}
+    named_dimensions = _named_page_dimensions(validate_page_size(value))
+    if named_dimensions:
+        return {"width": named_dimensions[0], "height": named_dimensions[1]}
     return {}
 
 
@@ -603,9 +654,13 @@ def _css_page_size(value: str | None) -> str:
     late CSS override; otherwise the style-level ``@page { size: A4; }`` wins.
     """
     try:
-        return validate_page_size(value)
+        validated = validate_page_size(value)
+        named_dimensions = _named_page_dimensions(validated)
+        if named_dimensions:
+            return f"{named_dimensions[0]} {named_dimensions[1]}"
+        return validated
     except ValueError:
-        return "A4"
+        return "210mm 297mm"
 
 
 def normalize_document_direction(value: Any, *, default: str = "auto") -> str:

@@ -2,10 +2,11 @@ from mardas_md2pdf.renderer import _css_page_size, _playwright_page_size_kwargs,
 
 
 def test_css_page_size_accepts_named_orientation_and_dimensions():
-    assert _css_page_size("A4 landscape") == "A4 landscape"
+    assert _css_page_size("A4 landscape") == "297mm 210mm"
+    assert _css_page_size("B0") == "1000mm 1414mm"
     assert _css_page_size("210mm 297mm") == "210mm 297mm"
-    assert _css_page_size("bad; value") == "A4"
-    assert _css_page_size("not-a-size") == "A4"
+    assert _css_page_size("bad; value") == "210mm 297mm"
+    assert _css_page_size("not-a-size") == "210mm 297mm"
 
 
 def test_page_size_validation_rejects_unknown_named_sizes():
@@ -14,14 +15,18 @@ def test_page_size_validation_rejects_unknown_named_sizes():
     assert validate_page_size("Letter") == "Letter"
     assert validate_page_size("A4 landscape") == "A4 landscape"
     assert validate_page_size("148mm 210mm") == "148mm 210mm"
+    for invalid in ("0mm 0mm", "0.1mm 0.1mm", "999999mm 999999mm"):
+        with pytest.raises(ValueError, match="page dimensions"):
+            validate_page_size(invalid)
     with pytest.raises(ValueError, match="page size"):
         validate_page_size("not-a-size")
 
 
-def test_playwright_page_size_uses_format_only_for_named_formats():
-    assert _playwright_page_size_kwargs("Letter") == {"format": "Letter"}
+def test_playwright_page_size_uses_explicit_dimensions_for_all_formats():
+    assert _playwright_page_size_kwargs("Letter") == {"width": "8.5in", "height": "11in"}
+    assert _playwright_page_size_kwargs("B2") == {"width": "500mm", "height": "707mm"}
     assert _playwright_page_size_kwargs("210mm 297mm") == {"width": "210mm", "height": "297mm"}
-    assert _playwright_page_size_kwargs("A4 landscape") == {}
+    assert _playwright_page_size_kwargs("A4 landscape") == {"width": "297mm", "height": "210mm"}
 
 
 def test_font_faces_warns_for_missing_font_directory(tmp_path):
@@ -70,7 +75,9 @@ def test_render_pdf_warns_when_mathjax_evaluation_fails(tmp_path):
             display_footer=False,
             footer_context="T",
         )
-    assert page.pdf_kwargs["format"] == "A4"
+    assert page.pdf_kwargs["width"] == "210mm"
+    assert page.pdf_kwargs["height"] == "297mm"
+    assert "format" not in page.pdf_kwargs
 
 
 def test_manual_pagebreak_css_breaks_after_marker_not_before(tmp_path):

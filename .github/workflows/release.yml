@@ -29,16 +29,11 @@ jobs:
           python -m pip install -e '.[dev]'
           python -m playwright install --with-deps chromium
 
-      - name: Run quality gates
+      - name: Run complete release gate
         env:
           MARDAS_RENDER_SMOKE: '1'
-        run: ./scripts/check.sh
-
-      - name: Build guide PDFs
-        run: ./scripts/build_examples.sh
-
-      - name: Build Python distributions
-        run: ./scripts/build_dist.sh
+          MARDAS_RELEASE_VISUAL_QA: '1'
+        run: ./scripts/release_gate.sh
 
       - name: Upload Python distributions
         uses: actions/upload-artifact@v4

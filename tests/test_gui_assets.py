@@ -182,8 +182,6 @@ def test_studio_asset_writer_rejects_file_directory_collisions_without_partial_w
         ("collision/child.png", "collision"),
         ("same.png", "same.png"),
         ("Images/Logo.png", "images/logo.png"),
-        ("a/logo.png", "b/logo.png"),
-        ("logo.png", "images/logo.png"),
     ]:
         case_dir = tmp_path / str(len(list(tmp_path.iterdir())))
         case_dir.mkdir()
@@ -192,6 +190,31 @@ def test_studio_asset_writer_rejects_file_directory_collisions_without_partial_w
         assert exc_info.value.status == 400
         assert exc_info.value.code == "conflicting_asset_path"
         assert list(case_dir.iterdir()) == []
+
+
+def test_studio_asset_writer_keeps_duplicate_basenames_in_separate_directories(tmp_path):
+    from mardas_md2pdf import gui
+
+    gui._write_gui_assets(
+        tmp_path,
+        [_encoded_asset("a/logo.png"), _encoded_asset("b/logo.png", "eQ==")],
+    )
+
+    assert (tmp_path / "a" / "logo.png").read_bytes() == b"x"
+    assert (tmp_path / "b" / "logo.png").read_bytes() == b"y"
+    assert not (tmp_path / "logo.png").exists()
+
+
+def test_studio_asset_writer_skips_ambiguous_basename_fallback(tmp_path):
+    from mardas_md2pdf import gui
+
+    gui._write_gui_assets(
+        tmp_path,
+        [_encoded_asset("logo.png"), _encoded_asset("images/logo.png", "eQ==")],
+    )
+
+    assert (tmp_path / "logo.png").read_bytes() == b"x"
+    assert (tmp_path / "images" / "logo.png").read_bytes() == b"y"
 
 
 def test_studio_asset_writer_rejects_reserved_working_paths(tmp_path):

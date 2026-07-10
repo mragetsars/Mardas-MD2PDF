@@ -201,3 +201,24 @@ def test_relative_file_links_are_inert_and_html_has_no_local_base_path(tmp_path:
     assert html.count("md2pdf-local-link-blocked") == 2
     assert 'href="https://example.com"' in html
     assert 'href="#part"' in html
+
+
+def test_studio_ipv6_urls_are_bracketed() -> None:
+    assert gui._studio_url("::1", 8765) == "http://[::1]:8765/"
+    assert gui._studio_url("127.0.0.1", 8765) == "http://127.0.0.1:8765/"
+
+
+def test_studio_can_bind_ipv6_loopback_when_available() -> None:
+    import socket
+
+    if not socket.has_ipv6:
+        pytest.skip("IPv6 is unavailable in this environment")
+    try:
+        server = gui._create_studio_server("::1", 0)
+    except OSError as exc:
+        pytest.skip(f"IPv6 loopback is unavailable: {exc}")
+    try:
+        assert server.address_family == socket.AF_INET6
+        assert server.server_port > 0
+    finally:
+        server.server_close()

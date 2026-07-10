@@ -34,6 +34,7 @@ def test_maintenance_scripts_are_executable() -> None:
         "scripts/render_smoke.py",
         "scripts/build_examples.sh",
         "scripts/build_dist.sh",
+        "scripts/normalize_sdist.py",
         "scripts/clean_workspace.sh",
         "scripts/release_gate.sh",
     ]:
@@ -80,6 +81,10 @@ def test_build_dist_supports_no_isolation_mode() -> None:
 
     assert "MARDAS_BUILD_NO_ISOLATION" in script
     assert "python -m build --no-isolation" in script
+    assert "SOURCE_DATE_EPOCH" in script
+    assert "PYTHONHASHSEED" in script
+    assert 'TZ="${TZ:-UTC}"' in script
+    assert "scripts/normalize_sdist.py" in script
 
 
 
@@ -118,7 +123,18 @@ def test_release_gate_consolidates_release_checks() -> None:
     assert "scripts/run_visual_qa_matrix.py" in script
     assert "scripts/build_dist.sh" in script
     assert "MARDAS_RELEASE_VISUAL_QA" in script
+    assert "python -m venv" in script
+    assert "pip check" in script
+    assert "CHECKSUMS.sha256" in script
     assert "./scripts/release_gate.sh" in release_doc
+
+
+def test_release_workflow_runs_the_complete_release_gate() -> None:
+    workflow = _read(".github/workflows/release.yml")
+
+    assert "./scripts/release_gate.sh" in workflow
+    assert "MARDAS_RELEASE_VISUAL_QA: '1'" in workflow
+    assert "./scripts/check.sh" not in workflow
 
 
 def test_check_render_smoke_uses_process_tree_safe_command_runner() -> None:

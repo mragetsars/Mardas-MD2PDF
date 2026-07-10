@@ -3,11 +3,13 @@ from __future__ import annotations
 import argparse
 import base64
 import binascii
+from collections import Counter
 import hashlib
 import json
 import logging
 import re
 import secrets
+import socket
 import tempfile
 import threading
 import webbrowser
@@ -23,6 +25,7 @@ from .appearance import code_style_for_appearance, validate_mode_name, validate_
 from .markdown import MarkdownInputError, render_markdown_file
 from .renderer import (
     DocumentAssetError,
+    NAMED_PAGE_DIMENSIONS,
     PdfOptions,
     build_html,
     convert,
@@ -50,26 +53,7 @@ STUDIO_PREVIEW_CLIENT_HEADER = "X-Mardas-Studio-Client-Id"
 STUDIO_PREVIEW_REQUEST_RE = re.compile(r"^[A-Za-z0-9_.:-]{1,96}$")
 STUDIO_PREVIEW_CLIENT_RE = re.compile(r"^[A-Za-z0-9_.:-]{1,96}$")
 
-STUDIO_PREVIEW_NAMED_PAGE_SIZES: dict[str, tuple[str, str]] = {
-    "letter": ("8.5in", "11in"),
-    "legal": ("8.5in", "14in"),
-    "tabloid": ("11in", "17in"),
-    "ledger": ("17in", "11in"),
-    "a0": ("841mm", "1189mm"),
-    "a1": ("594mm", "841mm"),
-    "a2": ("420mm", "594mm"),
-    "a3": ("297mm", "420mm"),
-    "a4": ("210mm", "297mm"),
-    "a5": ("148mm", "210mm"),
-    "a6": ("105mm", "148mm"),
-    "b0": ("1000mm", "1414mm"),
-    "b1": ("707mm", "1000mm"),
-    "b2": ("500mm", "707mm"),
-    "b3": ("353mm", "500mm"),
-    "b4": ("250mm", "353mm"),
-    "b5": ("176mm", "250mm"),
-    "b6": ("125mm", "176mm"),
-}
+STUDIO_PREVIEW_NAMED_PAGE_SIZES = NAMED_PAGE_DIMENSIONS
 STUDIO_PREVIEW_PAGE_NAME_RE = re.compile(
     r"^(?P<name>[A-Za-z][A-Za-z0-9-]*)(?:\s+(?P<orientation>portrait|landscape))?$",
     re.IGNORECASE,
@@ -88,6 +72,24 @@ class StudioRequestError(ValueError):
         super().__init__(message)
         self.status = status
         self.code = code
+
+
+class IPv6ThreadingHTTPServer(ThreadingHTTPServer):
+    """Threading HTTP server that binds IPv6 literals such as ``::1``."""
+
+    address_family = socket.AF_INET6
+
+
+def _create_studio_server(host: str, port: int) -> ThreadingHTTPServer:
+    normalized = (host or "").strip().strip("[]")
+    server_class = IPv6ThreadingHTTPServer if ":" in normalized else ThreadingHTTPServer
+    return server_class((normalized, port), GuiRequestHandler)
+
+
+def _studio_url(host: str, port: int) -> str:
+    normalized = (host or "127.0.0.1").strip().strip("[]")
+    display_host = f"[{normalized}]" if ":" in normalized else normalized
+    return f"http://{display_host}:{port}/"
 
 
 def _format_bytes(size: int) -> str:
@@ -495,16 +497,31 @@ def _asset_paths_conflict(left: Path, right: Path) -> bool:
     return left_parts[:common] == right_parts[:common]
 
 
-def _gui_asset_targets(rel_path: Path) -> tuple[Path, ...]:
-    if len(rel_path.parts) > 1:
-        return rel_path, Path(rel_path.name)
-    return (rel_path,)
+def _gui_asset_target_groups(asset_paths: list[Path]) -> list[tuple[Path, ...]]:
+    """Return primary asset paths plus only unambiguous basename fallbacks."""
+    basename_counts = Counter(
+        path.name.casefold() for path in asset_paths if len(path.parts) > 1
+    )
+    primary_keys = {_asset_path_key(path) for path in asset_paths}
+    groups: list[tuple[Path, ...]] = []
+    for rel_path in asset_paths:
+        targets = [rel_path]
+        basename = Path(rel_path.name)
+        if (
+            len(rel_path.parts) > 1
+            and basename_counts[rel_path.name.casefold()] == 1
+            and _asset_path_key(basename) not in primary_keys
+        ):
+            targets.append(basename)
+        groups.append(tuple(targets))
+    return groups
 
 
 def _validate_gui_asset_targets(
     asset_paths: list[Path], *, reserved_paths: tuple[Path, ...]
-) -> None:
-    targets = [target for rel_path in asset_paths for target in _gui_asset_targets(rel_path)]
+) -> list[tuple[Path, ...]]:
+    target_groups = _gui_asset_target_groups(asset_paths)
+    targets = [target for group in target_groups for target in group]
     normalized_reserved = tuple(Path(path) for path in reserved_paths)
 
     for target in targets:
@@ -521,6 +538,7 @@ def _validate_gui_asset_targets(
                     "Attached asset paths conflict after normalization or basename fallback.",
                     code="conflicting_asset_path",
                 )
+    return target_groups
 
 
 def _write_gui_assets(
@@ -552,11 +570,11 @@ def _write_gui_assets(
         prepared.append((rel_path, data))
         total_bytes += len(data)
 
-    _validate_gui_asset_targets(
+    target_groups = _validate_gui_asset_targets(
         [rel_path for rel_path, _data in prepared], reserved_paths=reserved_paths
     )
-    for rel_path, data in prepared:
-        for relative_target in _gui_asset_targets(rel_path):
+    for (rel_path, data), relative_targets in zip(prepared, target_groups, strict=True):
+        for relative_target in relative_targets:
             target = tmp / relative_target
             try:
                 target.relative_to(tmp)
@@ -1100,7 +1118,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    server = ThreadingHTTPServer((args.host, args.port), GuiRequestHandler)
+    server = _create_studio_server(args.host, args.port)
     server.studio_bind_host = args.host  # type: ignore[attr-defined]
     server.studio_csrf_token = secrets.token_urlsafe(32)  # type: ignore[attr-defined]
     server.studio_preview_state_lock = threading.Lock()  # type: ignore[attr-defined]
@@ -1109,7 +1127,7 @@ def main(argv: list[str] | None = None) -> int:
     server.studio_export_semaphore = threading.BoundedSemaphore(  # type: ignore[attr-defined]
         MAX_STUDIO_CONCURRENT_EXPORTS
     )
-    url = f"http://{args.host}:{server.server_port}/"
+    url = _studio_url(args.host, server.server_port)
     print(f"Mardas MD2PDF Studio is running at {url}")
     warning = _studio_bind_warning(args.host)
     if warning:

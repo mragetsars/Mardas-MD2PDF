@@ -51,3 +51,51 @@ else
 fi
 
 bash scripts/build_dist.sh
+
+wheel_path="$(find dist -maxdepth 1 -type f -name '*.whl' -print -quit)"
+if [[ -z "$wheel_path" ]]; then
+  echo "Release gate failed: wheel artifact was not produced." >&2
+  exit 1
+fi
+
+verify_venv="$(mktemp -d "${TMPDIR:-/tmp}/mardas-md2pdf-release-venv.XXXXXX")"
+cleanup_release_gate() {
+  rm -rf "$verify_venv" "$tmp_pdf"
+}
+trap cleanup_release_gate EXIT
+
+python -m venv "$verify_venv"
+venv_python="$verify_venv/bin/python"
+venv_bin="$verify_venv/bin"
+if [[ "${OS:-}" == "Windows_NT" ]]; then
+  venv_python="$verify_venv/Scripts/python.exe"
+  venv_bin="$verify_venv/Scripts"
+fi
+
+"$venv_python" -m pip install --disable-pip-version-check "$wheel_path"
+"$venv_python" -m pip check
+"$venv_bin/mrs-md2pdf" --version
+"$venv_bin/mrs-md2pdf" --help >/dev/null
+"$venv_bin/mrs-md2pdf" --list-styles >/dev/null
+"$venv_bin/mrs-md2pdf-gui" --version
+"$venv_python" - <<'PY'
+from importlib import resources
+
+assets = resources.files("mardas_md2pdf") / "assets"
+required = [
+    "gui.html",
+    "base.css",
+    "style_modern.css",
+    "mardas-logo.svg",
+    "mathjax/tex-svg-full.js",
+]
+missing = [name for name in required if not (assets / name).is_file()]
+if missing:
+    raise SystemExit(f"Missing packaged assets: {', '.join(missing)}")
+PY
+
+(
+  cd dist
+  rm -f CHECKSUMS.sha256
+  sha256sum ./*.whl ./*.tar.gz > CHECKSUMS.sha256
+)
