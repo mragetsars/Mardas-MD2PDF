@@ -4,6 +4,7 @@ import base64
 from contextlib import contextmanager
 from functools import lru_cache
 import html
+import logging
 import mimetypes
 import os
 import re
@@ -37,6 +38,9 @@ from .appearance import (
 from .brand_assets import product_logo_path
 from .diagnostics import format_diagnostic, has_errors
 from .markdown import MarkdownInputError, MarkdownRenderResult, render_markdown_file
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 MAX_EMBED_ASSET_BYTES = 20 * 1024 * 1024
@@ -2776,7 +2780,7 @@ class RenderSession:
             try:
                 browser.close()
             except Exception:
-                pass
+                LOGGER.debug("Failed to close reusable Chromium browser", exc_info=True)
 
     def close(self) -> None:
         self._claim_thread()
@@ -2786,7 +2790,7 @@ class RenderSession:
             try:
                 playwright.stop()
             except Exception:
-                pass
+                LOGGER.debug("Failed to stop reusable Playwright session", exc_info=True)
 
     def restart(self) -> None:
         """Discard the current browser so the next conversion launches cleanly."""

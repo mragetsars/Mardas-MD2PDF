@@ -1341,7 +1341,8 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
             self._send_json(response, status=202)
             return True
 
-        assert route is not None
+        if route is None:
+            return False
         job_id, _action = route
         cancelled = self._studio_export_manager().cancel(job_id)
         if cancelled is None:
