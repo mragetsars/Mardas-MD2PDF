@@ -443,10 +443,53 @@ def _safe_asset_relative_path(value: str | None, fallback: str = "asset") -> Pat
     return Path(*safe_parts) if safe_parts else Path(_safe_filename(fallback))
 
 
-def _write_gui_assets(tmp: Path, assets: Any) -> None:
+def _asset_path_key(path: Path) -> tuple[str, ...]:
+    """Return a platform-neutral key that catches Windows case collisions."""
+    return tuple(part.casefold() for part in path.parts)
+
+
+def _asset_paths_conflict(left: Path, right: Path) -> bool:
+    left_parts = _asset_path_key(left)
+    right_parts = _asset_path_key(right)
+    common = min(len(left_parts), len(right_parts))
+    return left_parts[:common] == right_parts[:common]
+
+
+def _gui_asset_targets(rel_path: Path) -> tuple[Path, ...]:
+    if len(rel_path.parts) > 1:
+        return rel_path, Path(rel_path.name)
+    return (rel_path,)
+
+
+def _validate_gui_asset_targets(
+    asset_paths: list[Path], *, reserved_paths: tuple[Path, ...]
+) -> None:
+    targets = [target for rel_path in asset_paths for target in _gui_asset_targets(rel_path)]
+    normalized_reserved = tuple(Path(path) for path in reserved_paths)
+
+    for target in targets:
+        if any(_asset_paths_conflict(target, reserved) for reserved in normalized_reserved):
+            raise StudioRequestError(
+                f'Attached asset path "{target.as_posix()}" conflicts with a Studio working file.',
+                code="reserved_asset_path",
+            )
+
+    for index, target in enumerate(targets):
+        for other in targets[index + 1 :]:
+            if _asset_paths_conflict(target, other):
+                raise StudioRequestError(
+                    "Attached asset paths conflict after normalization or basename fallback.",
+                    code="conflicting_asset_path",
+                )
+
+
+def _write_gui_assets(
+    tmp: Path, assets: Any, *, reserved_paths: tuple[Path, ...] = ()
+) -> None:
     if not isinstance(assets, list):
         return
     total_bytes = 0
+    prepared: list[tuple[Path, bytes]] = []
     for index, asset in enumerate(assets[:MAX_GUI_ASSETS]):
         if not isinstance(asset, dict):
             continue
@@ -466,22 +509,21 @@ def _write_gui_assets(tmp: Path, assets: Any) -> None:
         if total_bytes + len(data) > MAX_GUI_TOTAL_ASSET_BYTES:
             continue
         rel_path = _safe_asset_relative_path(name, fallback=f"asset-{index}")
-        target = tmp / rel_path
-        try:
-            target.relative_to(tmp)
-        except ValueError:
-            continue
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_bytes(data)
+        prepared.append((rel_path, data))
         total_bytes += len(data)
 
-        # Also copy a basename fallback beside document.md. This mirrors the CLI
-        # image resolver and helps when a browser only provides selected files
-        # without their original directory names.
-        if len(rel_path.parts) > 1:
-            fallback_target = tmp / rel_path.name
-            if not fallback_target.exists():
-                fallback_target.write_bytes(data)
+    _validate_gui_asset_targets(
+        [rel_path for rel_path, _data in prepared], reserved_paths=reserved_paths
+    )
+    for rel_path, data in prepared:
+        for relative_target in _gui_asset_targets(rel_path):
+            target = tmp / relative_target
+            try:
+                target.relative_to(tmp)
+            except ValueError:
+                continue
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(data)
 
 
 def _validate_studio_payload(
@@ -763,7 +805,11 @@ def _render_studio_html_payload(payload: dict[str, Any]) -> str:
         md_path = tmp / "document.md"
         html_path = tmp / "document.html"
         md_path.write_text(markdown, encoding="utf-8")
-        _write_gui_assets(tmp, assets)
+        _write_gui_assets(
+            tmp,
+            assets,
+            reserved_paths=(Path("document.md"), Path("document.html"), Path("document.pdf")),
+        )
         pdf_options = _studio_pdf_options(
             tmp=tmp,
             md_path=md_path,
@@ -930,7 +976,9 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
                 md_path = tmp / "document.md"
                 pdf_path = tmp / filename
                 md_path.write_text(markdown, encoding="utf-8")
-                _write_gui_assets(tmp, assets)
+                _write_gui_assets(
+                    tmp, assets, reserved_paths=(Path("document.md"), Path(filename))
+                )
                 pdf_options = _studio_pdf_options(
                     tmp=tmp,
                     md_path=md_path,

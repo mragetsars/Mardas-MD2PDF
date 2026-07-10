@@ -168,6 +168,89 @@ def test_gui_asset_writer_enforces_size_limits(tmp_path, monkeypatch):
 
 
 
+def _encoded_asset(path: str, payload: str = "eA==") -> dict[str, str]:
+    return {"path": path, "data": f"data:application/octet-stream;base64,{payload}"}
+
+
+def test_studio_asset_writer_rejects_file_directory_collisions_without_partial_writes(tmp_path):
+    import pytest
+
+    from mardas_md2pdf import gui
+
+    for paths in [
+        ("collision", "collision/child.png"),
+        ("collision/child.png", "collision"),
+        ("same.png", "same.png"),
+        ("Images/Logo.png", "images/logo.png"),
+        ("a/logo.png", "b/logo.png"),
+        ("logo.png", "images/logo.png"),
+    ]:
+        case_dir = tmp_path / str(len(list(tmp_path.iterdir())))
+        case_dir.mkdir()
+        with pytest.raises(gui.StudioRequestError) as exc_info:
+            gui._write_gui_assets(case_dir, [_encoded_asset(path) for path in paths])
+        assert exc_info.value.status == 400
+        assert exc_info.value.code == "conflicting_asset_path"
+        assert list(case_dir.iterdir()) == []
+
+
+def test_studio_asset_writer_rejects_reserved_working_paths(tmp_path):
+    import pytest
+
+    from mardas_md2pdf import gui
+
+    for path in ("document.md", "document.md/child.png", "DOCUMENT.MD"):
+        with pytest.raises(gui.StudioRequestError) as exc_info:
+            gui._write_gui_assets(
+                tmp_path,
+                [_encoded_asset(path)],
+                reserved_paths=(Path("document.md"), Path("export.pdf")),
+            )
+        assert exc_info.value.status == 400
+        assert exc_info.value.code == "reserved_asset_path"
+        assert list(tmp_path.iterdir()) == []
+
+
+def test_studio_http_preview_rejects_colliding_asset_paths_as_client_error():
+    import json
+
+    from mardas_md2pdf import gui
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), gui.GuiRequestHandler)
+    server.studio_bind_host = "127.0.0.1"  # type: ignore[attr-defined]
+    server.studio_csrf_token = "secret"  # type: ignore[attr-defined]
+    thread = Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        body = json.dumps(
+            {
+                "markdown": "# Collision",
+                "assets": [_encoded_asset("collision"), _encoded_asset("collision/child.png")],
+            }
+        )
+        connection = HTTPConnection("127.0.0.1", server.server_port, timeout=10)
+        connection.request(
+            "POST",
+            "/api/render-html",
+            body=body,
+            headers={
+                "Content-Type": "application/json",
+                "Origin": f"http://127.0.0.1:{server.server_port}",
+                "X-Mardas-Studio-Token": "secret",
+            },
+        )
+        response = connection.getresponse()
+        payload = json.loads(response.read().decode("utf-8"))
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=10)
+
+    assert response.status == 400
+    assert payload["code"] == "conflicting_asset_path"
+    assert "File exists" not in payload["error"]
+
+
 def test_studio_asset_paths_preserve_spaces_and_unicode(tmp_path):
     from mardas_md2pdf import gui
 
