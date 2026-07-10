@@ -5,7 +5,7 @@ import time
 from http.client import HTTPConnection
 from http.server import ThreadingHTTPServer
 from pathlib import Path
-from threading import Barrier, Event, Lock, Thread
+from threading import Event, Lock, Thread
 
 import pytest
 
@@ -92,15 +92,16 @@ def test_studio_export_concurrency_is_bounded(monkeypatch: pytest.MonkeyPatch, t
     active = 0
     maximum = 0
     state_lock = Lock()
-    entered = Barrier(gui.MAX_STUDIO_CONCURRENT_EXPORTS + 1)
+    entered = Event()
     release = Event()
 
-    def fake_convert(options: PdfOptions) -> Path:
+    def fake_convert(options: PdfOptions, *, session=None) -> Path:
         nonlocal active, maximum
         with state_lock:
             active += 1
             maximum = max(maximum, active)
-        entered.wait(timeout=10)
+            if active == gui.MAX_STUDIO_CONCURRENT_EXPORTS:
+                entered.set()
         assert release.wait(timeout=10)
         options.output_path.write_bytes(b"%PDF-1.7\n%%EOF\n")
         with state_lock:
@@ -119,11 +120,10 @@ def test_studio_export_concurrency_is_bounded(monkeypatch: pytest.MonkeyPatch, t
     try:
         workers[0].start()
         workers[1].start()
-        entered.wait(timeout=10)
+        assert entered.wait(timeout=10)
         workers[2].start()
-        deadline = time.monotonic() + 10
-        while len(results) < 1 and time.monotonic() < deadline:
-            time.sleep(0.01)
+        time.sleep(0.1)
+        assert not results
         release.set()
         for worker in workers:
             worker.join(timeout=20)
@@ -134,7 +134,7 @@ def test_studio_export_concurrency_is_bounded(monkeypatch: pytest.MonkeyPatch, t
         thread.join(timeout=10)
 
     assert maximum == gui.MAX_STUDIO_CONCURRENT_EXPORTS
-    assert sorted(results) == [200, 200, 429]
+    assert sorted(results) == [200, 200, 200]
 
 
 def test_preview_freshness_is_isolated_per_client(monkeypatch: pytest.MonkeyPatch) -> None:

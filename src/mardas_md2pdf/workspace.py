@@ -6,7 +6,7 @@ import stat
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable
+from typing import Callable, Iterable
 
 from .citations import load_bibliography
 from .book import (
@@ -21,7 +21,7 @@ from .config import CONFIG_FILENAME, LoadedProjectConfig, load_project_config
 from .diagnostics import Diagnostic, has_errors
 from .project_commands import project_config_diagnostics, validate_book_project
 from .markdown import embed_local_images, render_markdown
-from .renderer import PdfOptions, build_html
+from .renderer import CancellationCallback, PdfOptions, RenderSession, build_html
 
 MAX_WORKSPACE_FILES = 2_000
 MAX_WORKSPACE_TEXT_BYTES = 4 * 1024 * 1024
@@ -372,7 +372,12 @@ def _workspace_files(
     return tuple(files), tuple(diagnostics)
 
 
-def load_workspace(target: Path) -> ProjectWorkspace:
+def load_workspace(
+    target: Path,
+    *,
+    progress: Callable[[str, float], None] | None = None,
+    cancelled: CancellationCallback | None = None,
+) -> ProjectWorkspace:
     resolved = target.expanduser().resolve(strict=False)
     explicit = resolved if resolved.is_file() and resolved.name == CONFIG_FILENAME else None
     start = resolved.parent if resolved.is_file() else resolved
@@ -399,7 +404,11 @@ def load_workspace(target: Path) -> ProjectWorkspace:
     manifest: BookManifest | None = None
     bundle: BookRenderBundle | None = None
     if config.values.get("book_chapters") and not has_errors(diagnostics):
-        manifest, bundle, book_diagnostics = validate_book_project(config)
+        manifest, bundle, book_diagnostics = validate_book_project(
+            config,
+            progress=progress,
+            cancelled=cancelled,
+        )
         diagnostics.extend(book_diagnostics)
     elif not has_errors(diagnostics):
         manifest, manifest_diagnostics = load_book_manifest(config)
@@ -422,12 +431,17 @@ def load_workspace(target: Path) -> ProjectWorkspace:
     )
 
 
-def refresh_workspace(workspace: ProjectWorkspace) -> ProjectWorkspace:
+def refresh_workspace(
+    workspace: ProjectWorkspace,
+    *,
+    progress: Callable[[str, float], None] | None = None,
+    cancelled: CancellationCallback | None = None,
+) -> ProjectWorkspace:
     if workspace.config.path is None:
         raise WorkspaceError(
             "Studio project configuration is unavailable.", code="project_unavailable"
         )
-    return load_workspace(workspace.config.path)
+    return load_workspace(workspace.config.path, progress=progress, cancelled=cancelled)
 
 
 def workspace_diagnostics_payload(
@@ -471,8 +485,11 @@ def workspace_payload(workspace: ProjectWorkspace) -> dict[str, object]:
 
 def _validated_book_workspace(
     workspace: ProjectWorkspace,
+    *,
+    progress: Callable[[str, float], None] | None = None,
+    cancelled: CancellationCallback | None = None,
 ) -> tuple[ProjectWorkspace, BookManifest, BookRenderBundle]:
-    refreshed = refresh_workspace(workspace)
+    refreshed = refresh_workspace(workspace, progress=progress, cancelled=cancelled)
     if refreshed.manifest is None or refreshed.bundle is None or has_errors(refreshed.diagnostics):
         raise WorkspaceError(
             "Book project has validation errors. Resolve Problems before preview or export.",
@@ -500,26 +517,61 @@ def render_workspace_book_html(
     )
 
 
+def export_workspace_book_pdf(
+    workspace: ProjectWorkspace,
+    output_path: Path,
+    *,
+    session: RenderSession | None = None,
+    progress: Callable[[str, float], None] | None = None,
+    cancelled: CancellationCallback | None = None,
+) -> tuple[Path, str, ProjectWorkspace]:
+    refreshed, manifest, bundle = _validated_book_workspace(
+        workspace,
+        progress=(
+            (lambda stage, value: progress(stage, value * 0.35)) if progress else None
+        ),
+        cancelled=cancelled,
+    )
+    built, _bundle, diagnostics = convert_book(
+        manifest,
+        output_path=output_path,
+        bundle=bundle,
+        session=session,
+        progress=(
+            (lambda stage, value: progress(stage, 0.35 + value * 0.65))
+            if progress
+            else None
+        ),
+        cancelled=cancelled,
+    )
+    if built is None or has_errors(diagnostics):
+        raise WorkspaceError(
+            "Book export failed validation.",
+            code="project_export_failed",
+            status=422,
+            diagnostics=diagnostics,
+        )
+    return built, manifest.output_path.name, refreshed
+
+
 def render_workspace_book_pdf(
     workspace: ProjectWorkspace,
+    *,
+    session: RenderSession | None = None,
+    progress: Callable[[str, float], None] | None = None,
+    cancelled: CancellationCallback | None = None,
 ) -> tuple[bytes, str, ProjectWorkspace]:
-    refreshed, manifest, bundle = _validated_book_workspace(workspace)
     with tempfile.TemporaryDirectory(prefix="mardas-studio-book-") as directory:
-        output = Path(directory) / manifest.output_path.name
-        built, _bundle, diagnostics = convert_book(
-            manifest,
-            output_path=output,
-            bundle=bundle,
+        output = Path(directory) / "book.pdf"
+        built, filename, refreshed = export_workspace_book_pdf(
+            workspace,
+            output,
+            session=session,
+            progress=progress,
+            cancelled=cancelled,
         )
-        if built is None or has_errors(diagnostics):
-            raise WorkspaceError(
-                "Book export failed validation.",
-                code="project_export_failed",
-                status=422,
-                diagnostics=diagnostics,
-            )
         data = built.read_bytes()
-    return data, manifest.output_path.name, refreshed
+    return data, filename, refreshed
 
 
 def _workspace_pdf_options(workspace: ProjectWorkspace, source_path: Path) -> PdfOptions:

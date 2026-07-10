@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import base64
+from contextlib import contextmanager
+from functools import lru_cache
 import html
 import mimetypes
 import os
@@ -8,16 +10,17 @@ import re
 import shutil
 import stat
 import tempfile
+import threading
 import unicodedata
 import warnings
 from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from importlib import resources
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Iterator
 from urllib.parse import quote, unquote
 
-from playwright.sync_api import Page, sync_playwright
+from playwright.sync_api import Browser, BrowserContext, Page, Playwright, sync_playwright
 from pypdf import PdfReader, PdfWriter
 from pypdf.generic import ArrayObject, DictionaryObject, Fit, NameObject, NumberObject, TextStringObject
 
@@ -47,6 +50,7 @@ ALLOWED_EMBED_ASSET_MIME_TYPES = {
     "image/svg+xml",
 }
 ProgressCallback = Callable[[str, float], None]
+CancellationCallback = Callable[[], bool]
 BRANDING_MODES = ("off", "subtle", "full")
 PRODUCT_BRAND_NAME = "Mardas MD2PDF"
 PRODUCT_BRAND_FOOTER = "Markdown to PDF Engine"
@@ -60,6 +64,10 @@ class OutputPathError(ValueError):
     """Raised when conversion paths overlap or target invalid filesystem objects."""
 
 
+class RenderCancelledError(RuntimeError):
+    """Raised when a caller cancels rendering at a safe checkpoint."""
+
+
 def validate_branding_mode(value: str | None) -> str:
     """Validate and normalize cover branding mode names."""
     normalized = str(value or "off").strip().lower()
@@ -67,6 +75,12 @@ def validate_branding_mode(value: str | None) -> str:
         allowed = ", ".join(BRANDING_MODES)
         raise ValueError(f"must be one of: {allowed}")
     return normalized
+
+
+def _check_cancel(options: "PdfOptions") -> None:
+    callback = options.cancelled
+    if callback is not None and callback():
+        raise RenderCancelledError("PDF rendering was cancelled.")
 
 
 def _report_progress(callback: ProgressCallback | None, message: str, fraction: float) -> None:
@@ -132,8 +146,10 @@ class PdfOptions:
     bibliography_title: str | None = None
     bibliography_include_uncited: bool | None = None
     progress: ProgressCallback | None = None
+    cancelled: CancellationCallback | None = None
 
 
+@lru_cache(maxsize=16)
 def _asset_text(relative_path: str) -> str:
     return (resources.files("mardas_md2pdf") / "assets" / relative_path).read_text(encoding="utf-8")
 
@@ -190,6 +206,7 @@ def _font_faces(font_dir: Path | None) -> str:
     return "\n".join(chunks)
 
 
+@lru_cache(maxsize=1)
 def _mathjax_script() -> str:
     path = _asset_path("mathjax/tex-svg-full.js")
     if path.exists():
@@ -227,6 +244,15 @@ def _path_uri(path: Path | None) -> str | None:
     return path.resolve().as_uri()
 
 
+@lru_cache(maxsize=16)
+def _cached_small_image_data_uri(
+    path_text: str, mtime_ns: int, size: int, mime_type: str
+) -> str:
+    del mtime_ns, size
+    encoded = base64.b64encode(Path(path_text).read_bytes()).decode("ascii")
+    return f"data:{mime_type};base64,{encoded}"
+
+
 def _image_data_uri(path: Path | None) -> str | None:
     """Embed local images as data URIs so Chromium PDF can render them reliably."""
     if not path:
@@ -256,6 +282,11 @@ def _image_data_uri(path: Path | None) -> str | None:
             stacklevel=2,
         )
         return None
+    stat_result = path.stat()
+    if size <= 2 * 1024 * 1024:
+        return _cached_small_image_data_uri(
+            str(path), stat_result.st_mtime_ns, stat_result.st_size, mime_type
+        )
     encoded = base64.b64encode(path.read_bytes()).decode("ascii")
     return f"data:{mime_type};base64,{encoded}"
 
@@ -2707,6 +2738,120 @@ def _chromium_launch_args(options: PdfOptions) -> list[str]:
     return args
 
 
+class RenderSession:
+    """Thread-affine reusable Chromium session for repeated PDF exports.
+
+    A fresh browser context is created for every conversion, so cookies, page
+    state, and temporary object URLs never leak between documents.  Only the
+    expensive Playwright and Chromium process lifecycle is reused.
+    """
+
+    def __init__(self) -> None:
+        self._owner_thread: int | None = None
+        self._playwright: Playwright | None = None
+        self._browser: Browser | None = None
+        self._browser_key: tuple[str | None, tuple[str, ...]] | None = None
+        self.launch_count = 0
+        self.page_count = 0
+        self.last_page_reused_browser = False
+
+    def __enter__(self) -> "RenderSession":
+        self._claim_thread()
+        return self
+
+    def __exit__(self, exc_type: object, exc: object, traceback: object) -> None:
+        self.close()
+
+    def _claim_thread(self) -> None:
+        current = threading.get_ident()
+        if self._owner_thread is None:
+            self._owner_thread = current
+        elif self._owner_thread != current:
+            raise RuntimeError("RenderSession must only be used from its owning thread.")
+
+    def _close_browser(self) -> None:
+        browser, self._browser = self._browser, None
+        self._browser_key = None
+        if browser is not None:
+            try:
+                browser.close()
+            except Exception:
+                pass
+
+    def close(self) -> None:
+        self._claim_thread()
+        self._close_browser()
+        playwright, self._playwright = self._playwright, None
+        if playwright is not None:
+            try:
+                playwright.stop()
+            except Exception:
+                pass
+
+    def restart(self) -> None:
+        """Discard the current browser so the next conversion launches cleanly."""
+        self._claim_thread()
+        self._close_browser()
+
+    def _ensure_browser(self, options: PdfOptions) -> tuple[Browser, bool]:
+        self._claim_thread()
+        executable = options.chromium_path or shutil.which("chromium") or shutil.which("google-chrome")
+        key = (executable, tuple(_chromium_launch_args(options)))
+        reusable = bool(
+            self._browser is not None
+            and self._browser_key == key
+            and self._browser.is_connected()
+        )
+        if reusable:
+            return self._browser, True
+
+        self._close_browser()
+        if self._playwright is None:
+            self._playwright = sync_playwright().start()
+        launch_kwargs: dict[str, Any] = {"headless": True, "args": list(key[1])}
+        if executable:
+            launch_kwargs["executable_path"] = executable
+        self._browser = self._playwright.chromium.launch(**launch_kwargs)
+        self._browser_key = key
+        self.launch_count += 1
+        return self._browser, False
+
+    @contextmanager
+    def page(self, options: PdfOptions) -> Iterator[Page]:
+        browser, reused = self._ensure_browser(options)
+        self.last_page_reused_browser = reused
+        context: BrowserContext | None = None
+        try:
+            context = browser.new_context(device_scale_factor=1)
+            page = context.new_page()
+            page.set_default_timeout(options.timeout_ms)
+            self.page_count += 1
+            yield page
+        except Exception:
+            if self._browser is not None and not self._browser.is_connected():
+                self.restart()
+            raise
+        finally:
+            if context is not None:
+                try:
+                    context.close()
+                except Exception:
+                    self.restart()
+
+
+@contextmanager
+def _render_page(
+    options: PdfOptions, session: RenderSession | None
+) -> Iterator[tuple[Page, bool]]:
+    if session is not None:
+        with session.page(options) as page:
+            yield page, session.last_page_reused_browser
+        return
+    with RenderSession() as owned_session:
+        with owned_session.page(options) as page:
+            yield page, False
+
+
 def _pdf_cover_page_prefix(lang: str | None = None) -> str:
     return "جلد " if normalize_language(lang).startswith(RTL_LANG_PREFIXES) else "Cover "
 
@@ -2914,7 +3059,12 @@ def _merge_pdfs(
         writer.close()
 
 
-def convert_render_result(result: MarkdownRenderResult, options: PdfOptions) -> Path:
+def convert_render_result(
+    result: MarkdownRenderResult,
+    options: PdfOptions,
+    *,
+    session: RenderSession | None = None,
+) -> Path:
     """Render an already parsed Markdown result with the standard PDF pipeline."""
     progress = options.progress
     options.input_path = Path(options.input_path)
@@ -2922,6 +3072,7 @@ def convert_render_result(result: MarkdownRenderResult, options: PdfOptions) -> 
     options.debug_html = Path(options.debug_html) if options.debug_html else None
     _validate_conversion_paths(options)
     _apply_resolved_appearance(result.metadata, options)
+    _check_cancel(options)
     _report_progress(progress, "Markdown parsed", 0.16)
 
     title = options.title or _stringify_metadata_value(result.metadata.get("title")) or result.title
@@ -2931,117 +3082,118 @@ def convert_render_result(result: MarkdownRenderResult, options: PdfOptions) -> 
 
     options.output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    full_debug_html = build_html(
-        result,
-        options,
-        include_cover=True,
-        include_content=True,
-        include_watermark=True,
-    )
     if options.debug_html:
+        full_debug_html = build_html(
+            result,
+            options,
+            include_cover=True,
+            include_content=True,
+            include_watermark=True,
+        )
         _atomic_write_text(options.debug_html, full_debug_html)
+    _check_cancel(options)
     _report_progress(progress, "HTML prepared", 0.28)
-
-    executable = options.chromium_path or shutil.which("chromium") or shutil.which("google-chrome")
 
     with tempfile.TemporaryDirectory(prefix="mardas-md2pdf-") as tmpdir:
         tmp = Path(tmpdir)
-        with sync_playwright() as p:
-            _report_progress(progress, "Starting Chromium", 0.36)
-            launch_kwargs: dict[str, Any] = {
-                "headless": True,
-                "args": _chromium_launch_args(options),
-            }
-            if executable:
-                launch_kwargs["executable_path"] = executable
-            browser = p.chromium.launch(**launch_kwargs)
-            page = browser.new_page(device_scale_factor=1)
-            page.set_default_timeout(options.timeout_ms)
+        _check_cancel(options)
+        with _render_page(options, session) as (page, reused_browser):
+            _report_progress(
+                progress,
+                "Reusing Chromium" if reused_browser else "Starting Chromium",
+                0.36,
+            )
+            if options.cover:
+                cover_pdf = tmp / "cover.pdf"
+                cover_html = build_html(
+                    result,
+                    options,
+                    include_cover=True,
+                    include_content=False,
+                    include_watermark=False,
+                    cover_full_bleed=True,
+                )
+                _check_cancel(options)
+                _report_progress(progress, "Rendering cover", 0.48)
+                _render_pdf(
+                    page,
+                    cover_html,
+                    options,
+                    cover_pdf,
+                    display_footer=False,
+                    footer_context=footer_context,
+                )
 
-            try:
-                if options.cover:
-                    cover_pdf = tmp / "cover.pdf"
-                    cover_html = build_html(
-                        result,
-                        options,
-                        include_cover=True,
-                        include_content=False,
-                        include_watermark=False,
-                        cover_full_bleed=True,
-                    )
-                    _report_progress(progress, "Rendering cover", 0.48)
-                    _render_pdf(
-                        page,
-                        cover_html,
-                        options,
-                        cover_pdf,
-                        display_footer=False,
-                        footer_context=footer_context,
-                    )
+                content_pdf = tmp / "content.pdf"
+                content_html = build_html(
+                    result,
+                    options,
+                    include_cover=False,
+                    include_content=True,
+                    include_watermark=True,
+                )
+                _check_cancel(options)
+                _report_progress(progress, "Rendering content", 0.72)
+                _render_pdf(
+                    page,
+                    content_html,
+                    options,
+                    content_pdf,
+                    display_footer=True,
+                    footer_context=footer_context,
+                )
+            else:
+                content_pdf = tmp / "content.pdf"
+                html_text = build_html(
+                    result,
+                    options,
+                    include_cover=False,
+                    include_content=True,
+                    include_watermark=True,
+                )
+                _check_cancel(options)
+                _report_progress(progress, "Rendering PDF", 0.72)
+                _render_pdf(
+                    page,
+                    html_text,
+                    options,
+                    content_pdf,
+                    display_footer=True,
+                    footer_context=footer_context,
+                )
 
-                    content_pdf = tmp / "content.pdf"
-                    content_html = build_html(
-                        result,
-                        options,
-                        include_cover=False,
-                        include_content=True,
-                        include_watermark=True,
-                    )
-                    _report_progress(progress, "Rendering content", 0.72)
-                    _render_pdf(
-                        page,
-                        content_html,
-                        options,
-                        content_pdf,
-                        display_footer=True,
-                        footer_context=footer_context,
-                    )
-
-                    _report_progress(progress, "Merging PDF parts", 0.91)
-                    cover_page_count = len(PdfReader(str(cover_pdf)).pages)
-                    _merge_pdfs(
-                        [cover_pdf, content_pdf],
-                        options.output_path,
-                        pdf_metadata,
-                        outline_source_entries,
-                        outline_start_page=cover_page_count,
-                        page_label_lang=footer_context.lang,
-                    )
-                else:
-                    content_pdf = tmp / "content.pdf"
-                    html_text = build_html(
-                        result,
-                        options,
-                        include_cover=False,
-                        include_content=True,
-                        include_watermark=True,
-                    )
-                    _report_progress(progress, "Rendering PDF", 0.72)
-                    _render_pdf(
-                        page,
-                        html_text,
-                        options,
-                        content_pdf,
-                        display_footer=True,
-                        footer_context=footer_context,
-                    )
-
-                    _report_progress(progress, "Writing metadata", 0.91)
-                    _copy_pdf_with_metadata(
-                        content_pdf,
-                        options.output_path,
-                        pdf_metadata,
-                        outline_source_entries,
-                        page_label_lang=footer_context.lang,
-                    )
-            finally:
-                browser.close()
+        # Close the per-document browser context before PyPDF post-processing.
+        # This releases Chromium page memory before large merge/outline operations
+        # while keeping the worker's browser process available for the next job.
+        _check_cancel(options)
+        if options.cover:
+            _report_progress(progress, "Merging PDF parts", 0.91)
+            cover_page_count = len(PdfReader(str(cover_pdf)).pages)
+            _merge_pdfs(
+                [cover_pdf, content_pdf],
+                options.output_path,
+                pdf_metadata,
+                outline_source_entries,
+                outline_start_page=cover_page_count,
+                page_label_lang=footer_context.lang,
+            )
+        else:
+            _report_progress(progress, "Writing metadata", 0.91)
+            _copy_pdf_with_metadata(
+                content_pdf,
+                options.output_path,
+                pdf_metadata,
+                outline_source_entries,
+                page_label_lang=footer_context.lang,
+            )
+    _check_cancel(options)
     _report_progress(progress, "PDF created", 1.0)
     return options.output_path
 
 
-def convert(options: PdfOptions) -> Path:
+def convert(options: PdfOptions, *, session: RenderSession | None = None) -> Path:
     progress = options.progress
+    _check_cancel(options)
     _report_progress(progress, "Reading Markdown", 0.03)
 
     options.input_path = Path(options.input_path)
@@ -3065,8 +3217,9 @@ def convert(options: PdfOptions) -> Path:
         bibliography_title=options.bibliography_title,
         bibliography_include_uncited=options.bibliography_include_uncited,
     )
+    _check_cancel(options)
     if has_errors(result.diagnostics):
         raise MarkdownInputError("\n".join(format_diagnostic(item) for item in result.diagnostics))
     if not options.bibliography_sources and result.bibliography_sources:
         options.bibliography_sources = result.bibliography_sources
-    return convert_render_result(result, options)
+    return convert_render_result(result, options, session=session)

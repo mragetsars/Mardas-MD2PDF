@@ -17,7 +17,7 @@ import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from importlib import resources
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 from urllib.parse import parse_qs, quote, urlsplit
 
 from . import __version__
@@ -33,20 +33,24 @@ from .renderer import (
     DocumentAssetError,
     NAMED_PAGE_DIMENSIONS,
     PdfOptions,
+    RenderCancelledError,
+    RenderSession,
     build_html,
     convert,
     validate_branding_mode,
     validate_page_size,
 )
+from .render_pool import RenderQueueFullError
+from .studio_jobs import StudioExportJob, StudioExportJobError, StudioExportManager
 
 from .workspace import (
     ProjectWorkspace,
     WorkspaceError,
+    export_workspace_book_pdf,
     load_workspace,
     read_workspace_file,
     refresh_workspace,
     render_workspace_book_html,
-    render_workspace_book_pdf,
     render_workspace_file_html,
     workspace_diagnostics_payload,
     workspace_payload,
@@ -65,6 +69,9 @@ MAX_GUI_TOTAL_ASSET_BYTES = 32 * 1024 * 1024
 MAX_GUI_FILENAME_CHARS = 120
 MAX_GUI_ASSET_PATH_PART_CHARS = 180
 MAX_STUDIO_CONCURRENT_EXPORTS = 2
+DEFAULT_STUDIO_EXPORT_QUEUE_SIZE = 6
+DEFAULT_STUDIO_RENDER_IDLE_TIMEOUT = 60.0
+MAX_STUDIO_EXPORT_RESULT_BYTES = 512 * 1024 * 1024
 MAX_STUDIO_PREVIEW_CLIENTS = 256
 WILDCARD_BIND_HOSTS = {str(ipaddress.ip_address(0)), "::"}
 # This is an HTTP header name, not a credential.
@@ -73,6 +80,8 @@ STUDIO_PREVIEW_REQUEST_HEADER = "X-Mardas-Studio-Preview-Id"
 STUDIO_PREVIEW_CLIENT_HEADER = "X-Mardas-Studio-Client-Id"
 STUDIO_PREVIEW_REQUEST_RE = re.compile(r"^[A-Za-z0-9_.:-]{1,96}$")
 STUDIO_PREVIEW_CLIENT_RE = re.compile(r"^[A-Za-z0-9_.:-]{1,96}$")
+STUDIO_EXPORT_JOB_RE = re.compile(r"^[A-Za-z0-9]{12,64}$")
+STUDIO_EXPORT_MANAGER_INIT_LOCK = threading.Lock()
 
 STUDIO_PREVIEW_NAMED_PAGE_SIZES = NAMED_PAGE_DIMENSIONS
 STUDIO_PREVIEW_PAGE_NAME_RE = re.compile(
@@ -947,6 +956,100 @@ def _render_studio_html_payload(payload: dict[str, Any]) -> str:
         return html_text
 
 
+def _render_studio_document_export(
+    directory: Path,
+    *,
+    markdown: str,
+    options: dict[str, Any],
+    assets: list[Any],
+    render_options: dict[str, Any],
+    filename: str,
+    session: RenderSession,
+    progress: Callable[[str, float], None],
+    cancelled: Callable[[], bool],
+) -> Path:
+    md_path = directory / "document.md"
+    pdf_path = directory / filename
+    md_path.write_text(markdown, encoding="utf-8")
+    _write_gui_assets(
+        directory,
+        assets,
+        reserved_paths=(Path("document.md"), Path(filename)),
+    )
+    pdf_options = _studio_pdf_options(
+        tmp=directory,
+        md_path=md_path,
+        output_path=pdf_path,
+        options=options,
+        render_options=render_options,
+    )
+    pdf_options.progress = progress
+    pdf_options.cancelled = cancelled
+    convert(pdf_options, session=session)
+    if pdf_path.stat().st_size > MAX_STUDIO_EXPORT_RESULT_BYTES:
+        pdf_path.unlink(missing_ok=True)
+        raise StudioRequestError(
+            "Rendered PDF exceeds the Studio result-size limit.",
+            status=413,
+            code="export_result_too_large",
+        )
+    return pdf_path
+
+
+def _studio_job_error(exc: BaseException | None) -> tuple[str, str, int]:
+    if isinstance(exc, StudioRequestError):
+        return str(exc), exc.code, exc.status
+    if isinstance(exc, WorkspaceError):
+        return str(exc), exc.code, exc.status
+    if isinstance(exc, MarkdownInputError):
+        return str(exc), "invalid_markdown", 400
+    if isinstance(exc, DocumentAssetError):
+        return str(exc), "unsafe_document_asset", 400
+    if isinstance(exc, RenderCancelledError):
+        return "PDF rendering was cancelled.", "render_cancelled", 409
+    if isinstance(exc, StudioExportJobError):
+        return str(exc), "invalid_export_result", 500
+    return (
+        "Studio rendering failed. Check the local Studio logs for details.",
+        "render_failed",
+        500,
+    )
+
+
+def _studio_export_job_payload(job: StudioExportJob) -> dict[str, Any]:
+    snapshot = job.future.snapshot()
+    payload = snapshot.to_dict()
+    payload["job_id"] = job.job_id
+    payload["filename"] = job.filename
+    if snapshot.status == "succeeded":
+        payload["result_url"] = f"/api/export-jobs/{job.job_id}/result"
+    elif snapshot.status == "failed":
+        message, code, status = _studio_job_error(job.future.exception())
+        payload.update({"error": message, "code": code, "error_status": status})
+    elif snapshot.status == "cancelled":
+        payload.update(
+            {
+                "error": "PDF rendering was cancelled.",
+                "code": "render_cancelled",
+                "error_status": 409,
+            }
+        )
+    return payload
+
+
+def _studio_export_job_route(request_path: str) -> tuple[str, str] | None:
+    prefix = "/api/export-jobs/"
+    if not request_path.startswith(prefix):
+        return None
+    parts = request_path[len(prefix) :].split("/")
+    if not parts or not STUDIO_EXPORT_JOB_RE.fullmatch(parts[0]):
+        return None
+    action = parts[1] if len(parts) == 2 else "status" if len(parts) == 1 else ""
+    if action not in {"status", "result", "cancel"}:
+        return None
+    return parts[0], action
+
+
 class GuiRequestHandler(BaseHTTPRequestHandler):
     server_version = f"MardasMD2PDFGUI/{__version__}"
 
@@ -962,6 +1065,101 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
 
     def _set_studio_project_workspace(self, workspace: ProjectWorkspace) -> None:
         self.server.studio_project_workspace = workspace  # type: ignore[attr-defined]
+
+    def _studio_export_manager(self) -> StudioExportManager:
+        manager = getattr(self.server, "studio_export_manager", None)
+        if isinstance(manager, StudioExportManager):
+            return manager
+        with STUDIO_EXPORT_MANAGER_INIT_LOCK:
+            manager = getattr(self.server, "studio_export_manager", None)
+            if isinstance(manager, StudioExportManager):
+                return manager
+            manager = StudioExportManager(
+                workers=MAX_STUDIO_CONCURRENT_EXPORTS,
+                queue_size=DEFAULT_STUDIO_EXPORT_QUEUE_SIZE,
+                idle_timeout=DEFAULT_STUDIO_RENDER_IDLE_TIMEOUT,
+            )
+            self.server.studio_export_manager = manager  # type: ignore[attr-defined]
+            original_close = self.server.server_close
+
+            def close_with_exports() -> None:
+                manager.close()
+                original_close()
+
+            self.server.server_close = close_with_exports  # type: ignore[method-assign]
+            return manager
+
+    def _submit_export_job(self, payload: dict[str, Any]) -> StudioExportJob:
+        kind = str(payload.get("kind") or "document").strip().lower()
+        manager = self._studio_export_manager()
+        if kind == "book":
+            workspace = self._require_studio_project_workspace()
+            filename = (
+                workspace.manifest.output_path.name
+                if workspace.manifest is not None
+                else "book.pdf"
+            )
+
+            def render_book_job(
+                directory: Path,
+                session: RenderSession,
+                progress: Callable[[str, float], None],
+                cancelled: Callable[[], bool],
+            ) -> Path:
+                output = directory / filename
+                built, _filename, refreshed = export_workspace_book_pdf(
+                    workspace,
+                    output,
+                    session=session,
+                    progress=progress,
+                    cancelled=cancelled,
+                )
+                self._set_studio_project_workspace(refreshed)
+                if built.stat().st_size > MAX_STUDIO_EXPORT_RESULT_BYTES:
+                    built.unlink(missing_ok=True)
+                    raise StudioRequestError(
+                        "Rendered PDF exceeds the Studio result-size limit.",
+                        status=413,
+                        code="export_result_too_large",
+                    )
+                return built
+
+            return manager.submit(
+                label="Book PDF export",
+                filename=filename,
+                work=render_book_job,
+            )
+
+        if kind != "document":
+            raise StudioRequestError(
+                "Export job kind must be document or book.",
+                code="invalid_export_job_kind",
+            )
+        markdown, options, assets, render_options, filename = _validate_studio_payload(payload)
+
+        def render_document_job(
+            directory: Path,
+            session: RenderSession,
+            progress: Callable[[str, float], None],
+            cancelled: Callable[[], bool],
+        ) -> Path:
+            return _render_studio_document_export(
+                directory,
+                markdown=markdown,
+                options=options,
+                assets=assets,
+                render_options=render_options,
+                filename=filename,
+                session=session,
+                progress=progress,
+                cancelled=cancelled,
+            )
+
+        return manager.submit(
+            label="Document PDF export",
+            filename=filename,
+            work=render_document_job,
+        )
 
     def _require_studio_project_workspace(self) -> ProjectWorkspace:
         workspace = self._studio_project_workspace()
@@ -986,13 +1184,6 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
             lock = threading.Lock()
             self.server.studio_preview_state_lock = lock  # type: ignore[attr-defined]
         return lock
-
-    def _studio_export_semaphore(self) -> threading.BoundedSemaphore:
-        semaphore = getattr(self.server, "studio_export_semaphore", None)
-        if semaphore is None:
-            semaphore = threading.BoundedSemaphore(MAX_STUDIO_CONCURRENT_EXPORTS)
-            self.server.studio_export_semaphore = semaphore  # type: ignore[attr-defined]
-        return semaphore
 
     def _register_preview_request(self) -> tuple[str, str] | None:
         preview_id = (self.headers.get(STUDIO_PREVIEW_REQUEST_HEADER) or "").strip()
@@ -1072,6 +1263,107 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
             payload["diagnostics"] = workspace_diagnostics_payload(workspace, exc.diagnostics)
         self._send_json(payload, status=exc.status)
 
+    def _send_export_artifact(self, artifact: Any) -> bool:
+        try:
+            size = artifact.path.stat().st_size
+            self.send_response(200)
+            self.send_header("Content-Type", artifact.content_type)
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.send_header(
+                "Content-Disposition", _attachment_disposition(artifact.filename)
+            )
+            self.send_header("Content-Length", str(size))
+            self.end_headers()
+            with artifact.path.open("rb") as handle:
+                while chunk := handle.read(1024 * 1024):
+                    self.wfile.write(chunk)
+            return True
+        except (BrokenPipeError, ConnectionResetError):
+            LOGGER.info("Studio export download disconnected before completion")
+            return False
+
+    def _handle_export_job_get(self, request_path: str) -> bool:
+        route = _studio_export_job_route(request_path)
+        if route is None:
+            return False
+        job_id, action = route
+        if action == "cancel":
+            return False
+        _validate_studio_api_headers(
+            self.headers,
+            bind_host=self._studio_bind_host(),
+            csrf_token=self._studio_csrf_token(),
+        )
+        manager = self._studio_export_manager()
+        job = manager.get(job_id)
+        if job is None:
+            self._send_error(
+                "Export job was not found or has expired.",
+                status=404,
+                code="export_job_not_found",
+            )
+            return True
+        if action == "status":
+            self._send_json(_studio_export_job_payload(job))
+            return True
+
+        snapshot = job.future.snapshot()
+        if snapshot.status != "succeeded":
+            self._send_error(
+                "Export result is not ready.",
+                status=409,
+                code="export_result_not_ready",
+            )
+            return True
+        artifact = job.future.result(timeout=0)
+        if self._send_export_artifact(artifact):
+            manager.mark_downloaded(job_id)
+        return True
+
+    def _handle_export_job_post(self, request_path: str) -> bool:
+        route = _studio_export_job_route(request_path)
+        create = request_path == "/api/export-jobs"
+        if not create and (route is None or route[1] != "cancel"):
+            return False
+        _validate_studio_post_headers(
+            self.headers,
+            bind_host=self._studio_bind_host(),
+            csrf_token=self._studio_csrf_token(),
+        )
+        length = _studio_content_length(self.headers)
+        raw = _read_studio_request_body(self, length)
+        payload = _decode_json_payload(raw)
+        if create:
+            job = self._submit_export_job(payload)
+            response = _studio_export_job_payload(job)
+            response["status_url"] = f"/api/export-jobs/{job.job_id}"
+            response["cancel_url"] = f"/api/export-jobs/{job.job_id}/cancel"
+            self._send_json(response, status=202)
+            return True
+
+        assert route is not None
+        job_id, _action = route
+        cancelled = self._studio_export_manager().cancel(job_id)
+        if cancelled is None:
+            self._send_error(
+                "Export job was not found or has expired.",
+                status=404,
+                code="export_job_not_found",
+            )
+        elif not cancelled:
+            self._send_error(
+                "Export job has already finished.",
+                status=409,
+                code="export_job_finished",
+            )
+        else:
+            job = self._studio_export_manager().get(job_id)
+            self._send_json(
+                _studio_export_job_payload(job) if job is not None else {"job_id": job_id},
+                status=202,
+            )
+        return True
+
     def _handle_project_get(self, request_path: str) -> bool:
         if request_path not in {"/api/project", "/api/project/file"}:
             return False
@@ -1099,8 +1391,24 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:  # noqa: N802 - stdlib API
         request_path = self._request_path()
         try:
+            if self._handle_export_job_get(request_path):
+                return
             if self._handle_project_get(request_path):
                 return
+        except RenderQueueFullError:
+            self._send_error(
+                "Studio export queue is full. Try again after an active job finishes.",
+                status=429,
+                code="export_queue_full",
+            )
+            return
+        except RenderCancelledError:
+            self._send_error(
+                "PDF rendering was cancelled.",
+                status=409,
+                code="render_cancelled",
+            )
+            return
         except StudioRequestError as exc:
             self._send_error(str(exc), status=exc.status, code=exc.code)
             return
@@ -1142,6 +1450,31 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:  # noqa: N802 - stdlib API
         request_path = self._request_path()
+        if request_path == "/api/export-jobs" or (
+            (route := _studio_export_job_route(request_path)) is not None
+            and route[1] == "cancel"
+        ):
+            try:
+                if self._handle_export_job_post(request_path):
+                    return
+            except RenderQueueFullError:
+                self._send_error(
+                    "Studio export queue is full. Try again after an active job finishes.",
+                    status=429,
+                    code="export_queue_full",
+                )
+            except StudioRequestError as exc:
+                self._send_error(str(exc), status=exc.status, code=exc.code)
+            except WorkspaceError as exc:
+                self._send_workspace_error(exc)
+            except Exception:
+                LOGGER.exception("Studio export job request failed for %s", request_path)
+                self._send_error(
+                    "Studio export job request failed. Check the local Studio logs for details.",
+                    status=500,
+                    code="export_job_failed",
+                )
+            return
         allowed = {
             "/api/render",
             "/api/render-html",
@@ -1278,49 +1611,26 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
                 self._send_text(html_text, content_type="text/html; charset=utf-8")
                 return
 
-            semaphore = self._studio_export_semaphore()
-            if not semaphore.acquire(blocking=False):
-                raise StudioRequestError(
-                    "Studio is already processing the maximum number of PDF exports. Try again shortly.",
-                    status=429,
-                    code="export_capacity_reached",
-                )
-            try:
-                if request_path == "/api/project/render-book":
-                    workspace = self._require_studio_project_workspace()
-                    data, filename, refreshed = render_workspace_book_pdf(workspace)
-                    self._set_studio_project_workspace(refreshed)
-                else:
-                    markdown, options, assets, render_options, filename = _validate_studio_payload(
-                        payload
-                    )
-                    with tempfile.TemporaryDirectory(prefix="mardas-md2pdf-gui-") as tmpdir:
-                        tmp = Path(tmpdir)
-                        md_path = tmp / "document.md"
-                        pdf_path = tmp / filename
-                        md_path.write_text(markdown, encoding="utf-8")
-                        _write_gui_assets(
-                            tmp, assets, reserved_paths=(Path("document.md"), Path(filename))
-                        )
-                        pdf_options = _studio_pdf_options(
-                            tmp=tmp,
-                            md_path=md_path,
-                            output_path=pdf_path,
-                            options=options,
-                            render_options=render_options,
-                        )
-                        convert(pdf_options)
-                        data = pdf_path.read_bytes()
-            finally:
-                semaphore.release()
-
-            self.send_response(200)
-            self.send_header("Content-Type", "application/pdf")
-            self.send_header("X-Content-Type-Options", "nosniff")
-            self.send_header("Content-Disposition", _attachment_disposition(filename))
-            self.send_header("Content-Length", str(len(data)))
-            self.end_headers()
-            self.wfile.write(data)
+            job_payload = dict(payload)
+            job_payload["kind"] = (
+                "book" if request_path == "/api/project/render-book" else "document"
+            )
+            job = self._submit_export_job(job_payload)
+            artifact = job.future.result(timeout=900)
+            if self._send_export_artifact(artifact):
+                self._studio_export_manager().mark_downloaded(job.job_id)
+        except RenderQueueFullError:
+            self._send_error(
+                "Studio export queue is full. Try again after an active job finishes.",
+                status=429,
+                code="export_queue_full",
+            )
+        except RenderCancelledError:
+            self._send_error(
+                "PDF rendering was cancelled.",
+                status=409,
+                code="render_cancelled",
+            )
         except StudioRequestError as exc:
             self._send_error(str(exc), status=exc.status, code=exc.code)
         except WorkspaceError as exc:
@@ -1356,6 +1666,29 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         help="Open a local mardas.toml project workspace with safe file editing and Book Mode tools.",
     )
+    parser.add_argument(
+        "--render-workers",
+        type=int,
+        choices=range(1, 9),
+        default=MAX_STUDIO_CONCURRENT_EXPORTS,
+        metavar="N",
+        help="Persistent Chromium export workers; default: 2 (allowed: 1-8).",
+    )
+    parser.add_argument(
+        "--export-queue-size",
+        type=int,
+        choices=range(1, 65),
+        default=DEFAULT_STUDIO_EXPORT_QUEUE_SIZE,
+        metavar="N",
+        help="Maximum queued Studio exports; default: 6 (allowed: 1-64).",
+    )
+    parser.add_argument(
+        "--render-idle-timeout",
+        type=float,
+        default=DEFAULT_STUDIO_RENDER_IDLE_TIMEOUT,
+        metavar="SECONDS",
+        help="Close idle Chromium workers after this many seconds; default: 60.",
+    )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     return parser
 
@@ -1363,6 +1696,8 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+    if args.render_idle_timeout < 1:
+        parser.error("--render-idle-timeout must be at least one second")
     project_workspace: ProjectWorkspace | None = None
     if args.project is not None:
         try:
@@ -1376,9 +1711,12 @@ def main(argv: list[str] | None = None) -> int:
     server.studio_preview_state_lock = threading.Lock()  # type: ignore[attr-defined]
     server.studio_preview_render_lock = threading.Lock()  # type: ignore[attr-defined]
     server.studio_latest_preview_ids = {}  # type: ignore[attr-defined]
-    server.studio_export_semaphore = threading.BoundedSemaphore(  # type: ignore[attr-defined]
-        MAX_STUDIO_CONCURRENT_EXPORTS
+    export_manager = StudioExportManager(
+        workers=args.render_workers,
+        queue_size=args.export_queue_size,
+        idle_timeout=args.render_idle_timeout,
     )
+    server.studio_export_manager = export_manager  # type: ignore[attr-defined]
     server.studio_project_workspace = project_workspace  # type: ignore[attr-defined]
     url = _studio_url(args.host, server.server_port)
     print(f"Mardas MD2PDF Studio is running at {url}")
@@ -1395,6 +1733,7 @@ def main(argv: list[str] | None = None) -> int:
     except KeyboardInterrupt:
         print("\nStopping Mardas MD2PDF Studio...")
     finally:
+        export_manager.close()
         server.server_close()
     return 0
 

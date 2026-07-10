@@ -20,7 +20,13 @@ from .markdown import (
     render_markdown_file,
 )
 from .references import ReferenceOptions, resolve_cross_references
-from .renderer import PdfOptions, convert_render_result
+from .renderer import (
+    CancellationCallback,
+    PdfOptions,
+    RenderCancelledError,
+    RenderSession,
+    convert_render_result,
+)
 
 BOOK_MARKDOWN_SUFFIXES = frozenset({".md", ".markdown", ".mdown", ".mkd"})
 _BOOK_ID_REFERENCE_ATTRIBUTES = (
@@ -365,6 +371,9 @@ def _restore_cross_chapter_links(
 
 def render_book(
     manifest: BookManifest,
+    *,
+    progress: Callable[[str, float], None] | None = None,
+    cancelled: CancellationCallback | None = None,
 ) -> tuple[BookRenderBundle | None, tuple[Diagnostic, ...]]:
     diagnostics: list[Diagnostic] = []
     config_values = manifest.config.values
@@ -376,6 +385,10 @@ def render_book(
     citations_enabled = bool(config_values.get("citations_enabled", False))
     bibliography_library = None
     bibliography_sources = tuple(config_values.get("bibliography_sources") or ())
+    if cancelled and cancelled():
+        raise RenderCancelledError("PDF rendering was cancelled.")
+    if progress:
+        progress("Preparing book sources", 0.02)
     if citations_enabled:
         if not bibliography_sources:
             diagnostics.append(
@@ -394,7 +407,15 @@ def render_book(
     if has_errors(diagnostics):
         return None, tuple(diagnostics)
 
+    chapter_count = max(1, len(manifest.chapters))
     for chapter in manifest.chapters:
+        if cancelled and cancelled():
+            raise RenderCancelledError("PDF rendering was cancelled.")
+        if progress:
+            progress(
+                f"Parsing chapter {chapter.index} of {chapter_count}",
+                0.05 + 0.65 * ((chapter.index - 1) / chapter_count),
+            )
         try:
             result = render_markdown_file(
                 chapter.path,
@@ -474,6 +495,10 @@ def render_book(
     if has_errors(diagnostics) or not chapter_results:
         return None, tuple(diagnostics)
 
+    if cancelled and cancelled():
+        raise RenderCancelledError("PDF rendering was cancelled.")
+    if progress:
+        progress("Resolving book links and references", 0.74)
     _restore_cross_chapter_links(prepared, diagnostics)
     rendered_bodies: list[str] = []
     for item in prepared:
@@ -588,6 +613,8 @@ def render_book(
     )
     if has_errors(diagnostics):
         return None, tuple(diagnostics)
+    if progress:
+        progress("Book content assembled", 0.9)
     return BookRenderBundle(result=result, chapters=tuple(summaries)), tuple(diagnostics)
 
 
@@ -597,6 +624,7 @@ def book_pdf_options(
     output_path: Path | None = None,
     debug_html: Path | None = None,
     progress: Callable[[str, float], None] | None = None,
+    cancelled: CancellationCallback | None = None,
 ) -> PdfOptions:
     values = manifest.config.values
     options = PdfOptions(
@@ -649,6 +677,7 @@ def book_pdf_options(
         bibliography_title=values.get("bibliography_title"),
         bibliography_include_uncited=bool(values.get("bibliography_include_uncited", False)),
         progress=progress,
+        cancelled=cancelled,
     )
     return options
 
@@ -659,18 +688,29 @@ def convert_book(
     output_path: Path | None = None,
     debug_html: Path | None = None,
     progress: Callable[[str, float], None] | None = None,
+    cancelled: CancellationCallback | None = None,
+    session: RenderSession | None = None,
     bundle: BookRenderBundle | None = None,
 ) -> tuple[Path | None, BookRenderBundle | None, tuple[Diagnostic, ...]]:
     diagnostics: tuple[Diagnostic, ...] = ()
     if bundle is None:
-        bundle, diagnostics = render_book(manifest)
+        bundle, diagnostics = render_book(
+            manifest,
+            progress=(
+                (lambda stage, value: progress(stage, value * 0.3)) if progress else None
+            ),
+            cancelled=cancelled,
+        )
     if bundle is None or has_errors(diagnostics):
         return None, bundle, diagnostics
     options = book_pdf_options(
         manifest,
         output_path=output_path,
         debug_html=debug_html,
-        progress=progress,
+        progress=(
+            (lambda stage, value: progress(stage, 0.3 + value * 0.7)) if progress else None
+        ),
+        cancelled=cancelled,
     )
     protected = [
         manifest.config.path,
@@ -708,7 +748,10 @@ def convert_book(
                 ),
             ),
         )
-    output = convert_render_result(bundle.result, options)
+    if session is None:
+        output = convert_render_result(bundle.result, options)
+    else:
+        output = convert_render_result(bundle.result, options, session=session)
     return output, bundle, diagnostics
 
 

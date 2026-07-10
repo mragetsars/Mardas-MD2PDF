@@ -727,13 +727,26 @@ def _book_target_and_config(
 
 def _book_validation(
     config: LoadedProjectConfig,
+    *,
+    progress: Callable[[str, float], None] | None = None,
+    cancelled: Callable[[], bool] | None = None,
 ) -> tuple[BookManifest | None, BookRenderBundle | None, list[Diagnostic]]:
     manifest, manifest_diagnostics = load_book_manifest(config)
     diagnostics = list(manifest_diagnostics)
     if manifest is None or has_errors(diagnostics):
         return manifest, None, diagnostics
 
+    chapter_count = max(1, len(manifest.chapters))
     for chapter in manifest.chapters:
+        if cancelled and cancelled():
+            from .renderer import RenderCancelledError
+
+            raise RenderCancelledError("PDF rendering was cancelled.")
+        if progress:
+            progress(
+                f"Validating chapter {chapter.index} of {chapter_count}",
+                0.02 + 0.28 * ((chapter.index - 1) / chapter_count),
+            )
         chapter_diagnostics, _context = _validate_document(
             chapter.path,
             config,
@@ -742,7 +755,13 @@ def _book_validation(
             defer_citation_resolution=bool(config.values.get("citations_enabled", False)),
         )
         diagnostics.extend(chapter_diagnostics)
-    bundle, render_diagnostics = render_book(manifest)
+    bundle, render_diagnostics = render_book(
+        manifest,
+        progress=(
+            (lambda stage, value: progress(stage, 0.3 + value * 0.7)) if progress else None
+        ),
+        cancelled=cancelled,
+    )
     diagnostics.extend(render_diagnostics)
 
     if bundle is not None:
@@ -772,9 +791,12 @@ def project_config_diagnostics(config: LoadedProjectConfig) -> list[Diagnostic]:
 
 def validate_book_project(
     config: LoadedProjectConfig,
+    *,
+    progress: Callable[[str, float], None] | None = None,
+    cancelled: Callable[[], bool] | None = None,
 ) -> tuple[BookManifest | None, BookRenderBundle | None, list[Diagnostic]]:
     """Validate and render a Book Mode project without formatting CLI output."""
-    return _book_validation(config)
+    return _book_validation(config, progress=progress, cancelled=cancelled)
 
 
 def _book_progress(mode: str, *, json_output: bool) -> Callable[[str, float], None] | None:

@@ -306,6 +306,8 @@
     .footer #savedState{color:var(--muted);font-weight:850}
 
     .export-progress{display:none;align-items:center;gap:9px;min-width:280px}
+    .export-cancel{padding:4px 9px;border-radius:999px;border:1px solid var(--danger);background:transparent;color:var(--danger);font-size:10px;font-weight:900;cursor:pointer}
+    .export-cancel[hidden]{display:none}
     .busy .export-progress,.export-progress.active{display:flex}
     .progress-track{width:180px;height:8px;border-radius:999px;background:var(--panel-3);border:1px solid var(--border);overflow:hidden}
     .progress-bar{width:0%;height:100%;border-radius:inherit;background:var(--accent);box-shadow:0 0 18px color-mix(in srgb, var(--accent) 26%, transparent);transition:width .22s ease}
@@ -582,7 +584,7 @@
     </main>
     <footer class="footer">
       <div class="footer-group"><span id="statusWords">Words: 0</span><span id="statusChars">Chars: 0</span><span id="savedState">Live preview</span></div>
-      <div class="footer-group"><div id="exportProgress" class="export-progress" aria-hidden="true"><div class="progress-track"><div id="exportProgressBar" class="progress-bar"></div></div><span id="exportProgressLabel" class="progress-label">0%</span></div><span><i class="dot"></i><span id="serverStatus">Ready</span></span></div>
+      <div class="footer-group"><div id="exportProgress" class="export-progress" aria-hidden="true"><div class="progress-track"><div id="exportProgressBar" class="progress-bar"></div></div><span id="exportProgressLabel" class="progress-label">0%</span><button id="cancelExportBtn" class="export-cancel" type="button" onclick="cancelActiveExport()" hidden>Cancel</button></div><span><i class="dot"></i><span id="serverStatus">Ready</span></span></div>
     </footer>
   </div>
   <div id="commandPaletteBackdrop" class="command-palette-backdrop" role="presentation" onclick="closeCommandPalette()">
@@ -608,6 +610,7 @@ const serverStatus = $('serverStatus');
 const exportProgress = $('exportProgress');
 const exportProgressBar = $('exportProgressBar');
 const exportProgressLabel = $('exportProgressLabel');
+const cancelExportBtn = $('cancelExportBtn');
 const interfaceBtn = $('interfaceBtn');
 const lineNumbers = $('lineNumbers');
 const lineNumberSpacer = $('lineNumberSpacer');
@@ -637,6 +640,8 @@ const FAST_PREVIEW_DELAY_MS = 140;
 const ACCURATE_PREVIEW_DELAY_MS = 720;
 let exportProgressTimer = null;
 let exportProgressValue = 0;
+let activeExportJobId = null;
+let activeExportCancelRequested = false;
 let activeResizePane = null;
 let settingsCollapsed = false;
 const MARDAS_STUDIO_STATE_KEY = 'mardas-md2pdf-studio-state-v1';
@@ -995,25 +1000,22 @@ async function exportServerBook(){
   try {
     projectRequestInFlight = true;
     applyServerProject(serverProject);
-    startExportProgress();
-    const response = await fetch('/api/project/render-book', {
-      method: 'POST', headers: studioApiHeaders(), body: '{}'
-    });
-    if (!response.ok) throw new Error(await readRenderError(response));
-    const blob = await response.blob();
     const fallback = serverProject.book.output_name || 'book.pdf';
-    downloadBlob(responseAttachmentFilename(response, fallback), blob, 'application/pdf');
-    finishExportProgress('Book PDF downloaded');
+    await runQueuedExport({ kind:'book' }, fallback);
     setServerStatus('Book PDF exported', { toast: true, tone: 'success' });
   } catch (error) {
-    finishExportProgress('Book export failed', false);
-    setServerStatus('Book export failed', { toast: true, tone: 'danger' });
-    alert(error.message);
+    if (error && error.code === 'render_cancelled') {
+      setServerStatus('Book export cancelled', { toast: true });
+    } else {
+      setServerStatus('Book export failed', { toast: true, tone: 'danger' });
+      alert(error.message);
+    }
   } finally {
     projectRequestInFlight = false;
     if (serverProject) applyServerProject(serverProject);
   }
 }
+
 
 function setIconUse(button, iconName){
   const use = button && button.querySelector('use');
@@ -2343,6 +2345,104 @@ function finishExportProgress(message, success=true){
   }, success ? 1100 : 3200);
 }
 
+function beginQueuedExportProgress(){
+  clearInterval(exportProgressTimer);
+  activeExportCancelRequested = false;
+  exportProgress.classList.add('active');
+  exportProgress.setAttribute('aria-hidden', 'false');
+  exportProgress.setAttribute('role', 'progressbar');
+  exportProgress.setAttribute('aria-valuemin', '0');
+  exportProgress.setAttribute('aria-valuemax', '100');
+  cancelExportBtn.hidden = true;
+  cancelExportBtn.disabled = false;
+  setExportProgress(0.01, 'Queued for rendering...');
+}
+
+function exportDelay(ms){
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function exportJobStatus(url){
+  const response = await fetch(url, { headers: studioApiHeaders() });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(payload.error || response.statusText || 'Export status failed');
+    error.code = payload.code || 'export_status_failed';
+    throw error;
+  }
+  return payload;
+}
+
+async function cancelActiveExport(){
+  if (!activeExportJobId || activeExportCancelRequested) return;
+  activeExportCancelRequested = true;
+  cancelExportBtn.disabled = true;
+  setExportProgress(exportProgressValue, 'Requesting cancellation...');
+  try {
+    const response = await fetch('/api/export-jobs/' + encodeURIComponent(activeExportJobId) + '/cancel', {
+      method:'POST', headers:studioApiHeaders(), body:'{}'
+    });
+    if (!response.ok && response.status !== 409) throw new Error(await readRenderError(response));
+  } catch (error) {
+    activeExportCancelRequested = false;
+    cancelExportBtn.disabled = false;
+    setServerStatus('Cancellation request failed', { toast:true, tone:'danger' });
+  }
+}
+
+async function runQueuedExport(payload, fallbackFilename){
+  document.body.classList.add('busy');
+  beginQueuedExportProgress();
+  try {
+    const response = await fetch('/api/export-jobs', {
+      method:'POST',
+      headers:studioApiHeaders(),
+      body:JSON.stringify(payload)
+    });
+    const created = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const error = new Error(created.error || response.statusText || 'Export queue rejected the request');
+      error.code = created.code || 'export_queue_failed';
+      throw error;
+    }
+    activeExportJobId = created.job_id;
+    cancelExportBtn.hidden = false;
+    let status = created;
+    while (activeExportJobId === created.job_id) {
+      const progress = Number(status.progress);
+      setExportProgress(Number.isFinite(progress) ? progress : 0, status.message || status.status || 'Rendering...');
+      if (status.status === 'succeeded') {
+        const result = await fetch(status.result_url, { headers:studioApiHeaders() });
+        if (!result.ok) throw new Error(await readRenderError(result));
+        const blob = await result.blob();
+        downloadBlob(responseAttachmentFilename(result, fallbackFilename), blob, 'application/pdf');
+        finishExportProgress('PDF downloaded');
+        return status;
+      }
+      if (status.status === 'failed' || status.status === 'cancelled') {
+        const error = new Error(status.error || status.message || 'Export failed');
+        error.code = status.code || (status.status === 'cancelled' ? 'render_cancelled' : 'render_failed');
+        throw error;
+      }
+      await exportDelay(220);
+      status = await exportJobStatus(created.status_url);
+    }
+    const interrupted = new Error('Export polling was interrupted');
+    interrupted.code = 'export_interrupted';
+    throw interrupted;
+  } catch (error) {
+    const cancelled = error && error.code === 'render_cancelled';
+    finishExportProgress(cancelled ? 'Export cancelled' : 'Export failed', false);
+    throw error;
+  } finally {
+    activeExportJobId = null;
+    activeExportCancelRequested = false;
+    cancelExportBtn.hidden = true;
+    cancelExportBtn.disabled = false;
+    document.body.classList.remove('busy');
+  }
+}
+
 async function readRenderError(response){
   const payload = await response.json().catch(() => ({}));
   const message = payload.error || response.statusText || 'Render failed';
@@ -2379,27 +2479,16 @@ async function exportDebugHTML(){
 }
 
 async function renderPDF(){
-  document.body.classList.add('busy');
-  startExportProgress();
   try {
-    const response = await fetch('/api/render', {
-      method: 'POST',
-      headers: studioApiHeaders(),
-      body: JSON.stringify({ markdown: editor.value, options: getOptions(), assets: attachedAssets })
-    });
-    if (!response.ok) {
-      throw new Error(await readRenderError(response));
-    }
-    const blob = await response.blob();
-    downloadBlob($('filenameInput').value || 'mardas-document.pdf', blob, 'application/pdf');
-    finishExportProgress('PDF downloaded');
+    await runQueuedExport(
+      { kind:'document', markdown:editor.value, options:getOptions(), assets:attachedAssets },
+      $('filenameInput').value || 'mardas-document.pdf'
+    );
   } catch (error) {
-    finishExportProgress('Error: ' + error.message, false);
-    alert(error.message);
-  } finally {
-    document.body.classList.remove('busy');
+    if (!(error && error.code === 'render_cancelled')) alert(error.message);
   }
 }
+
 
 function shellQuote(value){
   const text = String(value ?? '');

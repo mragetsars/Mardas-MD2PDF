@@ -423,6 +423,9 @@ def test_studio_html_contains_project_explorer_problems_and_book_actions():
     assert "function saveServerProjectFile" in html
     assert "function validateServerProject" in html
     assert "function previewServerBook" in html
+    assert 'id="cancelExportBtn"' in html
+    assert "function runQueuedExport" in html
+    assert "function cancelActiveExport" in html
     assert "function exportServerBook" in html
     assert "/api/project/render-file-html" in html
     assert "/api/project/render-book-html" in html
