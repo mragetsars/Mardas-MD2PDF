@@ -24,7 +24,11 @@ def test_project_version_metadata_matches() -> None:
     assert f"Version-v{version}-success" in _read("README.md")
     assert f'version: "{version}"' in _read("docs/guides/GUIDE.en.md")
     assert f'version: "{version}"' in _read("docs/guides/GUIDE.fa.md")
-    assert re.search(rf"^## {re.escape(version)} - \d{{4}}-\d{{2}}-\d{{2}}", _read("docs/CHANGELOG.md"), re.MULTILINE)
+    assert re.search(
+        rf"^## {re.escape(version)} - \d{{4}}-\d{{2}}-\d{{2}}",
+        _read("docs/CHANGELOG.md"),
+        re.MULTILINE,
+    )
 
 
 def test_maintenance_scripts_are_executable() -> None:
@@ -87,8 +91,6 @@ def test_build_dist_supports_no_isolation_mode() -> None:
     assert "scripts/normalize_sdist.py" in script
 
 
-
-
 def test_pytest_can_import_src_from_checkout() -> None:
     pyproject = _read("pyproject.toml")
 
@@ -148,3 +150,12 @@ def test_check_render_smoke_uses_process_tree_safe_command_runner() -> None:
     assert "from visual_qa import run_command" in smoke_script
     assert "MARDAS_RENDER_SMOKE_TIMEOUT" in smoke_script
     assert 'description="render smoke"' in smoke_script
+
+
+def test_release_gate_verifies_installed_project_commands() -> None:
+    script = _read("scripts/release_gate.sh")
+
+    for command in [" init ", " validate ", " explain-config ", " doctor "]:
+        assert command in script
+    assert "project_smoke" in script
+    assert "validate.json" in script

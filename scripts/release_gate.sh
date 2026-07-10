@@ -59,8 +59,9 @@ if [[ -z "$wheel_path" ]]; then
 fi
 
 verify_venv="$(mktemp -d "${TMPDIR:-/tmp}/mardas-md2pdf-release-venv.XXXXXX")"
+project_smoke="$(mktemp -d "${TMPDIR:-/tmp}/mardas-md2pdf-project-smoke.XXXXXX")"
 cleanup_release_gate() {
-  rm -rf "$verify_venv" "$tmp_pdf"
+  rm -rf "$verify_venv" "$project_smoke" "$tmp_pdf"
 }
 trap cleanup_release_gate EXIT
 
@@ -77,6 +78,22 @@ fi
 "$venv_bin/mrs-md2pdf" --version
 "$venv_bin/mrs-md2pdf" --help >/dev/null
 "$venv_bin/mrs-md2pdf" --list-styles >/dev/null
+"$venv_bin/mrs-md2pdf" init "$project_smoke"
+printf '%s\n' '# Project command smoke' > "$project_smoke/report.md"
+"$venv_bin/mrs-md2pdf" validate "$project_smoke/report.md" --format json > "$project_smoke/validate.json"
+"$venv_bin/mrs-md2pdf" explain-config "$project_smoke/report.md" --format json > "$project_smoke/explain.json"
+"$venv_bin/mrs-md2pdf" doctor "$project_smoke/report.md" --format json > "$project_smoke/doctor.json"
+"$venv_python" - "$project_smoke" <<'PY_PROJECT'
+import json
+import sys
+from pathlib import Path
+
+root = Path(sys.argv[1])
+for name in ("validate", "explain", "doctor"):
+    payload = json.loads((root / f"{name}.json").read_text(encoding="utf-8"))
+    if not payload.get("ok"):
+        raise SystemExit(f"Project command smoke failed: {name}")
+PY_PROJECT
 "$venv_bin/mrs-md2pdf-gui" --version
 "$venv_python" - <<'PY'
 from importlib import resources
