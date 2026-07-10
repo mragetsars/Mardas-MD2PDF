@@ -191,6 +191,12 @@ CONFIG_FIELDS: tuple[ConfigField, ...] = (
     ConfigField("browser", "chromium_sandbox", "chromium_sandbox", _choice(["auto", "on", "off"])),
     ConfigField("browser", "timeout_ms", "timeout_ms", _integer(1_000, 3_600_000)),
     ConfigField("fonts", "directory", "font_dir", _string, path_value=True),
+    ConfigField("references", "enabled", "references_enabled", _boolean),
+    ConfigField("references", "numbering_scope", "numbering_scope", _choice(["global", "chapter"])),
+    ConfigField("references", "list_of_figures", "list_of_figures", _boolean),
+    ConfigField("references", "list_of_tables", "list_of_tables", _boolean),
+    ConfigField("references", "list_of_equations", "list_of_equations", _boolean),
+    ConfigField("references", "list_of_listings", "list_of_listings", _boolean),
     ConfigField("book", "chapters", "book_chapters", _book_chapters),
     ConfigField("book", "output", "book_output", _string, path_value=True),
     ConfigField("book", "chapter_page_break", "book_chapter_page_break", _boolean),
@@ -240,6 +246,14 @@ show_logo = true
 [security]
 unsafe_html = false
 allow_remote_assets = false
+
+[references]
+enabled = false
+numbering_scope = "global"
+list_of_figures = false
+list_of_tables = false
+list_of_equations = false
+list_of_listings = false
 
 # Enable multi-file Book Mode by listing chapters in deterministic order.
 # [book]

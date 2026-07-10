@@ -206,6 +206,7 @@ def _validate_document(
     config: LoadedProjectConfig,
     *,
     document_root: Path | None = None,
+    defer_reference_resolution: bool = False,
 ) -> tuple[list[Diagnostic], dict[str, Any]]:
     diagnostics: list[Diagnostic] = []
     values = config.values
@@ -217,6 +218,13 @@ def _validate_document(
             unsafe_html=bool(values.get("unsafe_html", False)),
             allow_remote_images=bool(values.get("allow_remote_assets", False)),
             document_root=document_root,
+            references_enabled=values.get("references_enabled"),
+            numbering_scope=values.get("numbering_scope"),
+            list_of_figures=values.get("list_of_figures"),
+            list_of_tables=values.get("list_of_tables"),
+            list_of_equations=values.get("list_of_equations"),
+            list_of_listings=values.get("list_of_listings"),
+            defer_reference_resolution=defer_reference_resolution,
         )
     except (MarkdownInputError, OSError, UnicodeError, ValueError) as exc:
         diagnostics.append(
@@ -240,6 +248,8 @@ def _validate_document(
                 hint="Add `title` to front matter or add a `# Heading`.",
             )
         )
+    if not defer_reference_resolution:
+        diagnostics.extend(result.diagnostics)
     soup = BeautifulSoup(result.body_html, "html.parser")
     for placeholder in soup.select(".md2pdf-image-placeholder[data-md2pdf-blocked-src]"):
         source = str(placeholder.get("data-md2pdf-blocked-src") or "").strip()
@@ -281,6 +291,7 @@ def _validate_document(
         "title": values.get("title") or result.metadata.get("title") or result.title,
         "headings": len(result.toc_entries),
         "metadata_keys": sorted(result.metadata),
+        "numbered_objects": len(result.reference_objects),
     }
 
 
@@ -446,6 +457,8 @@ def _effective_config(input_path: Path, config: LoadedProjectConfig) -> dict[str
     metadata_direction = _metadata_value(
         metadata, "dir", "direction", "text_direction", "document_direction"
     )
+    raw_references = metadata.get("references")
+    metadata_references = raw_references if isinstance(raw_references, dict) else {}
 
     defaults: dict[str, Any] = {
         "toc": False,
@@ -469,6 +482,12 @@ def _effective_config(input_path: Path, config: LoadedProjectConfig) -> dict[str
         "watermark_width": "105mm",
         "font_dir": None,
         "chromium_path": None,
+        "references_enabled": False,
+        "numbering_scope": "global",
+        "list_of_figures": False,
+        "list_of_tables": False,
+        "list_of_equations": False,
+        "list_of_listings": False,
     }
     effective: dict[str, dict[str, Any]] = {}
 
@@ -488,6 +507,14 @@ def _effective_config(input_path: Path, config: LoadedProjectConfig) -> dict[str
             raw = config.values[internal_key]
             value = not raw if internal_key.startswith("no_") else raw
             add(key, value, str(config.path))
+            continue
+        metadata_key = "enabled" if key == "references_enabled" else key
+        if metadata_key in metadata_references:
+            add(key, metadata_references[metadata_key], "front matter")
+        elif key == "references_enabled" and isinstance(raw_references, bool):
+            add(key, raw_references, "front matter")
+        elif key == "numbering_scope" and "numbering" in metadata_references:
+            add(key, metadata_references["numbering"], "front matter")
         else:
             add(key, default, "built-in default")
 
@@ -657,7 +684,10 @@ def _book_validation(
 
     for chapter in manifest.chapters:
         chapter_diagnostics, _context = _validate_document(
-            chapter.path, config, document_root=manifest.root
+            chapter.path,
+            config,
+            document_root=manifest.root,
+            defer_reference_resolution=bool(config.values.get("references_enabled", False)),
         )
         diagnostics.extend(chapter_diagnostics)
     bundle, render_diagnostics = render_book(manifest)

@@ -300,6 +300,48 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_false",
         help="Block remote assets enabled by project configuration",
     )
+    reference_group = parser.add_argument_group("cross-references and numbering")
+    reference_toggle = reference_group.add_mutually_exclusive_group()
+    reference_toggle.add_argument(
+        "--references",
+        dest="references_enabled",
+        action="store_true",
+        default=None,
+        help="Enable labeled object numbering and @label cross-references.",
+    )
+    reference_toggle.add_argument(
+        "--no-references",
+        dest="references_enabled",
+        action="store_false",
+        help="Disable cross-references enabled by project configuration or front matter.",
+    )
+    reference_group.add_argument(
+        "--numbering-scope",
+        choices=["global", "chapter"],
+        default=None,
+        help="Number labeled objects globally or by chapter in Book Mode.",
+    )
+    for option, dest, title in (
+        ("figures", "list_of_figures", "figures"),
+        ("tables", "list_of_tables", "tables"),
+        ("equations", "list_of_equations", "equations"),
+        ("listings", "list_of_listings", "code listings"),
+    ):
+        toggle = reference_group.add_mutually_exclusive_group()
+        toggle.add_argument(
+            f"--list-of-{option}",
+            dest=dest,
+            action="store_true",
+            default=None,
+            help=f"Generate a list of numbered {title}.",
+        )
+        toggle.add_argument(
+            f"--no-list-of-{option}",
+            dest=dest,
+            action="store_false",
+            help=f"Disable a configured list of {title}.",
+        )
+
     parser.add_argument(
         "--timeout-ms", type=int, default=120_000, help="Browser timeout in milliseconds"
     )
@@ -455,6 +497,12 @@ def _conversion_main(argv: list[str]) -> int:
         watermark_width=args.watermark_width,
         unsafe_html=args.unsafe_html,
         allow_remote_assets=args.allow_remote_assets,
+        references_enabled=args.references_enabled,
+        numbering_scope=args.numbering_scope,
+        list_of_figures=args.list_of_figures,
+        list_of_tables=args.list_of_tables,
+        list_of_equations=args.list_of_equations,
+        list_of_listings=args.list_of_listings,
         progress=_progress_callback(args.progress),
     )
     try:

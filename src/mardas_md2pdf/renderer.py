@@ -32,7 +32,8 @@ from .appearance import (
     style_css_file,
 )
 from .brand_assets import product_logo_path
-from .markdown import MarkdownRenderResult, render_markdown_file
+from .diagnostics import format_diagnostic, has_errors
+from .markdown import MarkdownInputError, MarkdownRenderResult, render_markdown_file
 
 
 MAX_EMBED_ASSET_BYTES = 20 * 1024 * 1024
@@ -119,6 +120,12 @@ class PdfOptions:
     watermark_width: str = "105mm"
     unsafe_html: bool = False
     allow_remote_assets: bool = False
+    references_enabled: bool | None = None
+    numbering_scope: str | None = None
+    list_of_figures: bool | None = None
+    list_of_tables: bool | None = None
+    list_of_equations: bool | None = None
+    list_of_listings: bool | None = None
     progress: ProgressCallback | None = None
 
 
@@ -732,6 +739,7 @@ def _resolved_document_direction(result: MarkdownRenderResult, options: PdfOptio
             _stringify_metadata_value(metadata.get("title")),
             _stringify_metadata_value(metadata.get("subtitle")),
             _plain_html_text(result.toc_html),
+            _plain_html_text(result.reference_lists_html),
             _plain_html_text(result.body_html),
         ]
         if part
@@ -1569,6 +1577,79 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
         font-family: inherit;
       }}
 
+      .md2pdf-numbered-object {{
+        scroll-margin-top: 12mm;
+      }}
+      .md2pdf-caption-label {{
+        font-weight: 750;
+        white-space: nowrap;
+      }}
+      .md2pdf-xref {{
+        font-weight: 650;
+        text-decoration-thickness: 0.08em;
+        text-underline-offset: 0.13em;
+        white-space: nowrap;
+      }}
+      .md2pdf-xref--unresolved {{
+        color: #b91c1c;
+        font-weight: 750;
+      }}
+      .md2pdf-equation {{
+        position: relative;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        column-gap: 4mm;
+        margin: 1em 0;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }}
+      .md2pdf-equation > .math.display {{
+        grid-column: 1;
+        margin: 0;
+        min-width: 0;
+      }}
+      .md2pdf-equation-number {{
+        grid-column: 2;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+        color: var(--muted, #64748b);
+      }}
+      .md2pdf-reference-lists {{
+        break-after: page;
+        page-break-after: always;
+      }}
+      .md2pdf-reference-list {{
+        margin: 1.2em 0 1.8em;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }}
+      .md2pdf-reference-list-heading {{
+        margin: 0 0 0.7em;
+      }}
+      .md2pdf-reference-list-items {{
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }}
+      .md2pdf-reference-list-item > a {{
+        display: grid;
+        grid-template-columns: max-content minmax(0, 1fr);
+        gap: 0.8em;
+        align-items: baseline;
+        padding: 0.28em 0;
+        text-decoration: none;
+      }}
+      .md2pdf-reference-list-number {{
+        font-weight: 750;
+        white-space: nowrap;
+      }}
+      .md2pdf-reference-list-title {{
+        overflow-wrap: anywhere;
+      }}
+      body.md2pdf-dir-rtl .md2pdf-reference-list-item > a {{
+        grid-template-columns: max-content minmax(0, 1fr);
+      }}
       .heading-anchor {{
         opacity: 0.34;
         margin-inline-start: 0.35em;
@@ -1997,7 +2078,7 @@ def build_html(
     )
     content = ""
     if include_content:
-        content = f"{result.toc_html}{result.body_html}"
+        content = f"{result.toc_html}{result.reference_lists_html}{result.body_html}"
     watermark = _watermark_html(options) if include_content and include_watermark else ""
 
     appearance_classes = appearance_body_classes(appearance)
@@ -2905,5 +2986,13 @@ def convert(options: PdfOptions) -> Path:
         appearance_mode=options.mode,
         unsafe_html=options.unsafe_html,
         allow_remote_images=options.allow_remote_assets,
+        references_enabled=options.references_enabled,
+        numbering_scope=options.numbering_scope,
+        list_of_figures=options.list_of_figures,
+        list_of_tables=options.list_of_tables,
+        list_of_equations=options.list_of_equations,
+        list_of_listings=options.list_of_listings,
     )
+    if has_errors(result.diagnostics):
+        raise MarkdownInputError("\n".join(format_diagnostic(item) for item in result.diagnostics))
     return convert_render_result(result, options)

@@ -18,6 +18,7 @@ from .markdown import (
     normalize_language,
     render_markdown_file,
 )
+from .references import ReferenceOptions, resolve_cross_references
 from .renderer import PdfOptions, convert_render_result
 
 BOOK_MARKDOWN_SUFFIXES = frozenset({".md", ".markdown", ".mdown", ".mkd"})
@@ -379,6 +380,9 @@ def render_book(
                 unsafe_html=bool(config_values.get("unsafe_html", False)),
                 allow_remote_images=bool(config_values.get("allow_remote_assets", False)),
                 document_root=manifest.root,
+                references_enabled=bool(config_values.get("references_enabled", False)),
+                numbering_scope=str(config_values.get("numbering_scope", "global")),
+                defer_reference_resolution=bool(config_values.get("references_enabled", False)),
             )
         except (MarkdownInputError, OSError, UnicodeError, ValueError) as exc:
             diagnostics.append(
@@ -391,6 +395,7 @@ def render_book(
             )
             continue
 
+        diagnostics.extend(result.diagnostics)
         soup, entries, id_mapping = _namespace_chapter_html(result, chapter)
         title = _chapter_title(chapter, result, entries)
         if not any(level == 1 for level, *_rest in entries):
@@ -487,14 +492,41 @@ def render_book(
         lang=lang,
         text_hint=text_hint,
     )
+    combined_body = "".join(rendered_bodies)
+    reference_lists_html = ""
+    reference_objects: tuple[dict[str, object], ...] = ()
+    if bool(config_values.get("references_enabled", False)):
+        resolved_references = resolve_cross_references(
+            combined_body,
+            options=ReferenceOptions(
+                enabled=True,
+                numbering_scope=str(config_values.get("numbering_scope", "global")),
+                list_of_figures=bool(config_values.get("list_of_figures", False)),
+                list_of_tables=bool(config_values.get("list_of_tables", False)),
+                list_of_equations=bool(config_values.get("list_of_equations", False)),
+                list_of_listings=bool(config_values.get("list_of_listings", False)),
+            ),
+            lang=lang,
+            path=manifest.config.path,
+        )
+        combined_body = resolved_references.body_html
+        reference_lists_html = resolved_references.lists_html
+        reference_objects = tuple(item.to_dict() for item in resolved_references.objects)
+        diagnostics.extend(resolved_references.diagnostics)
+
     result = MarkdownRenderResult(
-        body_html="".join(rendered_bodies),
+        body_html=combined_body,
         metadata=first_metadata,
         title=book_title,
         pygments_css="\n".join(css_blocks),
         toc_html=toc_html,
         toc_entries=all_entries,
+        reference_lists_html=reference_lists_html,
+        reference_objects=reference_objects,
+        diagnostics=tuple(diagnostics),
     )
+    if has_errors(diagnostics):
+        return None, tuple(diagnostics)
     return BookRenderBundle(result=result, chapters=tuple(summaries)), tuple(diagnostics)
 
 
@@ -544,6 +576,12 @@ def _book_pdf_options(
         watermark_width=str(values.get("watermark_width", "105mm")),
         unsafe_html=bool(values.get("unsafe_html", False)),
         allow_remote_assets=bool(values.get("allow_remote_assets", False)),
+        references_enabled=bool(values.get("references_enabled", False)),
+        numbering_scope=str(values.get("numbering_scope", "global")),
+        list_of_figures=bool(values.get("list_of_figures", False)),
+        list_of_tables=bool(values.get("list_of_tables", False)),
+        list_of_equations=bool(values.get("list_of_equations", False)),
+        list_of_listings=bool(values.get("list_of_listings", False)),
         progress=progress,
     )
     return options
@@ -624,4 +662,5 @@ def book_context(manifest: BookManifest, bundle: BookRenderBundle | None = None)
         context["chapters"] = [summary.to_dict() for summary in bundle.chapters]
         context["title"] = bundle.result.title
         context["headings"] = len(bundle.result.toc_entries)
+        context["numbered_objects"] = len(bundle.result.reference_objects)
     return context

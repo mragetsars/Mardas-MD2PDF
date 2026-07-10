@@ -24,6 +24,7 @@ from pygments.lexers import TextLexer, get_lexer_by_name
 from pygments.util import ClassNotFound
 
 from .appearance import appearance_from_metadata, code_style_for_appearance, resolve_appearance
+from .diagnostics import Diagnostic
 from .mermaid import render_mermaid_to_svg
 
 ARABIC_RANGES = re.compile(r"[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]")
@@ -107,6 +108,11 @@ GLOBAL_SAFE_ATTRS = {
     "data-md2pdf-direction-profile",
     "data-md2pdf-number-profile",
     "data-md2pdf-rows",
+    "data-md2pdf-label",
+    "data-md2pdf-reference",
+    "data-md2pdf-reference-kind",
+    "data-md2pdf-reference-number",
+    "data-md2pdf-reference-lang",
 }
 TAG_SAFE_ATTRS = {
     "a": {"href", "name", "target", "rel"},
@@ -189,6 +195,7 @@ def ui_label(key: str, *, lang: str | None = None, text_hint: str = "") -> str:
             "caption_table": "جدول",
             "caption_code": "کد",
             "caption_diagram": "نمودار",
+            "caption_equation": "معادله",
         },
         "en": {
             "toc_title": "Table of Contents",
@@ -214,6 +221,7 @@ def ui_label(key: str, *, lang: str | None = None, text_hint: str = "") -> str:
             "caption_table": "Table",
             "caption_code": "Listing",
             "caption_diagram": "Diagram",
+            "caption_equation": "Equation",
         },
     }
     family = language_family(lang, text_hint)
@@ -228,6 +236,9 @@ class MarkdownRenderResult:
     pygments_css: str = ""
     toc_html: str = ""
     toc_entries: list[tuple[int, str, str, str]] = field(default_factory=list)
+    reference_lists_html: str = ""
+    reference_objects: tuple[dict[str, object], ...] = ()
+    diagnostics: tuple[Diagnostic, ...] = ()
 
 
 @dataclass(slots=True)
@@ -768,6 +779,9 @@ CODE_FENCE_KV_RE = re.compile(
     r"(?:(?P<quote>[\"'])(?P<quoted>.*?)(?P=quote)|(?P<bare>[^\s}]+))"
 )
 CODE_FENCE_ATTR_CLASS_RE = re.compile(r"(?<!\S)\.(?P<class>[A-Za-z_][\w.-]*)")
+CODE_FENCE_LABEL_RE = re.compile(
+    r"(?:^|[\s{])#(?P<label>(?:fig|tbl|eq|lst):[A-Za-z0-9](?:[A-Za-z0-9_.-]*[A-Za-z0-9])?)(?=[\s}]|$)"
+)
 CODE_FENCE_TITLE_KEYS = {"title", "filename", "file", "caption", "name"}
 CODE_FENCE_HIGHLIGHT_KEYS = {
     "hl_lines",
@@ -949,9 +963,13 @@ def parse_code_fence_info(info: str | None) -> dict[str, Any]:
             line_start = _positive_int_attr(value, fallback=1)
             break
 
+    label_match = CODE_FENCE_LABEL_RE.search(attrs)
+    reference_label = label_match.group("label") if label_match else ""
+
     return {
         "language": language,
         "title": title,
+        "reference_label": reference_label,
         "linenos": linenos,
         "highlight_lines": sorted(set(highlight_values)),
         "line_start": line_start,
@@ -970,6 +988,7 @@ def highlight_code(
     linenos: bool = False,
     highlight_lines: list[int] | None = None,
     line_start: int = 1,
+    reference_label: str | None = None,
 ) -> str:
     parts = (lang or "").strip().split()
     language = parts[0] if parts else ""
@@ -1001,6 +1020,8 @@ def highlight_code(
     )
     line_count = max(1, len(code.rstrip("\n").splitlines()))
     extra_attrs = f" data-lang=\"{html.escape(language)}\"" if language else ""
+    if reference_label:
+        extra_attrs += f" data-md2pdf-label=\"{html.escape(reference_label)}\""
     extra_attrs += f" data-lines=\"{line_count}\""
     if linenos and line_start > 1:
         extra_attrs += f" data-line-start=\"{line_start}\""
@@ -1028,12 +1049,19 @@ def highlight_code(
 
 
 
-def mermaid_placeholder(code: str, caption: str | None = None) -> str:
+def mermaid_placeholder(
+    code: str,
+    caption: str | None = None,
+    reference_label: str | None = None,
+) -> str:
     """Keep Mermaid source safe until post-processing renders it as SVG."""
     escaped = html.escape(code.rstrip("\n"))
     caption_text = html.escape((caption or "MERMAID").strip() or "MERMAID")
+    label_attr = (
+        f' data-md2pdf-label="{html.escape(reference_label)}"' if reference_label else ""
+    )
     return (
-        '<figure class="mermaid-diagram mermaid-diagram--pending" dir="ltr">'
+        f'<figure class="mermaid-diagram mermaid-diagram--pending" dir="ltr"{label_attr}>'
         '<figcaption class="md2pdf-caption md2pdf-caption--diagram" dir="auto">'
         f'{caption_text}'
         '</figcaption>'
@@ -2222,6 +2250,25 @@ def _apply_caption_profile(caption: Tag) -> None:
     """Apply explicit direction and audit metadata to a semantic caption."""
     text = caption.get_text(" ", strip=True)
     caption_classes = set(caption.get("class", []))
+    caption_classes.difference_update(
+        {
+            "md2pdf-caption--rtl",
+            "md2pdf-caption--ltr",
+            "md2pdf-caption--mixed",
+            "md2pdf-caption--persian",
+            "md2pdf-caption--numbered",
+            "md2pdf-caption--persian-number",
+            "md2pdf-caption--latin-number",
+            "md2pdf-caption--mixed-number",
+            "md2pdf-caption--profiled",
+            "md2pdf-rtl-text",
+            "md2pdf-ltr-text",
+            "mixed-script",
+            "persian-numeral",
+            "latin-numeral",
+            "mixed-numeral",
+        }
+    )
     caption_classes.update(_caption_profile_classes(caption))
     caption["class"] = sorted(caption_classes)
     profile = direction_profile(text)
@@ -2328,8 +2375,16 @@ def _table_row_count(table: Tag) -> int:
     """Return the number of rendered rows for print-flow hints."""
     return len(table.find_all("tr"))
 
-def postprocess_html(body_html: str, *, code_style: str = "github-dark", lang: str | None = None) -> str:
+def postprocess_html(
+    body_html: str,
+    *,
+    code_style: str = "github-dark",
+    lang: str | None = None,
+    references_enabled: bool = False,
+    source_path: Path | None = None,
+) -> tuple[str, tuple[Diagnostic, ...]]:
     soup = BeautifulSoup(body_html, "html.parser")
+    reference_diagnostics: tuple[Diagnostic, ...] = ()
 
     promote_image_caption_pairs(soup)
     promote_table_caption_pairs(soup)
@@ -2338,6 +2393,16 @@ def postprocess_html(body_html: str, *, code_style: str = "github-dark", lang: s
     normalize_raw_code_blocks(soup, code_style=code_style)
     normalize_semantic_captions(soup)
     normalize_github_callouts(soup, lang=lang)
+    if references_enabled:
+        from .references import annotate_reference_markup
+
+        annotated_html, reference_diagnostics = annotate_reference_markup(
+            str(soup),
+            path=source_path,
+            lang=lang,
+        )
+        soup = BeautifulSoup(annotated_html, "html.parser")
+        normalize_semantic_captions(soup)
     isolate_ltr_runs_in_mixed_persian_text(soup)
 
     # Direction-aware blocks and inline content.
@@ -2566,7 +2631,7 @@ def postprocess_html(body_html: str, *, code_style: str = "github-dark", lang: s
         if summary is not None:
             summary["class"] = list(set(summary.get("class", []) + ["md2pdf-summary"]))
 
-    return str(soup)
+    return str(soup), reference_diagnostics
 
 
 PAGEBREAK_COMMENT_RE = re.compile(r"<!--\s*(?:pagebreak|page-break|newpage)\s*-->", re.I)
@@ -2650,6 +2715,14 @@ def render_markdown(
     appearance_mode: str | None = None,
     unsafe_html: bool = False,
     allow_remote_images: bool = False,
+    references_enabled: bool | None = None,
+    numbering_scope: str | None = None,
+    list_of_figures: bool | None = None,
+    list_of_tables: bool | None = None,
+    list_of_equations: bool | None = None,
+    list_of_listings: bool | None = None,
+    defer_reference_resolution: bool = False,
+    source_path: Path | None = None,
 ) -> MarkdownRenderResult:
     markdown = markdown.removeprefix("\ufeff")
     metadata, markdown_body = extract_frontmatter(markdown)
@@ -2699,7 +2772,11 @@ def render_markdown(
         fence_info = parse_code_fence_info(token.info)
         lang = fence_info["language"]
         if is_mermaid_language(lang):
-            return mermaid_placeholder(token.content, fence_info["title"] or None) + "\n"
+            return mermaid_placeholder(
+                token.content,
+                fence_info["title"] or None,
+                fence_info["reference_label"] or None,
+            ) + "\n"
         return highlight_code(
             token.content,
             lang,
@@ -2709,6 +2786,7 @@ def render_markdown(
             linenos=bool(fence_info["linenos"]),
             highlight_lines=fence_info["highlight_lines"],
             line_start=int(fence_info.get("line_start") or 1),
+            reference_label=fence_info["reference_label"] or None,
         ) + "\n"
 
     md.renderer.rules["fence"] = render_fence
@@ -2721,9 +2799,68 @@ def render_markdown(
     body_html, toc_entries = add_heading_ids(body_html, toc_depth=toc_depth)
     text_hint = BeautifulSoup(body_html, "html.parser").get_text(" ", strip=True)
     toc_html = build_toc(toc_entries, toc, lang=lang, text_hint=text_hint)
-    body_html = postprocess_html(body_html, code_style=code_style, lang=lang)
+
+    raw_reference_metadata = metadata.get("references")
+    reference_metadata = raw_reference_metadata if isinstance(raw_reference_metadata, dict) else {}
+
+    def metadata_bool(explicit: bool | None, key: str, fallback: bool = False) -> bool:
+        if explicit is not None:
+            return bool(explicit)
+        value = reference_metadata.get(key, metadata.get(key, fallback))
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            return value.strip().lower() in {"1", "true", "yes", "on"}
+        return bool(value)
+
+    if references_enabled is None:
+        if isinstance(raw_reference_metadata, bool):
+            resolved_references_enabled = raw_reference_metadata
+        else:
+            resolved_references_enabled = metadata_bool(None, "enabled", False)
+    else:
+        resolved_references_enabled = bool(references_enabled)
+
+    body_html, reference_diagnostics = postprocess_html(
+        body_html,
+        code_style=code_style,
+        lang=lang,
+        references_enabled=resolved_references_enabled,
+        source_path=source_path,
+    )
     if not allow_remote_images:
         body_html = block_remote_images(body_html)
+
+    resolved_numbering_scope = str(
+        numbering_scope
+        or reference_metadata.get("numbering_scope")
+        or reference_metadata.get("numbering")
+        or metadata.get("numbering_scope")
+        or "global"
+    )
+    reference_lists_html = ""
+    reference_objects: tuple[dict[str, object], ...] = ()
+    if resolved_references_enabled:
+        from .references import ReferenceOptions, resolve_cross_references
+
+        if not defer_reference_resolution:
+            resolved = resolve_cross_references(
+                body_html,
+                options=ReferenceOptions(
+                    enabled=True,
+                    numbering_scope=resolved_numbering_scope,
+                    list_of_figures=metadata_bool(list_of_figures, "list_of_figures"),
+                    list_of_tables=metadata_bool(list_of_tables, "list_of_tables"),
+                    list_of_equations=metadata_bool(list_of_equations, "list_of_equations"),
+                    list_of_listings=metadata_bool(list_of_listings, "list_of_listings"),
+                ),
+                lang=lang,
+                path=source_path,
+            )
+            body_html = resolved.body_html
+            reference_lists_html = resolved.lists_html
+            reference_objects = tuple(item.to_dict() for item in resolved.objects)
+            reference_diagnostics = reference_diagnostics + resolved.diagnostics
 
     formatter = CodeHtmlFormatter(code_style)
     pygments_css = formatter.get_style_defs(".codehilite")
@@ -2734,6 +2871,9 @@ def render_markdown(
         pygments_css=pygments_css,
         toc_html=toc_html,
         toc_entries=toc_entries,
+        reference_lists_html=reference_lists_html,
+        reference_objects=reference_objects,
+        diagnostics=reference_diagnostics,
     )
 
 
@@ -2748,6 +2888,13 @@ def render_markdown_file(
     unsafe_html: bool = False,
     allow_remote_images: bool = False,
     document_root: str | Path | None = None,
+    references_enabled: bool | None = None,
+    numbering_scope: str | None = None,
+    list_of_figures: bool | None = None,
+    list_of_tables: bool | None = None,
+    list_of_equations: bool | None = None,
+    list_of_listings: bool | None = None,
+    defer_reference_resolution: bool = False,
 ) -> MarkdownRenderResult:
     input_path = Path(path)
     text = input_path.read_text(encoding="utf-8-sig")
@@ -2760,6 +2907,14 @@ def render_markdown_file(
         appearance_mode=appearance_mode,
         unsafe_html=unsafe_html,
         allow_remote_images=allow_remote_images,
+        references_enabled=references_enabled,
+        numbering_scope=numbering_scope,
+        list_of_figures=list_of_figures,
+        list_of_tables=list_of_tables,
+        list_of_equations=list_of_equations,
+        list_of_listings=list_of_listings,
+        defer_reference_resolution=defer_reference_resolution,
+        source_path=input_path.resolve(),
     )
     result.body_html = embed_local_images(
         result.body_html,
