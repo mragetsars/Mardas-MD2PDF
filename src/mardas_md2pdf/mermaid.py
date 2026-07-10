@@ -68,7 +68,10 @@ def render_mermaid_to_svg(source: str) -> str | None:
     diagram = parse_mermaid_flowchart(source)
     if not diagram or not diagram.nodes:
         return None
-    marker_id = "md2pdf-mermaid-arrow-" + hashlib.sha1(source.encode("utf-8")).hexdigest()[:10]
+    # SHA-1 is used only for a deterministic SVG marker ID, not security.
+    marker_id = "md2pdf-mermaid-arrow-" + hashlib.sha1(
+        source.encode("utf-8"), usedforsecurity=False
+    ).hexdigest()[:10]
     return _diagram_to_svg(diagram, marker_id=marker_id)
 
 

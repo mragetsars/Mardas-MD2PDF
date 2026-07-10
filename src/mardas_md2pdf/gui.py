@@ -5,6 +5,7 @@ import base64
 import binascii
 from collections import Counter
 import hashlib
+import ipaddress
 import json
 import logging
 import re
@@ -47,7 +48,9 @@ MAX_GUI_FILENAME_CHARS = 120
 MAX_GUI_ASSET_PATH_PART_CHARS = 180
 MAX_STUDIO_CONCURRENT_EXPORTS = 2
 MAX_STUDIO_PREVIEW_CLIENTS = 256
-STUDIO_TOKEN_HEADER = "X-Mardas-Studio-Token"
+WILDCARD_BIND_HOSTS = {str(ipaddress.ip_address(0)), "::"}
+# This is an HTTP header name, not a credential.
+STUDIO_TOKEN_HEADER = "X-Mardas-Studio-Token"  # nosec B105
 STUDIO_PREVIEW_REQUEST_HEADER = "X-Mardas-Studio-Preview-Id"
 STUDIO_PREVIEW_CLIENT_HEADER = "X-Mardas-Studio-Client-Id"
 STUDIO_PREVIEW_REQUEST_RE = re.compile(r"^[A-Za-z0-9_.:-]{1,96}$")
@@ -159,7 +162,12 @@ def _host_header_is_trusted(host_header: str | None, bind_host: str | None) -> b
     # If the user intentionally binds Studio to a non-local interface, the CSRF
     # token and same-origin checks below still gate render access.
     bind = (bind_host or "").strip().lower().strip("[]")
-    return bool(bind and not _is_local_bind_host(bind) and (bind in {"0.0.0.0", "::"} or host == bind))
+    # Wildcard binding is available only when explicitly selected by the user.
+    return bool(
+        bind
+        and not _is_local_bind_host(bind)
+        and (bind in WILDCARD_BIND_HOSTS or host == bind)
+    )
 
 
 def _same_origin_request(origin: str | None, host_header: str | None) -> bool:
@@ -421,7 +429,10 @@ def _shorten_filename(value: str, *, max_chars: int) -> str:
     if len(value) <= max_chars:
         return value
 
-    digest = hashlib.sha1(value.encode("utf-8", "surrogatepass")).hexdigest()[:10]
+    # SHA-1 is used only for a deterministic filename suffix, not security.
+    digest = hashlib.sha1(
+        value.encode("utf-8", "surrogatepass"), usedforsecurity=False
+    ).hexdigest()[:10]
     stem = value
     suffix = ""
     if "." in value:

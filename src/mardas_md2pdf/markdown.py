@@ -264,8 +264,9 @@ HIGHLIGHT_TRAILING_NEWLINE_RE = re.compile(
     r'(<span class="hll">.*?)(\r?\n)(</span>)',
     re.DOTALL,
 )
-PROTECTED_CODE_TOKEN_PREFIX = "\ue000MD2PDFCODE"
-PROTECTED_CODE_TOKEN_SUFFIX = "\ue001"
+# Private-use parser sentinels; these are not credentials.
+PROTECTED_CODE_TOKEN_PREFIX = "\ue000MD2PDFCODE"  # nosec B105
+PROTECTED_CODE_TOKEN_SUFFIX = "\ue001"  # nosec B105
 
 
 def _normalize_highlight_line_breaks(highlighted_html: str) -> str:

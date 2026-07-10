@@ -2260,7 +2260,7 @@ def _walk_destination_name_tree(node: Any) -> list[tuple[str, ArrayObject]]:
             try:
                 name = str(names[index])
                 destination = _destination_array(names[index + 1])
-            except Exception:
+            except Exception:  # nosec B112
                 continue
             if destination is not None:
                 results.append((name, destination))
@@ -2355,7 +2355,7 @@ def _copy_pdf_named_destinations(
         copied_destination.extend(destination[1:])
         try:
             writer.add_named_destination_array(TextStringObject(name), copied_destination)
-        except Exception:
+        except Exception:  # nosec B112
             continue
         copied[name] = (target_page_index, _destination_top(copied_destination), copied_destination)
     return copied
@@ -2422,7 +2422,7 @@ def _rewrite_pdf_link_annotation_destinations(
         for annotation_ref in annotations:
             try:
                 annotation = annotation_ref.get_object()
-            except Exception:
+            except Exception:  # nosec B112
                 continue
             if str(annotation.get(NameObject("/Subtype")) or annotation.get("/Subtype") or "") != "/Link":
                 continue
@@ -2462,7 +2462,7 @@ def _heading_destination_names(heading_id: str) -> list[str]:
 def _normalize_pdf_search_text(value: str) -> str:
     """Normalize extracted PDF text and heading titles for fuzzy page lookup."""
     text = unicodedata.normalize("NFKC", value or "")
-    text = text.replace("‌", " ").replace("‏", " ").replace("‎", " ")
+    text = text.replace("\u200c", " ").replace("\u200f", " ").replace("\u200e", " ")
     text = re.sub(r"[\s\W_]+", "", text, flags=re.UNICODE)
     return text.casefold()
 
