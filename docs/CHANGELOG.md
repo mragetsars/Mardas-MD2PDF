@@ -4,6 +4,28 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.16.0 - 2026-07-10
+
+### Added
+- Added an opt-in semantic cross-reference engine for labeled figures, tables, display equations, and code listings in both single-file and multi-file Book Mode output.
+- Added continuous global numbering and chapter-scoped numbering, localized English/Persian captions and references, stable PDF destinations, and generated lists of figures, tables, equations, and listings.
+- Added `--references`, `--numbering-scope`, and paired list-generation CLI overrides plus matching versioned `[references]` project configuration and front-matter fields.
+
+### Changed
+- Resolved Book Mode labels only after all chapters are assembled so references can target objects in another listed chapter while retaining deterministic manifest order and chapter namespaces.
+- Extended the clean-wheel release gate to build a labeled multi-chapter book and verify all four numbered object kinds and their PDF named destinations.
+
+### Fixed
+- Recalculated caption direction/profile classes after semantic label markers are removed, preserving Persian and mixed-script caption typography.
+- Kept reference tokens inside code, links, scripts, styles, and literal contexts unchanged and avoided bidi isolation before semantic reference resolution.
+
+### Security
+- Kept reference labels document-internal and independent of local-file or URL resolution; labels cannot expand filesystem access, enable scripts, or bypass safe-HTML and asset policies.
+- Failed before Chromium on duplicate labels, unresolved references, kind mismatches, malformed labels, and ambiguous markers.
+
+### Tests
+- Added single-file and Book Mode regression coverage for all object kinds, localized numbering, punctuation boundaries, cross-chapter resolution, duplicate/unresolved diagnostics, raw HTML handling, generated lists, CLI/config precedence, and clean-wheel PDF destinations.
+
 ## 1.15.0 - 2026-07-10
 
 ### Added
