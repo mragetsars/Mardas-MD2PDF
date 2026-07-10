@@ -4,6 +4,25 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.17.0 - 2026-07-10
+
+### Added
+- Added an offline-first bibliography and citation engine for local BibTeX and CSL JSON sources in single-file and multi-file Book Mode output.
+- Added parenthetical and narrative citation syntax, built-in `author-date` and `numeric` styles, localized Persian/English punctuation and digits, stable PDF bibliography destinations, citation back-links, and optional uncited entries.
+- Added `[bibliography]` project configuration, equivalent front-matter fields, and CLI overrides for sources, style, title, enablement, and uncited-entry behavior.
+
+### Changed
+- Resolved Book Mode citations only after all chapters are assembled so one first-use order and one bibliography are shared across the complete book.
+- Extended clean-wheel release verification to render citations from an installed package and verify bibliography destinations in the generated PDF.
+- Added deterministic same-author/same-year disambiguation with `a`, `b`, ... suffixes in both citations and bibliography entries.
+
+### Security
+- Kept bibliography processing local and offline, constrained configured sources to the document or project root, bounded source count, source size, and entry count, and protected source files from PDF/debug-output collisions.
+- Rejected malformed sources, repeated source paths, duplicate bibliography keys, undefined citation keys, and malformed citation groups before Chromium starts.
+
+### Tests
+- Added BibTeX, CSL JSON, Unicode/LaTeX normalization, macro, author-date, numeric, localization, cross-chapter, path-boundary, size-limit, entry-limit, diagnostics, clean-wheel, and PDF destination regression coverage.
+
 ## 1.16.0 - 2026-07-10
 
 ### Added
