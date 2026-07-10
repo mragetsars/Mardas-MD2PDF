@@ -5,6 +5,7 @@ import base64
 import binascii
 import hashlib
 import json
+import logging
 import re
 import secrets
 import tempfile
@@ -21,6 +22,9 @@ from .brand_assets import asset_content_type, gui_brand_asset_filename, packaged
 from .appearance import code_style_for_appearance, validate_mode_name, validate_palette_name, validate_style_name
 from .markdown import render_markdown_file
 from .renderer import PdfOptions, build_html, convert, validate_branding_mode, validate_page_size
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 MAX_GUI_REQUEST_BYTES = 32 * 1024 * 1024
@@ -998,8 +1002,13 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
             self.wfile.write(data)
         except StudioRequestError as exc:
             self._send_error(str(exc), status=exc.status, code=exc.code)
-        except Exception as exc:  # pragma: no cover - exercised manually with browser
-            self._send_error(f"PDF rendering failed: {exc}", status=500, code="render_failed")
+        except Exception:  # pragma: no cover - defensive boundary; exercised via HTTP tests
+            LOGGER.exception("Studio render failed for %s", request_path)
+            self._send_error(
+                "Studio rendering failed. Check the local Studio logs for details.",
+                status=500,
+                code="render_failed",
+            )
 
     def log_message(self, fmt: str, *args: Any) -> None:
         print(f"[Mardas GUI] {self.address_string()} - {fmt % args}")

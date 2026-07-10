@@ -552,6 +552,57 @@ def test_studio_http_api_rejects_cross_origin_render_post():
     assert "untrusted_origin" in body
 
 
+def test_studio_http_render_errors_are_logged_without_leaking_internal_details(monkeypatch, caplog):
+    import json
+    import logging
+
+    from mardas_md2pdf import gui
+
+    sensitive_detail = "/tmp/private-project/secret.pdf"
+
+    def fail_render(_payload: dict[str, object]) -> str:
+        raise RuntimeError(f"renderer exploded at {sensitive_detail}")
+
+    monkeypatch.setattr(gui, "_render_studio_html_payload", fail_render)
+    caplog.set_level(logging.ERROR, logger=gui.__name__)
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), gui.GuiRequestHandler)
+    server.studio_bind_host = "127.0.0.1"  # type: ignore[attr-defined]
+    server.studio_csrf_token = "secret"  # type: ignore[attr-defined]
+    thread = Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        body = json.dumps({"markdown": "# Failure"})
+        connection = HTTPConnection("127.0.0.1", server.server_port, timeout=10)
+        connection.request(
+            "POST",
+            "/api/render-html",
+            body=body,
+            headers={
+                "Content-Type": "application/json",
+                "Origin": f"http://127.0.0.1:{server.server_port}",
+                "X-Mardas-Studio-Token": "secret",
+            },
+        )
+        response = connection.getresponse()
+        payload = json.loads(response.read().decode("utf-8"))
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=10)
+
+    assert response.status == 500
+    assert payload == {
+        "error": "Studio rendering failed. Check the local Studio logs for details.",
+        "status": 500,
+        "code": "render_failed",
+    }
+    assert sensitive_detail not in payload["error"]
+    assert "RuntimeError" not in payload["error"]
+    assert sensitive_detail in caplog.text
+    assert "Studio render failed for /api/render-html" in caplog.text
+
+
 def test_studio_http_preview_requests_are_latest_only(monkeypatch):
     from mardas_md2pdf import gui
 
