@@ -86,7 +86,21 @@ from pathlib import Path
 root = Path(sys.argv[1])
 config = root / "mardas.toml"
 text = config.read_text(encoding="utf-8")
-text = text.replace("enabled = false", "enabled = true", 1)
+text = text.replace(
+    '[bibliography]\nenabled = false',
+    '[bibliography]\nenabled = true',
+    1,
+)
+text = text.replace(
+    '# sources = ["references.bib"]',
+    'sources = ["references.bib"]',
+    1,
+)
+text = text.replace(
+    '[references]\nenabled = false',
+    '[references]\nenabled = true',
+    1,
+)
 text = text.replace('numbering_scope = "global"', 'numbering_scope = "chapter"', 1)
 text = text.replace("list_of_figures = false", "list_of_figures = true", 1)
 text = text.replace("list_of_tables = false", "list_of_tables = true", 1)
@@ -101,9 +115,15 @@ config.write_text(text, encoding="utf-8", newline="\n")
     '</svg>',
     encoding="utf-8",
 )
+(root / "references.bib").write_text(
+    "@article{doe2024, author={Doe, Jane}, title={Release Evidence}, year={2024}}\n"
+    "@book{smith2022, author={Smith, Alex}, title={Release Methods}, year={2022}}\n",
+    encoding="utf-8",
+)
 chapter_one = (
     "# Introduction\n\n"
-    "See @fig:model, @tbl:metrics, @eq:energy, and @lst:loop.\n\n"
+    "See @fig:model, @tbl:metrics, @eq:energy, and @lst:loop. "
+    "Prior evidence is documented in [@doe2024].\n\n"
     "![Model](../assets/model.svg)\n\n"
     "Figure: Release model {#fig:model}\n\n"
     "| Metric | Value |\n|---|---:|\n| Pass | 1 |\n\n"
@@ -112,6 +132,7 @@ chapter_one = (
 )
 chapter_two = (
     "# Main Content\n\n"
+    "The release method follows @smith2022.\n\n"
     "```python title=\"Release loop\" {#lst:loop}\n"
     "print(\"release\")\n"
     "```\n"
@@ -151,6 +172,10 @@ if not str(book.get("output", "")).endswith("dist/book.pdf"):
     raise SystemExit("Book Mode smoke wrote an unexpected output path")
 if book.get("numbered_objects") != 4:
     raise SystemExit("Cross-reference smoke did not number all four object kinds")
+if book.get("cited_entries") != 2:
+    raise SystemExit("Citation smoke did not resolve both cited keys")
+if book.get("bibliography_entries") != 2:
+    raise SystemExit("Citation smoke did not generate both bibliography entries")
 
 from pypdf import PdfReader
 reader = PdfReader(str(root / "dist" / "book.pdf"))
@@ -163,6 +188,8 @@ for expected in (
 ):
     if expected not in destinations:
         raise SystemExit(f"Cross-reference destination is missing: {expected}")
+if len([name for name in destinations if name.startswith("/bib-")]) != 2:
+    raise SystemExit("Bibliography destinations are missing from the installed-wheel PDF")
 PY_PROJECT
 "$venv_bin/mrs-md2pdf-gui" --version
 "$venv_python" - <<'PY'
