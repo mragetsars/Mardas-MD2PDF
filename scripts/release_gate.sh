@@ -78,21 +78,37 @@ fi
 "$venv_bin/mrs-md2pdf" --version
 "$venv_bin/mrs-md2pdf" --help >/dev/null
 "$venv_bin/mrs-md2pdf" --list-styles >/dev/null
-"$venv_bin/mrs-md2pdf" init "$project_smoke"
+"$venv_bin/mrs-md2pdf" init "$project_smoke" --book
 printf '%s\n' '# Project command smoke' > "$project_smoke/report.md"
 "$venv_bin/mrs-md2pdf" validate "$project_smoke/report.md" --format json > "$project_smoke/validate.json"
 "$venv_bin/mrs-md2pdf" explain-config "$project_smoke/report.md" --format json > "$project_smoke/explain.json"
 "$venv_bin/mrs-md2pdf" doctor "$project_smoke/report.md" --format json > "$project_smoke/doctor.json"
+"$venv_bin/mrs-md2pdf" validate-book "$project_smoke" --format json > "$project_smoke/validate-book.json"
+"$venv_bin/mrs-md2pdf" explain-book "$project_smoke" --format json > "$project_smoke/explain-book.json"
+"$venv_bin/mrs-md2pdf" build-book "$project_smoke" --format json --progress off > "$project_smoke/build-book.json"
+test -s "$project_smoke/dist/book.pdf"
 "$venv_python" - "$project_smoke" <<'PY_PROJECT'
 import json
 import sys
 from pathlib import Path
 
 root = Path(sys.argv[1])
-for name in ("validate", "explain", "doctor"):
+for name in (
+    "validate",
+    "explain",
+    "doctor",
+    "validate-book",
+    "explain-book",
+    "build-book",
+):
     payload = json.loads((root / f"{name}.json").read_text(encoding="utf-8"))
     if not payload.get("ok"):
         raise SystemExit(f"Project command smoke failed: {name}")
+book = json.loads((root / "build-book.json").read_text(encoding="utf-8"))
+if book.get("chapter_count") != 2:
+    raise SystemExit("Book Mode smoke did not preserve the starter chapter manifest")
+if not str(book.get("output", "")).endswith("dist/book.pdf"):
+    raise SystemExit("Book Mode smoke wrote an unexpected output path")
 PY_PROJECT
 "$venv_bin/mrs-md2pdf-gui" --version
 "$venv_python" - <<'PY'

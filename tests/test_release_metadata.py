@@ -155,10 +155,20 @@ def test_check_render_smoke_uses_process_tree_safe_command_runner() -> None:
 def test_release_gate_verifies_installed_project_commands() -> None:
     script = _read("scripts/release_gate.sh")
 
-    for command in [" init ", " validate ", " explain-config ", " doctor "]:
+    for command in [
+        " init ",
+        " validate ",
+        " explain-config ",
+        " doctor ",
+        " validate-book ",
+        " explain-book ",
+        " build-book ",
+    ]:
         assert command in script
+    assert "--book" in script
     assert "project_smoke" in script
     assert "validate.json" in script
+    assert "dist/book.pdf" in script
 
 
 def test_release_gate_verifies_current_packaged_asset_names() -> None:
