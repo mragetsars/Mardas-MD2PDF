@@ -4,6 +4,29 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.14.0 - 2026-07-10
+
+### Added
+- Added versioned `mardas.toml` project configuration with nearest-ancestor discovery, explicit `--config` selection, `--no-config` opt-out, schema validation, safe relative-path resolution, and deterministic CLI override precedence.
+- Added `mrs-md2pdf init`, `validate`, `doctor`, and `explain-config` workflows with stable text/JSON diagnostics for automation and local environment inspection.
+- Added diagnostic coverage for malformed TOML/YAML, unknown or invalid configuration values, missing configured assets, blocked local/remote images, heading hierarchy jumps, risky security settings, missing dependencies, Chromium discovery, and packaged MathJax integrity.
+
+### Changed
+- Added paired CLI overrides such as `--no-toc`, `--cover`, `--header-footer`, `--mathjax`, `--safe-html`, and `--block-remote-assets` so command-line automation can override either side of a project boolean.
+- Extended the clean-wheel release gate to initialize, validate, inspect, and diagnose a real project using only installed console entry points.
+- Added the Python 3.10 `tomli` compatibility dependency while using the standard-library `tomllib` on Python 3.11 and newer.
+
+### Fixed
+- Resolved appearance consistently as `CLI > mardas.toml > front matter > built-in defaults`, including syntax highlighting, document CSS, footer styling, and Chromium PDF output.
+- Restored front-matter appearance behavior when no CLI or project override is supplied instead of silently forcing CLI parser defaults.
+
+### Security
+- Warned explicitly when project configuration enables unsanitized HTML or remote network assets and documented command-line safety overrides.
+- Rejected unknown schema sections/keys and invalid configured paths before Chromium starts.
+
+### Tests
+- Added project-configuration, precedence, path-resolution, structured-diagnostic, project-command, clean-release, and front-matter appearance regression coverage.
+
 ## 1.13.40 - 2026-07-10
 
 ### Security
