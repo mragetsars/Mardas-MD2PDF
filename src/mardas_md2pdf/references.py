@@ -16,9 +16,7 @@ REFERENCE_KINDS = ("fig", "tbl", "eq", "lst")
 REFERENCE_SCOPE_VALUES = ("global", "chapter")
 LABEL_NAME_RE = r"[A-Za-z0-9](?:[A-Za-z0-9_.-]*[A-Za-z0-9])?"
 LABEL_RE = re.compile(rf"^(?P<kind>{'|'.join(REFERENCE_KINDS)}):(?P<name>{LABEL_NAME_RE})$")
-LABEL_MARKER_RE = re.compile(
-    rf"\{{#(?P<label>(?:{'|'.join(REFERENCE_KINDS)}):{LABEL_NAME_RE})\}}"
-)
+LABEL_MARKER_RE = re.compile(rf"\{{#(?P<label>(?:{'|'.join(REFERENCE_KINDS)}):{LABEL_NAME_RE})\}}")
 LABEL_MARKER_CANDIDATE_RE = re.compile(
     rf"\{{#(?P<label>(?:{'|'.join(REFERENCE_KINDS)}):[^{{}}\n]*)\}}"
 )
@@ -134,7 +132,9 @@ def _kind_label(kind: str, *, lang: str | None, text_hint: str = "") -> str:
 
 def _reference_display(kind: str, number: str, *, lang: str | None, text_hint: str = "") -> str:
     family = _language_family(lang, text_hint)
-    return f"{_kind_label(kind, lang=lang, text_hint=text_hint)} {_localized_number(number, family)}"
+    return (
+        f"{_kind_label(kind, lang=lang, text_hint=text_hint)} {_localized_number(number, family)}"
+    )
 
 
 def _target_for_label(label: str) -> str:
@@ -382,8 +382,11 @@ def _prepare_objects(soup: BeautifulSoup, diagnostics: list[Diagnostic], path: P
     candidates.extend(tag for tag in soup.find_all("table") if isinstance(tag, Tag))
     candidates.extend(
         tag
-        for tag in soup.find_all("div", class_=lambda value: value and "math" in value and "display" in value)
-        if isinstance(tag, Tag) and not tag.find_parent("figure", class_=lambda value: value and "md2pdf-equation" in value)
+        for tag in soup.find_all(
+            "div", class_=lambda value: value and "math" in value and "display" in value
+        )
+        if isinstance(tag, Tag)
+        and not tag.find_parent("figure", class_=lambda value: value and "md2pdf-equation" in value)
     )
     for obj in list(candidates):
         kind = _kind_for_object(obj)
@@ -513,11 +516,21 @@ def _build_lists(
         )
     if not blocks:
         return ""
-    return (
-        '<section class="md2pdf-reference-lists">'
-        + "".join(blocks)
-        + "</section>"
-    )
+    return '<section class="md2pdf-reference-lists">' + "".join(blocks) + "</section>"
+
+
+def _diagnostic_path_for_tag(tag: Tag, fallback: Path | None) -> Path | None:
+    section = tag.find_parent(attrs={"data-book-source": True})
+    if isinstance(section, Tag):
+        source = str(section.get("data-book-source") or "").strip()
+        if source:
+            base = (
+                fallback
+                if fallback is not None and fallback.is_dir()
+                else (fallback.parent if fallback is not None else Path.cwd())
+            )
+            return (base / source).resolve(strict=False)
+    return fallback
 
 
 def resolve_cross_references(
@@ -538,10 +551,7 @@ def resolve_cross_references(
     chapter_counters: dict[tuple[int, str], int] = {}
     objects: list[NumberedObject] = []
     text_hint = soup.get_text(" ", strip=True)
-    original_ids = [
-        str(tag.get("id") or "").strip()
-        for tag in soup.find_all(attrs={"id": True})
-    ]
+    original_ids = [str(tag.get("id") or "").strip() for tag in soup.find_all(attrs={"id": True})]
     original_id_counts = Counter(value for value in original_ids if value)
     reserved_ids = set(original_ids)
 
@@ -554,7 +564,7 @@ def resolve_cross_references(
                     "MARDAS-E605",
                     "error",
                     f"Invalid reference label: {label}",
-                    path=path,
+                    path=_diagnostic_path_for_tag(obj, path),
                     hint="Use labels such as fig:architecture, tbl:results, eq:energy, or lst:training-loop.",
                 )
             )
@@ -566,7 +576,7 @@ def resolve_cross_references(
                     "MARDAS-E605",
                     "error",
                     f"Reference label is not attached to a supported object: {label}",
-                    path=path,
+                    path=_diagnostic_path_for_tag(obj, path),
                 )
             )
             continue
@@ -577,7 +587,7 @@ def resolve_cross_references(
                     "MARDAS-E603",
                     "error",
                     f"Reference label kind {declared_kind!r} does not match the attached {kind!r} object: {label}",
-                    path=path,
+                    path=_diagnostic_path_for_tag(obj, path),
                 )
             )
             continue
@@ -587,7 +597,7 @@ def resolve_cross_references(
                     "MARDAS-E601",
                     "error",
                     f"Reference label is defined more than once: {label}",
-                    path=path,
+                    path=_diagnostic_path_for_tag(obj, path),
                     hint="Use a unique label across the complete document or book.",
                 )
             )
@@ -660,7 +670,7 @@ def resolve_cross_references(
                     "MARDAS-E602",
                     "error",
                     f"Reference target is not defined: {label}",
-                    path=path,
+                    path=_diagnostic_path_for_tag(anchor, path),
                     hint="Add a matching object label or correct the @reference token.",
                 )
             )

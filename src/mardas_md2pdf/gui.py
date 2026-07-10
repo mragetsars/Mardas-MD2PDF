@@ -18,11 +18,16 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from importlib import resources
 from pathlib import Path
 from typing import Any
-from urllib.parse import quote, urlsplit
+from urllib.parse import parse_qs, quote, urlsplit
 
 from . import __version__
 from .brand_assets import asset_content_type, gui_brand_asset_filename, packaged_asset_path
-from .appearance import code_style_for_appearance, validate_mode_name, validate_palette_name, validate_style_name
+from .appearance import (
+    code_style_for_appearance,
+    validate_mode_name,
+    validate_palette_name,
+    validate_style_name,
+)
 from .markdown import MarkdownInputError, render_markdown_file
 from .renderer import (
     DocumentAssetError,
@@ -34,6 +39,19 @@ from .renderer import (
     validate_page_size,
 )
 
+from .workspace import (
+    ProjectWorkspace,
+    WorkspaceError,
+    load_workspace,
+    read_workspace_file,
+    refresh_workspace,
+    render_workspace_book_html,
+    render_workspace_book_pdf,
+    render_workspace_file_html,
+    workspace_diagnostics_payload,
+    workspace_payload,
+    write_workspace_file,
+)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -164,9 +182,7 @@ def _host_header_is_trusted(host_header: str | None, bind_host: str | None) -> b
     bind = (bind_host or "").strip().lower().strip("[]")
     # Wildcard binding is available only when explicitly selected by the user.
     return bool(
-        bind
-        and not _is_local_bind_host(bind)
-        and (bind in WILDCARD_BIND_HOSTS or host == bind)
+        bind and not _is_local_bind_host(bind) and (bind in WILDCARD_BIND_HOSTS or host == bind)
     )
 
 
@@ -237,13 +253,13 @@ def _read_studio_request_body(handler: Any, length: int) -> bytes:
     return raw
 
 
-def _validate_studio_post_headers(
+def _validate_studio_api_headers(
     headers: Any,
     *,
     bind_host: str | None,
     csrf_token: str | None,
 ) -> None:
-    """Reject browser-originated Studio API requests that did not come from Studio."""
+    """Reject API requests that did not originate from the active Studio page."""
     host = headers.get("Host")
     if not _host_header_is_trusted(host, bind_host):
         raise StudioRequestError(
@@ -267,20 +283,6 @@ def _validate_studio_post_headers(
             code="untrusted_fetch_site",
         )
 
-    if headers.get("Transfer-Encoding"):
-        raise StudioRequestError(
-            "Studio render requests do not support Transfer-Encoding.",
-            status=400,
-            code="unsupported_transfer_encoding",
-        )
-
-    if not _content_type_is_json(headers.get("Content-Type")):
-        raise StudioRequestError(
-            "Studio render requests must use Content-Type: application/json.",
-            status=415,
-            code="unsupported_media_type",
-        )
-
     if csrf_token:
         submitted = headers.get(STUDIO_TOKEN_HEADER)
         if not submitted or not secrets.compare_digest(str(submitted), csrf_token):
@@ -291,6 +293,26 @@ def _validate_studio_post_headers(
             )
 
 
+def _validate_studio_post_headers(
+    headers: Any,
+    *,
+    bind_host: str | None,
+    csrf_token: str | None,
+) -> None:
+    """Validate authenticated JSON POST requests to the Studio API."""
+    _validate_studio_api_headers(headers, bind_host=bind_host, csrf_token=csrf_token)
+    if headers.get("Transfer-Encoding"):
+        raise StudioRequestError(
+            "Studio render requests do not support Transfer-Encoding.",
+            status=400,
+            code="unsupported_transfer_encoding",
+        )
+    if not _content_type_is_json(headers.get("Content-Type")):
+        raise StudioRequestError(
+            "Studio render requests must use Content-Type: application/json.",
+            status=415,
+            code="unsupported_media_type",
+        )
 
 
 def _json_bool(value: Any, *, default: bool, code: str, label: str) -> bool:
@@ -321,11 +343,15 @@ def _json_int_range(
     if value is None or value == "":
         return default
     if isinstance(value, bool):
-        raise StudioRequestError(f"{label} must be an integer from {minimum} to {maximum}.", code=code)
+        raise StudioRequestError(
+            f"{label} must be an integer from {minimum} to {maximum}.", code=code
+        )
     try:
         number = int(value)
     except (TypeError, ValueError) as exc:
-        raise StudioRequestError(f"{label} must be an integer from {minimum} to {maximum}.", code=code) from exc
+        raise StudioRequestError(
+            f"{label} must be an integer from {minimum} to {maximum}.", code=code
+        ) from exc
     if not minimum <= number <= maximum:
         raise StudioRequestError(f"{label} must be between {minimum} and {maximum}.", code=code)
     return number
@@ -343,11 +369,15 @@ def _json_float_range(
     if value is None or value == "":
         return default
     if isinstance(value, bool):
-        raise StudioRequestError(f"{label} must be a number from {minimum:g} to {maximum:g}.", code=code)
+        raise StudioRequestError(
+            f"{label} must be a number from {minimum:g} to {maximum:g}.", code=code
+        )
     try:
         number = float(value)
     except (TypeError, ValueError) as exc:
-        raise StudioRequestError(f"{label} must be a number from {minimum:g} to {maximum:g}.", code=code) from exc
+        raise StudioRequestError(
+            f"{label} must be a number from {minimum:g} to {maximum:g}.", code=code
+        ) from exc
     if not minimum <= number <= maximum:
         raise StudioRequestError(f"{label} must be between {minimum:g} and {maximum:g}.", code=code)
     return number
@@ -396,14 +426,22 @@ def _validated_render_options(options: dict[str, Any]) -> dict[str, Any]:
             label="tocDepth",
         ),
         "toc_page_break": _json_bool(
-            options.get("tocPageBreak"), default=True, code="invalid_toc_page_break", label="tocPageBreak"
+            options.get("tocPageBreak"),
+            default=True,
+            code="invalid_toc_page_break",
+            label="tocPageBreak",
         ),
         "h1_page_break": _json_bool(
-            options.get("h1PageBreak"), default=True, code="invalid_h1_page_break", label="h1PageBreak"
+            options.get("h1PageBreak"),
+            default=True,
+            code="invalid_h1_page_break",
+            label="h1PageBreak",
         ),
         "page_size": page_size,
         "direction": direction or None,
-        "cover": not _json_bool(options.get("noCover"), default=False, code="invalid_no_cover", label="noCover"),
+        "cover": not _json_bool(
+            options.get("noCover"), default=False, code="invalid_no_cover", label="noCover"
+        ),
         "watermark_opacity": _json_float_range(
             options.get("watermarkOpacity"),
             default=0.065,
@@ -413,12 +451,16 @@ def _validated_render_options(options: dict[str, Any]) -> dict[str, Any]:
             label="watermarkOpacity",
         ),
         "no_header_footer": _json_bool(
-            options.get("noHeaderFooter"), default=False, code="invalid_no_header_footer", label="noHeaderFooter"
+            options.get("noHeaderFooter"),
+            default=False,
+            code="invalid_no_header_footer",
+            label="noHeaderFooter",
         ),
         "no_mathjax": _json_bool(
             options.get("noMathjax"), default=False, code="invalid_no_mathjax", label="noMathjax"
         ),
     }
+
 
 def _asset_text(name: str) -> str:
     return (resources.files("mardas_md2pdf") / "assets" / name).read_text(encoding="utf-8")
@@ -510,9 +552,7 @@ def _asset_paths_conflict(left: Path, right: Path) -> bool:
 
 def _gui_asset_target_groups(asset_paths: list[Path]) -> list[tuple[Path, ...]]:
     """Return primary asset paths plus only unambiguous basename fallbacks."""
-    basename_counts = Counter(
-        path.name.casefold() for path in asset_paths if len(path.parts) > 1
-    )
+    basename_counts = Counter(path.name.casefold() for path in asset_paths if len(path.parts) > 1)
     primary_keys = {_asset_path_key(path) for path in asset_paths}
     groups: list[tuple[Path, ...]] = []
     for rel_path in asset_paths:
@@ -552,9 +592,7 @@ def _validate_gui_asset_targets(
     return target_groups
 
 
-def _write_gui_assets(
-    tmp: Path, assets: Any, *, reserved_paths: tuple[Path, ...] = ()
-) -> None:
+def _write_gui_assets(tmp: Path, assets: Any, *, reserved_paths: tuple[Path, ...] = ()) -> None:
     if not isinstance(assets, list):
         return
     total_bytes = 0
@@ -613,7 +651,9 @@ def _validate_studio_payload(
             code="markdown_too_large",
         )
     render_options = _validated_render_options(options)
-    filename = _safe_filename(str(options.get("filename") or options.get("title") or "mardas-document"))
+    filename = _safe_filename(
+        str(options.get("filename") or options.get("title") or "mardas-document")
+    )
     if not filename.lower().endswith(".pdf"):
         filename += ".pdf"
     return markdown, options, assets if isinstance(assets, list) else [], render_options, filename
@@ -860,6 +900,7 @@ def _studio_pdf_like_preview_css(page_size: str | None) -> str:
     }})();
   </script>"""
 
+
 def _inject_studio_preview_css(html_text: str, *, page_size: str | None) -> str:
     preview_css = _studio_pdf_like_preview_css(page_size)
     return html_text.replace("</head>", f"{preview_css}\n</head>", 1)
@@ -914,6 +955,23 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
 
     def _studio_bind_host(self) -> str:
         return str(getattr(self.server, "studio_bind_host", self.server.server_address[0]))
+
+    def _studio_project_workspace(self) -> ProjectWorkspace | None:
+        workspace = getattr(self.server, "studio_project_workspace", None)
+        return workspace if isinstance(workspace, ProjectWorkspace) else None
+
+    def _set_studio_project_workspace(self, workspace: ProjectWorkspace) -> None:
+        self.server.studio_project_workspace = workspace  # type: ignore[attr-defined]
+
+    def _require_studio_project_workspace(self) -> ProjectWorkspace:
+        workspace = self._studio_project_workspace()
+        if workspace is None:
+            raise WorkspaceError(
+                "Studio was not started in project mode.",
+                code="project_mode_disabled",
+                status=404,
+            )
+        return workspace
 
     def _studio_preview_render_lock(self) -> threading.Lock:
         lock = getattr(self.server, "studio_preview_render_lock", None)
@@ -978,7 +1036,9 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
             code="stale_preview",
         )
 
-    def _send_text(self, content: str, *, status: int = 200, content_type: str = "text/html; charset=utf-8") -> None:
+    def _send_text(
+        self, content: str, *, status: int = 200, content_type: str = "text/html; charset=utf-8"
+    ) -> None:
         data = content.encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", content_type)
@@ -1002,8 +1062,60 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
     def _request_path(self) -> str:
         return urlsplit(self.path).path or "/"
 
+    def _request_query(self) -> dict[str, list[str]]:
+        return parse_qs(urlsplit(self.path).query, keep_blank_values=True)
+
+    def _send_workspace_error(self, exc: WorkspaceError) -> None:
+        payload = _error_payload(str(exc), status=exc.status, code=exc.code)
+        workspace = self._studio_project_workspace()
+        if workspace is not None and exc.diagnostics:
+            payload["diagnostics"] = workspace_diagnostics_payload(workspace, exc.diagnostics)
+        self._send_json(payload, status=exc.status)
+
+    def _handle_project_get(self, request_path: str) -> bool:
+        if request_path not in {"/api/project", "/api/project/file"}:
+            return False
+        _validate_studio_api_headers(
+            self.headers,
+            bind_host=self._studio_bind_host(),
+            csrf_token=self._studio_csrf_token(),
+        )
+        workspace = self._studio_project_workspace()
+        if request_path == "/api/project":
+            if workspace is None:
+                self._send_json({"enabled": False})
+                return True
+            refreshed = refresh_workspace(workspace)
+            self._set_studio_project_workspace(refreshed)
+            self._send_json(workspace_payload(refreshed))
+            return True
+
+        workspace = self._require_studio_project_workspace()
+        values = self._request_query().get("path", [])
+        relative_path = values[0] if values else ""
+        self._send_json(read_workspace_file(workspace, relative_path))
+        return True
+
     def do_GET(self) -> None:  # noqa: N802 - stdlib API
         request_path = self._request_path()
+        try:
+            if self._handle_project_get(request_path):
+                return
+        except StudioRequestError as exc:
+            self._send_error(str(exc), status=exc.status, code=exc.code)
+            return
+        except WorkspaceError as exc:
+            self._send_workspace_error(exc)
+            return
+        except Exception:  # pragma: no cover - defensive project API boundary
+            LOGGER.exception("Studio project GET failed for %s", request_path)
+            self._send_error(
+                "Studio project request failed. Check the local Studio logs for details.",
+                status=500,
+                code="project_request_failed",
+            )
+            return
+
         if request_path in {"/", "/index.html"}:
             html = (
                 _asset_text("gui.html")
@@ -1030,7 +1142,16 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:  # noqa: N802 - stdlib API
         request_path = self._request_path()
-        if request_path not in {"/api/render", "/api/render-html"}:
+        allowed = {
+            "/api/render",
+            "/api/render-html",
+            "/api/project/save",
+            "/api/project/validate",
+            "/api/project/render-book",
+            "/api/project/render-book-html",
+            "/api/project/render-file-html",
+        }
+        if request_path not in allowed:
             self._send_error("Unknown endpoint", status=404, code="not_found")
             return
         try:
@@ -1040,9 +1161,105 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
                 csrf_token=self._studio_csrf_token(),
             )
             length = _studio_content_length(self.headers)
-            preview_request = self._register_preview_request() if request_path == "/api/render-html" else None
+            preview_request = (
+                self._register_preview_request()
+                if request_path
+                in {
+                    "/api/render-html",
+                    "/api/project/render-book-html",
+                    "/api/project/render-file-html",
+                }
+                else None
+            )
             raw = _read_studio_request_body(self, length)
             payload = _decode_json_payload(raw)
+
+            if request_path == "/api/project/save":
+                workspace = self._require_studio_project_workspace()
+                relative_path = payload.get("path")
+                content = payload.get("content")
+                expected = payload.get("expected_sha256")
+                if not isinstance(relative_path, str):
+                    raise WorkspaceError(
+                        "Project save requires a relative file path.",
+                        code="invalid_project_path",
+                    )
+                if not isinstance(content, str):
+                    raise WorkspaceError(
+                        "Project save requires text content.",
+                        code="invalid_project_content",
+                    )
+                if not isinstance(expected, str):
+                    raise WorkspaceError(
+                        "Project save requires the previously opened file hash.",
+                        code="missing_project_file_hash",
+                    )
+                file_payload = write_workspace_file(
+                    workspace, relative_path, content, expected_sha256=expected
+                )
+                refreshed = refresh_workspace(workspace)
+                self._set_studio_project_workspace(refreshed)
+                self._send_json({"file": file_payload, "project": workspace_payload(refreshed)})
+                return
+
+            if request_path == "/api/project/validate":
+                workspace = self._require_studio_project_workspace()
+                refreshed = refresh_workspace(workspace)
+                self._set_studio_project_workspace(refreshed)
+                self._send_json(workspace_payload(refreshed))
+                return
+
+            if request_path == "/api/project/render-file-html":
+                workspace = self._require_studio_project_workspace()
+                relative_path = payload.get("path")
+                content = payload.get("content")
+                if not isinstance(relative_path, str) or not isinstance(content, str):
+                    raise WorkspaceError(
+                        "Project preview requires a file path and text content.",
+                        code="invalid_project_preview",
+                    )
+                if not self._preview_request_is_current(preview_request):
+                    self._send_stale_preview()
+                    return
+                with self._studio_preview_render_lock():
+                    if not self._preview_request_is_current(preview_request):
+                        self._send_stale_preview()
+                        return
+                    html_text, refreshed = render_workspace_file_html(
+                        workspace, relative_path, content
+                    )
+                    html_text = _inject_studio_preview_css(
+                        html_text,
+                        page_size=str(refreshed.config.values.get("page_size", "A4")),
+                    )
+                    self._set_studio_project_workspace(refreshed)
+                    if not self._preview_request_is_current(preview_request):
+                        self._send_stale_preview()
+                        return
+                self._send_text(html_text, content_type="text/html; charset=utf-8")
+                return
+
+            if request_path == "/api/project/render-book-html":
+                workspace = self._require_studio_project_workspace()
+                if not self._preview_request_is_current(preview_request):
+                    self._send_stale_preview()
+                    return
+                with self._studio_preview_render_lock():
+                    if not self._preview_request_is_current(preview_request):
+                        self._send_stale_preview()
+                        return
+                    html_text, refreshed = render_workspace_book_html(workspace)
+                    html_text = _inject_studio_preview_css(
+                        html_text,
+                        page_size=str(refreshed.config.values.get("page_size", "A4")),
+                    )
+                    self._set_studio_project_workspace(refreshed)
+                    if not self._preview_request_is_current(preview_request):
+                        self._send_stale_preview()
+                        return
+                self._send_text(html_text, content_type="text/html; charset=utf-8")
+                return
+
             if request_path == "/api/render-html":
                 if not self._preview_request_is_current(preview_request):
                     self._send_stale_preview()
@@ -1069,24 +1286,31 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
                     code="export_capacity_reached",
                 )
             try:
-                markdown, options, assets, render_options, filename = _validate_studio_payload(payload)
-                with tempfile.TemporaryDirectory(prefix="mardas-md2pdf-gui-") as tmpdir:
-                    tmp = Path(tmpdir)
-                    md_path = tmp / "document.md"
-                    pdf_path = tmp / filename
-                    md_path.write_text(markdown, encoding="utf-8")
-                    _write_gui_assets(
-                        tmp, assets, reserved_paths=(Path("document.md"), Path(filename))
+                if request_path == "/api/project/render-book":
+                    workspace = self._require_studio_project_workspace()
+                    data, filename, refreshed = render_workspace_book_pdf(workspace)
+                    self._set_studio_project_workspace(refreshed)
+                else:
+                    markdown, options, assets, render_options, filename = _validate_studio_payload(
+                        payload
                     )
-                    pdf_options = _studio_pdf_options(
-                        tmp=tmp,
-                        md_path=md_path,
-                        output_path=pdf_path,
-                        options=options,
-                        render_options=render_options,
-                    )
-                    convert(pdf_options)
-                    data = pdf_path.read_bytes()
+                    with tempfile.TemporaryDirectory(prefix="mardas-md2pdf-gui-") as tmpdir:
+                        tmp = Path(tmpdir)
+                        md_path = tmp / "document.md"
+                        pdf_path = tmp / filename
+                        md_path.write_text(markdown, encoding="utf-8")
+                        _write_gui_assets(
+                            tmp, assets, reserved_paths=(Path("document.md"), Path(filename))
+                        )
+                        pdf_options = _studio_pdf_options(
+                            tmp=tmp,
+                            md_path=md_path,
+                            output_path=pdf_path,
+                            options=options,
+                            render_options=render_options,
+                        )
+                        convert(pdf_options)
+                        data = pdf_path.read_bytes()
             finally:
                 semaphore.release()
 
@@ -1099,6 +1323,8 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
             self.wfile.write(data)
         except StudioRequestError as exc:
             self._send_error(str(exc), status=exc.status, code=exc.code)
+        except WorkspaceError as exc:
+            self._send_workspace_error(exc)
         except MarkdownInputError as exc:
             self._send_error(str(exc), status=400, code="invalid_markdown")
         except DocumentAssetError as exc:
@@ -1122,13 +1348,28 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--host", default="127.0.0.1", help="Host to bind; default: 127.0.0.1")
     parser.add_argument("--port", type=int, default=8765, help="Port to bind; default: 8765")
-    parser.add_argument("--no-open", action="store_true", help="Do not open the browser automatically")
+    parser.add_argument(
+        "--no-open", action="store_true", help="Do not open the browser automatically"
+    )
+    parser.add_argument(
+        "--project",
+        type=Path,
+        help="Open a local mardas.toml project workspace with safe file editing and Book Mode tools.",
+    )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = build_parser().parse_args(argv)
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    project_workspace: ProjectWorkspace | None = None
+    if args.project is not None:
+        try:
+            project_workspace = load_workspace(args.project)
+        except WorkspaceError as exc:
+            parser.error(str(exc))
+
     server = _create_studio_server(args.host, args.port)
     server.studio_bind_host = args.host  # type: ignore[attr-defined]
     server.studio_csrf_token = secrets.token_urlsafe(32)  # type: ignore[attr-defined]
@@ -1138,8 +1379,11 @@ def main(argv: list[str] | None = None) -> int:
     server.studio_export_semaphore = threading.BoundedSemaphore(  # type: ignore[attr-defined]
         MAX_STUDIO_CONCURRENT_EXPORTS
     )
+    server.studio_project_workspace = project_workspace  # type: ignore[attr-defined]
     url = _studio_url(args.host, server.server_port)
     print(f"Mardas MD2PDF Studio is running at {url}")
+    if project_workspace is not None:
+        print(f"Project workspace: {project_workspace.root}")
     warning = _studio_bind_warning(args.host)
     if warning:
         print(f"WARNING: {warning}")

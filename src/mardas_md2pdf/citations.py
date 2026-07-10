@@ -992,6 +992,20 @@ def _marker_items(marker: Tag) -> list[tuple[str, str]]:
     return items
 
 
+def _diagnostic_path_for_marker(marker: Tag, fallback: Path | None) -> Path | None:
+    section = marker.find_parent(attrs={"data-book-source": True})
+    if isinstance(section, Tag):
+        source = str(section.get("data-book-source") or "").strip()
+        if source:
+            base = (
+                fallback
+                if fallback is not None and fallback.is_dir()
+                else (fallback.parent if fallback is not None else Path.cwd())
+            )
+            return (base / source).resolve(strict=False)
+    return fallback
+
+
 def resolve_citations(
     body_html: str,
     *,
@@ -1035,7 +1049,7 @@ def resolve_citations(
                     "MARDAS-E705",
                     "error",
                     f"Malformed citation marker: {original}",
-                    path=path,
+                    path=_diagnostic_path_for_marker(marker, path),
                 )
             )
             marker.name = "span"
@@ -1052,7 +1066,7 @@ def resolve_citations(
                         "MARDAS-E704",
                         "error",
                         f"Citation key is not defined: {key}",
-                        path=path,
+                        path=_diagnostic_path_for_marker(marker, path),
                         hint="Add the key to a configured .bib or CSL .json bibliography source.",
                     )
                 )

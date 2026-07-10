@@ -1179,8 +1179,8 @@ def test_studio_file_toolbar_exposes_new_project_workflow():
 
     assert "onclick=\"newDocument()\"" in html
     assert "Open MD" in html
-    assert "Open Project" in html
-    assert "Save Project" in html
+    assert "Open Bundle" in html
+    assert "Save Bundle" in html
     assert "DEFAULT_MARKDOWN" in html
     assert "editor.value = DEFAULT_MARKDOWN;" in html
 
@@ -1268,7 +1268,7 @@ def test_studio_exposes_command_palette_and_professional_shortcuts():
     assert "Use PDF-like preview" in html
     assert "Use fast approximate preview" in html
     assert "Use exact PDF preview" not in html
-    assert "Open Studio project" in html
+    assert "Open Studio bundle" in html
 
 
 def test_studio_first_run_state_is_not_reported_as_error():

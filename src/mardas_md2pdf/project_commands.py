@@ -102,8 +102,10 @@ def _init_main(argv: list[str]) -> int:
             chapters_dir = directory / "chapters"
             chapters_dir.mkdir(parents=True, exist_ok=True)
             samples = {
-                chapters_dir / "01-introduction.md": "# Introduction\n\nStart writing your book here.\n",
-                chapters_dir / "02-content.md": "# Main Content\n\nContinue with the next chapter.\n",
+                chapters_dir
+                / "01-introduction.md": "# Introduction\n\nStart writing your book here.\n",
+                chapters_dir
+                / "02-content.md": "# Main Content\n\nContinue with the next chapter.\n",
             }
             for chapter_path, content in samples.items():
                 if chapter_path.exists():
@@ -668,7 +670,6 @@ def _explain_config_main(argv: list[str]) -> int:
     return 1 if has_errors(diagnostics) else 0
 
 
-
 def _book_parser(command: str) -> argparse.ArgumentParser:
     descriptions = {
         "build-book": "Build one deterministic PDF from the ordered chapters in mardas.toml.",
@@ -764,6 +765,18 @@ def _book_validation(
     return manifest, bundle, diagnostics
 
 
+def project_config_diagnostics(config: LoadedProjectConfig) -> list[Diagnostic]:
+    """Return project-level diagnostics for Studio and CLI integrations."""
+    return _project_config_diagnostics(config)
+
+
+def validate_book_project(
+    config: LoadedProjectConfig,
+) -> tuple[BookManifest | None, BookRenderBundle | None, list[Diagnostic]]:
+    """Validate and render a Book Mode project without formatting CLI output."""
+    return _book_validation(config)
+
+
 def _book_progress(mode: str, *, json_output: bool) -> Callable[[str, float], None] | None:
     enabled = mode == "on" or (mode == "auto" and sys.stderr.isatty())
     if json_output or not enabled:
@@ -827,7 +840,9 @@ def _build_book_main(argv: list[str]) -> int:
         context: dict[str, object] = {"command": "build-book"}
         if manifest is not None:
             context.update(book_context(manifest, bundle))
-        write_diagnostics(diagnostics, output_format=args.format, stream=sys.stdout, context=context)
+        write_diagnostics(
+            diagnostics, output_format=args.format, stream=sys.stdout, context=context
+        )
         return 1
 
     output_override = args.output.expanduser().resolve() if args.output else None

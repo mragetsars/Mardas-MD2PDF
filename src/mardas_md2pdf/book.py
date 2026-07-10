@@ -95,8 +95,10 @@ def _same_path(left: Path, right: Path) -> bool:
     if os.path.normcase(str(left_resolved)) == os.path.normcase(str(right_resolved)):
         return True
     try:
-        return left_resolved.exists() and right_resolved.exists() and left_resolved.samefile(
-            right_resolved
+        return (
+            left_resolved.exists()
+            and right_resolved.exists()
+            and left_resolved.samefile(right_resolved)
         )
     except OSError:
         return False
@@ -293,10 +295,14 @@ def _chapter_title(
             return title.strip()
     if result.title and result.title != "Document":
         return result.title
-    return chapter.path.stem.replace("-", " ").replace("_", " ").strip() or f"Chapter {chapter.index}"
+    return (
+        chapter.path.stem.replace("-", " ").replace("_", " ").strip() or f"Chapter {chapter.index}"
+    )
 
 
-def _synthetic_chapter_heading(chapter: BookChapter, title: str) -> tuple[str, tuple[int, str, str, str]]:
+def _synthetic_chapter_heading(
+    chapter: BookChapter, title: str
+) -> tuple[str, tuple[int, str, str, str]]:
     heading_id = f"{chapter.prefix}title"
     title_html = html.escape(title)
     heading = (
@@ -346,9 +352,7 @@ def _restore_cross_chapter_links(
                 continue
             link["href"] = f"#{target_id}"
             classes = [
-                value
-                for value in link.get("class", [])
-                if value != "md2pdf-local-link-blocked"
+                value for value in link.get("class", []) if value != "md2pdf-local-link-blocked"
             ]
             if classes:
                 link["class"] = classes
@@ -384,9 +388,7 @@ def render_book(
                 )
             )
         else:
-            bibliography_library, bibliography_diagnostics = load_bibliography(
-                bibliography_sources
-            )
+            bibliography_library, bibliography_diagnostics = load_bibliography(bibliography_sources)
             diagnostics.extend(bibliography_diagnostics)
 
     if has_errors(diagnostics):
@@ -556,9 +558,7 @@ def render_book(
                 enabled=True,
                 style=str(config_values.get("citation_style", "author-date")),
                 title=config_values.get("bibliography_title"),
-                include_uncited=bool(
-                    config_values.get("bibliography_include_uncited", False)
-                ),
+                include_uncited=bool(config_values.get("bibliography_include_uncited", False)),
             ),
             lang=lang,
             path=manifest.config.path,
@@ -591,7 +591,7 @@ def render_book(
     return BookRenderBundle(result=result, chapters=tuple(summaries)), tuple(diagnostics)
 
 
-def _book_pdf_options(
+def book_pdf_options(
     manifest: BookManifest,
     *,
     output_path: Path | None = None,
@@ -647,9 +647,7 @@ def _book_pdf_options(
         bibliography_sources=tuple(values.get("bibliography_sources") or ()),
         citation_style=str(values.get("citation_style", "author-date")),
         bibliography_title=values.get("bibliography_title"),
-        bibliography_include_uncited=bool(
-            values.get("bibliography_include_uncited", False)
-        ),
+        bibliography_include_uncited=bool(values.get("bibliography_include_uncited", False)),
         progress=progress,
     )
     return options
@@ -668,7 +666,7 @@ def convert_book(
         bundle, diagnostics = render_book(manifest)
     if bundle is None or has_errors(diagnostics):
         return None, bundle, diagnostics
-    options = _book_pdf_options(
+    options = book_pdf_options(
         manifest,
         output_path=output_path,
         debug_html=debug_html,
@@ -714,7 +712,9 @@ def convert_book(
     return output, bundle, diagnostics
 
 
-def book_context(manifest: BookManifest, bundle: BookRenderBundle | None = None) -> dict[str, object]:
+def book_context(
+    manifest: BookManifest, bundle: BookRenderBundle | None = None
+) -> dict[str, object]:
     context: dict[str, object] = {
         "config": str(manifest.config.path) if manifest.config.path else None,
         "project_root": str(manifest.root),
