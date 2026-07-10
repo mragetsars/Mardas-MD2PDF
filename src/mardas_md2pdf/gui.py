@@ -20,7 +20,7 @@ from urllib.parse import quote, urlsplit
 from . import __version__
 from .brand_assets import asset_content_type, gui_brand_asset_filename, packaged_asset_path
 from .appearance import code_style_for_appearance, validate_mode_name, validate_palette_name, validate_style_name
-from .markdown import render_markdown_file
+from .markdown import MarkdownInputError, render_markdown_file
 from .renderer import (
     DocumentAssetError,
     PdfOptions,
@@ -42,9 +42,13 @@ MAX_GUI_ASSET_BYTES = 12 * 1024 * 1024
 MAX_GUI_TOTAL_ASSET_BYTES = 32 * 1024 * 1024
 MAX_GUI_FILENAME_CHARS = 120
 MAX_GUI_ASSET_PATH_PART_CHARS = 180
+MAX_STUDIO_CONCURRENT_EXPORTS = 2
+MAX_STUDIO_PREVIEW_CLIENTS = 256
 STUDIO_TOKEN_HEADER = "X-Mardas-Studio-Token"
 STUDIO_PREVIEW_REQUEST_HEADER = "X-Mardas-Studio-Preview-Id"
+STUDIO_PREVIEW_CLIENT_HEADER = "X-Mardas-Studio-Client-Id"
 STUDIO_PREVIEW_REQUEST_RE = re.compile(r"^[A-Za-z0-9_.:-]{1,96}$")
+STUDIO_PREVIEW_CLIENT_RE = re.compile(r"^[A-Za-z0-9_.:-]{1,96}$")
 
 STUDIO_PREVIEW_NAMED_PAGE_SIZES: dict[str, tuple[str, str]] = {
     "letter": ("8.5in", "11in"),
@@ -896,7 +900,14 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
             self.server.studio_preview_state_lock = lock  # type: ignore[attr-defined]
         return lock
 
-    def _register_preview_request(self) -> str | None:
+    def _studio_export_semaphore(self) -> threading.BoundedSemaphore:
+        semaphore = getattr(self.server, "studio_export_semaphore", None)
+        if semaphore is None:
+            semaphore = threading.BoundedSemaphore(MAX_STUDIO_CONCURRENT_EXPORTS)
+            self.server.studio_export_semaphore = semaphore  # type: ignore[attr-defined]
+        return semaphore
+
+    def _register_preview_request(self) -> tuple[str, str] | None:
         preview_id = (self.headers.get(STUDIO_PREVIEW_REQUEST_HEADER) or "").strip()
         if not preview_id:
             return None
@@ -906,15 +917,30 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
                 status=400,
                 code="invalid_preview_request_id",
             )
+        client_id = (self.headers.get(STUDIO_PREVIEW_CLIENT_HEADER) or "legacy").strip()
+        if not STUDIO_PREVIEW_CLIENT_RE.fullmatch(client_id):
+            raise StudioRequestError(
+                "Studio preview client id is invalid.",
+                status=400,
+                code="invalid_preview_client_id",
+            )
         with self._studio_preview_state_lock():
-            self.server.studio_latest_preview_id = preview_id  # type: ignore[attr-defined]
-        return preview_id
+            states = getattr(self.server, "studio_latest_preview_ids", None)
+            if not isinstance(states, dict):
+                states = {}
+                self.server.studio_latest_preview_ids = states  # type: ignore[attr-defined]
+            if client_id not in states and len(states) >= MAX_STUDIO_PREVIEW_CLIENTS:
+                states.pop(next(iter(states)))
+            states[client_id] = preview_id
+        return client_id, preview_id
 
-    def _preview_request_is_current(self, preview_id: str | None) -> bool:
-        if not preview_id:
+    def _preview_request_is_current(self, preview_request: tuple[str, str] | None) -> bool:
+        if not preview_request:
             return True
+        client_id, preview_id = preview_request
         with self._studio_preview_state_lock():
-            return getattr(self.server, "studio_latest_preview_id", "") == preview_id
+            states = getattr(self.server, "studio_latest_preview_ids", {})
+            return isinstance(states, dict) and states.get(client_id) == preview_id
 
     def _send_stale_preview(self) -> None:
         self._send_error(
@@ -985,20 +1011,20 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
                 csrf_token=self._studio_csrf_token(),
             )
             length = _studio_content_length(self.headers)
-            preview_id = self._register_preview_request() if request_path == "/api/render-html" else None
+            preview_request = self._register_preview_request() if request_path == "/api/render-html" else None
             raw = _read_studio_request_body(self, length)
             payload = _decode_json_payload(raw)
             if request_path == "/api/render-html":
-                if not self._preview_request_is_current(preview_id):
+                if not self._preview_request_is_current(preview_request):
                     self._send_stale_preview()
                     return
-                if preview_id:
+                if preview_request:
                     with self._studio_preview_render_lock():
-                        if not self._preview_request_is_current(preview_id):
+                        if not self._preview_request_is_current(preview_request):
                             self._send_stale_preview()
                             return
                         html_text = _render_studio_html_payload(payload)
-                        if not self._preview_request_is_current(preview_id):
+                        if not self._preview_request_is_current(preview_request):
                             self._send_stale_preview()
                             return
                 else:
@@ -1006,24 +1032,34 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
                 self._send_text(html_text, content_type="text/html; charset=utf-8")
                 return
 
-            markdown, options, assets, render_options, filename = _validate_studio_payload(payload)
-            with tempfile.TemporaryDirectory(prefix="mardas-md2pdf-gui-") as tmpdir:
-                tmp = Path(tmpdir)
-                md_path = tmp / "document.md"
-                pdf_path = tmp / filename
-                md_path.write_text(markdown, encoding="utf-8")
-                _write_gui_assets(
-                    tmp, assets, reserved_paths=(Path("document.md"), Path(filename))
+            semaphore = self._studio_export_semaphore()
+            if not semaphore.acquire(blocking=False):
+                raise StudioRequestError(
+                    "Studio is already processing the maximum number of PDF exports. Try again shortly.",
+                    status=429,
+                    code="export_capacity_reached",
                 )
-                pdf_options = _studio_pdf_options(
-                    tmp=tmp,
-                    md_path=md_path,
-                    output_path=pdf_path,
-                    options=options,
-                    render_options=render_options,
-                )
-                convert(pdf_options)
-                data = pdf_path.read_bytes()
+            try:
+                markdown, options, assets, render_options, filename = _validate_studio_payload(payload)
+                with tempfile.TemporaryDirectory(prefix="mardas-md2pdf-gui-") as tmpdir:
+                    tmp = Path(tmpdir)
+                    md_path = tmp / "document.md"
+                    pdf_path = tmp / filename
+                    md_path.write_text(markdown, encoding="utf-8")
+                    _write_gui_assets(
+                        tmp, assets, reserved_paths=(Path("document.md"), Path(filename))
+                    )
+                    pdf_options = _studio_pdf_options(
+                        tmp=tmp,
+                        md_path=md_path,
+                        output_path=pdf_path,
+                        options=options,
+                        render_options=render_options,
+                    )
+                    convert(pdf_options)
+                    data = pdf_path.read_bytes()
+            finally:
+                semaphore.release()
 
             self.send_response(200)
             self.send_header("Content-Type", "application/pdf")
@@ -1034,6 +1070,8 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
             self.wfile.write(data)
         except StudioRequestError as exc:
             self._send_error(str(exc), status=exc.status, code=exc.code)
+        except MarkdownInputError as exc:
+            self._send_error(str(exc), status=400, code="invalid_markdown")
         except DocumentAssetError as exc:
             self._send_error(str(exc), status=400, code="unsafe_document_asset")
         except Exception:  # pragma: no cover - defensive boundary; exercised via HTTP tests
@@ -1067,7 +1105,10 @@ def main(argv: list[str] | None = None) -> int:
     server.studio_csrf_token = secrets.token_urlsafe(32)  # type: ignore[attr-defined]
     server.studio_preview_state_lock = threading.Lock()  # type: ignore[attr-defined]
     server.studio_preview_render_lock = threading.Lock()  # type: ignore[attr-defined]
-    server.studio_latest_preview_id = ""  # type: ignore[attr-defined]
+    server.studio_latest_preview_ids = {}  # type: ignore[attr-defined]
+    server.studio_export_semaphore = threading.BoundedSemaphore(  # type: ignore[attr-defined]
+        MAX_STUDIO_CONCURRENT_EXPORTS
+    )
     url = f"http://{args.host}:{server.server_port}/"
     print(f"Mardas MD2PDF Studio is running at {url}")
     warning = _studio_bind_warning(args.host)

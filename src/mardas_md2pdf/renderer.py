@@ -398,26 +398,55 @@ def _stringify_metadata_value(value: Any, *, item_separator: str = "، ") -> str
     small dictionaries such as author records. The cover renderer should handle
     all of them without leaking Python list/dict syntax into the PDF.
     """
-    if value in (None, ""):
-        return ""
-    if isinstance(value, (list, tuple, set)):
-        return item_separator.join(
-            part
-            for part in (_stringify_metadata_value(item, item_separator=item_separator) for item in value)
-            if part
-        )
-    if isinstance(value, dict):
-        name = value.get("name") or value.get("title") or value.get("label") or ""
-        details = []
-        for key in ("email", "affiliation", "role"):
-            if value.get(key):
-                details.append(str(value[key]))
-        if name and details:
-            return f"{name} ({' - '.join(details)})"
-        if name:
-            return str(name)
-        return item_separator.join(f"{key}: {val}" for key, val in value.items() if val not in (None, ""))
-    return str(value)
+    active: set[int] = set()
+    node_budget = 2048
+
+    def stringify(item: Any, depth: int) -> str:
+        nonlocal node_budget
+        node_budget -= 1
+        if node_budget < 0:
+            raise ValueError("Front-matter value exceeds the supported complexity limit.")
+        if depth > 16:
+            raise ValueError("Front-matter value exceeds the supported nesting depth.")
+        if item in (None, ""):
+            return ""
+        if isinstance(item, (list, tuple, set)):
+            identity = id(item)
+            if identity in active:
+                raise ValueError("Front-matter value contains a recursive alias.")
+            active.add(identity)
+            try:
+                return item_separator.join(
+                    part for part in (stringify(child, depth + 1) for child in item) if part
+                )
+            finally:
+                active.remove(identity)
+        if isinstance(item, dict):
+            identity = id(item)
+            if identity in active:
+                raise ValueError("Front-matter value contains a recursive alias.")
+            active.add(identity)
+            try:
+                name = item.get("name") or item.get("title") or item.get("label") or ""
+                details = []
+                for key in ("email", "affiliation", "role"):
+                    if item.get(key):
+                        details.append(stringify(item[key], depth + 1))
+                if name and details:
+                    return f"{stringify(name, depth + 1)} ({' - '.join(details)})"
+                if name:
+                    return stringify(name, depth + 1)
+                parts = []
+                for key, child in item.items():
+                    if child in (None, ""):
+                        continue
+                    parts.append(f"{stringify(key, depth + 1)}: {stringify(child, depth + 1)}")
+                return item_separator.join(parts)
+            finally:
+                active.remove(identity)
+        return str(item)
+
+    return stringify(value, 0)
 
 
 CSS_PAGE_SIZE_RE = re.compile(

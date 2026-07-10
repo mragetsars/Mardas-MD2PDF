@@ -700,7 +700,7 @@ def test_studio_http_preview_requests_are_latest_only(monkeypatch):
     server.studio_csrf_token = "secret"  # type: ignore[attr-defined]
     server.studio_preview_state_lock = Lock()  # type: ignore[attr-defined]
     server.studio_preview_render_lock = Lock()  # type: ignore[attr-defined]
-    server.studio_latest_preview_id = ""  # type: ignore[attr-defined]
+    server.studio_latest_preview_ids = {}  # type: ignore[attr-defined]
     thread = Thread(target=server.serve_forever, daemon=True)
     thread.start()
     responses: dict[str, tuple[int, str]] = {}
@@ -716,6 +716,7 @@ def test_studio_http_preview_requests_are_latest_only(monkeypatch):
                     "Content-Type": "application/json",
                     "Origin": f"http://127.0.0.1:{server.server_port}",
                     "X-Mardas-Studio-Token": "secret",
+                    "X-Mardas-Studio-Client-Id": "same-client",
                     "X-Mardas-Studio-Preview-Id": preview_id,
                 },
             )
@@ -731,9 +732,12 @@ def test_studio_http_preview_requests_are_latest_only(monkeypatch):
         assert entered_old_render.wait(timeout=10)
         new_thread.start()
         deadline = time.monotonic() + 10
-        while getattr(server, "studio_latest_preview_id", "") != "new-preview" and time.monotonic() < deadline:
+        while (
+            getattr(server, "studio_latest_preview_ids", {}).get("same-client") != "new-preview"
+            and time.monotonic() < deadline
+        ):
             time.sleep(0.01)
-        assert getattr(server, "studio_latest_preview_id", "") == "new-preview"
+        assert getattr(server, "studio_latest_preview_ids", {}).get("same-client") == "new-preview"
         release_old_render.set()
         old_thread.join(timeout=20)
         new_thread.join(timeout=20)

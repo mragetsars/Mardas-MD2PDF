@@ -605,6 +605,7 @@ let settingsCollapsed = false;
 const MARDAS_STUDIO_STATE_KEY = 'mardas-md2pdf-studio-state-v1';
 const MARDAS_PROJECT_SCHEMA = 'mardas-md2pdf-studio-project-v1';
 const MARDAS_STUDIO_TOKEN = '__MARDAS_STUDIO_TOKEN__';
+const MARDAS_STUDIO_CLIENT_KEY = 'mardas-md2pdf-studio-client-v1';
 const MAX_STORED_MARKDOWN_CHARS = 250000;
 const MAX_AUTO_ACCURATE_PREVIEW_CHARS = 180000;
 const MAX_FAST_PREVIEW_CHARS = 350000;
@@ -637,10 +638,29 @@ print("Hello Mardas")
 `;
 let saveStateTimer = null;
 
+function studioClientId(){
+  try {
+    const existing = sessionStorage.getItem(MARDAS_STUDIO_CLIENT_KEY);
+    if (existing) return existing;
+    const generated = 'client-' + (
+      globalThis.crypto && typeof globalThis.crypto.randomUUID === 'function'
+        ? globalThis.crypto.randomUUID()
+        : Date.now().toString(36) + '-' + Math.random().toString(36).slice(2)
+    );
+    sessionStorage.setItem(MARDAS_STUDIO_CLIENT_KEY, generated);
+    return generated;
+  } catch (_error) {
+    return 'client-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
+  }
+}
+
+const MARDAS_STUDIO_CLIENT_ID = studioClientId();
+
 function studioApiHeaders(extraHeaders={}){
   return Object.assign({
     'Content-Type': 'application/json',
-    'X-Mardas-Studio-Token': MARDAS_STUDIO_TOKEN
+    'X-Mardas-Studio-Token': MARDAS_STUDIO_TOKEN,
+    'X-Mardas-Studio-Client-Id': MARDAS_STUDIO_CLIENT_ID
   }, extraHeaders || {});
 }
 

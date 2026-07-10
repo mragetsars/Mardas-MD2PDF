@@ -119,8 +119,15 @@ TAG_SAFE_ATTRS = {
 SAFE_URL_SCHEMES = {"", "http", "https", "mailto", "data"}
 SAFE_DATA_IMAGE_MIME_TYPES = {"image/png", "image/jpeg", "image/gif", "image/webp", "image/bmp", "image/avif"}
 MAX_EMBED_IMAGE_BYTES = 20 * 1024 * 1024
+MAX_FRONTMATTER_DEPTH = 16
+MAX_FRONTMATTER_NODES = 2048
+MAX_FRONTMATTER_SCALAR_CHARS = 256 * 1024
 TRANSPARENT_IMAGE_DATA_URI = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="
 RTL_LANG_PREFIXES = ("ar", "fa", "he", "iw", "ku", "ps", "sd", "ug", "ur", "yi")
+
+
+class MarkdownInputError(ValueError):
+    """Raised when Markdown metadata or document structure is invalid or unsafe."""
 
 
 def normalize_language(value: Any, fallback: str = "auto") -> str:
@@ -272,6 +279,57 @@ def _normalize_highlight_line_breaks(highlighted_html: str) -> str:
     return HIGHLIGHT_TRAILING_NEWLINE_RE.sub(r"\1\3\2", highlighted_html)
 
 
+def _validate_frontmatter_graph(value: Any) -> None:
+    """Reject recursive or excessively amplified YAML object graphs."""
+    node_count = 0
+    scalar_chars = 0
+    active: set[int] = set()
+
+    def visit(item: Any, depth: int) -> None:
+        nonlocal node_count, scalar_chars
+        node_count += 1
+        if node_count > MAX_FRONTMATTER_NODES:
+            raise MarkdownInputError(
+                f"Front matter exceeds the {MAX_FRONTMATTER_NODES}-item complexity limit."
+            )
+        if depth > MAX_FRONTMATTER_DEPTH:
+            raise MarkdownInputError(
+                f"Front matter exceeds the maximum nesting depth of {MAX_FRONTMATTER_DEPTH}."
+            )
+
+        if isinstance(item, dict):
+            identity = id(item)
+            if identity in active:
+                raise MarkdownInputError("Front matter contains a recursive YAML alias.")
+            active.add(identity)
+            try:
+                for key, child in item.items():
+                    visit(key, depth + 1)
+                    visit(child, depth + 1)
+            finally:
+                active.remove(identity)
+            return
+        if isinstance(item, (list, tuple, set)):
+            identity = id(item)
+            if identity in active:
+                raise MarkdownInputError("Front matter contains a recursive YAML alias.")
+            active.add(identity)
+            try:
+                for child in item:
+                    visit(child, depth + 1)
+            finally:
+                active.remove(identity)
+            return
+
+        scalar_chars += len(str(item))
+        if scalar_chars > MAX_FRONTMATTER_SCALAR_CHARS:
+            raise MarkdownInputError(
+                "Front matter scalar content exceeds the supported size limit."
+            )
+
+    visit(value, 0)
+
+
 def extract_frontmatter(text: str) -> tuple[dict[str, Any], str]:
     match = FRONTMATTER_RE.match(text)
     if not match:
@@ -282,10 +340,14 @@ def extract_frontmatter(text: str) -> tuple[dict[str, Any], str]:
         return {}, body
     try:
         data = yaml.safe_load(raw) or {}
-    except Exception:
-        data = {}
+    except Exception as exc:
+        problem = getattr(exc, "problem", None) or str(exc).splitlines()[0]
+        mark = getattr(exc, "problem_mark", None)
+        location = f" at line {mark.line + 1}, column {mark.column + 1}" if mark else ""
+        raise MarkdownInputError(f"Invalid YAML front matter{location}: {problem}") from exc
     if not isinstance(data, dict):
-        data = {}
+        raise MarkdownInputError("YAML front matter must contain a mapping/object at the top level.")
+    _validate_frontmatter_graph(data)
     return data, body
 
 
@@ -1509,7 +1571,18 @@ def add_heading_ids(html_text: str, *, toc_depth: int = 6) -> tuple[str, list[tu
         content = match.group(3)
         if " id=" in attrs:
             id_match = re.search(r'id=["\']([^"\']+)["\']', attrs)
-            heading_id = id_match.group(1) if id_match else slugify(content, used)
+            requested_id = id_match.group(1) if id_match else ""
+            if requested_id and requested_id not in used:
+                heading_id = requested_id
+                used.add(heading_id)
+            else:
+                heading_id = slugify(requested_id or content, used)
+                if id_match:
+                    attrs = (
+                        attrs[: id_match.start(1)]
+                        + html.escape(heading_id, quote=True)
+                        + attrs[id_match.end(1) :]
+                    )
         else:
             heading_id = slugify(content, used)
             attrs += f' id="{heading_id}"'
@@ -1797,6 +1870,33 @@ def sanitize_html(body_html: str) -> str:
             rel = set(str(tag.get("rel") or "").split())
             rel.update({"noopener", "noreferrer"})
             tag["rel"] = " ".join(sorted(rel))
+    return str(soup)
+
+
+def block_local_file_links(body_html: str) -> str:
+    """Remove local filesystem-style links while preserving anchors and web URLs.
+
+    Chromium resolves relative links against the page URL. Historically the
+    renderer supplied an absolute ``file://`` base URL, which leaked the build
+    machine path into PDF annotations. Local links are now kept visible but made
+    inert; fragment links, web links, and mail links remain functional.
+    """
+    soup = BeautifulSoup(body_html, "html.parser")
+    for link in soup.find_all("a", href=True):
+        href = str(link.get("href") or "").strip()
+        if not href or href.startswith("#"):
+            continue
+        parsed = urlparse(href)
+        if parsed.scheme.lower() in {"http", "https", "mailto"}:
+            continue
+        if parsed.scheme:
+            continue
+        del link["href"]
+        classes = set(link.get("class", []))
+        classes.add("md2pdf-local-link-blocked")
+        link["class"] = sorted(classes)
+        link["title"] = "Local file link omitted from portable PDF output"
+        link["data-md2pdf-source"] = href
     return str(soup)
 
 
@@ -2482,6 +2582,7 @@ def render_markdown(
     body_html = append_footnotes(body_html, footnote_entries, md, lang=lang, text_hint=markdown_body)
     if not unsafe_html:
         body_html = sanitize_html(body_html)
+    body_html = block_local_file_links(body_html)
     body_html, toc_entries = add_heading_ids(body_html, toc_depth=toc_depth)
     text_hint = BeautifulSoup(body_html, "html.parser").get_text(" ", strip=True)
     toc_html = build_toc(toc_entries, toc, lang=lang, text_hint=text_hint)
