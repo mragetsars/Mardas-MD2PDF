@@ -751,13 +751,28 @@ def _build_book_main(argv: list[str]) -> int:
 
     output_override = args.output.expanduser().resolve() if args.output else None
     debug_html = args.debug_html.expanduser().resolve() if args.debug_html else None
-    output, built_bundle, build_diagnostics = convert_book(
-        manifest,
-        output_path=output_override,
-        debug_html=debug_html,
-        progress=_book_progress(args.progress, json_output=args.format == "json"),
-        bundle=bundle,
-    )
+    try:
+        output, built_bundle, build_diagnostics = convert_book(
+            manifest,
+            output_path=output_override,
+            debug_html=debug_html,
+            progress=_book_progress(args.progress, json_output=args.format == "json"),
+            bundle=bundle,
+        )
+    except Exception as exc:
+        if os.environ.get("MARDAS_DEBUG") == "1":
+            raise
+        output = None
+        built_bundle = bundle
+        build_diagnostics = (
+            Diagnostic(
+                "MARDAS-E511",
+                "error",
+                f"Book rendering failed: {exc}",
+                path=manifest.output_path,
+                hint="Run `mrs-md2pdf doctor` and retry with MARDAS_DEBUG=1 only for local debugging.",
+            ),
+        )
     diagnostics.extend(build_diagnostics)
     context = {"command": "build-book", **book_context(manifest, built_bundle or bundle)}
     if output is not None:

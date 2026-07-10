@@ -396,3 +396,44 @@ def test_book_chapter_can_embed_assets_from_shared_project_directory(tmp_path: P
     assert bundle is not None
     assert not [item for item in diagnostics if item.severity == "error"]
     assert "data:image/png;base64," in bundle.result.body_html
+
+
+def test_build_book_reports_controlled_render_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys
+) -> None:
+    _write_book_project(tmp_path)
+
+    def fail_convert(*_args, **_kwargs):
+        raise RuntimeError("Chromium unavailable")
+
+    monkeypatch.setattr("mardas_md2pdf.project_commands.convert_book", fail_convert)
+
+    assert (
+        main(
+            [
+                "build-book",
+                str(tmp_path),
+                "--format",
+                "json",
+                "--progress",
+                "off",
+            ]
+        )
+        == 1
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["ok"] is False
+    assert payload["diagnostics"][-1]["code"] == "MARDAS-E511"
+    assert "Traceback" not in payload["diagnostics"][-1]["message"]
+
+
+def test_main_help_lists_book_workflows(capsys) -> None:
+    with pytest.raises(SystemExit) as exc_info:
+        main(["--help"])
+
+    assert exc_info.value.code == 0
+    output = capsys.readouterr().out
+    assert "validate-book" in output
+    assert "explain-book" in output
+    assert "build-book" in output

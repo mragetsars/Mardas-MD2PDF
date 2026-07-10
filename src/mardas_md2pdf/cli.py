@@ -80,8 +80,9 @@ def build_parser() -> argparse.ArgumentParser:
             "professional covers, hierarchical TOC, code highlighting, Mermaid flowcharts, tables, watermarking, and MathJax."
         ),
         epilog=(
-            "Project workflows: `mrs-md2pdf init`, `validate`, `doctor`, and `explain-config`. "
-            "Legacy conversion syntax remains `mrs-md2pdf input.md [options]`."
+            "Project workflows: `mrs-md2pdf init`, `validate`, `doctor`, `explain-config`, "
+            "`validate-book`, `explain-book`, and `build-book`. Legacy conversion syntax remains "
+            "`mrs-md2pdf input.md [options]`."
         ),
     )
     parser.add_argument("input", nargs="?", type=Path, help="Input Markdown file")
