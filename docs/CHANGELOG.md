@@ -4,6 +4,25 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.15.0 - 2026-07-10
+
+### Added
+- Added deterministic multi-file Book Mode driven by the ordered `[book].chapters` manifest in `mardas.toml`, with `init --book`, `validate-book`, `explain-book`, and `build-book` workflows.
+- Added one-pass book assembly with project-level cover/output settings, per-chapter Markdown/front matter, global TOC and PDF outline generation, chapter title overrides, optional inter-chapter page breaks, and atomic debug-HTML/PDF output.
+- Added safe shared project-root asset resolution and internal links between listed chapters, including optional heading fragments.
+
+### Changed
+- Namespaced chapter heading, anchor, and footnote IDs before assembly so repeated titles and local identifiers remain unambiguous across the complete book.
+- Extended the clean-wheel release gate to create, validate, explain, and render a starter two-chapter book from the installed console entry point.
+- Refactored the PDF pipeline to accept an already parsed `MarkdownRenderResult`, allowing single-file and Book Mode output to share the same cover, Chromium, metadata, outline, page-label, and atomic-write implementation.
+
+### Security
+- Restricted chapter sources and shared assets to the project root after symlink resolution, rejected absolute or duplicate chapter paths and source/output collisions, and kept unrelated local filesystem links inert.
+- Limited Book Mode manifests to 512 ordered chapters and supported Markdown extensions before rendering begins.
+
+### Tests
+- Added Book Mode regression coverage for manifest ordering, chapter containment, duplicate sources, ID namespacing, title overrides, shared assets, cross-chapter links, page breaks, output collisions, JSON diagnostics, starter-project generation, and clean-wheel release execution.
+
 ## 1.14.0 - 2026-07-10
 
 ### Added
