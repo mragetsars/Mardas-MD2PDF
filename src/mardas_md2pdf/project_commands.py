@@ -111,8 +111,8 @@ def _input_diagnostics(path: Path, *, required_file: bool) -> list[Diagnostic]:
 def _project_config_diagnostics(config: LoadedProjectConfig) -> list[Diagnostic]:
     diagnostics: list[Diagnostic] = []
     path_checks = [
-        ("brand_logo", "MARDAS-E110", "Configured branding logo is not a regular file."),
-        ("watermark_image", "MARDAS-E111", "Configured watermark image is not a regular file."),
+        ("brand_logo", "MARDAS-E113", "Configured branding logo is not a regular file."),
+        ("watermark_image", "MARDAS-E114", "Configured watermark image is not a regular file."),
     ]
     for key, code, message in path_checks:
         value = config.values.get(key)
@@ -122,7 +122,7 @@ def _project_config_diagnostics(config: LoadedProjectConfig) -> list[Diagnostic]
     if font_dir is not None and not Path(font_dir).is_dir():
         diagnostics.append(
             Diagnostic(
-                "MARDAS-E112",
+                "MARDAS-E115",
                 "error",
                 "Configured font directory does not exist or is not a directory.",
                 path=Path(font_dir),
@@ -186,7 +186,7 @@ def _validate_document(
         )
         return diagnostics, {}
 
-    if not result.metadata.get("title") and result.title == "Document":
+    if not values.get("title") and not result.metadata.get("title") and result.title == "Document":
         diagnostics.append(
             Diagnostic(
                 "MARDAS-W201",
@@ -234,7 +234,7 @@ def _validate_document(
             )
         previous_level = level
     return diagnostics, {
-        "title": result.metadata.get("title") or result.title,
+        "title": values.get("title") or result.metadata.get("title") or result.title,
         "headings": len(result.toc_entries),
         "metadata_keys": sorted(result.metadata),
     }
@@ -281,6 +281,16 @@ def _doctor_main(argv: list[str]) -> int:
         )
 
     chromium = shutil.which("chromium") or shutil.which("google-chrome") or shutil.which("chrome")
+    if not chromium:
+        try:
+            from playwright.sync_api import sync_playwright
+
+            with sync_playwright() as playwright:
+                managed_browser = Path(playwright.chromium.executable_path)
+            if managed_browser.is_file():
+                chromium = str(managed_browser)
+        except Exception:
+            chromium = None
     configured_chromium = config.values.get("chromium_path")
     if configured_chromium:
         configured_path = Path(configured_chromium)
@@ -396,6 +406,12 @@ def _effective_config(input_path: Path, config: LoadedProjectConfig) -> dict[str
         "allow_remote_assets": False,
         "timeout_ms": 120_000,
         "chromium_sandbox": "auto",
+        "show_logo": True,
+        "watermark": None,
+        "watermark_opacity": 0.065,
+        "watermark_width": "105mm",
+        "font_dir": None,
+        "chromium_path": None,
     }
     effective: dict[str, dict[str, Any]] = {}
 

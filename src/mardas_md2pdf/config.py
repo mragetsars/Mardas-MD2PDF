@@ -16,6 +16,7 @@ from .renderer import BRANDING_MODES, validate_page_size
 
 CONFIG_FILENAME = "mardas.toml"
 CONFIG_SCHEMA_VERSION = 1
+MAX_CONFIG_BYTES = 1_048_576
 
 
 @dataclass(frozen=True, slots=True)
@@ -260,6 +261,19 @@ def load_project_config(
         )
 
     try:
+        size = config_path.stat().st_size
+        if size > MAX_CONFIG_BYTES:
+            diagnostic = Diagnostic(
+                "MARDAS-E110",
+                "error",
+                f"Project configuration exceeds the {MAX_CONFIG_BYTES}-byte safety limit.",
+                path=config_path,
+                hint="Keep project configuration concise and move document content out of TOML.",
+            )
+            return ConfigLoadResult(
+                LoadedProjectConfig(config_path, config_path.parent, {}),
+                (diagnostic,),
+            )
         raw = tomllib.loads(config_path.read_text(encoding="utf-8-sig"))
     except (OSError, UnicodeError) as exc:
         diagnostic = Diagnostic(

@@ -409,3 +409,29 @@ def test_resolved_appearance_is_persisted_for_footer_and_pdf_rendering(tmp_path:
     assert options.style == "academic"
     assert options.palette == "rose"
     assert options.mode == "dark"
+
+
+def test_oversized_project_config_is_rejected_before_toml_parsing(tmp_path: Path) -> None:
+    from mardas_md2pdf.config import MAX_CONFIG_BYTES
+
+    config_path = tmp_path / "mardas.toml"
+    config_path.write_bytes(b"#" * (MAX_CONFIG_BYTES + 1))
+
+    result = load_project_config(start=tmp_path, explicit_path=config_path)
+
+    assert [item.code for item in result.diagnostics] == ["MARDAS-E110"]
+
+
+def test_project_title_prevents_missing_title_warning(tmp_path: Path, capsys) -> None:
+    input_path = tmp_path / "report.md"
+    input_path.write_text("Paragraph only.\n", encoding="utf-8")
+    (tmp_path / "mardas.toml").write_text(
+        "schema_version = 1\n[project]\ntitle = 'Configured title'\n",
+        encoding="utf-8",
+    )
+
+    assert main(["validate", str(input_path), "--format", "json"]) == 0
+
+    payload = json.loads(capsys.readouterr().out)
+    assert "MARDAS-W201" not in [item["code"] for item in payload["diagnostics"]]
+    assert payload["document"]["title"] == "Configured title"
