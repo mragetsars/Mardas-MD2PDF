@@ -2,7 +2,7 @@ include LICENSE
 include README.md
 include README.png
 include pyproject.toml
-recursive-include docs *.md *.png
+recursive-include docs *.md *.png *.bib *.json
 recursive-include examples *.pdf
 recursive-include scripts *.py *.sh
 recursive-include tests *.py

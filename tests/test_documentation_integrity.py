@@ -5,6 +5,7 @@ import struct
 from pathlib import Path
 
 import yaml
+from bs4 import BeautifulSoup
 
 from mardas_md2pdf.markdown import render_markdown_file
 
@@ -310,6 +311,8 @@ def test_guides_cover_retired_feature_reference_topics():
         "Mermaid Flowcharts",
         "Cross-references and Numbering",
         "ارجاع متقابل و شماره‌گذاری",
+        "Bibliography and Citations",
+        "کتاب‌نامه و استناد",
     ]
     for marker in required:
         assert marker in combined
@@ -349,6 +352,28 @@ def test_guides_render_cross_reference_destinations_and_lists():
             assert f'id="{target}"' in html
             assert f'href="#{target}"' in html
         assert "md2pdf-reference-list" in result.reference_lists_html
+
+
+def test_guides_include_and_render_live_citation_samples():
+    for guide in GUIDES:
+        source = guide.read_text(encoding="utf-8")
+        assert "bibliography: GUIDE.references.bib" in source
+        assert "style: author-date" in source
+        assert "[@mardas2026a, p. 14; @mardas2026b]" in source
+        assert "@ahmadi1404" in source
+
+        result = render_markdown_file(guide, toc=True)
+        assert not [item for item in result.diagnostics if item.severity == "error"]
+        assert result.cited_keys == ("mardas2026a", "mardas2026b", "ahmadi1404")
+        assert len(result.citation_entries) == 3
+        combined = result.body_html + result.bibliography_html
+        soup = BeautifulSoup(combined, "html.parser")
+        assert len(soup.select("section.md2pdf-bibliography")) == 1
+        for key in ["mardas2026a", "mardas2026b", "ahmadi1404"]:
+            assert soup.select_one(f'[data-md2pdf-bibliography-key="{key}"]')
+            assert soup.select_one(f'a[href^="#bib-"][data-md2pdf-citation-key="{key}"]')
+        assert "2026a" in combined
+        assert "2026b" in combined
 
 
 def test_readme_has_no_stale_feature_reference_links():

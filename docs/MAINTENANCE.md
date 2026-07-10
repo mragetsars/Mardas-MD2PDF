@@ -43,6 +43,21 @@ python -m pytest -q tests/test_cross_references.py tests/test_book_mode.py tests
 
 Before release, render a representative English/Persian book containing a labeled figure, table, display equation, and code listing. Verify global and chapter-scoped numbering, a reference that crosses chapter boundaries, duplicate/unresolved diagnostics, all requested generated lists, and the corresponding `xref-*` named destinations and link annotations in the PDF. Official guide builds also enable all four reference lists as live renderer samples.
 
+## Bibliography and citation checks
+
+When changing `src/mardas_md2pdf/citations.py`, bibliography configuration, or Book Mode citation assembly, run:
+
+```bash
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest -q \
+  tests/test_citations.py \
+  tests/test_book_mode.py \
+  tests/test_project_config.py \
+  tests/test_security_boundaries.py \
+  tests/test_documentation_integrity.py
+```
+
+Also rebuild both guides. They load `docs/guides/GUIDE.references.bib` as a live offline source and must produce author-year disambiguation, narrative/grouped citation links, one generated bibliography, and stable `/bib-*` PDF destinations. No release check may require DOI lookup or network metadata retrieval.
+
 ## Generated examples
 
 The guide PDFs in `examples/` are generated artifacts that should match the current Markdown guides. The helper sets a default `SOURCE_DATE_EPOCH` so PDF metadata dates stay deterministic across repeat builds. Regenerate them with:

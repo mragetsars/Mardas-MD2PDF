@@ -36,6 +36,11 @@ references:
   list_of_tables: true
   list_of_equations: true
   list_of_listings: true
+bibliography: GUIDE.references.bib
+citations:
+  enabled: true
+  style: author-date
+  include_uncited: false
 ---
 
 # Introduction
@@ -1080,6 +1085,45 @@ Labels must be unique across the complete output. Book Mode resolves references 
 
 Generated reference lists are placed after the table of contents and before the document body. Only explicitly labeled objects are included. This guide enables all four lists as a live release sample.
 
+# Bibliography and Citations
+
+The citation engine is offline-first and opt-in. It reads local BibTeX (`.bib`) or CSL JSON (`.json`) files and never performs DOI lookup or network metadata retrieval during a build.
+
+Enable it in `mardas.toml`:
+
+```toml
+[bibliography]
+enabled = true
+sources = ["references.bib"]
+style = "author-date"
+include_uncited = false
+# title = "References"
+```
+
+The same source may be declared in front matter:
+
+```yaml
+bibliography: references.bib
+citations:
+  enabled: true
+  style: author-date
+  include_uncited: false
+```
+
+Supported citation forms are deliberately small and deterministic:
+
+```markdown
+Prior work supports this result [@doe2024].
+Several studies agree [@doe2024, p. 12; @smith2023].
+Narrative citation: @doe2024 describes the method.
+```
+
+Use `style = "numeric"` for first-use numbering such as `[1]`; `author-date` generates localized author/year citations and deterministic `a`, `b`, ... suffixes when the same author has multiple works in one year. Bibliography entries are linked to their first citation and citation links target stable `#bib-*` destinations. Book Mode loads project bibliography sources once and resolves all chapter citations only after chapter assembly, so one bibliography is generated for the complete book.
+
+The next sentence is a live renderer check. It must produce two disambiguated grouped citations [@mardas2026a, p. 14; @mardas2026b] and one narrative citation to @ahmadi1404, followed by one generated bibliography at the end of this guide.
+
+Validation rejects missing sources, invalid BibTeX/CSL JSON, duplicate keys, undefined citation keys, malformed citation groups, repeated source files, oversized sources, and excessive entry counts with stable `MARDAS-E70x` diagnostics before Chromium starts. Citation-like text inside code, existing links, scripts, styles, and other literal contexts remains unchanged.
+
 # GUI Workflow
 
 Launch the GUI:
@@ -1117,6 +1161,10 @@ If an export fails, Studio shows the HTTP status and stable backend error code, 
 | `--references`, `--no-references` | Enable or disable semantic object numbering and cross-references. |
 | `--numbering-scope` | Use continuous `global` numbering or `chapter` numbering in Book Mode. |
 | `--list-of-figures`, `--list-of-tables`, `--list-of-equations`, `--list-of-listings` | Generate selected reference lists; each option also has a paired `--no-list-of-*` override. |
+| `--citations`, `--no-citations` | Enable or disable citation resolution and generated bibliography output. |
+| `--bibliography PATH` | Add a local `.bib` or CSL `.json` source; repeat for multiple sources. |
+| `--citation-style` | Select the built-in `author-date` or `numeric` style. |
+| `--bibliography-title`, `--include-uncited`, `--cited-only` | Customize the bibliography heading and whether uncited entries are included. |
 | `--toc-page-break`, `--h1-page-break` | Control printed page flow. |
 | `--style` | Choose `modern`, `github`, `textbook`, or `academic`. |
 | `--palette` | Choose `blue`, `emerald`, `violet`, `amber`, `rose`, `slate`, or `neutral`. |

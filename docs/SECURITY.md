@@ -133,6 +133,12 @@ Semantic labels such as `{#fig:model}` and reference tokens such as `@fig:model`
 
 Duplicate labels, unresolved references, kind mismatches, malformed labels, and ambiguous multiple-label markers are rejected before Chromium starts. References inside code, existing links, scripts, styles, and other literal contexts are not expanded. Generated reference lists contain only sanitized text and internal `#xref-*` destinations derived from validated labels.
 
+## Bibliography and citation boundary
+
+Bibliography sources are local project inputs. Project/front-matter paths must remain inside the document or project root after symlink resolution, use `.bib` or `.json`, and stay within bounded source-count, file-size, and entry-count limits. Output PDF and debug HTML paths cannot alias a bibliography source.
+
+Citation rendering never performs DOI lookup, URL retrieval, or remote metadata discovery. DOI and URL fields may become ordinary `https` links in the final bibliography, but they are not fetched during conversion. Citation keys are validated internal identifiers; duplicate keys, malformed sources/groups, repeated source files, and undefined citations fail before Chromium starts. Citation-like text in code, existing links, scripts, styles, and literal contexts remains unchanged.
+
 ## Reporting issues
 
 For security-related issues, use a private report when available. Share minimal

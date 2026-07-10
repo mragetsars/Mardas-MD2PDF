@@ -36,6 +36,11 @@ references:
   list_of_tables: true
   list_of_equations: true
   list_of_listings: true
+bibliography: GUIDE.references.bib
+citations:
+  enabled: true
+  style: author-date
+  include_uncited: false
 ---
 
 # معرفی
@@ -1001,6 +1006,45 @@ Labelها باید در کل خروجی یکتا باشند. Book Mode پس از
 
 فهرست‌های تولیدشده بعد از فهرست مطالب و پیش از بدنه سند قرار می‌گیرند و فقط شیءهایی را شامل می‌شوند که label صریح دارند. این راهنما هر چهار فهرست را به‌عنوان نمونه زنده release فعال می‌کند.
 
+# کتاب‌نامه و استناد
+
+موتور استناد به‌صورت offline-first و opt-in طراحی شده است. این موتور فایل محلی BibTeX با پسوند `.bib` یا CSL JSON با پسوند `.json` را می‌خواند و هنگام build هیچ DOI lookup یا دریافت metadata از شبکه انجام نمی‌دهد.
+
+فعال‌سازی در `mardas.toml`:
+
+```toml
+[bibliography]
+enabled = true
+sources = ["references.bib"]
+style = "author-date"
+include_uncited = false
+# title = "منابع"
+```
+
+همین منبع را می‌توان در front matter تعریف کرد:
+
+```yaml
+bibliography: references.bib
+citations:
+  enabled: true
+  style: author-date
+  include_uncited: false
+```
+
+شکل‌های پشتیبانی‌شده استناد عمداً کوچک و deterministic هستند:
+
+```markdown
+نتیجه با پژوهش پیشین سازگار است [@doe2024].
+چند منبع این موضوع را تأیید کرده‌اند [@doe2024, p. 12; @smith2023].
+استناد روایی: @doe2024 روش را توضیح داده است.
+```
+
+برای شماره‌گذاری بر اساس نخستین کاربرد از `style = "numeric"` استفاده کنید. حالت `author-date` استناد نویسنده/سال localized تولید می‌کند و وقتی یک نویسنده در یک سال چند اثر داشته باشد، پسوندهای deterministic مانند `a` و `b` را اضافه می‌کند. هر مدخل کتاب‌نامه به نخستین استناد back-link دارد و هر استناد به destination پایدار `#bib-*` متصل می‌شود. در Book Mode منابع پروژه فقط یک بار بارگذاری می‌شوند و استنادها پس از ترکیب همه فصل‌ها resolve می‌شوند؛ بنابراین کل کتاب فقط یک کتاب‌نامه دارد.
+
+جمله بعدی test case زنده renderer است. باید دو استناد گروهی تفکیک‌شده [@mardas2026a, p. 14; @mardas2026b] و یک استناد روایی به @ahmadi1404 تولید کند و در انتهای همین راهنما فقط یک بخش منابع ساخته شود.
+
+Validation، منبع مفقود، BibTeX یا CSL JSON نامعتبر، کلید تکراری، citation حل‌نشده، گروه citation خراب، source تکراری، فایل بیش‌ازحد بزرگ و تعداد مدخل بیش‌ازحد را با diagnosticهای پایدار `MARDAS-E70x` پیش از اجرای Chromium رد می‌کند. متن شبیه citation داخل code، لینک موجود، script، style و contextهای literal بدون تغییر باقی می‌ماند.
+
 # روند کار با GUI
 
 اجرای GUI:
@@ -1038,6 +1082,10 @@ Studio پیش‌نویس فعلی، layout، حالت روشن/تاریک، جه
 | `--references`, `--no-references` | فعال یا غیرفعال کردن شماره‌گذاری و ارجاع معنایی. |
 | `--numbering-scope` | انتخاب شماره‌گذاری پیوسته `global` یا شماره‌گذاری فصل‌محور `chapter` در Book Mode. |
 | `--list-of-figures`, `--list-of-tables`, `--list-of-equations`, `--list-of-listings` | ساخت فهرست‌های انتخابی؛ هر گزینه جفت `--no-list-of-*` نیز دارد. |
+| `--citations`, `--no-citations` | فعال یا غیرفعال کردن resolve استناد و ساخت کتاب‌نامه. |
+| `--bibliography PATH` | افزودن منبع محلی `.bib` یا CSL `.json`؛ برای چند منبع تکرار شود. |
+| `--citation-style` | انتخاب style داخلی `author-date` یا `numeric`. |
+| `--bibliography-title`, `--include-uncited`, `--cited-only` | تنظیم عنوان کتاب‌نامه و حضور یا حذف مدخل‌های استنادنشده. |
 | `--toc-page-break`, `--h1-page-break` | کنترل صفحه‌بندی چاپی. |
 | `--style` | انتخاب `modern`، `github`، `textbook` یا `academic`. |
 | `--palette` | انتخاب `blue`، `emerald`، `violet`، `amber`، `rose`، `slate` یا `neutral`. |
