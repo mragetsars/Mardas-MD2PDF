@@ -4,6 +4,19 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.13.39 - 2026-07-10
+
+### Security
+- Enforced required, non-negative, bounded `Content-Length` values, rejected unsupported `Transfer-Encoding`, and added deadlines plus exact-length checks for Studio request-body reads.
+- Prevented Studio renderer exceptions, temporary paths, and operating-system details from being returned to API clients while retaining full local error logs.
+
+### Fixed
+- Rejected normalized, case-insensitive, ancestor/descendant, and basename-fallback collisions between attached Studio assets before writing any temporary files.
+- Protected Studio working files such as `document.md` and the requested PDF output path from attached-asset overwrite collisions.
+
+### Tests
+- Added HTTP-level regression coverage for negative request lengths, unsupported transfer encodings, controlled renderer failures, conflicting asset paths, reserved paths, and partial-write prevention.
+
 ## 1.13.38 - 2026-07-04
 
 ### Changed
