@@ -1056,10 +1056,42 @@ function escapeHtml(value){
     .replace(/'/g, '&#39;');
 }
 
+function safeFastPreviewLinkUrl(value){
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  if (/^#[A-Za-z0-9_.:-]+$/.test(raw)) return raw;
+  try {
+    const parsed = new URL(raw);
+    return ['http:', 'https:', 'mailto:'].includes(parsed.protocol) ? raw : '';
+  } catch (_error) {
+    return '';
+  }
+}
+
+function safeFastPreviewImageUrl(value){
+  const raw = String(value || '').trim();
+  return /^data:image\/(?:png|jpe?g|gif|webp|bmp|avif);base64,[A-Za-z0-9+/=\s]+$/i.test(raw)
+    ? raw
+    : '';
+}
+
 function renderInlineMarkdown(value, footnoteDefinitions={}){
   let text = escapeHtml(value);
-  text = text.replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+&quot;([^&]*)&quot;)?\)/g, '<img alt="$1" src="$2" title="$3">');
-  text = text.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+  text = text.replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+&quot;([^&]*)&quot;)?\)/g, (_match, alt, url, title) => {
+    const safeUrl = safeFastPreviewImageUrl(url);
+    if (!safeUrl) {
+      return '<span class="preview-blocked-asset" title="Fast Preview blocks local and remote images">[Blocked image: ' + alt + ']</span>';
+    }
+    const titleAttr = title ? ' title="' + title + '"' : '';
+    return '<img alt="' + alt + '" src="' + safeUrl + '"' + titleAttr + '>';
+  });
+  text = text.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_match, label, url) => {
+    const safeUrl = safeFastPreviewLinkUrl(url);
+    if (!safeUrl) {
+      return '<span class="preview-blocked-link" title="Unsafe or local link omitted in Fast Preview">' + label + '</span>';
+    }
+    return '<a href="' + safeUrl + '" target="_blank" rel="noopener noreferrer">' + label + '</a>';
+  });
   text = text.replace(/\[\^([^\]]+)\]/g, (_match, id) => {
     const safeId = escapeHtml(id);
     return '<sup class="footnote-ref"><a href="#fn-' + safeId + '">[' + safeId + ']</a></sup>';

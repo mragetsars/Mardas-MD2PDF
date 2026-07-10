@@ -6,6 +6,7 @@ import mimetypes
 import os
 import re
 import shutil
+import stat
 import tempfile
 import unicodedata
 import warnings
@@ -36,10 +37,27 @@ from .markdown import MarkdownRenderResult, render_markdown_file
 
 
 MAX_EMBED_ASSET_BYTES = 20 * 1024 * 1024
+ALLOWED_EMBED_ASSET_MIME_TYPES = {
+    "image/png",
+    "image/jpeg",
+    "image/gif",
+    "image/webp",
+    "image/bmp",
+    "image/avif",
+    "image/svg+xml",
+}
 ProgressCallback = Callable[[str, float], None]
 BRANDING_MODES = ("off", "subtle", "full")
 PRODUCT_BRAND_NAME = "Mardas MD2PDF"
 PRODUCT_BRAND_FOOTER = "Markdown to PDF Engine"
+
+
+class DocumentAssetError(ValueError):
+    """Raised when document metadata references an unsafe local asset."""
+
+
+class OutputPathError(ValueError):
+    """Raised when conversion paths overlap or target invalid filesystem objects."""
 
 
 def validate_branding_mode(value: str | None) -> str:
@@ -193,7 +211,13 @@ def _image_data_uri(path: Path | None) -> str | None:
     if not path:
         return None
     path = path.resolve()
-    if not path.exists():
+    if not path.exists() or not path.is_file():
+        return None
+    try:
+        mode = path.stat().st_mode
+    except OSError:
+        return None
+    if not stat.S_ISREG(mode):
         return None
     size = path.stat().st_size
     if size > MAX_EMBED_ASSET_BYTES:
@@ -203,7 +227,14 @@ def _image_data_uri(path: Path | None) -> str | None:
             stacklevel=2,
         )
         return None
-    mime_type = mimetypes.guess_type(str(path))[0] or "image/png"
+    mime_type = mimetypes.guess_type(str(path))[0] or ""
+    if mime_type.lower() not in ALLOWED_EMBED_ASSET_MIME_TYPES:
+        warnings.warn(
+            f"Skipping non-image or unsupported embedded asset: {path}",
+            RuntimeWarning,
+            stacklevel=2,
+        )
+        return None
     encoded = base64.b64encode(path.read_bytes()).decode("ascii")
     return f"data:{mime_type};base64,{encoded}"
 
@@ -697,10 +728,33 @@ def _metadata_path(value: Any, base_dir: Path) -> Path | None:
     text = _stringify_metadata_value(value)
     if not text.strip():
         return None
-    path = Path(text).expanduser()
-    if not path.is_absolute():
-        path = base_dir / path
-    return path if path.exists() else None
+    root = base_dir.resolve(strict=True)
+    raw_path = Path(text).expanduser()
+    if raw_path.is_absolute():
+        raise DocumentAssetError(
+            "Front-matter image paths must be relative to the Markdown document directory."
+        )
+    try:
+        path = (root / raw_path).resolve(strict=True)
+        path.relative_to(root)
+    except (FileNotFoundError, OSError, ValueError) as exc:
+        raise DocumentAssetError(
+            f'Front-matter image path "{text}" is missing or outside the Markdown document directory.'
+        ) from exc
+    if not path.is_file() or not stat.S_ISREG(path.stat().st_mode):
+        raise DocumentAssetError(
+            f'Front-matter image path "{text}" must reference a regular file.'
+        )
+    mime_type = (mimetypes.guess_type(str(path))[0] or "").lower()
+    if mime_type not in ALLOWED_EMBED_ASSET_MIME_TYPES:
+        raise DocumentAssetError(
+            f'Front-matter image path "{text}" must reference a supported image file.'
+        )
+    if path.stat().st_size > MAX_EMBED_ASSET_BYTES:
+        raise DocumentAssetError(
+            f'Front-matter image path "{text}" exceeds the {MAX_EMBED_ASSET_BYTES}-byte limit.'
+        )
+    return path
 
 
 def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document_direction: str = "rtl") -> str:
@@ -1800,7 +1854,6 @@ def build_html(
         )
         or labels["generated_document"]
     )
-    base_href = options.input_path.resolve().parent.as_uri() + "/"
     css_variables, body_classes = _layout_css(
         options,
         cover_full_bleed=cover_full_bleed,
@@ -1861,7 +1914,6 @@ def build_html(
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <base href="{base_href}">
   <title>{html.escape(str(title))}</title>
   <style>{font_faces}</style>
   <style>{result.pygments_css}</style>
@@ -2451,6 +2503,96 @@ def _add_pdf_page_labels(
     writer._root_object[NameObject("/PageLabels")] = DictionaryObject({NameObject("/Nums"): nums})
 
 
+def _path_identity_key(path: Path) -> str:
+    """Return a normalized path key for non-existent path comparisons."""
+    return os.path.normcase(str(path.expanduser().resolve(strict=False)))
+
+
+def _paths_refer_to_same_file(left: Path, right: Path) -> bool:
+    """Detect textual aliases, symlinks, hardlinks, and case-folded path aliases."""
+    left = Path(left)
+    right = Path(right)
+    try:
+        if left.exists() and right.exists() and os.path.samefile(left, right):
+            return True
+    except OSError:
+        pass
+    return _path_identity_key(left) == _path_identity_key(right)
+
+
+def _validate_conversion_paths(options: PdfOptions) -> None:
+    input_path = Path(options.input_path)
+    output_path = Path(options.output_path)
+    debug_html = Path(options.debug_html) if options.debug_html else None
+
+    if not input_path.exists():
+        raise OutputPathError(f"Input Markdown file not found: {input_path}")
+    if not input_path.is_file():
+        raise OutputPathError(f"Input path is not a regular file: {input_path}")
+    if output_path.exists() and output_path.is_dir():
+        raise OutputPathError(f"Output PDF path is a directory: {output_path}")
+    if debug_html and debug_html.exists() and debug_html.is_dir():
+        raise OutputPathError(f"Debug HTML path is a directory: {debug_html}")
+
+    pairs = [("input Markdown", input_path, "output PDF", output_path)]
+    if debug_html:
+        pairs.extend(
+            [
+                ("input Markdown", input_path, "debug HTML", debug_html),
+                ("output PDF", output_path, "debug HTML", debug_html),
+            ]
+        )
+    for left_label, left, right_label, right in pairs:
+        if _paths_refer_to_same_file(left, right):
+            raise OutputPathError(
+                f"The {left_label} and {right_label} paths must reference different files."
+            )
+
+
+def _atomic_write_pdf(writer: PdfWriter, output_path: Path) -> None:
+    """Commit a complete PDF with an atomic same-directory replacement."""
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fd, temporary_name = tempfile.mkstemp(
+        prefix=f".{output_path.name}.", suffix=".tmp", dir=output_path.parent
+    )
+    temporary_path = Path(temporary_name)
+    try:
+        with os.fdopen(fd, "wb") as fh:
+            writer.write(fh)
+            fh.flush()
+            os.fsync(fh.fileno())
+        os.replace(temporary_path, output_path)
+    except Exception:
+        try:
+            os.close(fd)
+        except OSError:
+            pass
+        temporary_path.unlink(missing_ok=True)
+        raise
+
+
+def _atomic_write_text(path: Path, text: str, *, encoding: str = "utf-8") -> None:
+    """Write text without truncating a previous valid artifact on failure."""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, temporary_name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
+    temporary_path = Path(temporary_name)
+    try:
+        with os.fdopen(fd, "w", encoding=encoding, newline="") as fh:
+            fh.write(text)
+            fh.flush()
+            os.fsync(fh.fileno())
+        os.replace(temporary_path, path)
+    except Exception:
+        try:
+            os.close(fd)
+        except OSError:
+            pass
+        temporary_path.unlink(missing_ok=True)
+        raise
+
+
 def _copy_pdf_with_metadata(
     input_path: Path,
     output_path: Path,
@@ -2463,25 +2605,26 @@ def _copy_pdf_with_metadata(
     reader = PdfReader(str(input_path))
     page_texts = _pdf_page_texts(reader) if outline_source_entries else []
     writer = PdfWriter()
-    for page in reader.pages:
-        writer.add_page(page)
-    named_destinations = _copy_pdf_named_destinations(writer, reader)
-    _rewrite_pdf_link_annotation_destinations(writer, named_destinations)
-    _add_pdf_page_labels(writer, content_start_page=outline_start_page, lang=page_label_lang)
-    writer.add_metadata(metadata)
-    if outline_source_entries:
-        _add_pdf_outline(
-            writer,
-            _locate_outline_pages(
-                page_texts,
-                outline_source_entries,
-                named_destinations=named_destinations,
-                start_page=outline_start_page,
-            ),
-        )
-    with output_path.open("wb") as fh:
-        writer.write(fh)
-    writer.close()
+    try:
+        for page in reader.pages:
+            writer.add_page(page)
+        named_destinations = _copy_pdf_named_destinations(writer, reader)
+        _rewrite_pdf_link_annotation_destinations(writer, named_destinations)
+        _add_pdf_page_labels(writer, content_start_page=outline_start_page, lang=page_label_lang)
+        writer.add_metadata(metadata)
+        if outline_source_entries:
+            _add_pdf_outline(
+                writer,
+                _locate_outline_pages(
+                    page_texts,
+                    outline_source_entries,
+                    named_destinations=named_destinations,
+                    start_page=outline_start_page,
+                ),
+            )
+        _atomic_write_pdf(writer, output_path)
+    finally:
+        writer.close()
 
 
 def _apply_pdf_metadata(pdf_path: Path, metadata: dict[str, str]) -> None:
@@ -2500,33 +2643,34 @@ def _merge_pdfs(
     page_label_lang: str | None = None,
 ) -> None:
     writer = PdfWriter()
-    page_texts: list[str] = []
-    named_destinations: NamedDestinationMap = {}
-    for part in parts:
-        reader = PdfReader(str(part))
-        page_offset = len(writer.pages)
+    try:
+        page_texts: list[str] = []
+        named_destinations: NamedDestinationMap = {}
+        for part in parts:
+            reader = PdfReader(str(part))
+            page_offset = len(writer.pages)
+            if outline_source_entries:
+                page_texts.extend(_pdf_page_texts(reader))
+            for page in reader.pages:
+                writer.add_page(page)
+            named_destinations.update(_copy_pdf_named_destinations(writer, reader, page_offset=page_offset))
+        _rewrite_pdf_link_annotation_destinations(writer, named_destinations)
+        _add_pdf_page_labels(writer, content_start_page=outline_start_page, lang=page_label_lang)
+        if metadata:
+            writer.add_metadata(metadata)
         if outline_source_entries:
-            page_texts.extend(_pdf_page_texts(reader))
-        for page in reader.pages:
-            writer.add_page(page)
-        named_destinations.update(_copy_pdf_named_destinations(writer, reader, page_offset=page_offset))
-    _rewrite_pdf_link_annotation_destinations(writer, named_destinations)
-    _add_pdf_page_labels(writer, content_start_page=outline_start_page, lang=page_label_lang)
-    if metadata:
-        writer.add_metadata(metadata)
-    if outline_source_entries:
-        _add_pdf_outline(
-            writer,
-            _locate_outline_pages(
-                page_texts,
-                outline_source_entries,
-                named_destinations=named_destinations,
-                start_page=outline_start_page,
-            ),
-        )
-    with output_path.open("wb") as fh:
-        writer.write(fh)
-    writer.close()
+            _add_pdf_outline(
+                writer,
+                _locate_outline_pages(
+                    page_texts,
+                    outline_source_entries,
+                    named_destinations=named_destinations,
+                    start_page=outline_start_page,
+                ),
+            )
+        _atomic_write_pdf(writer, output_path)
+    finally:
+        writer.close()
 
 
 def convert(options: PdfOptions) -> Path:
@@ -2535,6 +2679,8 @@ def convert(options: PdfOptions) -> Path:
 
     options.input_path = Path(options.input_path)
     options.output_path = Path(options.output_path)
+    options.debug_html = Path(options.debug_html) if options.debug_html else None
+    _validate_conversion_paths(options)
     result = render_markdown_file(
         options.input_path,
         toc=options.toc,
@@ -2554,8 +2700,7 @@ def convert(options: PdfOptions) -> Path:
 
     full_debug_html = build_html(result, options, include_cover=True, include_content=True, include_watermark=True)
     if options.debug_html:
-        options.debug_html.parent.mkdir(parents=True, exist_ok=True)
-        options.debug_html.write_text(full_debug_html, encoding="utf-8")
+        _atomic_write_text(options.debug_html, full_debug_html)
     _report_progress(progress, "HTML prepared", 0.28)
 
     executable = options.chromium_path or shutil.which("chromium") or shutil.which("google-chrome")

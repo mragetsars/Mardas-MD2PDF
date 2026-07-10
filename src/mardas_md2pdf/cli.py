@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -170,11 +171,13 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("input is required unless you use --list-styles, --list-palettes, or --list-modes")
     if not input_path.exists():
         parser.error(f"Input file not found: {input_path}")
+    if not input_path.is_file():
+        parser.error(f"Input path is not a regular file: {input_path}")
     brand_logo = args.brand_logo or args.cover_logo
-    if brand_logo and not brand_logo.exists():
-        parser.error(f"Brand logo not found: {brand_logo}")
-    if args.watermark_image and not args.watermark_image.exists():
-        parser.error(f"Watermark image not found: {args.watermark_image}")
+    if brand_logo and not brand_logo.is_file():
+        parser.error(f"Brand logo must be a regular file: {brand_logo}")
+    if args.watermark_image and not args.watermark_image.is_file():
+        parser.error(f"Watermark image must be a regular file: {args.watermark_image}")
     if not 0 <= args.watermark_opacity <= 1:
         parser.error("--watermark-opacity must be between 0 and 1")
     try:
@@ -227,7 +230,13 @@ def main(argv: list[str] | None = None) -> int:
         allow_remote_assets=args.allow_remote_assets,
         progress=_progress_callback(args.progress),
     )
-    pdf_path = convert(options)
+    try:
+        pdf_path = convert(options)
+    except Exception as exc:
+        if os.environ.get("MARDAS_DEBUG") == "1":
+            raise
+        print(f"Error: {exc}", file=sys.stderr)
+        return 1
     print(f"PDF created: {pdf_path}")
     return 0
 
