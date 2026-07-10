@@ -1,0 +1,396 @@
+from __future__ import annotations
+
+import re
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Callable
+
+try:
+    import tomllib
+except ModuleNotFoundError:  # pragma: no cover - exercised on Python 3.10
+    import tomli as tomllib
+
+from .appearance import MODES, PALETTES_ORDER, STYLES
+from .diagnostics import Diagnostic
+from .renderer import BRANDING_MODES, validate_page_size
+
+CONFIG_FILENAME = "mardas.toml"
+CONFIG_SCHEMA_VERSION = 1
+
+
+@dataclass(frozen=True, slots=True)
+class LoadedProjectConfig:
+    path: Path | None
+    root: Path
+    values: dict[str, Any]
+
+    @property
+    def discovered(self) -> bool:
+        return self.path is not None
+
+
+@dataclass(frozen=True, slots=True)
+class ConfigLoadResult:
+    config: LoadedProjectConfig
+    diagnostics: tuple[Diagnostic, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class ConfigField:
+    section: str
+    key: str
+    dest: str
+    validator: Callable[[Any], Any]
+    path_value: bool = False
+    invert: bool = False
+
+    @property
+    def dotted_key(self) -> str:
+        return f"{self.section}.{self.key}"
+
+
+class ConfigValueError(ValueError):
+    pass
+
+
+def _string(value: Any) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ConfigValueError("expected a non-empty string")
+    return value.strip()
+
+
+def _optional_string(value: Any) -> str:
+    if not isinstance(value, str):
+        raise ConfigValueError("expected a string")
+    return value
+
+
+def _boolean(value: Any) -> bool:
+    if not isinstance(value, bool):
+        raise ConfigValueError("expected true or false")
+    return value
+
+
+def _integer(minimum: int, maximum: int) -> Callable[[Any], int]:
+    def validate(value: Any) -> int:
+        if isinstance(value, bool) or not isinstance(value, int):
+            raise ConfigValueError("expected an integer")
+        if not minimum <= value <= maximum:
+            raise ConfigValueError(f"expected a value between {minimum} and {maximum}")
+        return value
+
+    return validate
+
+
+def _number(minimum: float, maximum: float) -> Callable[[Any], float]:
+    def validate(value: Any) -> float:
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise ConfigValueError("expected a number")
+        result = float(value)
+        if not minimum <= result <= maximum:
+            raise ConfigValueError(f"expected a value between {minimum} and {maximum}")
+        return result
+
+    return validate
+
+
+def _choice(choices: tuple[str, ...] | list[str]) -> Callable[[Any], str]:
+    allowed = tuple(choices)
+
+    def validate(value: Any) -> str:
+        result = _string(value).lower()
+        if result not in allowed:
+            raise ConfigValueError(f"expected one of: {', '.join(allowed)}")
+        return result
+
+    return validate
+
+
+def _page_size(value: Any) -> str:
+    try:
+        return validate_page_size(_string(value))
+    except ValueError as exc:
+        raise ConfigValueError(str(exc)) from exc
+
+
+def _css_length(value: Any) -> str:
+    result = _string(value)
+    if len(result) > 64 or not re.fullmatch(
+        r"(?:0|[0-9]+(?:\.[0-9]+)?(?:mm|cm|in|pt|px|%))", result
+    ):
+        raise ConfigValueError("expected a non-negative CSS length such as 18mm, 1.5cm, or 45%")
+    return result
+
+
+CONFIG_FIELDS: tuple[ConfigField, ...] = (
+    ConfigField("project", "title", "title", _optional_string),
+    ConfigField("project", "author", "author", _optional_string),
+    ConfigField("project", "description", "description", _optional_string),
+    ConfigField("project", "direction", "document_direction", _choice(["auto", "rtl", "ltr"])),
+    ConfigField("output", "toc", "toc", _boolean),
+    ConfigField("output", "toc_depth", "toc_depth", _integer(1, 6)),
+    ConfigField("output", "toc_page_break", "toc_page_break", _boolean),
+    ConfigField("output", "h1_page_break", "h1_page_break", _boolean),
+    ConfigField("output", "page_size", "page_size", _page_size),
+    ConfigField("output", "margin_top", "margin_top", _css_length),
+    ConfigField("output", "margin_bottom", "margin_bottom", _css_length),
+    ConfigField("output", "margin_x", "margin_x", _css_length),
+    ConfigField("output", "cover", "no_cover", _boolean, invert=True),
+    ConfigField("output", "header_footer", "no_header_footer", _boolean, invert=True),
+    ConfigField("output", "mathjax", "no_mathjax", _boolean, invert=True),
+    ConfigField("appearance", "style", "style", _choice(list(STYLES))),
+    ConfigField("appearance", "palette", "palette", _choice(list(PALETTES_ORDER))),
+    ConfigField("appearance", "mode", "mode", _choice(list(MODES))),
+    ConfigField("branding", "mode", "branding", _choice(list(BRANDING_MODES))),
+    ConfigField("branding", "name", "brand_name", _optional_string),
+    ConfigField("branding", "logo", "brand_logo", _string, path_value=True),
+    ConfigField("branding", "footer", "brand_footer", _optional_string),
+    ConfigField("branding", "show_logo", "no_cover_logo", _boolean, invert=True),
+    ConfigField("watermark", "text", "watermark", _optional_string),
+    ConfigField("watermark", "image", "watermark_image", _string, path_value=True),
+    ConfigField("watermark", "opacity", "watermark_opacity", _number(0.0, 1.0)),
+    ConfigField("watermark", "width", "watermark_width", _css_length),
+    ConfigField("security", "unsafe_html", "unsafe_html", _boolean),
+    ConfigField("security", "allow_remote_assets", "allow_remote_assets", _boolean),
+    ConfigField("browser", "chromium_path", "chromium_path", _string, path_value=True),
+    ConfigField("browser", "chromium_sandbox", "chromium_sandbox", _choice(["auto", "on", "off"])),
+    ConfigField("browser", "timeout_ms", "timeout_ms", _integer(1_000, 3_600_000)),
+    ConfigField("fonts", "directory", "font_dir", _string, path_value=True),
+)
+
+_ALLOWED_SECTIONS = {field.section for field in CONFIG_FIELDS}
+_ALLOWED_KEYS = {
+    section: {field.key for field in CONFIG_FIELDS if field.section == section}
+    for section in _ALLOWED_SECTIONS
+}
+
+
+def default_config_text() -> str:
+    return """schema_version = 1
+
+[project]
+# title = "My document"
+# author = "Author name"
+# description = "Short document summary"
+direction = "auto"
+
+[output]
+page_size = "A4"
+toc = true
+toc_depth = 3
+toc_page_break = true
+h1_page_break = false
+cover = true
+header_footer = true
+mathjax = true
+margin_top = "18mm"
+margin_bottom = "20mm"
+margin_x = "16mm"
+
+[appearance]
+style = "modern"
+palette = "blue"
+mode = "light"
+
+[branding]
+mode = "off"
+show_logo = true
+# name = "Organization name"
+# logo = "assets/logo.png"
+# footer = "Department or project"
+
+[security]
+unsafe_html = false
+allow_remote_assets = false
+
+[browser]
+chromium_sandbox = "auto"
+timeout_ms = 120000
+"""
+
+
+def discover_config(start: Path) -> Path | None:
+    current = start.resolve()
+    if current.is_file():
+        current = current.parent
+    for directory in (current, *current.parents):
+        candidate = directory / CONFIG_FILENAME
+        if candidate.is_file():
+            return candidate
+    return None
+
+
+def _toml_location(exc: Exception) -> tuple[int | None, int | None]:
+    line = getattr(exc, "lineno", None)
+    column = getattr(exc, "colno", None)
+    if line is not None:
+        return int(line), int(column) if column is not None else None
+    match = re.search(r"line (\d+), column (\d+)", str(exc), flags=re.IGNORECASE)
+    if match:
+        return int(match.group(1)), int(match.group(2))
+    return None, None
+
+
+def load_project_config(
+    *,
+    start: Path,
+    explicit_path: Path | None = None,
+    disabled: bool = False,
+) -> ConfigLoadResult:
+    root = (start.parent if start.is_file() else start).resolve()
+    if disabled:
+        return ConfigLoadResult(LoadedProjectConfig(None, root, {}), ())
+
+    config_path = (
+        explicit_path.expanduser() if explicit_path is not None else discover_config(start)
+    )
+    if config_path is None:
+        return ConfigLoadResult(LoadedProjectConfig(None, root, {}), ())
+    config_path = config_path.resolve()
+    if not config_path.is_file():
+        diagnostic = Diagnostic(
+            "MARDAS-E101",
+            "error",
+            "Project configuration file was not found or is not a regular file.",
+            path=config_path,
+            hint=f"Create {CONFIG_FILENAME} with `mrs-md2pdf init` or provide a valid --config path.",
+        )
+        return ConfigLoadResult(
+            LoadedProjectConfig(config_path, config_path.parent, {}), (diagnostic,)
+        )
+
+    try:
+        raw = tomllib.loads(config_path.read_text(encoding="utf-8-sig"))
+    except (OSError, UnicodeError) as exc:
+        diagnostic = Diagnostic(
+            "MARDAS-E102",
+            "error",
+            f"Could not read project configuration: {exc}",
+            path=config_path,
+        )
+        return ConfigLoadResult(
+            LoadedProjectConfig(config_path, config_path.parent, {}), (diagnostic,)
+        )
+    except tomllib.TOMLDecodeError as exc:
+        line, column = _toml_location(exc)
+        diagnostic = Diagnostic(
+            "MARDAS-E103",
+            "error",
+            f"Invalid TOML: {exc}",
+            path=config_path,
+            line=line,
+            column=column,
+            hint="Fix the TOML syntax before rendering or validating the project.",
+        )
+        return ConfigLoadResult(
+            LoadedProjectConfig(config_path, config_path.parent, {}), (diagnostic,)
+        )
+
+    diagnostics: list[Diagnostic] = []
+    schema_version = raw.get("schema_version", CONFIG_SCHEMA_VERSION)
+    if isinstance(schema_version, bool) or not isinstance(schema_version, int):
+        diagnostics.append(
+            Diagnostic(
+                "MARDAS-E104",
+                "error",
+                "schema_version must be an integer.",
+                path=config_path,
+            )
+        )
+    elif schema_version != CONFIG_SCHEMA_VERSION:
+        diagnostics.append(
+            Diagnostic(
+                "MARDAS-E105",
+                "error",
+                f"Unsupported schema_version {schema_version}; supported version is {CONFIG_SCHEMA_VERSION}.",
+                path=config_path,
+            )
+        )
+
+    for key, value in raw.items():
+        if key == "schema_version":
+            continue
+        if key not in _ALLOWED_SECTIONS:
+            diagnostics.append(
+                Diagnostic(
+                    "MARDAS-E106",
+                    "error",
+                    f"Unknown configuration section [{key}].",
+                    path=config_path,
+                )
+            )
+            continue
+        if not isinstance(value, dict):
+            diagnostics.append(
+                Diagnostic(
+                    "MARDAS-E107",
+                    "error",
+                    f"Configuration section [{key}] must be a table.",
+                    path=config_path,
+                )
+            )
+            continue
+        for child_key in value:
+            if child_key not in _ALLOWED_KEYS[key]:
+                diagnostics.append(
+                    Diagnostic(
+                        "MARDAS-E108",
+                        "error",
+                        f"Unknown configuration key {key}.{child_key}.",
+                        path=config_path,
+                        hint="Run `mrs-md2pdf explain-config <input>` to inspect supported effective values.",
+                    )
+                )
+
+    validated: dict[str, Any] = {}
+    for field in CONFIG_FIELDS:
+        section = raw.get(field.section)
+        if not isinstance(section, dict) or field.key not in section:
+            continue
+        value = section[field.key]
+        try:
+            value = field.validator(value)
+        except ConfigValueError as exc:
+            diagnostics.append(
+                Diagnostic(
+                    "MARDAS-E109",
+                    "error",
+                    f"Invalid value for {field.dotted_key}: {exc}.",
+                    path=config_path,
+                )
+            )
+            continue
+        if field.path_value:
+            path = Path(value).expanduser()
+            if not path.is_absolute():
+                path = config_path.parent / path
+            value = path.resolve()
+        if field.invert:
+            value = not value
+        validated[field.dest] = value
+
+    return ConfigLoadResult(
+        LoadedProjectConfig(config_path, config_path.parent, validated),
+        tuple(diagnostics),
+    )
+
+
+def apply_config_values(
+    namespace: Any,
+    config: LoadedProjectConfig,
+    *,
+    explicit_destinations: set[str],
+) -> dict[str, str]:
+    """Apply project values not explicitly supplied on the CLI.
+
+    Returns a destination-to-source map for explain-config output.
+    """
+
+    sources: dict[str, str] = {}
+    for dest, value in config.values.items():
+        if dest in explicit_destinations:
+            sources[dest] = "command line"
+            continue
+        setattr(namespace, dest, value)
+        sources[dest] = str(config.path) if config.path else "built-in default"
+    return sources

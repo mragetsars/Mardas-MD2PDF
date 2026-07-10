@@ -25,7 +25,6 @@ from .appearance import (
     Appearance,
     appearance_body_classes,
     appearance_from_metadata,
-    code_style_for_appearance,
     footer_kind,
     math_scale_vars,
     palette_css,
@@ -195,6 +194,16 @@ def _resolved_appearance(metadata: dict[str, Any], options: PdfOptions) -> Appea
         mode=options.mode or metadata_appearance.mode,
     )
 
+
+
+
+def _apply_resolved_appearance(metadata: dict[str, Any], options: PdfOptions) -> Appearance:
+    """Resolve CLI/config/front-matter appearance once and persist it on options."""
+    appearance = _resolved_appearance(metadata, options)
+    options.style = appearance.style
+    options.palette = appearance.palette
+    options.mode = appearance.mode
+    return appearance
 
 def _style_css(appearance: Appearance) -> str:
     return _asset_text(style_css_file(appearance.style, appearance.mode))
@@ -2769,10 +2778,12 @@ def convert(options: PdfOptions) -> Path:
         options.input_path,
         toc=options.toc,
         toc_depth=options.toc_depth,
-        code_style=code_style_for_appearance(options.style, options.mode),
+        appearance_style=options.style,
+        appearance_mode=options.mode,
         unsafe_html=options.unsafe_html,
         allow_remote_images=options.allow_remote_assets,
     )
+    _apply_resolved_appearance(result.metadata, options)
     _report_progress(progress, "Markdown parsed", 0.16)
 
     title = options.title or _stringify_metadata_value(result.metadata.get("title")) or result.title

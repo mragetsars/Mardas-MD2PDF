@@ -23,6 +23,7 @@ from pygments.formatters import HtmlFormatter
 from pygments.lexers import TextLexer, get_lexer_by_name
 from pygments.util import ClassNotFound
 
+from .appearance import appearance_from_metadata, code_style_for_appearance, resolve_appearance
 from .mermaid import render_mermaid_to_svg
 
 ARABIC_RANGES = re.compile(r"[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]")
@@ -2626,12 +2627,21 @@ def render_markdown(
     *,
     toc: bool = False,
     toc_depth: int = 6,
-    code_style: str = "github-dark",
+    code_style: str | None = None,
+    appearance_style: str | None = None,
+    appearance_mode: str | None = None,
     unsafe_html: bool = False,
     allow_remote_images: bool = False,
 ) -> MarkdownRenderResult:
     markdown = markdown.removeprefix("\ufeff")
     metadata, markdown_body = extract_frontmatter(markdown)
+    if code_style is None:
+        metadata_appearance = appearance_from_metadata(metadata)
+        appearance = resolve_appearance(
+            style=appearance_style or metadata_appearance.style,
+            mode=appearance_mode or metadata_appearance.mode,
+        )
+        code_style = code_style_for_appearance(appearance.style, appearance.mode)
     title = guess_title(markdown_body, metadata)
     lang = normalize_language(metadata.get("lang"), "auto")
 
@@ -2714,7 +2724,9 @@ def render_markdown_file(
     *,
     toc: bool = False,
     toc_depth: int = 6,
-    code_style: str = "github-dark",
+    code_style: str | None = None,
+    appearance_style: str | None = None,
+    appearance_mode: str | None = None,
     unsafe_html: bool = False,
     allow_remote_images: bool = False,
 ) -> MarkdownRenderResult:
@@ -2725,6 +2737,8 @@ def render_markdown_file(
         toc=toc,
         toc_depth=toc_depth,
         code_style=code_style,
+        appearance_style=appearance_style,
+        appearance_mode=appearance_mode,
         unsafe_html=unsafe_html,
         allow_remote_images=allow_remote_images,
     )
