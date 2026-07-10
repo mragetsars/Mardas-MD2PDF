@@ -169,6 +169,11 @@ def test_release_gate_verifies_installed_project_commands() -> None:
     assert "project_smoke" in script
     assert "validate.json" in script
     assert "dist/book.pdf" in script
+    assert "numbered_objects" in script
+    assert "xref-fig-model" in script
+    assert "xref-tbl-metrics" in script
+    assert "xref-eq-energy" in script
+    assert "xref-lst-loop" in script
 
 
 def test_release_gate_verifies_current_packaged_asset_names() -> None:

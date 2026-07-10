@@ -79,6 +79,46 @@ fi
 "$venv_bin/mrs-md2pdf" --help >/dev/null
 "$venv_bin/mrs-md2pdf" --list-styles >/dev/null
 "$venv_bin/mrs-md2pdf" init "$project_smoke" --book
+"$venv_python" - "$project_smoke" <<'PY_REFERENCE_PROJECT'
+import sys
+from pathlib import Path
+
+root = Path(sys.argv[1])
+config = root / "mardas.toml"
+text = config.read_text(encoding="utf-8")
+text = text.replace("enabled = false", "enabled = true", 1)
+text = text.replace('numbering_scope = "global"', 'numbering_scope = "chapter"', 1)
+text = text.replace("list_of_figures = false", "list_of_figures = true", 1)
+text = text.replace("list_of_tables = false", "list_of_tables = true", 1)
+text = text.replace("list_of_equations = false", "list_of_equations = true", 1)
+text = text.replace("list_of_listings = false", "list_of_listings = true", 1)
+config.write_text(text, encoding="utf-8", newline="\n")
+(root / "assets").mkdir(exist_ok=True)
+(root / "assets" / "model.svg").write_text(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="320" height="120">'
+    '<rect width="320" height="120" rx="12" fill="#dbeafe"/>'
+    '<text x="160" y="68" text-anchor="middle" font-family="sans-serif">Model</text>'
+    '</svg>',
+    encoding="utf-8",
+)
+chapter_one = (
+    "# Introduction\n\n"
+    "See @fig:model, @tbl:metrics, @eq:energy, and @lst:loop.\n\n"
+    "![Model](../assets/model.svg)\n\n"
+    "Figure: Release model {#fig:model}\n\n"
+    "| Metric | Value |\n|---|---:|\n| Pass | 1 |\n\n"
+    "Table: Release metrics {#tbl:metrics}\n\n"
+    "$$\nE = mc^2\n$$\n\n{#eq:energy}\n"
+)
+chapter_two = (
+    "# Main Content\n\n"
+    "```python title=\"Release loop\" {#lst:loop}\n"
+    "print(\"release\")\n"
+    "```\n"
+)
+(root / "chapters" / "01-introduction.md").write_text(chapter_one, encoding="utf-8")
+(root / "chapters" / "02-content.md").write_text(chapter_two, encoding="utf-8")
+PY_REFERENCE_PROJECT
 printf '%s\n' '# Project command smoke' > "$project_smoke/report.md"
 "$venv_bin/mrs-md2pdf" validate "$project_smoke/report.md" --format json > "$project_smoke/validate.json"
 "$venv_bin/mrs-md2pdf" explain-config "$project_smoke/report.md" --format json > "$project_smoke/explain.json"
@@ -109,6 +149,20 @@ if book.get("chapter_count") != 2:
     raise SystemExit("Book Mode smoke did not preserve the starter chapter manifest")
 if not str(book.get("output", "")).endswith("dist/book.pdf"):
     raise SystemExit("Book Mode smoke wrote an unexpected output path")
+if book.get("numbered_objects") != 4:
+    raise SystemExit("Cross-reference smoke did not number all four object kinds")
+
+from pypdf import PdfReader
+reader = PdfReader(str(root / "dist" / "book.pdf"))
+destinations = set(reader.named_destinations)
+for expected in (
+    "/xref-fig-model",
+    "/xref-tbl-metrics",
+    "/xref-eq-energy",
+    "/xref-lst-loop",
+):
+    if expected not in destinations:
+        raise SystemExit(f"Cross-reference destination is missing: {expected}")
 PY_PROJECT
 "$venv_bin/mrs-md2pdf-gui" --version
 "$venv_python" - <<'PY'
