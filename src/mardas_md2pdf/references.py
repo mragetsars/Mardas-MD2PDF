@@ -274,7 +274,8 @@ def _replace_caption_prefix(
         obj.append(number_span)
         return equation_text
 
-    assert caption is not None
+    if caption is None:
+        return ""
     for existing in list(caption.select(":scope > .md2pdf-caption-label")):
         existing.decompose()
     for node in list(caption.find_all(string=True)):
@@ -514,7 +515,16 @@ def resolve_cross_references(
             )
             continue
         kind = _kind_for_object(obj)
-        assert kind is not None
+        if kind is None:
+            diagnostics.append(
+                Diagnostic(
+                    "MARDAS-E605",
+                    "error",
+                    f"Reference label is not attached to a supported object: {label}",
+                    path=path,
+                )
+            )
+            continue
         declared_kind = match.group("kind")
         if declared_kind != kind:
             diagnostics.append(
