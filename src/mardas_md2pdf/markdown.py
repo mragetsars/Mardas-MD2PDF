@@ -9,7 +9,10 @@ import warnings
 from urllib.parse import unquote, urlparse
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any, Sequence
+
+if TYPE_CHECKING:
+    from .citations import BibliographyLibrary
 
 try:
     import yaml
@@ -113,6 +116,11 @@ GLOBAL_SAFE_ATTRS = {
     "data-md2pdf-reference-kind",
     "data-md2pdf-reference-number",
     "data-md2pdf-reference-lang",
+    "data-md2pdf-citation-mode",
+    "data-md2pdf-citation-items",
+    "data-md2pdf-citation-original",
+    "data-md2pdf-citation-key",
+    "data-md2pdf-bibliography-key",
 }
 TAG_SAFE_ATTRS = {
     "a": {"href", "name", "target", "rel"},
@@ -196,6 +204,7 @@ def ui_label(key: str, *, lang: str | None = None, text_hint: str = "") -> str:
             "caption_code": "کد",
             "caption_diagram": "نمودار",
             "caption_equation": "معادله",
+            "bibliography_title": "منابع",
         },
         "en": {
             "toc_title": "Table of Contents",
@@ -222,6 +231,7 @@ def ui_label(key: str, *, lang: str | None = None, text_hint: str = "") -> str:
             "caption_code": "Listing",
             "caption_diagram": "Diagram",
             "caption_equation": "Equation",
+            "bibliography_title": "References",
         },
     }
     family = language_family(lang, text_hint)
@@ -238,6 +248,10 @@ class MarkdownRenderResult:
     toc_entries: list[tuple[int, str, str, str]] = field(default_factory=list)
     reference_lists_html: str = ""
     reference_objects: tuple[dict[str, object], ...] = ()
+    bibliography_html: str = ""
+    bibliography_sources: tuple[Path, ...] = ()
+    citation_entries: tuple[dict[str, object], ...] = ()
+    cited_keys: tuple[str, ...] = ()
     diagnostics: tuple[Diagnostic, ...] = ()
 
 
@@ -2397,10 +2411,12 @@ def postprocess_html(
     code_style: str = "github-dark",
     lang: str | None = None,
     references_enabled: bool = False,
+    citations_enabled: bool = False,
     source_path: Path | None = None,
 ) -> tuple[str, tuple[Diagnostic, ...]]:
     soup = BeautifulSoup(body_html, "html.parser")
     reference_diagnostics: tuple[Diagnostic, ...] = ()
+    citation_diagnostics: tuple[Diagnostic, ...] = ()
 
     promote_image_caption_pairs(soup)
     promote_table_caption_pairs(soup)
@@ -2419,6 +2435,14 @@ def postprocess_html(
         )
         soup = BeautifulSoup(annotated_html, "html.parser")
         normalize_semantic_captions(soup)
+    if citations_enabled:
+        from .citations import annotate_citation_markup
+
+        annotated_html, citation_diagnostics = annotate_citation_markup(
+            str(soup),
+            path=source_path,
+        )
+        soup = BeautifulSoup(annotated_html, "html.parser")
     isolate_ltr_runs_in_mixed_persian_text(soup)
 
     # Direction-aware blocks and inline content.
@@ -2647,7 +2671,7 @@ def postprocess_html(
         if summary is not None:
             summary["class"] = list(set(summary.get("class", []) + ["md2pdf-summary"]))
 
-    return str(soup), reference_diagnostics
+    return str(soup), reference_diagnostics + citation_diagnostics
 
 
 PAGEBREAK_COMMENT_RE = re.compile(r"<!--\s*(?:pagebreak|page-break|newpage)\s*-->", re.I)
@@ -2738,6 +2762,12 @@ def render_markdown(
     list_of_equations: bool | None = None,
     list_of_listings: bool | None = None,
     defer_reference_resolution: bool = False,
+    citations_enabled: bool | None = None,
+    citation_style: str | None = None,
+    bibliography_title: str | None = None,
+    bibliography_include_uncited: bool | None = None,
+    bibliography_library: BibliographyLibrary | None = None,
+    defer_citation_resolution: bool = False,
     source_path: Path | None = None,
 ) -> MarkdownRenderResult:
     markdown = markdown.removeprefix("\ufeff")
@@ -2864,11 +2894,34 @@ def render_markdown(
     else:
         resolved_references_enabled = bool(references_enabled)
 
+    raw_citation_metadata = metadata.get("citations")
+    citation_metadata = raw_citation_metadata if isinstance(raw_citation_metadata, dict) else {}
+    if citations_enabled is None:
+        if isinstance(raw_citation_metadata, bool):
+            resolved_citations_enabled = raw_citation_metadata
+        else:
+            citation_enabled_value = citation_metadata.get(
+                "enabled", metadata.get("citations_enabled")
+            )
+            if citation_enabled_value is None:
+                resolved_citations_enabled = bool(
+                    bibliography_library and bibliography_library.entries
+                )
+            elif isinstance(citation_enabled_value, str):
+                resolved_citations_enabled = citation_enabled_value.strip().lower() in {
+                    "1", "true", "yes", "on"
+                }
+            else:
+                resolved_citations_enabled = bool(citation_enabled_value)
+    else:
+        resolved_citations_enabled = bool(citations_enabled)
+
     body_html, reference_diagnostics = postprocess_html(
         body_html,
         code_style=code_style,
         lang=lang,
         references_enabled=resolved_references_enabled,
+        citations_enabled=resolved_citations_enabled,
         source_path=source_path,
     )
     if resolved_references_enabled and fence_reference_diagnostics:
@@ -2907,6 +2960,58 @@ def render_markdown(
             reference_objects = tuple(item.to_dict() for item in resolved.objects)
             reference_diagnostics = reference_diagnostics + resolved.diagnostics
 
+    bibliography_html = ""
+    citation_entries: tuple[dict[str, object], ...] = ()
+    cited_keys: tuple[str, ...] = ()
+    if resolved_citations_enabled:
+        from .citations import CitationOptions, resolve_citations
+
+        if bibliography_library is None or not bibliography_library.entries:
+            reference_diagnostics = reference_diagnostics + (
+                Diagnostic(
+                    "MARDAS-E701",
+                    "error",
+                    "Citations are enabled but no bibliography entries were loaded.",
+                    path=source_path,
+                    hint="Configure bibliography.sources with local .bib or CSL .json files.",
+                ),
+            )
+        elif not defer_citation_resolution:
+            citation_metadata_style = citation_metadata.get(
+                "style", metadata.get("citation_style", "author-date")
+            )
+            resolved_citations = resolve_citations(
+                body_html,
+                library=bibliography_library,
+                options=CitationOptions(
+                    enabled=True,
+                    style=str(citation_style or citation_metadata_style or "author-date"),
+                    title=(
+                        bibliography_title
+                        if bibliography_title is not None
+                        else citation_metadata.get(
+                            "bibliography_title", metadata.get("bibliography_title")
+                        )
+                    ),
+                    include_uncited=(
+                        bool(bibliography_include_uncited)
+                        if bibliography_include_uncited is not None
+                        else bool(
+                            citation_metadata.get(
+                                "include_uncited", metadata.get("bibliography_include_uncited", False)
+                            )
+                        )
+                    ),
+                ),
+                lang=lang,
+                path=source_path,
+            )
+            body_html = resolved_citations.body_html
+            bibliography_html = resolved_citations.bibliography_html
+            cited_keys = resolved_citations.cited_keys
+            citation_entries = tuple(item.to_dict() for item in resolved_citations.entries)
+            reference_diagnostics = reference_diagnostics + resolved_citations.diagnostics
+
     formatter = CodeHtmlFormatter(code_style)
     pygments_css = formatter.get_style_defs(".codehilite")
     return MarkdownRenderResult(
@@ -2918,6 +3023,12 @@ def render_markdown(
         toc_entries=toc_entries,
         reference_lists_html=reference_lists_html,
         reference_objects=reference_objects,
+        bibliography_html=bibliography_html,
+        bibliography_sources=(
+            bibliography_library.sources if bibliography_library is not None else ()
+        ),
+        citation_entries=citation_entries,
+        cited_keys=cited_keys,
         diagnostics=reference_diagnostics,
     )
 
@@ -2940,9 +3051,65 @@ def render_markdown_file(
     list_of_equations: bool | None = None,
     list_of_listings: bool | None = None,
     defer_reference_resolution: bool = False,
+    citations_enabled: bool | None = None,
+    bibliography_sources: Sequence[Path] | None = None,
+    bibliography_library: BibliographyLibrary | None = None,
+    citation_style: str | None = None,
+    bibliography_title: str | None = None,
+    bibliography_include_uncited: bool | None = None,
+    defer_citation_resolution: bool = False,
 ) -> MarkdownRenderResult:
     input_path = Path(path)
     text = input_path.read_text(encoding="utf-8-sig")
+    source_diagnostics: tuple[Diagnostic, ...] = ()
+    resolved_sources: list[Path] = []
+    if bibliography_sources is not None:
+        resolved_sources = [Path(item).expanduser().resolve(strict=False) for item in bibliography_sources]
+    else:
+        try:
+            source_metadata, _body = extract_frontmatter(text)
+        except MarkdownInputError:
+            source_metadata = {}
+        raw_sources = source_metadata.get("bibliography")
+        citation_meta = source_metadata.get("citations")
+        if raw_sources is None and isinstance(citation_meta, dict):
+            raw_sources = citation_meta.get("sources")
+        if isinstance(raw_sources, (str, Path)):
+            raw_sources = [raw_sources]
+        if isinstance(raw_sources, list):
+            root = Path(document_root).resolve() if document_root is not None else input_path.resolve().parent
+            for item in raw_sources:
+                candidate = Path(str(item)).expanduser()
+                if candidate.is_absolute():
+                    source_diagnostics += (
+                        Diagnostic(
+                            "MARDAS-E701",
+                            "error",
+                            "Front-matter bibliography paths must be relative to the document root.",
+                            path=input_path,
+                        ),
+                    )
+                    continue
+                candidate = (input_path.resolve().parent / candidate).resolve(strict=False)
+                try:
+                    candidate.relative_to(root)
+                except ValueError:
+                    source_diagnostics += (
+                        Diagnostic(
+                            "MARDAS-E701",
+                            "error",
+                            "Front-matter bibliography path escapes the document root.",
+                            path=candidate,
+                        ),
+                    )
+                    continue
+                resolved_sources.append(candidate)
+    if bibliography_library is None and resolved_sources:
+        from .citations import load_bibliography
+
+        bibliography_library, bibliography_diagnostics = load_bibliography(resolved_sources)
+        source_diagnostics += bibliography_diagnostics
+
     result = render_markdown(
         text,
         toc=toc,
@@ -2959,8 +3126,15 @@ def render_markdown_file(
         list_of_equations=list_of_equations,
         list_of_listings=list_of_listings,
         defer_reference_resolution=defer_reference_resolution,
+        citations_enabled=citations_enabled,
+        citation_style=citation_style,
+        bibliography_title=bibliography_title,
+        bibliography_include_uncited=bibliography_include_uncited,
+        bibliography_library=bibliography_library,
+        defer_citation_resolution=defer_citation_resolution,
         source_path=input_path.resolve(),
     )
+    result.diagnostics = source_diagnostics + result.diagnostics
     result.body_html = embed_local_images(
         result.body_html,
         input_path.resolve().parent,

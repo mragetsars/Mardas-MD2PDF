@@ -126,6 +126,11 @@ class PdfOptions:
     list_of_tables: bool | None = None
     list_of_equations: bool | None = None
     list_of_listings: bool | None = None
+    citations_enabled: bool | None = None
+    bibliography_sources: tuple[Path, ...] = ()
+    citation_style: str | None = None
+    bibliography_title: str | None = None
+    bibliography_include_uncited: bool | None = None
     progress: ProgressCallback | None = None
 
 
@@ -741,6 +746,7 @@ def _resolved_document_direction(result: MarkdownRenderResult, options: PdfOptio
             _plain_html_text(result.toc_html),
             _plain_html_text(result.reference_lists_html),
             _plain_html_text(result.body_html),
+            _plain_html_text(result.bibliography_html),
         ]
         if part
     )
@@ -1650,6 +1656,62 @@ def _layout_css(options: PdfOptions, *, cover_full_bleed: bool = False, document
       body.md2pdf-dir-rtl .md2pdf-reference-list-item > a {{
         grid-template-columns: max-content minmax(0, 1fr);
       }}
+      .md2pdf-citation {{
+        unicode-bidi: isolate;
+        white-space: normal;
+      }}
+      .md2pdf-citation-item {{
+        color: var(--link, #2563eb);
+        font-weight: 650;
+        text-decoration: none;
+        text-underline-offset: 0.13em;
+      }}
+      .md2pdf-citation-item--unresolved {{
+        color: #b91c1c;
+        font-weight: 750;
+      }}
+      .md2pdf-bibliography {{
+        margin-top: 2.4em;
+        break-before: page;
+        page-break-before: always;
+      }}
+      .md2pdf-bibliography-heading {{
+        margin-bottom: 1em;
+      }}
+      .md2pdf-bibliography-items {{
+        margin: 0;
+        padding: 0;
+      }}
+      .md2pdf-bibliography-items--numeric {{
+        list-style: none;
+        counter-reset: none;
+      }}
+      .md2pdf-bibliography-entry {{
+        margin: 0 0 0.85em;
+        padding-inline-start: 1.7em;
+        text-indent: -1.7em;
+        overflow-wrap: anywhere;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }}
+      .md2pdf-bib-number {{
+        display: inline-block;
+        min-width: 1.5em;
+        font-weight: 750;
+        text-indent: 0;
+      }}
+      .md2pdf-bib-title {{
+        font-weight: 600;
+      }}
+      .md2pdf-bib-link {{
+        direction: ltr;
+        unicode-bidi: isolate;
+        overflow-wrap: anywhere;
+      }}
+      .md2pdf-bib-backref {{
+        margin-inline-start: 0.35em;
+        text-decoration: none;
+      }}
       .heading-anchor {{
         opacity: 0.34;
         margin-inline-start: 0.35em;
@@ -2078,7 +2140,7 @@ def build_html(
     )
     content = ""
     if include_content:
-        content = f"{result.toc_html}{result.reference_lists_html}{result.body_html}"
+        content = f"{result.toc_html}{result.reference_lists_html}{result.body_html}{result.bibliography_html}"
     watermark = _watermark_html(options) if include_content and include_watermark else ""
 
     appearance_classes = appearance_body_classes(appearance)
@@ -2716,6 +2778,11 @@ def _validate_conversion_paths(options: PdfOptions) -> None:
                 ("output PDF", output_path, "debug HTML", debug_html),
             ]
         )
+    for source in options.bibliography_sources:
+        bibliography_path = Path(source)
+        pairs.append(("bibliography source", bibliography_path, "output PDF", output_path))
+        if debug_html:
+            pairs.append(("bibliography source", bibliography_path, "debug HTML", debug_html))
     for left_label, left, right_label, right in pairs:
         if _paths_refer_to_same_file(left, right):
             raise OutputPathError(
@@ -2992,7 +3059,14 @@ def convert(options: PdfOptions) -> Path:
         list_of_tables=options.list_of_tables,
         list_of_equations=options.list_of_equations,
         list_of_listings=options.list_of_listings,
+        citations_enabled=options.citations_enabled,
+        bibliography_sources=(options.bibliography_sources or None),
+        citation_style=options.citation_style,
+        bibliography_title=options.bibliography_title,
+        bibliography_include_uncited=options.bibliography_include_uncited,
     )
     if has_errors(result.diagnostics):
         raise MarkdownInputError("\n".join(format_diagnostic(item) for item in result.diagnostics))
+    if not options.bibliography_sources and result.bibliography_sources:
+        options.bibliography_sources = result.bibliography_sources
     return convert_render_result(result, options)

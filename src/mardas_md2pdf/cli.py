@@ -342,6 +342,56 @@ def build_parser() -> argparse.ArgumentParser:
             help=f"Disable a configured list of {title}.",
         )
 
+    bibliography_group = parser.add_argument_group("bibliography and citations")
+    citation_toggle = bibliography_group.add_mutually_exclusive_group()
+    citation_toggle.add_argument(
+        "--citations",
+        dest="citations_enabled",
+        action="store_true",
+        default=None,
+        help="Enable citations and a generated bibliography.",
+    )
+    citation_toggle.add_argument(
+        "--no-citations",
+        dest="citations_enabled",
+        action="store_false",
+        help="Disable citations enabled by project configuration or front matter.",
+    )
+    bibliography_group.add_argument(
+        "--bibliography",
+        dest="bibliography_sources",
+        action="append",
+        type=Path,
+        default=None,
+        metavar="PATH",
+        help="Add a local BibTeX (.bib) or CSL JSON (.json) source; repeat for multiple files.",
+    )
+    bibliography_group.add_argument(
+        "--citation-style",
+        choices=["author-date", "numeric"],
+        default=None,
+        help="Render citations in author-date or numeric style.",
+    )
+    bibliography_group.add_argument(
+        "--bibliography-title",
+        default=None,
+        help="Override the localized bibliography section title.",
+    )
+    uncited_toggle = bibliography_group.add_mutually_exclusive_group()
+    uncited_toggle.add_argument(
+        "--include-uncited",
+        dest="bibliography_include_uncited",
+        action="store_true",
+        default=None,
+        help="Include uncited bibliography entries in the generated bibliography.",
+    )
+    uncited_toggle.add_argument(
+        "--cited-only",
+        dest="bibliography_include_uncited",
+        action="store_false",
+        help="Include only cited entries when project configuration enables uncited entries.",
+    )
+
     parser.add_argument(
         "--timeout-ms", type=int, default=120_000, help="Browser timeout in milliseconds"
     )
@@ -503,6 +553,11 @@ def _conversion_main(argv: list[str]) -> int:
         list_of_tables=args.list_of_tables,
         list_of_equations=args.list_of_equations,
         list_of_listings=args.list_of_listings,
+        citations_enabled=args.citations_enabled,
+        bibliography_sources=tuple(args.bibliography_sources or ()),
+        citation_style=args.citation_style,
+        bibliography_title=args.bibliography_title,
+        bibliography_include_uncited=args.bibliography_include_uncited,
         progress=_progress_callback(args.progress),
     )
     try:

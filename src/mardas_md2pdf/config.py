@@ -18,6 +18,7 @@ CONFIG_FILENAME = "mardas.toml"
 CONFIG_SCHEMA_VERSION = 1
 MAX_CONFIG_BYTES = 1_048_576
 MAX_BOOK_CHAPTERS = 512
+MAX_BIBLIOGRAPHY_SOURCES = 32
 
 
 @dataclass(frozen=True, slots=True)
@@ -99,6 +100,29 @@ def _book_chapters(value: Any) -> tuple[dict[str, str | None], ...]:
         chapters.append({"path": path_value, "title": title})
     return tuple(chapters)
 
+
+
+
+def _bibliography_sources(value: Any) -> tuple[str, ...]:
+    if isinstance(value, str):
+        value = [value]
+    if not isinstance(value, list):
+        raise ConfigValueError("expected a bibliography path or an array of paths")
+    if not value:
+        raise ConfigValueError("expected at least one bibliography source")
+    if len(value) > MAX_BIBLIOGRAPHY_SOURCES:
+        raise ConfigValueError(
+            f"expected no more than {MAX_BIBLIOGRAPHY_SOURCES} bibliography sources"
+        )
+    sources: list[str] = []
+    for index, item in enumerate(value, start=1):
+        path = _string(item)
+        if Path(path).suffix.lower() not in {".bib", ".json"}:
+            raise ConfigValueError(
+                f"bibliography source {index} must use .bib or .json"
+            )
+        sources.append(path)
+    return tuple(sources)
 
 def _boolean(value: Any) -> bool:
     if not isinstance(value, bool):
@@ -191,6 +215,15 @@ CONFIG_FIELDS: tuple[ConfigField, ...] = (
     ConfigField("browser", "chromium_sandbox", "chromium_sandbox", _choice(["auto", "on", "off"])),
     ConfigField("browser", "timeout_ms", "timeout_ms", _integer(1_000, 3_600_000)),
     ConfigField("fonts", "directory", "font_dir", _string, path_value=True),
+    ConfigField("bibliography", "enabled", "citations_enabled", _boolean),
+    ConfigField("bibliography", "sources", "bibliography_sources", _bibliography_sources),
+    ConfigField(
+        "bibliography", "style", "citation_style", _choice(["author-date", "numeric"])
+    ),
+    ConfigField("bibliography", "title", "bibliography_title", _optional_string),
+    ConfigField(
+        "bibliography", "include_uncited", "bibliography_include_uncited", _boolean
+    ),
     ConfigField("references", "enabled", "references_enabled", _boolean),
     ConfigField("references", "numbering_scope", "numbering_scope", _choice(["global", "chapter"])),
     ConfigField("references", "list_of_figures", "list_of_figures", _boolean),
@@ -246,6 +279,13 @@ show_logo = true
 [security]
 unsafe_html = false
 allow_remote_assets = false
+
+[bibliography]
+enabled = false
+# sources = ["references.bib"]
+style = "author-date"
+include_uncited = false
+# title = "References"
 
 [references]
 enabled = false
@@ -434,7 +474,39 @@ def load_project_config(
                 )
             )
             continue
-        if field.dest == "book_chapters":
+        if field.dest == "bibliography_sources":
+            resolved_sources: list[Path] = []
+            project_root = config_path.parent.resolve()
+            for raw_source in value:
+                source_path = Path(str(raw_source)).expanduser()
+                if source_path.is_absolute():
+                    diagnostics.append(
+                        Diagnostic(
+                            "MARDAS-E118",
+                            "error",
+                            "Bibliography paths must be relative to the project configuration.",
+                            path=config_path,
+                            hint="Keep bibliography sources inside the project root.",
+                        )
+                    )
+                    continue
+                resolved_path = (project_root / source_path).resolve(strict=False)
+                try:
+                    resolved_path.relative_to(project_root)
+                except ValueError:
+                    diagnostics.append(
+                        Diagnostic(
+                            "MARDAS-E119",
+                            "error",
+                            "Bibliography path escapes the project root.",
+                            path=resolved_path,
+                            hint="Move the source inside the project or remove parent-directory traversal.",
+                        )
+                    )
+                    continue
+                resolved_sources.append(resolved_path)
+            value = tuple(resolved_sources)
+        elif field.dest == "book_chapters":
             resolved_chapters: list[dict[str, Any]] = []
             project_root = config_path.parent.resolve()
             for chapter in value:

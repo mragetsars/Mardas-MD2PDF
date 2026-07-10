@@ -137,3 +137,28 @@ def test_fast_preview_enforces_safe_link_and_image_url_policy() -> None:
     assert "Fast Preview blocks local and remote images" in source
     assert "src=\"$2\"" not in source
     assert "href=\"$2\"" not in source
+
+
+def test_conversion_paths_protect_bibliography_sources(tmp_path: Path) -> None:
+    input_path = tmp_path / "report.md"
+    input_path.write_text("# Report\n", encoding="utf-8")
+    bibliography = tmp_path / "references.bib"
+    bibliography.write_text("@book{x, title={X}, year={2024}}", encoding="utf-8")
+
+    with pytest.raises(OutputPathError, match="bibliography source"):
+        _validate_conversion_paths(
+            PdfOptions(
+                input_path=input_path,
+                output_path=bibliography,
+                bibliography_sources=(bibliography,),
+            )
+        )
+    with pytest.raises(OutputPathError, match="bibliography source"):
+        _validate_conversion_paths(
+            PdfOptions(
+                input_path=input_path,
+                output_path=tmp_path / "report.pdf",
+                debug_html=bibliography,
+                bibliography_sources=(bibliography,),
+            )
+        )

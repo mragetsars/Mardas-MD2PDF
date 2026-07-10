@@ -9,6 +9,7 @@ from urllib.parse import unquote, urlsplit
 
 from bs4 import BeautifulSoup
 
+from .citations import CitationOptions, load_bibliography, resolve_citations
 from .config import LoadedProjectConfig
 from .diagnostics import Diagnostic, has_errors
 from .markdown import (
@@ -368,6 +369,28 @@ def render_book(
     chapter_results: list[MarkdownRenderResult] = []
     prepared: list[_PreparedChapter] = []
     css_blocks: list[str] = []
+    citations_enabled = bool(config_values.get("citations_enabled", False))
+    bibliography_library = None
+    bibliography_sources = tuple(config_values.get("bibliography_sources") or ())
+    if citations_enabled:
+        if not bibliography_sources:
+            diagnostics.append(
+                Diagnostic(
+                    "MARDAS-E701",
+                    "error",
+                    "Book citations are enabled but bibliography.sources is empty.",
+                    path=manifest.config.path,
+                    hint="Add local .bib or CSL .json files to [bibliography].sources.",
+                )
+            )
+        else:
+            bibliography_library, bibliography_diagnostics = load_bibliography(
+                bibliography_sources
+            )
+            diagnostics.extend(bibliography_diagnostics)
+
+    if has_errors(diagnostics):
+        return None, tuple(diagnostics)
 
     for chapter in manifest.chapters:
         try:
@@ -383,6 +406,14 @@ def render_book(
                 references_enabled=bool(config_values.get("references_enabled", False)),
                 numbering_scope=str(config_values.get("numbering_scope", "global")),
                 defer_reference_resolution=bool(config_values.get("references_enabled", False)),
+                citations_enabled=citations_enabled,
+                bibliography_library=bibliography_library,
+                citation_style=str(config_values.get("citation_style", "author-date")),
+                bibliography_title=config_values.get("bibliography_title"),
+                bibliography_include_uncited=bool(
+                    config_values.get("bibliography_include_uncited", False)
+                ),
+                defer_citation_resolution=citations_enabled,
             )
         except (MarkdownInputError, OSError, UnicodeError, ValueError) as exc:
             diagnostics.append(
@@ -514,6 +545,30 @@ def render_book(
         reference_objects = tuple(item.to_dict() for item in resolved_references.objects)
         diagnostics.extend(resolved_references.diagnostics)
 
+    bibliography_html = ""
+    citation_entries: tuple[dict[str, object], ...] = ()
+    cited_keys: tuple[str, ...] = ()
+    if citations_enabled and bibliography_library is not None:
+        resolved_citations = resolve_citations(
+            combined_body,
+            library=bibliography_library,
+            options=CitationOptions(
+                enabled=True,
+                style=str(config_values.get("citation_style", "author-date")),
+                title=config_values.get("bibliography_title"),
+                include_uncited=bool(
+                    config_values.get("bibliography_include_uncited", False)
+                ),
+            ),
+            lang=lang,
+            path=manifest.config.path,
+        )
+        combined_body = resolved_citations.body_html
+        bibliography_html = resolved_citations.bibliography_html
+        citation_entries = tuple(item.to_dict() for item in resolved_citations.entries)
+        cited_keys = resolved_citations.cited_keys
+        diagnostics.extend(resolved_citations.diagnostics)
+
     result = MarkdownRenderResult(
         body_html=combined_body,
         metadata=first_metadata,
@@ -523,6 +578,12 @@ def render_book(
         toc_entries=all_entries,
         reference_lists_html=reference_lists_html,
         reference_objects=reference_objects,
+        bibliography_html=bibliography_html,
+        bibliography_sources=(
+            bibliography_library.sources if bibliography_library is not None else ()
+        ),
+        citation_entries=citation_entries,
+        cited_keys=cited_keys,
         diagnostics=tuple(diagnostics),
     )
     if has_errors(diagnostics):
@@ -582,6 +643,13 @@ def _book_pdf_options(
         list_of_tables=bool(values.get("list_of_tables", False)),
         list_of_equations=bool(values.get("list_of_equations", False)),
         list_of_listings=bool(values.get("list_of_listings", False)),
+        citations_enabled=bool(values.get("citations_enabled", False)),
+        bibliography_sources=tuple(values.get("bibliography_sources") or ()),
+        citation_style=str(values.get("citation_style", "author-date")),
+        bibliography_title=values.get("bibliography_title"),
+        bibliography_include_uncited=bool(
+            values.get("bibliography_include_uncited", False)
+        ),
         progress=progress,
     )
     return options
@@ -606,7 +674,11 @@ def convert_book(
         debug_html=debug_html,
         progress=progress,
     )
-    protected = [manifest.config.path, *(chapter.path for chapter in manifest.chapters)]
+    protected = [
+        manifest.config.path,
+        *(chapter.path for chapter in manifest.chapters),
+        *(Path(path) for path in manifest.config.values.get("bibliography_sources", ())),
+    ]
     for candidate in (options.output_path, options.debug_html):
         if candidate is None:
             continue
@@ -663,4 +735,6 @@ def book_context(manifest: BookManifest, bundle: BookRenderBundle | None = None)
         context["title"] = bundle.result.title
         context["headings"] = len(bundle.result.toc_entries)
         context["numbered_objects"] = len(bundle.result.reference_objects)
+        context["cited_entries"] = len(bundle.result.cited_keys)
+        context["bibliography_entries"] = len(bundle.result.citation_entries)
     return context

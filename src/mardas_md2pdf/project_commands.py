@@ -158,6 +158,18 @@ def _project_config_diagnostics(config: LoadedProjectConfig) -> list[Diagnostic]
         value = config.values.get(key)
         if value is not None and not Path(value).is_file():
             diagnostics.append(Diagnostic(code, "error", message, path=Path(value)))
+    for source in config.values.get("bibliography_sources", ()):
+        path = Path(source)
+        if not path.is_file():
+            diagnostics.append(
+                Diagnostic(
+                    "MARDAS-E701",
+                    "error",
+                    "Configured bibliography source does not exist or is not a regular file.",
+                    path=path,
+                )
+            )
+
     font_dir = config.values.get("font_dir")
     if font_dir is not None and not Path(font_dir).is_dir():
         diagnostics.append(
@@ -207,6 +219,7 @@ def _validate_document(
     *,
     document_root: Path | None = None,
     defer_reference_resolution: bool = False,
+    defer_citation_resolution: bool = False,
 ) -> tuple[list[Diagnostic], dict[str, Any]]:
     diagnostics: list[Diagnostic] = []
     values = config.values
@@ -225,6 +238,12 @@ def _validate_document(
             list_of_equations=values.get("list_of_equations"),
             list_of_listings=values.get("list_of_listings"),
             defer_reference_resolution=defer_reference_resolution,
+            citations_enabled=values.get("citations_enabled"),
+            bibliography_sources=values.get("bibliography_sources"),
+            citation_style=values.get("citation_style"),
+            bibliography_title=values.get("bibliography_title"),
+            bibliography_include_uncited=values.get("bibliography_include_uncited"),
+            defer_citation_resolution=defer_citation_resolution,
         )
     except (MarkdownInputError, OSError, UnicodeError, ValueError) as exc:
         diagnostics.append(
@@ -292,6 +311,8 @@ def _validate_document(
         "headings": len(result.toc_entries),
         "metadata_keys": sorted(result.metadata),
         "numbered_objects": len(result.reference_objects),
+        "cited_entries": len(result.cited_keys),
+        "bibliography_entries": len(result.citation_entries),
     }
 
 
@@ -459,6 +480,8 @@ def _effective_config(input_path: Path, config: LoadedProjectConfig) -> dict[str
     )
     raw_references = metadata.get("references")
     metadata_references = raw_references if isinstance(raw_references, dict) else {}
+    raw_citations = metadata.get("citations")
+    metadata_citations = raw_citations if isinstance(raw_citations, dict) else {}
 
     defaults: dict[str, Any] = {
         "toc": False,
@@ -488,6 +511,11 @@ def _effective_config(input_path: Path, config: LoadedProjectConfig) -> dict[str
         "list_of_tables": False,
         "list_of_equations": False,
         "list_of_listings": False,
+        "citations_enabled": False,
+        "bibliography_sources": [],
+        "citation_style": "author-date",
+        "bibliography_title": None,
+        "bibliography_include_uncited": False,
     }
     effective: dict[str, dict[str, Any]] = {}
 
@@ -497,6 +525,12 @@ def _effective_config(input_path: Path, config: LoadedProjectConfig) -> dict[str
             "source": source,
         }
 
+    citation_metadata_keys = {
+        "citations_enabled": "enabled",
+        "citation_style": "style",
+        "bibliography_title": "bibliography_title",
+        "bibliography_include_uncited": "include_uncited",
+    }
     for key, default in defaults.items():
         internal_key = {
             "cover": "no_cover",
@@ -507,6 +541,22 @@ def _effective_config(input_path: Path, config: LoadedProjectConfig) -> dict[str
             raw = config.values[internal_key]
             value = not raw if internal_key.startswith("no_") else raw
             add(key, value, str(config.path))
+            continue
+        if key == "bibliography_sources":
+            raw_sources = metadata.get("bibliography") or metadata_citations.get("sources")
+            if raw_sources not in (None, "", []):
+                add(key, raw_sources, "front matter")
+            else:
+                add(key, default, "built-in default")
+            continue
+        if key in citation_metadata_keys:
+            metadata_key = citation_metadata_keys[key]
+            if metadata_key in metadata_citations:
+                add(key, metadata_citations[metadata_key], "front matter")
+            elif key == "citations_enabled" and isinstance(raw_citations, bool):
+                add(key, raw_citations, "front matter")
+            else:
+                add(key, default, "built-in default")
             continue
         metadata_key = "enabled" if key == "references_enabled" else key
         if metadata_key in metadata_references:
@@ -688,6 +738,7 @@ def _book_validation(
             config,
             document_root=manifest.root,
             defer_reference_resolution=bool(config.values.get("references_enabled", False)),
+            defer_citation_resolution=bool(config.values.get("citations_enabled", False)),
         )
         diagnostics.extend(chapter_diagnostics)
     bundle, render_diagnostics = render_book(manifest)

@@ -437,3 +437,57 @@ def test_main_help_lists_book_workflows(capsys) -> None:
     assert "validate-book" in output
     assert "explain-book" in output
     assert "build-book" in output
+
+
+def test_book_resolves_citations_across_chapters_and_generates_one_bibliography(
+    tmp_path: Path,
+) -> None:
+    chapters = tmp_path / "chapters"
+    chapters.mkdir()
+    (chapters / "01-introduction.md").write_text(
+        "# Introduction\n\nPrior work [@doe2024].\n",
+        encoding="utf-8",
+    )
+    (chapters / "02-methods.md").write_text(
+        "# Methods\n\nThe method follows @smith2022.\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "references.bib").write_text(
+        """
+@article{doe2024, author={Doe, Jane}, title={Prior Work}, year={2024}}
+@book{smith2022, author={Smith, Alex}, title={Methods}, year={2022}}
+""".strip(),
+        encoding="utf-8",
+    )
+    config_path = tmp_path / "mardas.toml"
+    config_path.write_text(
+        """schema_version = 1
+[project]
+title = "Cited Book"
+lang = "en"
+
+[bibliography]
+enabled = true
+sources = ["references.bib"]
+style = "author-date"
+
+[book]
+chapters = ["chapters/01-introduction.md", "chapters/02-methods.md"]
+output = "dist/book.pdf"
+""".replace('lang = "en"\n', ''),
+        encoding="utf-8",
+    )
+    config = load_project_config(start=tmp_path, explicit_path=config_path).config
+    manifest, diagnostics = load_book_manifest(config)
+    assert manifest is not None and not diagnostics
+
+    bundle, render_diagnostics = render_book(manifest)
+
+    assert bundle is not None
+    assert not [item for item in render_diagnostics if item.severity == "error"]
+    assert bundle.result.cited_keys == ("doe2024", "smith2022")
+    assert len(bundle.result.citation_entries) == 2
+    assert bundle.result.bibliography_html.count("md2pdf-bibliography-entry") == 2
+    assert "Doe, 2024" in bundle.result.body_html
+    assert "Smith (2022)" in bundle.result.body_html
+    assert bundle.result.body_html.count("md2pdf-bibliography") == 0

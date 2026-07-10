@@ -435,3 +435,79 @@ def test_project_title_prevents_missing_title_warning(tmp_path: Path, capsys) ->
     payload = json.loads(capsys.readouterr().out)
     assert "MARDAS-W201" not in [item["code"] for item in payload["diagnostics"]]
     assert payload["document"]["title"] == "Configured title"
+
+
+def test_bibliography_config_resolves_local_sources_and_cli_can_override(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    document = tmp_path / "report.md"
+    document.write_text("# Report\n\nEvidence [@doe2024].\n", encoding="utf-8")
+    bibliography = tmp_path / "references.bib"
+    bibliography.write_text(
+        "@book{doe2024, author={Doe, Jane}, title={Evidence}, year={2024}}",
+        encoding="utf-8",
+    )
+    alternate = tmp_path / "alternate.json"
+    alternate.write_text(
+        '[{"id":"alt2020","type":"book","title":"Alternate","issued":{"date-parts":[[2020]]}}]',
+        encoding="utf-8",
+    )
+    config_path = tmp_path / "mardas.toml"
+    config_path.write_text(
+        """schema_version = 1
+[bibliography]
+enabled = true
+sources = ["references.bib"]
+style = "numeric"
+include_uncited = true
+""",
+        encoding="utf-8",
+    )
+    loaded = load_project_config(start=document, explicit_path=config_path)
+    assert not loaded.diagnostics
+    assert loaded.config.values["bibliography_sources"] == (bibliography.resolve(),)
+
+    captured: list[PdfOptions] = []
+
+    def fake_convert(options: PdfOptions) -> Path:
+        captured.append(options)
+        return options.output_path
+
+    monkeypatch.setattr("mardas_md2pdf.cli.convert", fake_convert)
+    assert (
+        main(
+            [
+                str(document),
+                "--bibliography",
+                str(alternate),
+                "--citation-style",
+                "author-date",
+                "--cited-only",
+                "--progress",
+                "off",
+            ]
+        )
+        == 0
+    )
+    options = captured[0]
+    assert options.citations_enabled is True
+    assert options.bibliography_sources == (alternate,)
+    assert options.citation_style == "author-date"
+    assert options.bibliography_include_uncited is False
+
+
+def test_bibliography_config_rejects_absolute_and_escaping_sources(tmp_path: Path) -> None:
+    absolute = tmp_path / "absolute.bib"
+    absolute.write_text("", encoding="utf-8")
+    config_path = tmp_path / "mardas.toml"
+    config_path.write_text(
+        f'''schema_version = 1
+[bibliography]
+sources = [{str(absolute)!r}, "../outside.bib"]
+''',
+        encoding="utf-8",
+    )
+
+    result = load_project_config(start=tmp_path, explicit_path=config_path)
+
+    assert {item.code for item in result.diagnostics} == {"MARDAS-E118", "MARDAS-E119"}
