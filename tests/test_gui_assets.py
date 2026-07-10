@@ -509,6 +509,83 @@ def test_studio_http_api_rejects_negative_content_length_before_reading_body():
     assert '"code": "invalid_content_length"' in response_text
 
 
+def test_studio_http_api_rejects_incomplete_request_body():
+    from mardas_md2pdf import gui
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), gui.GuiRequestHandler)
+    server.studio_bind_host = "127.0.0.1"  # type: ignore[attr-defined]
+    server.studio_csrf_token = "secret"  # type: ignore[attr-defined]
+    thread = Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        body = b'{"markdown":"# short"}'
+        request = (
+            "POST /api/render-html HTTP/1.1\r\n"
+            f"Host: 127.0.0.1:{server.server_port}\r\n"
+            f"Origin: http://127.0.0.1:{server.server_port}\r\n"
+            "Content-Type: application/json\r\n"
+            "X-Mardas-Studio-Token: secret\r\n"
+            f"Content-Length: {len(body) + 5}\r\n"
+            "Connection: close\r\n"
+            "\r\n"
+        ).encode("ascii") + body
+        with socket.create_connection(("127.0.0.1", server.server_port), timeout=10) as connection:
+            connection.sendall(request)
+            connection.shutdown(socket.SHUT_WR)
+            response = bytearray()
+            while True:
+                chunk = connection.recv(4096)
+                if not chunk:
+                    break
+                response.extend(chunk)
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=10)
+
+    response_text = response.decode("utf-8")
+    assert " 400 " in response_text.split("\r\n", 1)[0]
+    assert '"code": "incomplete_request_body"' in response_text
+
+
+def test_studio_http_api_times_out_stalled_request_body(monkeypatch):
+    from mardas_md2pdf import gui
+
+    monkeypatch.setattr(gui, "STUDIO_REQUEST_BODY_TIMEOUT_SECONDS", 0.05)
+    server = ThreadingHTTPServer(("127.0.0.1", 0), gui.GuiRequestHandler)
+    server.studio_bind_host = "127.0.0.1"  # type: ignore[attr-defined]
+    server.studio_csrf_token = "secret"  # type: ignore[attr-defined]
+    thread = Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        request = (
+            "POST /api/render-html HTTP/1.1\r\n"
+            f"Host: 127.0.0.1:{server.server_port}\r\n"
+            f"Origin: http://127.0.0.1:{server.server_port}\r\n"
+            "Content-Type: application/json\r\n"
+            "X-Mardas-Studio-Token: secret\r\n"
+            "Content-Length: 10\r\n"
+            "Connection: close\r\n"
+            "\r\n"
+        ).encode("ascii")
+        with socket.create_connection(("127.0.0.1", server.server_port), timeout=10) as connection:
+            connection.sendall(request)
+            response = bytearray()
+            while True:
+                chunk = connection.recv(4096)
+                if not chunk:
+                    break
+                response.extend(chunk)
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=10)
+
+    response_text = response.decode("utf-8")
+    assert " 408 " in response_text.split("\r\n", 1)[0]
+    assert '"code": "request_body_timeout"' in response_text
+
+
 def test_gui_wires_studio_api_token_into_render_fetches():
     html = GUI_HTML.read_text(encoding="utf-8")
     gui_source = (GUI_HTML.parents[1] / "gui.py").read_text(encoding="utf-8")

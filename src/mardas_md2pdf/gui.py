@@ -28,6 +28,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 MAX_GUI_REQUEST_BYTES = 32 * 1024 * 1024
+STUDIO_REQUEST_BODY_TIMEOUT_SECONDS = 15.0
 MAX_GUI_MARKDOWN_BYTES = 4 * 1024 * 1024
 MAX_GUI_ASSETS = 250
 MAX_GUI_ASSET_BYTES = 12 * 1024 * 1024
@@ -189,6 +190,30 @@ def _studio_content_length(headers: Any) -> int:
             code="request_too_large",
         )
     return length
+
+
+def _read_studio_request_body(handler: Any, length: int) -> bytes:
+    """Read exactly the validated Studio request body within a short I/O deadline."""
+    previous_timeout = handler.connection.gettimeout()
+    try:
+        handler.connection.settimeout(STUDIO_REQUEST_BODY_TIMEOUT_SECONDS)
+        try:
+            raw = handler.rfile.read(length)
+        except TimeoutError as exc:
+            raise StudioRequestError(
+                "Timed out while reading the Studio request body.",
+                status=408,
+                code="request_body_timeout",
+            ) from exc
+    finally:
+        handler.connection.settimeout(previous_timeout)
+
+    if len(raw) != length:
+        raise StudioRequestError(
+            "Studio request body ended before Content-Length bytes were received.",
+            code="incomplete_request_body",
+        )
+    return raw
 
 
 def _validate_studio_post_headers(
@@ -954,7 +979,7 @@ class GuiRequestHandler(BaseHTTPRequestHandler):
             )
             length = _studio_content_length(self.headers)
             preview_id = self._register_preview_request() if request_path == "/api/render-html" else None
-            raw = self.rfile.read(length)
+            raw = _read_studio_request_body(self, length)
             payload = _decode_json_payload(raw)
             if request_path == "/api/render-html":
                 if not self._preview_request_is_current(preview_id):
