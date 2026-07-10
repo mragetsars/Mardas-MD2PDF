@@ -194,11 +194,11 @@ def test_unknown_narrative_citation_is_diagnosed() -> None:
 def test_bibtex_unicode_normalization_and_literal_organization(tmp_path: Path) -> None:
     path = tmp_path / "latex.bib"
     path.write_text(
-        r'''@book{latex2024,
+        r"""@book{latex2024,
   author = {Garc{\'i}a, Jos{\'e} and {Research and Development Group}},
   title = {An {\"o}pen and \emph{reproducible} system},
   year = {2024}
-}''',
+}""",
         encoding="utf-8",
     )
     library, diagnostics = load_bibliography([path])
@@ -223,3 +223,98 @@ def test_numeric_include_uncited_assigns_deterministic_numbers(tmp_path: Path) -
     bibliography = BeautifulSoup(result.bibliography_html, "html.parser")
     numbers = [item.get_text("", strip=True) for item in bibliography.select(".md2pdf-bib-number")]
     assert numbers == ["[1]", "[2]"]
+
+
+def test_author_date_disambiguates_same_author_and_year(tmp_path: Path) -> None:
+    path = tmp_path / "same-year.bib"
+    path.write_text(
+        """
+@article{smith-z,
+  author = {Smith, Alex},
+  title = {Zeta Study},
+  year = {2024}
+}
+@article{smith-a,
+  author = {Smith, Alex},
+  title = {Alpha Study},
+  year = {2024}
+}
+""".strip(),
+        encoding="utf-8",
+    )
+    library, diagnostics = load_bibliography([path])
+    assert not diagnostics
+    annotated, _ = annotate_citation_markup("<p>See [@smith-z; @smith-a].</p>")
+    result = resolve_citations(
+        annotated,
+        library=library,
+        options=CitationOptions(enabled=True, style="author-date"),
+        lang="en",
+    )
+    body = BeautifulSoup(result.body_html, "html.parser").get_text(" ", strip=True)
+    assert "Smith, 2024b" in body
+    assert "Smith, 2024a" in body
+    bibliography = BeautifulSoup(result.bibliography_html, "html.parser")
+    entries = bibliography.select(".md2pdf-bibliography-entry")
+    assert [item["data-md2pdf-bibliography-key"] for item in entries] == [
+        "smith-a",
+        "smith-z",
+    ]
+    assert "(2024a)" in entries[0].get_text(" ", strip=True)
+    assert "(2024b)" in entries[1].get_text(" ", strip=True)
+
+
+def test_duplicate_bibliography_source_is_rejected(tmp_path: Path) -> None:
+    path = _write_bib(tmp_path / "references.bib")
+    library, diagnostics = load_bibliography([path, path])
+    assert len(library.entries) == 2
+    assert [item.code for item in diagnostics] == ["MARDAS-E701"]
+    assert "listed more than once" in diagnostics[0].message
+
+
+def test_bibliography_source_and_entry_limits_are_enforced(tmp_path: Path, monkeypatch) -> None:
+    import mardas_md2pdf.citations as citations
+
+    oversized = tmp_path / "oversized.bib"
+    oversized.write_text("@book{x,title={X}}", encoding="utf-8")
+    monkeypatch.setattr(citations, "MAX_BIBLIOGRAPHY_SOURCE_BYTES", 8)
+    library, diagnostics = citations.load_bibliography([oversized])
+    assert not library.entries
+    assert [item.code for item in diagnostics] == ["MARDAS-E702"]
+
+    monkeypatch.setattr(citations, "MAX_BIBLIOGRAPHY_SOURCE_BYTES", 1024)
+    monkeypatch.setattr(citations, "MAX_BIBLIOGRAPHY_ENTRIES", 1)
+    limited = tmp_path / "limited.bib"
+    limited.write_text(
+        "@book{a,title={A}}\n@book{b,title={B}}",
+        encoding="utf-8",
+    )
+    library, diagnostics = citations.load_bibliography([limited])
+    assert set(library.entries) == {"a"}
+    assert [item.code for item in diagnostics] == ["MARDAS-E706"]
+
+
+def test_bibtex_string_macros_and_invalid_csl_json_are_diagnosed(tmp_path: Path) -> None:
+    bib = tmp_path / "macros.bib"
+    bib.write_text(
+        """
+@string{journalName = "Journal of Offline Publishing"}
+@article{macro2024,
+  author = {Doe, Jane},
+  title = {Macro Test},
+  year = {2024},
+  journal = journalName
+}
+""".strip(),
+        encoding="utf-8",
+    )
+    library, diagnostics = load_bibliography([bib])
+    assert not diagnostics
+    assert library.entries["macro2024"].container_title == "Journal of Offline Publishing"
+
+    csl = tmp_path / "broken.json"
+    csl.write_text('[{"id": "broken"}', encoding="utf-8")
+    library, diagnostics = load_bibliography([csl])
+    assert not library.entries
+    assert [item.code for item in diagnostics] == ["MARDAS-E702"]
+    assert diagnostics[0].line == 1

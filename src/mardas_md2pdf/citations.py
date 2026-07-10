@@ -406,9 +406,7 @@ def _decode_latex_text(value: str) -> str:
 
     def replace_accent(match: re.Match[str]) -> str:
         letter = match.group("braced") or match.group("plain") or ""
-        return unicodedata.normalize(
-            "NFC", letter + _LATEX_ACCENTS[match.group("accent")]
-        )
+        return unicodedata.normalize("NFC", letter + _LATEX_ACCENTS[match.group("accent")])
 
     text = accent_pattern.sub(replace_accent, text)
     text = re.sub(r"\\(?:emph|textit|textbf|textrm|texttt)\{([^{}]*)\}", r"\1", text)
@@ -527,11 +525,16 @@ def _entry_from_mapping(item: dict[str, Any], source: Path) -> BibliographyEntry
     else:
         authors = _split_bibtex_authors(_normalize_space(item.get("author")))
 
-    year = _csl_year(item) if isinstance(item.get("issued"), dict) else (
-        _normalize_space(item.get("year")) or "n.d."
+    year = (
+        _csl_year(item)
+        if isinstance(item.get("issued"), dict)
+        else (_normalize_space(item.get("year")) or "n.d.")
     )
     container_title = _normalize_space(
-        item.get("container-title") or item.get("container_title") or item.get("journal") or item.get("booktitle")
+        item.get("container-title")
+        or item.get("container_title")
+        or item.get("journal")
+        or item.get("booktitle")
     )
     return BibliographyEntry(
         key=key,
@@ -540,7 +543,9 @@ def _entry_from_mapping(item: dict[str, Any], source: Path) -> BibliographyEntry
         authors=authors,
         year=year,
         container_title=container_title,
-        publisher=_normalize_space(item.get("publisher") or item.get("institution") or item.get("school")),
+        publisher=_normalize_space(
+            item.get("publisher") or item.get("institution") or item.get("school")
+        ),
         volume=_normalize_space(item.get("volume")),
         issue=_normalize_space(item.get("issue") or item.get("number")),
         pages=_normalize_space(item.get("page") or item.get("pages")).replace("--", "–"),
@@ -613,8 +618,21 @@ def load_bibliography(
 
     entries: dict[str, BibliographyEntry] = {}
     resolved_sources: list[Path] = []
+    seen_sources: set[Path] = set()
     for source in sources:
         path = Path(source).expanduser().resolve(strict=False)
+        if path in seen_sources:
+            diagnostics.append(
+                Diagnostic(
+                    "MARDAS-E701",
+                    "error",
+                    "Bibliography source is listed more than once.",
+                    path=path,
+                    hint="Keep each bibliography source only once.",
+                )
+            )
+            continue
+        seen_sources.add(path)
         resolved_sources.append(path)
         if not path.is_file():
             diagnostics.append(
@@ -659,8 +677,7 @@ def load_bibliography(
                     )
                 )
                 continue
-            entries[entry.key] = entry
-            if len(entries) > MAX_BIBLIOGRAPHY_ENTRIES:
+            if len(entries) >= MAX_BIBLIOGRAPHY_ENTRIES:
                 diagnostics.append(
                     Diagnostic(
                         "MARDAS-E706",
@@ -670,6 +687,7 @@ def load_bibliography(
                     )
                 )
                 return BibliographyLibrary(entries, tuple(resolved_sources)), tuple(diagnostics)
+            entries[entry.key] = entry
     return BibliographyLibrary(entries, tuple(resolved_sources)), tuple(diagnostics)
 
 
@@ -858,13 +876,19 @@ def _safe_external_url(value: str) -> str:
     return value if parsed.scheme.lower() in {"http", "https"} and parsed.netloc else ""
 
 
-def _format_bibliography_entry(entry: BibliographyEntry, *, family: str) -> str:
+def _format_bibliography_entry(
+    entry: BibliographyEntry,
+    *,
+    family: str,
+    display_year: str | None = None,
+) -> str:
     author = _author_full(entry, family)
     chunks: list[str] = []
     if author:
         chunks.append(f'<span class="md2pdf-bib-authors">{html.escape(author)}</span>')
     chunks.append(
-        f'<span class="md2pdf-bib-year">({html.escape(_localized_digits(entry.year, family))})</span>'
+        f'<span class="md2pdf-bib-year">('
+        f"{html.escape(_localized_digits(display_year or entry.year, family))})</span>"
     )
     chunks.append(f'<span class="md2pdf-bib-title">{html.escape(entry.title)}</span>')
     if entry.container_title:
@@ -886,7 +910,9 @@ def _format_bibliography_entry(entry: BibliographyEntry, *, family: str) -> str:
         chunks.append(f'<span class="md2pdf-bib-publisher">{html.escape(entry.publisher)}</span>')
     if entry.edition:
         chunks.append(f'<span class="md2pdf-bib-edition">{html.escape(entry.edition)}</span>')
-    doi_url = _safe_external_url(f"https://doi.org/{quote(entry.doi, safe='/:')}" if entry.doi else "")
+    doi_url = _safe_external_url(
+        f"https://doi.org/{quote(entry.doi, safe='/:')}" if entry.doi else ""
+    )
     external_url = doi_url or _safe_external_url(entry.url)
     if external_url:
         label = f"doi:{entry.doi}" if entry.doi else entry.url
@@ -905,6 +931,7 @@ def _citation_item_text(
     locator: str,
     family: str,
     narrative: bool,
+    display_year: str | None = None,
 ) -> str:
     author = _author_short(entry, family)
     if style == "numeric":
@@ -914,15 +941,55 @@ def _citation_item_text(
         else:
             result = _localized_digits(number, family)
     elif narrative:
-        result = f"{author} ({_localized_digits(entry.year, family)})"
+        result = f"{author} ({_localized_digits(display_year or entry.year, family)})"
     else:
-        localized_year = _localized_digits(entry.year, family)
+        localized_year = _localized_digits(display_year or entry.year, family)
         comma = "، " if family == "fa" else ", "
         result = f"{author}{comma}{localized_year}" if author else localized_year
     if locator:
         comma = "، " if family == "fa" else ", "
         result += f"{comma}{locator}"
     return result
+
+
+def _alpha_suffix(index: int) -> str:
+    value = index
+    chunks: list[str] = []
+    while value > 0:
+        value, remainder = divmod(value - 1, 26)
+        chunks.append(chr(ord("a") + remainder))
+    return "".join(reversed(chunks))
+
+
+def _author_year_labels(
+    entries: Sequence[BibliographyEntry],
+    *,
+    family: str,
+) -> dict[str, str]:
+    groups: dict[tuple[str, str], list[BibliographyEntry]] = {}
+    for entry in entries:
+        identity = _author_short(entry, family).casefold()
+        groups.setdefault((identity, entry.year.casefold()), []).append(entry)
+    labels = {entry.key: entry.year for entry in entries}
+    for group in groups.values():
+        if len(group) < 2:
+            continue
+        for index, entry in enumerate(sorted(group, key=_entry_sort_key), start=1):
+            labels[entry.key] = f"{entry.year}{_alpha_suffix(index)}"
+    return labels
+
+
+def _marker_items(marker: Tag) -> list[tuple[str, str]]:
+    try:
+        raw_items = json.loads(str(marker.get("data-md2pdf-citation-items") or "[]"))
+    except json.JSONDecodeError:
+        return []
+    items: list[tuple[str, str]] = []
+    if isinstance(raw_items, list):
+        for raw in raw_items:
+            if isinstance(raw, list) and len(raw) == 2:
+                items.append((_normalize_space(raw[0]), _normalize_space(raw[1])))
+    return items
 
 
 def resolve_citations(
@@ -943,19 +1010,25 @@ def resolve_citations(
     first_citation_ids: dict[str, str] = {}
     occurrences: dict[str, int] = {}
     family = language_family(lang, soup.get_text(" ", strip=True))
+    markers = list(soup.select("span.md2pdf-citation[data-md2pdf-citation-items]"))
+    candidate_keys: list[str] = []
+    for marker in markers:
+        for key, _locator in _marker_items(marker):
+            if key in library.entries and key not in candidate_keys:
+                candidate_keys.append(key)
+    if options.include_uncited:
+        for key in library.entries:
+            if key not in candidate_keys:
+                candidate_keys.append(key)
+    display_years = _author_year_labels(
+        [library.entries[key] for key in candidate_keys],
+        family=family,
+    )
 
-    for marker in list(soup.select("span.md2pdf-citation[data-md2pdf-citation-items]")):
+    for marker in markers:
         original = str(marker.get("data-md2pdf-citation-original") or marker.get_text())
         mode = str(marker.get("data-md2pdf-citation-mode") or "parenthetical")
-        try:
-            raw_items = json.loads(str(marker.get("data-md2pdf-citation-items") or "[]"))
-        except json.JSONDecodeError:
-            raw_items = []
-        items: list[tuple[str, str]] = []
-        if isinstance(raw_items, list):
-            for raw in raw_items:
-                if isinstance(raw, list) and len(raw) == 2:
-                    items.append((_normalize_space(raw[0]), _normalize_space(raw[1])))
+        items = _marker_items(marker)
         if not items:
             diagnostics.append(
                 Diagnostic(
@@ -1007,11 +1080,16 @@ def resolve_citations(
                 locator=locator,
                 family=family,
                 narrative=mode == "narrative",
+                display_year=display_years.get(key),
             )
             rendered.append(anchor)
 
         marker.clear()
-        marker["class"] = ["md2pdf-citation", f"md2pdf-citation--{mode}", "md2pdf-citation--resolved"]
+        marker["class"] = [
+            "md2pdf-citation",
+            f"md2pdf-citation--{mode}",
+            "md2pdf-citation--resolved",
+        ]
         marker.attrs.pop("data-md2pdf-citation-items", None)
         marker.attrs.pop("data-md2pdf-citation-original", None)
         if mode == "parenthetical":
@@ -1043,7 +1121,9 @@ def resolve_citations(
     if style == "author-date":
         selected_entries.sort(key=_entry_sort_key)
 
-    title = options.title or ui_label("bibliography_title", lang=lang, text_hint=soup.get_text(" ", strip=True))
+    title = options.title or ui_label(
+        "bibliography_title", lang=lang, text_hint=soup.get_text(" ", strip=True)
+    )
     bibliography_html = ""
     if selected_entries:
         list_tag = "ol" if style == "numeric" else "div"
@@ -1068,14 +1148,14 @@ def resolve_citations(
                 f'<{item_tag} class="md2pdf-bibliography-entry" dir="auto" '
                 f'id="{html.escape(_safe_fragment("bib", entry.key))}" '
                 f'data-md2pdf-bibliography-key="{html.escape(entry.key, quote=True)}">'
-                f"{prefix}{_format_bibliography_entry(entry, family=family)}{backlink}"
+                f"{prefix}{_format_bibliography_entry(entry, family=family, display_year=display_years.get(entry.key))}{backlink}"
                 f"</{item_tag}>"
             )
         bibliography_html = (
             '<section class="md2pdf-bibliography" id="bibliography">'
             f'<h2 class="md2pdf-bibliography-heading">{html.escape(title)}</h2>'
             f'<{list_tag} class="md2pdf-bibliography-items md2pdf-bibliography-items--{style}">'
-            f'{"".join(items_html)}</{list_tag}></section>'
+            f"{''.join(items_html)}</{list_tag}></section>"
         )
 
     return CitationProcessResult(
