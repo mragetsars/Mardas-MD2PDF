@@ -83,11 +83,13 @@ def test_studio_visual_audit_uses_live_server_preview_context() -> None:
     source = (SCRIPTS / "audit_studio_visual.py").read_text(encoding="utf-8")
 
     assert '<base href="{base_href}">' in source
-    assert 'page.route("**/api/render-html"' in source
+    assert 'page.route("**/api/**", proxy_studio_api)' in source
     assert "_proxy_local_studio_api" in source
+    assert '"--project"' in source
+    assert '"project_section_visible"' in source
     assert "_studio_process_env" in source
     assert "X-Mardas-Studio-Token" in source
-    assert 'request.headers.get("x-mardas-studio-token", "")' in source
+    assert '("x-mardas-studio-token", "X-Mardas-Studio-Token")' in source
     assert "preview_status" in source
     assert "preview_failed" in source
     assert "preview_mode" in source

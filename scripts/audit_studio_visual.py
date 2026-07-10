@@ -11,7 +11,9 @@ import shutil
 import subprocess
 import sys
 import time
+import urllib.error
 import urllib.request
+from urllib.parse import urlsplit
 from pathlib import Path
 from typing import Any
 
@@ -78,27 +80,60 @@ def _fetch_studio_html(url: str, timeout: float) -> str:
 
 def _proxy_local_studio_api(
     url: str,
-    path: str,
+    request_url: str,
     *,
+    method: str,
     body: bytes | None,
-    content_type: str,
-    studio_token: str,
+    request_headers: dict[str, str],
     timeout: float,
-) -> tuple[int, bytes, str]:
+) -> tuple[int, bytes, str, dict[str, str]]:
+    parsed = urlsplit(request_url)
+    path = parsed.path or "/"
+    if parsed.query:
+        path += "?" + parsed.query
+    headers: dict[str, str] = {}
+    for source, target in (
+        ("content-type", "Content-Type"),
+        ("x-mardas-studio-token", "X-Mardas-Studio-Token"),
+        ("x-mardas-studio-client-id", "X-Mardas-Studio-Client-Id"),
+        ("x-mardas-studio-preview-id", "X-Mardas-Studio-Preview-Id"),
+    ):
+        value = request_headers.get(source)
+        if value:
+            headers[target] = value
     request = urllib.request.Request(
         url.rstrip("/") + path,
-        data=body,
-        headers={"Content-Type": content_type, "X-Mardas-Studio-Token": studio_token},
-        method="POST",
+        data=body if method.upper() not in {"GET", "HEAD"} else None,
+        headers=headers,
+        method=method.upper(),
     )
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:  # noqa: S310 - local Studio URL only.
-            return response.status, response.read(), response.headers.get_content_type()
+            return (
+                response.status,
+                response.read(),
+                response.headers.get_content_type(),
+                dict(response.headers.items()),
+            )
+    except urllib.error.HTTPError as exc:
+        return (
+            exc.code,
+            exc.read(),
+            exc.headers.get_content_type(),
+            dict(exc.headers.items()),
+        )
     except Exception as exc:
-        return 502, str(exc).encode("utf-8", errors="replace"), "text/plain"
+        return 502, str(exc).encode("utf-8", errors="replace"), "text/plain", {}
 
 
-def _capture_studio(html_text: str, url: str, screenshot_path: Path, timeout_ms: int) -> dict[str, Any]:
+def _capture_studio(
+    html_text: str,
+    url: str,
+    screenshot_path: Path,
+    timeout_ms: int,
+    *,
+    project_mode: bool,
+) -> dict[str, Any]:
     try:
         from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
         from playwright.sync_api import sync_playwright
@@ -108,7 +143,7 @@ def _capture_studio(html_text: str, url: str, screenshot_path: Path, timeout_ms:
     preview_ready_script = """
         () => {
           const status = document.querySelector('#previewStatus')?.textContent || '';
-          return /^(?:ready|updated|failed|fast ready|fast preview updated)$/i.test(status);
+          return /^(?:ready|updated|failed|fast ready|fast preview updated|book ready|text file)$/i.test(status);
         }
     """
     with sync_playwright() as playwright:
@@ -116,18 +151,28 @@ def _capture_studio(html_text: str, url: str, screenshot_path: Path, timeout_ms:
         try:
             page = browser.new_page(viewport={"width": 1440, "height": 1000}, device_scale_factor=1)
 
-            def proxy_render_html(route: Any, request: Any) -> None:
-                status, body, content_type = _proxy_local_studio_api(
+            def proxy_studio_api(route: Any, request: Any) -> None:
+                status, body, content_type, response_headers = _proxy_local_studio_api(
                     url,
-                    "/api/render-html",
+                    request.url,
+                    method=request.method,
                     body=request.post_data_buffer,
-                    content_type=request.headers.get("content-type", "application/json"),
-                    studio_token=request.headers.get("x-mardas-studio-token", ""),
+                    request_headers=dict(request.headers),
                     timeout=max(timeout_ms / 1000, 1),
                 )
-                route.fulfill(status=status, body=body, content_type=content_type)
+                safe_headers = {
+                    key: value
+                    for key, value in response_headers.items()
+                    if key.lower() in {"content-disposition", "x-content-type-options"}
+                }
+                route.fulfill(
+                    status=status,
+                    body=body,
+                    content_type=content_type,
+                    headers=safe_headers,
+                )
 
-            page.route("**/api/render-html", proxy_render_html)
+            page.route("**/api/**", proxy_studio_api)
             page.set_content(html_text, wait_until="domcontentloaded", timeout=timeout_ms)
             try:
                 page.wait_for_function(preview_ready_script, timeout=timeout_ms)
@@ -152,6 +197,11 @@ def _capture_studio(html_text: str, url: str, screenshot_path: Path, timeout_ms:
             except PlaywrightTimeoutError:
                 pass
             preview_css_loaded = page.evaluate(preview_css_ready_script)
+            preview_status = page.locator("#previewStatus").inner_text(timeout=timeout_ms)
+            preview_status_box = page.locator("#previewStatus").evaluate(
+                "node => ({ text: node.textContent || '', clientWidth: node.clientWidth, scrollWidth: node.scrollWidth })",
+                timeout=timeout_ms,
+            )
             page_guides_removed = page.evaluate(
                 """
                 () => {
@@ -224,6 +274,20 @@ def _capture_studio(html_text: str, url: str, screenshot_path: Path, timeout_ms:
                 })
                 """
             )
+            project_checks = page.evaluate(
+                """
+                () => ({
+                  sectionVisible: Boolean(document.querySelector('#projectWorkspaceSection') && !document.querySelector('#projectWorkspaceSection').hidden),
+                  problemsVisible: Boolean(document.querySelector('#problemsSection') && !document.querySelector('#problemsSection').hidden),
+                  fileCount: document.querySelectorAll('#projectFileTree [data-project-path]').length,
+                  activePath: document.querySelector('#activeProjectPath')?.textContent || '',
+                  saveButtonPresent: Boolean(document.querySelector('#saveProjectFileBtn')),
+                  validateButtonPresent: Boolean(document.querySelector('#validateProjectBtn')),
+                  previewBookButtonPresent: Boolean(document.querySelector('#previewBookBtn')),
+                  exportBookButtonPresent: Boolean(document.querySelector('#exportBookBtn')),
+                })
+                """
+            )
             checks = {
                 "title": page.title(),
                 "export_button_visible": page.locator("#exportPdfBtn").is_visible(),
@@ -236,7 +300,7 @@ def _capture_studio(html_text: str, url: str, screenshot_path: Path, timeout_ms:
                 "preview_mode": preview_mode,
                 "preview_failed": "failed" in preview_status.lower(),
                 "preview_frame_visible": preview_frame_visible,
-                "pdf_like_preview_loaded": preview_status.strip().lower() in {"ready", "updated"},
+                "pdf_like_preview_loaded": preview_status.strip().lower() in {"ready", "updated", "book ready"},
                 "pdf_like_preview_css_loaded": preview_css_loaded,
                 "pdf_like_page_guides_removed": page_guides_removed,
                 "long_editor_line_numbers_ok": bool(line_number_check.get("ok")),
@@ -249,6 +313,15 @@ def _capture_studio(html_text: str, url: str, screenshot_path: Path, timeout_ms:
                 "toast_region_present": bool(ui_polish_check.get("toastRegion")),
                 "command_palette_navigation": bool(ui_polish_check.get("commandPaletteNavigation")),
                 "preview_status_unclipped_live": bool(ui_polish_check.get("previewStatusUnclipped")),
+                "project_mode_requested": project_mode,
+                "project_section_visible": bool(project_checks.get("sectionVisible")),
+                "project_problems_visible": bool(project_checks.get("problemsVisible")),
+                "project_file_count": int(project_checks.get("fileCount") or 0),
+                "project_active_path": str(project_checks.get("activePath") or ""),
+                "project_save_button_present": bool(project_checks.get("saveButtonPresent")),
+                "project_validate_button_present": bool(project_checks.get("validateButtonPresent")),
+                "project_preview_book_button_present": bool(project_checks.get("previewBookButtonPresent")),
+                "project_export_book_button_present": bool(project_checks.get("exportBookButtonPresent")),
             }
         finally:
             browser.close()
@@ -263,6 +336,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--timeout", type=float, default=30, help="Seconds to wait for the Studio server")
     parser.add_argument("--browser-timeout-ms", type=int, default=60_000)
     parser.add_argument("--clean", action="store_true", help="Delete output directory before capturing")
+    parser.add_argument(
+        "--project",
+        type=Path,
+        help="Launch Studio against a mardas.toml project workspace.",
+    )
     args = parser.parse_args(argv)
 
     if args.clean:
@@ -272,17 +350,20 @@ def main(argv: list[str] | None = None) -> int:
 
     env = _studio_process_env()
     env["PYTHONUNBUFFERED"] = "1"
+    command = [
+        sys.executable,
+        "-m",
+        "mardas_md2pdf.gui",
+        "--host",
+        args.host,
+        "--port",
+        str(args.port),
+        "--no-open",
+    ]
+    if args.project is not None:
+        command.extend(["--project", str(args.project)])
     process = subprocess.Popen(
-        [
-            sys.executable,
-            "-m",
-            "mardas_md2pdf.gui",
-            "--host",
-            args.host,
-            "--port",
-            str(args.port),
-            "--no-open",
-        ],
+        command,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
@@ -290,9 +371,15 @@ def main(argv: list[str] | None = None) -> int:
     )
     try:
         url = _read_server_url(process, timeout=args.timeout)
-        screenshot_path = args.output_dir / "studio-default.png"
+        screenshot_path = args.output_dir / ("studio-project.png" if args.project else "studio-default.png")
         html_text = _fetch_studio_html(url, timeout=args.timeout)
-        checks = _capture_studio(html_text, url, screenshot_path, timeout_ms=args.browser_timeout_ms)
+        checks = _capture_studio(
+            html_text,
+            url,
+            screenshot_path,
+            timeout_ms=args.browser_timeout_ms,
+            project_mode=args.project is not None,
+        )
         payload = {
             "url": url,
             "screenshot": screenshot_path.name,
@@ -332,6 +419,22 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit("Studio command palette keyboard navigation helpers are missing")
     if not checks.get("preview_status_unclipped") or not checks.get("preview_status_unclipped_live"):
         raise SystemExit("Studio preview status is visually clipped")
+    if args.project is not None:
+        required_project_checks = [
+            "project_section_visible",
+            "project_problems_visible",
+            "project_save_button_present",
+            "project_validate_button_present",
+            "project_preview_book_button_present",
+            "project_export_book_button_present",
+        ]
+        for key in required_project_checks:
+            if not checks.get(key):
+                raise SystemExit(f"Studio project visual check failed: {key}")
+        if int(checks.get("project_file_count") or 0) < 1:
+            raise SystemExit("Studio project file tree is empty")
+        if not str(checks.get("project_active_path") or "").strip():
+            raise SystemExit("Studio project did not open an active file")
     print(f"Studio screenshot written to {screenshot_path}")
     return 0
 
