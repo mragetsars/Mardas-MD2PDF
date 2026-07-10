@@ -91,6 +91,12 @@ media types before rendering begins. Preview freshness is isolated per browser
 tab, and PDF exports are concurrency-bounded so repeated clients cannot launch an
 unlimited number of Chromium jobs.
 
+Studio exports use a bounded worker pool and queue. Workers may keep Chromium alive for a configured idle period, but every export runs in a new browser context so cookies, DOM state, object URLs, and page storage do not cross document boundaries. A renderer failure or disconnected browser causes that worker to discard the browser before accepting the next job.
+
+Completed export artifacts are regular files inside a per-job private temporary directory, have a bounded maximum size and retention period, and are streamed to the browser instead of being copied into one large server-memory buffer. Paths returned by a worker are validated before download. Queue-full, cancelled, expired, and failed jobs use stable client-facing codes without exposing temporary paths or exception details.
+
+Cancellation is cooperative. It is checked before parsing, before browser startup, between cover/content rendering, and before PDF post-processing. Chromium's active `page.pdf()` operation is not force-killed mid-call because the process may be shared by the worker; cancellation completes at the next safe checkpoint.
+
 ### Studio Project Workspace
 
 `mrs-md2pdf-gui --project PATH` explicitly grants the local Studio process access to the `mardas.toml` project rooted at `PATH`. The Project Explorer exposes only supported UTF-8 text files below that resolved project root. Hidden/generated directories, unsupported extensions, absolute paths, parent escapes, symbolic links, non-regular files, and files larger than 4 MiB are not editable through the API.

@@ -165,6 +165,22 @@ mrs-md2pdf-gui --project path/to/project
 
 Project Workspace mode adds a project file tree, Book Mode chapter badges, a Problems panel backed by the same structured diagnostics as the CLI, safe file opening/saving, renderer-backed preview for the active Markdown file, and full-book preview/export. Problem entries navigate to the responsible project file and line. Saves use content hashes and atomic replacement, so Studio rejects stale edits when a file changes externally.
 
+Studio exports run through a bounded queue. The footer reports the real renderer stage, queue wait, and completion percentage; an active or queued export can be cancelled without terminating unrelated jobs. Chromium is reused by a dedicated worker only across trusted local exports, while every document receives a fresh browser context. Tune the local queue when needed:
+
+```bash
+mrs-md2pdf-gui --render-workers 2 --export-queue-size 6 --render-idle-timeout 60
+```
+
+Measure the same deterministic performance profiles before and after renderer changes:
+
+```bash
+python scripts/benchmark_large_documents.py \
+  --profiles small,pages50,pages250,editor-loop \
+  --mode both \
+  --repeats 3 \
+  --output-dir build/performance
+```
+
 The Studio interface groups export settings into Document, Appearance, Branding, Layout, and Advanced sections. Appearance and branding choices use visual cards, while advanced controls such as watermarks and local assets stay collapsed until needed. The **Open Bundle** and **Save Bundle** controls handle portable `.mardas.json` snapshots containing Markdown, export options, and attached assets; they are separate from the live on-disk Project Workspace opened with `--project`. Studio also supports drag-and-drop asset management, auto-scaling PDF-like renderer-backed preview, Fast approximate browser-local preview, debug HTML export, and a command palette via **Ctrl/Cmd+K**. In Project Workspace mode, **Ctrl/Cmd+S** saves the active project file; **Ctrl/Cmd+Shift+S** saves a portable bundle, and **Ctrl/Cmd+Enter** exports the normal single-document PDF. The complete Studio walkthrough lives in the guides.
 
 ## Repository Structure
@@ -185,6 +201,8 @@ Mardas-MD2PDF/
 │   ├── diagnostics.py      # Stable text/JSON diagnostic records
 │   ├── project_commands.py # Project diagnostics plus init/build/validate/explain Book Mode workflows
 │   ├── workspace.py        # Safe Studio project tree, file I/O, diagnostics, preview, and Book export
+│   ├── render_pool.py      # Bounded export workers with thread-affine reusable Chromium sessions
+│   ├── studio_jobs.py      # Disk-backed Studio export jobs, progress, cancellation, and retention
 │   ├── gui.py              # Local browser-based GUI backend
 │   └── assets/             # Style CSS, GUI shell, logo, and vendored MathJax files
 ├── docs/                   # Guides, changelog, release, maintenance, security, and documentation policy
@@ -226,6 +244,7 @@ Chromium sandboxing is configurable with `--chromium-sandbox auto|on|off`; the d
 pip install -e .[dev]
 ./scripts/check.sh
 python -m pytest -q tests/test_cross_references.py tests/test_book_mode.py
+python scripts/benchmark_large_documents.py --profiles small,editor-loop --mode both --repeats 2
 ```
 
 Clean local build and patch artifacts when the working tree starts to feel noisy:

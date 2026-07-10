@@ -4,6 +4,31 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.19.0 - 2026-07-10
+
+### Added
+- Added a thread-affine `RenderSession` that reuses one Chromium process across repeated exports while creating a fresh browser context for every document.
+- Added a bounded Studio export queue with real stage progress, queue-wait/render timings, cooperative cancellation, retained disk-backed results, and explicit `429 export_queue_full` handling.
+- Added `scripts/benchmark_large_documents.py` with deterministic small, 50-page, 250-page, 500-page, and editor-loop profiles for cold and persistent-session measurements.
+- Added configurable Studio renderer controls: `--render-workers`, `--export-queue-size`, and `--render-idle-timeout`.
+
+### Changed
+- Studio PDF downloads are streamed from bounded temporary result files instead of loading complete large PDFs into server memory.
+- Cached immutable packaged CSS, vendored MathJax, and bounded small local-image data URIs, and skipped full debug-HTML assembly when `--debug-html` is not requested.
+- Preserved the legacy synchronous Studio render routes while routing them through the same bounded render pool used by the asynchronous job API.
+- Extended the release gate and Chromium Studio audit to verify persistent-browser reuse, queued-export controls, packaged performance modules, and clean-wheel rendering.
+
+### Security
+- Kept each reused Chromium export isolated in a fresh browser context and restarted the browser after renderer failures or disconnection.
+- Restricted completed export artifacts to regular files inside their assigned job directory, bounded result size and retention, and kept queue/job errors free of host paths and internal exceptions.
+- Kept cancellation cooperative at documented renderer checkpoints rather than terminating shared worker processes unsafely.
+
+### Performance
+- Reduced measured mean wall time in the documented Linux benchmark environment by approximately 40% for the small profile, 21% for the 50-page profile, 37% for the editor-loop profile, 9% for the 250-page profile, and 11% for the 500-page profile when using a persistent render session; warm repeats improved by approximately 18-56% depending on profile.
+
+### Tests
+- Added render-session isolation/reuse, bounded-queue, cancellation, progress/timing, artifact-boundary, streamed-download, benchmark-contract, installed-wheel, Chromium-reuse, and Studio UI regression coverage.
+
 ## 1.18.0 - 2026-07-10
 
 ### Added

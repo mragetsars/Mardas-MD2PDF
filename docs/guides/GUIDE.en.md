@@ -1124,6 +1124,35 @@ The next sentence is a live renderer check. It must produce two disambiguated gr
 
 Validation rejects missing sources, invalid BibTeX/CSL JSON, duplicate keys, undefined citation keys, malformed citation groups, repeated source files, oversized sources, and excessive entry counts with stable `MARDAS-E70x` diagnostics before Chromium starts. Citation-like text inside code, existing links, scripts, styles, and other literal contexts remains unchanged.
 
+# Performance and Large Documents
+
+Repeated Studio exports use a bounded queue and a persistent renderer session. Each worker may reuse one Chromium process, but every export receives a fresh browser context so page state, cookies, object URLs, and storage are isolated. The Studio footer displays the real render stage and percentage instead of an estimated timer. Use **Cancel** to cancel a queued job immediately or request cooperative cancellation of a running job.
+
+Tune the local queue from the GUI command line:
+
+```bash
+mrs-md2pdf-gui \
+  --render-workers 2 \
+  --export-queue-size 6 \
+  --render-idle-timeout 60
+```
+
+`--render-workers` controls simultaneous Chromium workers, `--export-queue-size` bounds waiting jobs, and `--render-idle-timeout` closes an unused persistent browser. More workers can increase throughput but also increase peak memory; keep the default unless measurements justify a change.
+
+For reproducible before/after measurements, run:
+
+```bash
+python scripts/benchmark_large_documents.py \
+  --profiles small,pages50,pages250,pages500,editor-loop \
+  --mode both \
+  --repeats 3 \
+  --output-dir build/performance
+```
+
+The `cold` mode launches Chromium for each conversion. The `session` mode keeps Chromium alive and creates a new browser context per repeat. Compare the JSON report's wall-clock distribution, page count, PDF size, browser-launch count, and peak RSS in the same environment. A single fast run is not sufficient evidence of a performance improvement.
+
+Completed Studio PDFs remain in private bounded temporary storage only until download or expiry and are streamed to the browser. Cancellation is cooperative: a currently executing Chromium `page.pdf()` call completes before the next safe cancellation checkpoint.
+
 # GUI Workflow
 
 Launch the GUI for a standalone document:

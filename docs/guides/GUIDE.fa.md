@@ -1045,6 +1045,35 @@ citations:
 
 Validation، منبع مفقود، BibTeX یا CSL JSON نامعتبر، کلید تکراری، citation حل‌نشده، گروه citation خراب، source تکراری، فایل بیش‌ازحد بزرگ و تعداد مدخل بیش‌ازحد را با diagnosticهای پایدار `MARDAS-E70x` پیش از اجرای Chromium رد می‌کند. متن شبیه citation داخل code، لینک موجود، script، style و contextهای literal بدون تغییر باقی می‌ماند.
 
+# کارایی و اسناد بزرگ
+
+خروجی‌های تکراری Studio از یک صف محدود و نشست پایدار renderer استفاده می‌کنند. هر worker می‌تواند یک فرایند Chromium را دوباره به‌کار گیرد، اما برای هر خروجی یک browser context تازه ساخته می‌شود تا وضعیت صفحه، cookie، object URL و storage میان سندها منتقل نشود. نوار پایین Studio مرحله واقعی رندر و درصد پیشرفت را نمایش می‌دهد. دکمه **Cancel** کار در صف را فوراً لغو می‌کند و برای کار در حال اجرا درخواست لغو تعاملی می‌فرستد.
+
+برای تنظیم صف محلی، Studio را به شکل زیر اجرا کنید:
+
+```bash
+mrs-md2pdf-gui \
+  --render-workers 2 \
+  --export-queue-size 6 \
+  --render-idle-timeout 60
+```
+
+گزینه `--render-workers` تعداد workerهای هم‌زمان Chromium، گزینه `--export-queue-size` حداکثر کارهای منتظر و گزینه `--render-idle-timeout` زمان بسته‌شدن browser بدون استفاده را تعیین می‌کند. افزایش worker ممکن است throughput را بیشتر کند، اما peak memory را نیز بالا می‌برد؛ بدون benchmark مقدار پیش‌فرض را تغییر ندهید.
+
+برای اندازه‌گیری بازتولیدپذیر قبل و بعد از تغییرات اجرا کنید:
+
+```bash
+python scripts/benchmark_large_documents.py \
+  --profiles small,pages50,pages250,pages500,editor-loop \
+  --mode both \
+  --repeats 3 \
+  --output-dir build/performance
+```
+
+حالت `cold` برای هر تبدیل Chromium را از نو اجرا می‌کند. حالت `session` Chromium را نگه می‌دارد و برای هر تکرار browser context جدید می‌سازد. در یک محیط یکسان، توزیع زمان اجرا، تعداد صفحه، اندازه PDF، تعداد اجرای browser و peak RSS گزارش JSON را مقایسه کنید. یک اجرای سریع به‌تنهایی مدرک کافی برای بهبود کارایی نیست.
+
+PDFهای تکمیل‌شده Studio فقط تا زمان دانلود یا انقضا در فضای موقت خصوصی و محدود نگه‌داری و به‌صورت streaming ارسال می‌شوند. لغو کار تعاملی است؛ اگر `page.pdf()` در Chromium در حال اجرا باشد، آن فراخوانی تا checkpoint امن بعدی کامل می‌شود.
+
 # روند کار با GUI
 
 اجرای GUI برای یک سند مستقل:

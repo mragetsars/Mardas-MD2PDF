@@ -82,6 +82,36 @@ python scripts/audit_studio_visual.py \
 
 Verify project-relative diagnostics, safe navigation to a chapter line, external-change conflict handling, UTF-8/size boundaries, project-root and symlink rejection, renderer-backed active-file preview, and saved full-book preview/export. The installed-wheel release gate also imports `mardas_md2pdf.workspace`, performs a hash-guarded atomic save, checks `mrs-md2pdf-gui --help` for `--project`, and captures a Chromium project-workspace audit.
 
+## Performance and large-document checks
+
+Performance changes require a before/after benchmark using the same source tree, Chromium executable, Python version, machine load, profile set, repeat count, and timeout. Run the deterministic helper from the repository root:
+
+```bash
+python scripts/benchmark_large_documents.py \
+  --profiles small,pages50,pages250,pages500,editor-loop \
+  --mode both \
+  --repeats 3 \
+  --timeout-ms 300000 \
+  --output-dir build/performance \
+  --output build/performance/report.json
+```
+
+The `cold` mode starts Chromium for every conversion. The `session` mode reuses one Chromium process while creating a fresh browser context for every repeat. Compare wall-clock distributions, page counts, PDF sizes, browser-launch counts, and peak RSS; do not claim an optimization from one run or from different input profiles.
+
+For targeted reliability checks:
+
+```bash
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest -q \
+  tests/test_performance_reliability.py \
+  tests/test_studio_export_jobs.py \
+  tests/test_performance_benchmark.py
+
+MARDAS_RENDER_SMOKE=1 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 \
+  python -m pytest -q tests/test_performance_reliability.py
+```
+
+Verify that Studio returns `429 export_queue_full` when the bounded queue is exhausted, queued cancellation prevents work from starting, running cancellation is reported as cooperative, completed PDFs are streamed from disk, and an idle worker closes its reusable browser after the configured timeout.
+
 ## Generated examples
 
 The guide PDFs in `examples/` are generated artifacts that should match the current Markdown guides. The helper sets a default `SOURCE_DATE_EPOCH` so PDF metadata dates stay deterministic across repeat builds. Regenerate them with:

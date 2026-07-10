@@ -46,6 +46,18 @@ MARDAS_RELEASE_VISUAL_QA=1 ./scripts/release_gate.sh
 
 When a release runner is slow, use `MARDAS_TIMEOUT_MS` for Chromium's page timeout and `MARDAS_RENDER_SMOKE_TIMEOUT` for the outer `./scripts/check.sh` smoke-render command timeout.
 
+For a performance-affecting release, preserve a benchmark report under `build/performance/` and compare it with the recorded baseline using identical profiles and environment details:
+
+```bash
+python scripts/benchmark_large_documents.py \
+  --profiles small,pages50,pages250,editor-loop \
+  --mode both \
+  --repeats 3 \
+  --output-dir build/performance
+```
+
+The release gate verifies persistent Chromium reuse from the installed wheel, thread-affine queue sessions, and packaged `render_pool.py`/`studio_jobs.py`. A performance claim additionally requires reported before/after wall time, page-count equivalence, output-size checks, and peak-memory context. Treat regressions greater than 10% on a representative profile as release-blocking until explained.
+
 For a targeted Studio Project Workspace review, run:
 
 ```bash
