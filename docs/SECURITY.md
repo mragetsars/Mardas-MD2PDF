@@ -42,8 +42,9 @@ network policy.
 `mardas.toml` is a trusted local project input. The CLI discovers the nearest file
 from the Markdown directory upward unless `--config` selects a specific file or
 `--no-config` disables discovery. Relative paths are resolved from the configuration
-directory. Unknown sections, unknown keys, unsupported schema versions, invalid
-values, and missing configured assets are rejected before Chromium starts.
+directory. Project files are bounded to 1 MiB. Oversized files, unknown sections,
+unknown keys, unsupported schema versions, invalid values, and missing configured
+assets are rejected before Chromium starts.
 
 Project configuration can explicitly enable `security.unsafe_html` or
 `security.allow_remote_assets`. Both settings expand the trust boundary and are

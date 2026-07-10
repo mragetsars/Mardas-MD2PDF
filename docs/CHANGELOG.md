@@ -18,11 +18,12 @@ The project follows semantic versioning for user-visible behavior. Patch release
 
 ### Fixed
 - Resolved appearance consistently as `CLI > mardas.toml > front matter > built-in defaults`, including syntax highlighting, document CSS, footer styling, and Chromium PDF output.
+- Corrected clean-wheel release verification to check the stylesheet and branding asset names that are actually shipped in the package.
 - Restored front-matter appearance behavior when no CLI or project override is supplied instead of silently forcing CLI parser defaults.
 
 ### Security
 - Warned explicitly when project configuration enables unsanitized HTML or remote network assets and documented command-line safety overrides.
-- Rejected unknown schema sections/keys and invalid configured paths before Chromium starts.
+- Rejected oversized project files, unknown schema sections/keys, unsupported schema versions, invalid values, and invalid configured paths before Chromium starts.
 
 ### Tests
 - Added project-configuration, precedence, path-resolution, structured-diagnostic, project-command, clean-release, and front-matter appearance regression coverage.
