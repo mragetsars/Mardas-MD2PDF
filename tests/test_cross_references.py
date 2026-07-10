@@ -508,3 +508,167 @@ def test_single_file_conversion_rejects_unresolved_reference_before_browser(tmp_
         assert "MARDAS-E602" in str(exc)
     else:  # pragma: no cover - defensive assertion
         raise AssertionError("Conversion should fail before Chromium starts")
+
+
+def test_inline_code_label_marker_remains_literal() -> None:
+    result = render_markdown(
+        """---
+references: true
+---
+![Architecture](architecture.png)
+
+`{#fig:architecture}`
+"""
+    )
+
+    assert not result.diagnostics
+    assert not result.reference_objects
+    assert "{#fig:architecture}" in result.body_html
+    assert "<code" in result.body_html
+
+
+def test_label_marker_inside_caption_code_remains_literal() -> None:
+    result = render_markdown(
+        """---
+references: true
+---
+![Architecture](architecture.png)
+
+Figure: literal `{#fig:architecture}`
+"""
+    )
+
+    assert not result.diagnostics
+    assert not result.reference_objects
+    assert "{#fig:architecture}" in result.body_html
+
+
+def test_invalid_label_marker_reports_structured_error() -> None:
+    result = render_markdown(
+        """---
+references: true
+---
+![Architecture](architecture.png)
+
+Figure: Architecture {#fig:bad label}
+"""
+    )
+
+    assert _diagnostic_codes(result) == ["MARDAS-E605"]
+    assert "{#fig:bad label}" in result.body_html
+
+
+def test_semantic_target_does_not_reuse_author_supplied_object_id() -> None:
+    result = render_markdown(
+        """---
+references: true
+---
+See @fig:model.
+
+<figure id="legacy-model" data-md2pdf-label="fig:model"><figcaption>Model</figcaption></figure>
+"""
+    )
+
+    soup = BeautifulSoup(result.body_html, "html.parser")
+    assert not result.diagnostics
+    assert result.reference_objects[0]["target_id"] == "xref-fig-model"
+    assert soup.select_one('#xref-fig-model[data-md2pdf-label="fig:model"]') is not None
+    assert soup.select_one('span#legacy-model.md2pdf-reference-target') is not None
+    assert soup.select_one('a[data-md2pdf-reference="fig:model"]')["href"] == "#xref-fig-model"
+
+
+def test_duplicate_raw_ids_cannot_merge_semantic_destinations() -> None:
+    result = render_markdown(
+        """---
+references: true
+---
+See @fig:first and @fig:second.
+
+<figure id="same" data-md2pdf-label="fig:first"><figcaption>First</figcaption></figure>
+<figure id="same" data-md2pdf-label="fig:second"><figcaption>Second</figcaption></figure>
+"""
+    )
+
+    soup = BeautifulSoup(result.body_html, "html.parser")
+    assert not result.diagnostics
+    assert [item["target_id"] for item in result.reference_objects] == [
+        "xref-fig-first",
+        "xref-fig-second",
+    ]
+    assert soup.select_one('a[data-md2pdf-reference="fig:first"]')["href"] == "#xref-fig-first"
+    assert soup.select_one('a[data-md2pdf-reference="fig:second"]')["href"] == "#xref-fig-second"
+    assert not soup.select("#same")
+
+
+def test_semantic_target_uses_deterministic_suffix_when_xref_id_is_reserved() -> None:
+    result = render_markdown(
+        """---
+references: true
+---
+<div id="xref-fig-model">Reserved</div>
+
+See @fig:model.
+
+![Model](model.png)
+
+Figure: Model {#fig:model}
+"""
+    )
+
+    assert not result.diagnostics
+    assert result.reference_objects[0]["target_id"] == "xref-fig-model-2"
+    assert 'href="#xref-fig-model-2"' in result.body_html
+
+
+def test_raw_label_on_unsupported_element_is_rejected() -> None:
+    result = render_markdown(
+        """---
+references: true
+---
+<div data-md2pdf-label="fig:not-a-figure">Not a figure</div>
+"""
+    )
+
+    assert _diagnostic_codes(result) == ["MARDAS-E605"]
+    assert not result.reference_objects
+
+
+def test_invalid_code_fence_label_reports_structured_error() -> None:
+    result = render_markdown(
+        """---
+references: true
+---
+```python {#lst:bad-}
+print(1)
+```
+"""
+    )
+
+    assert _diagnostic_codes(result) == ["MARDAS-E605"]
+    assert not result.reference_objects
+
+
+def test_invalid_code_fence_label_is_ignored_when_references_are_disabled() -> None:
+    result = render_markdown(
+        """```python {#lst:bad-}
+print(1)
+```
+"""
+    )
+
+    assert not result.diagnostics
+    assert not result.reference_objects
+
+
+def test_multiple_code_fence_labels_are_rejected() -> None:
+    result = render_markdown(
+        """---
+references: true
+---
+```python {#lst:first} {#lst:second}
+print(1)
+```
+"""
+    )
+
+    assert "MARDAS-E604" in _diagnostic_codes(result)

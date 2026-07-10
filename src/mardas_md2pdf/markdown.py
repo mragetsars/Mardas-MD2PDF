@@ -782,6 +782,12 @@ CODE_FENCE_ATTR_CLASS_RE = re.compile(r"(?<!\S)\.(?P<class>[A-Za-z_][\w.-]*)")
 CODE_FENCE_LABEL_RE = re.compile(
     r"(?:^|[\s{])#(?P<label>(?:fig|tbl|eq|lst):[A-Za-z0-9](?:[A-Za-z0-9_.-]*[A-Za-z0-9])?)(?=[\s}]|$)"
 )
+CODE_FENCE_LABEL_CANDIDATE_RE = re.compile(
+    r"(?:^|[\s{])#(?P<label>(?:fig|tbl|eq|lst):[^\s}]*)"
+)
+CODE_FENCE_LABEL_VALUE_RE = re.compile(
+    r"^(?:fig|tbl|eq|lst):[A-Za-z0-9](?:[A-Za-z0-9_.-]*[A-Za-z0-9])?$"
+)
 CODE_FENCE_TITLE_KEYS = {"title", "filename", "file", "caption", "name"}
 CODE_FENCE_HIGHLIGHT_KEYS = {
     "hl_lines",
@@ -963,13 +969,23 @@ def parse_code_fence_info(info: str | None) -> dict[str, Any]:
             line_start = _positive_int_attr(value, fallback=1)
             break
 
-    label_match = CODE_FENCE_LABEL_RE.search(attrs)
-    reference_label = label_match.group("label") if label_match else ""
+    reference_labels = list(
+        dict.fromkeys(match.group("label") for match in CODE_FENCE_LABEL_RE.finditer(attrs))
+    )
+    reference_label = reference_labels[0] if reference_labels else ""
+    invalid_reference_label = ""
+    for candidate_match in CODE_FENCE_LABEL_CANDIDATE_RE.finditer(attrs):
+        candidate = candidate_match.group("label")
+        if not CODE_FENCE_LABEL_VALUE_RE.fullmatch(candidate):
+            invalid_reference_label = candidate
+            break
 
     return {
         "language": language,
         "title": title,
         "reference_label": reference_label,
+        "reference_labels": reference_labels,
+        "invalid_reference_label": invalid_reference_label,
         "linenos": linenos,
         "highlight_lines": sorted(set(highlight_values)),
         "line_start": line_start,
@@ -2758,6 +2774,7 @@ def render_markdown(
         },
     )
     md.enable(["table", "strikethrough"])
+    fence_reference_diagnostics: list[Diagnostic] = []
 
     def render_fence(tokens: list[Any], idx: int, options: dict[str, Any], env: dict[str, Any]) -> str:
         """Render fenced code blocks as complete figures, not nested inside <pre><code>.
@@ -2770,6 +2787,32 @@ def render_markdown(
         """
         token = tokens[idx]
         fence_info = parse_code_fence_info(token.info)
+        reference_labels = list(fence_info.get("reference_labels") or [])
+        if len(reference_labels) > 1:
+            fence_reference_diagnostics.append(
+                Diagnostic(
+                    "MARDAS-E604",
+                    "error",
+                    f"Code listing has more than one reference label: {', '.join(reference_labels)}",
+                    path=source_path,
+                    hint="Keep exactly one semantic label on each fenced code block.",
+                )
+            )
+        invalid_label = str(fence_info.get("invalid_reference_label") or "")
+        if invalid_label:
+            fence_reference_diagnostics.append(
+                Diagnostic(
+                    "MARDAS-E605",
+                    "error",
+                    f"Invalid reference label in code fence: {invalid_label}",
+                    path=source_path,
+                    hint=(
+                        "Use a label such as {#lst:training-loop}; names may contain "
+                        "letters, digits, dots, underscores, and hyphens and must end "
+                        "with a letter or digit."
+                    ),
+                )
+            )
         lang = fence_info["language"]
         if is_mermaid_language(lang):
             return mermaid_placeholder(
@@ -2828,6 +2871,8 @@ def render_markdown(
         references_enabled=resolved_references_enabled,
         source_path=source_path,
     )
+    if resolved_references_enabled and fence_reference_diagnostics:
+        reference_diagnostics = tuple(fence_reference_diagnostics) + reference_diagnostics
     if not allow_remote_images:
         body_html = block_remote_images(body_html)
 

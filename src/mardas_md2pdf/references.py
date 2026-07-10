@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import html
 import re
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
@@ -17,6 +18,9 @@ LABEL_NAME_RE = r"[A-Za-z0-9](?:[A-Za-z0-9_.-]*[A-Za-z0-9])?"
 LABEL_RE = re.compile(rf"^(?P<kind>{'|'.join(REFERENCE_KINDS)}):(?P<name>{LABEL_NAME_RE})$")
 LABEL_MARKER_RE = re.compile(
     rf"\{{#(?P<label>(?:{'|'.join(REFERENCE_KINDS)}):{LABEL_NAME_RE})\}}"
+)
+LABEL_MARKER_CANDIDATE_RE = re.compile(
+    rf"\{{#(?P<label>(?:{'|'.join(REFERENCE_KINDS)}):[^{{}}\n]*)\}}"
 )
 REFERENCE_TOKEN_RE = re.compile(
     rf"(?<![\w@])@(?P<label>(?:{'|'.join(REFERENCE_KINDS)}):{LABEL_NAME_RE})"
@@ -179,10 +183,19 @@ def _append_fragment(parent: Tag, fragment_html: str) -> None:
         parent.append(child.extract())
 
 
+def _has_literal_parent(node: NavigableString, *, boundary: Tag | None = None) -> bool:
+    for parent in node.parents:
+        if boundary is not None and parent is boundary:
+            break
+        if isinstance(parent, Tag) and parent.name in _SKIP_REFERENCE_PARENTS:
+            return True
+    return False
+
+
 def _strip_label_markers(tag: Tag) -> list[str]:
     labels: list[str] = []
     for node in list(tag.find_all(string=True)):
-        if not isinstance(node, NavigableString):
+        if not isinstance(node, NavigableString) or _has_literal_parent(node, boundary=tag):
             continue
         text = str(node)
         matches = list(LABEL_MARKER_RE.finditer(text))
@@ -198,6 +211,8 @@ def _strip_label_markers(tag: Tag) -> list[str]:
 
 
 def _standalone_marker(paragraph: Tag) -> str | None:
+    if paragraph.find(list(_SKIP_REFERENCE_PARENTS)) is not None:
+        return None
     text = paragraph.get_text(" ", strip=True)
     match = LABEL_MARKER_RE.fullmatch(text)
     return match.group("label") if match else None
@@ -302,6 +317,31 @@ def _replace_caption_prefix(
     caption["data-md2pdf-number-profile"] = number_profile
     caption["class"] = sorted(caption_classes)
     return _caption_plain_text(obj, kind)
+
+
+def _validate_label_marker_syntax(
+    soup: BeautifulSoup, diagnostics: list[Diagnostic], path: Path | None
+) -> None:
+    for node in list(soup.find_all(string=LABEL_MARKER_CANDIDATE_RE)):
+        if not isinstance(node, NavigableString) or _has_literal_parent(node):
+            continue
+        for match in LABEL_MARKER_CANDIDATE_RE.finditer(str(node)):
+            marker = match.group(0)
+            if LABEL_MARKER_RE.fullmatch(marker):
+                continue
+            diagnostics.append(
+                Diagnostic(
+                    "MARDAS-E605",
+                    "error",
+                    f"Invalid reference label marker: {marker}",
+                    path=path,
+                    hint=(
+                        "Use an ASCII label such as {#fig:architecture}; names may contain "
+                        "letters, digits, dots, underscores, and hyphens and must end with "
+                        "a letter or digit."
+                    ),
+                )
+            )
 
 
 def _prepare_objects(soup: BeautifulSoup, diagnostics: list[Diagnostic], path: Path | None) -> None:
@@ -409,6 +449,7 @@ def annotate_reference_markup(
 ) -> tuple[str, tuple[Diagnostic, ...]]:
     soup = BeautifulSoup(body_html, "html.parser")
     diagnostics: list[Diagnostic] = []
+    _validate_label_marker_syntax(soup, diagnostics, path)
     _prepare_objects(soup, diagnostics, path)
     _prepare_reference_tokens(soup)
     normalized_lang = normalize_language(lang, "auto")
@@ -432,9 +473,7 @@ def _chapter_index(obj: Tag) -> int | None:
 
 def _objects_in_document_order(soup: BeautifulSoup) -> Iterable[Tag]:
     for tag in soup.find_all(attrs={"data-md2pdf-label": True}):
-        if not isinstance(tag, Tag):
-            continue
-        if _kind_for_object(tag) is not None:
+        if isinstance(tag, Tag):
             yield tag
 
 
@@ -499,6 +538,12 @@ def resolve_cross_references(
     chapter_counters: dict[tuple[int, str], int] = {}
     objects: list[NumberedObject] = []
     text_hint = soup.get_text(" ", strip=True)
+    original_ids = [
+        str(tag.get("id") or "").strip()
+        for tag in soup.find_all(attrs={"id": True})
+    ]
+    original_id_counts = Counter(value for value in original_ids if value)
+    reserved_ids = set(original_ids)
 
     for obj in _objects_in_document_order(soup):
         label = str(obj.get("data-md2pdf-label") or "").strip()
@@ -557,17 +602,29 @@ def resolve_cross_references(
             counters[kind] += 1
             number = str(counters[kind])
 
-        target_id = str(obj.get("id") or "").strip()
-        if not target_id:
-            target_id = _target_for_label(label)
-            existing_ids = {str(tag.get("id")) for tag in soup.find_all(attrs={"id": True})}
-            candidate = target_id
-            suffix = 2
-            while candidate in existing_ids:
-                candidate = f"{target_id}-{suffix}"
-                suffix += 1
-            target_id = candidate
-            obj["id"] = target_id
+        existing_id = str(obj.get("id") or "").strip()
+        target_base = _target_for_label(label)
+        target_id = target_base
+        suffix = 2
+        while target_id in reserved_ids and not (
+            target_id == existing_id and original_id_counts.get(existing_id, 0) == 1
+        ):
+            target_id = f"{target_base}-{suffix}"
+            suffix += 1
+
+        if existing_id and existing_id != target_id:
+            # Preserve a unique author-supplied anchor while assigning every semantic
+            # object its own deterministic xref destination. Duplicate raw IDs were
+            # already ambiguous, so they are removed rather than copied forward.
+            if original_id_counts.get(existing_id, 0) == 1:
+                legacy_anchor = soup.new_tag("span")
+                legacy_anchor["id"] = existing_id
+                legacy_anchor["class"] = ["md2pdf-reference-target"]
+                legacy_anchor["aria-hidden"] = "true"
+                obj.insert_before(legacy_anchor)
+            obj.attrs.pop("id", None)
+        obj["id"] = target_id
+        reserved_ids.add(target_id)
 
         obj["data-md2pdf-reference-kind"] = kind
         obj["data-md2pdf-reference-number"] = number
