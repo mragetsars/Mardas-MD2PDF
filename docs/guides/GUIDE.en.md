@@ -919,6 +919,83 @@ mrs-md2pdf doctor report.md --format json
 
 Warnings do not make `validate` or `doctor` fail, while error diagnostics return a non-zero exit status. A configuration that enables `unsafe_html` or remote assets is accepted only as an explicit project decision and is surfaced as a warning because it expands the trust boundary and can reduce build reproducibility.
 
+# Multi-file Book Mode
+
+Book Mode builds one PDF from an explicit, deterministic list of Markdown chapters. It is intended for books, theses, long reports, course notes, and documentation sets whose source should remain split into manageable files.
+
+Create a starter project:
+
+```bash
+mrs-md2pdf init my-book --book
+```
+
+The generated project contains `mardas.toml` and two starter chapter files:
+
+```text
+my-book/
+├── mardas.toml
+└── chapters/
+    ├── 01-introduction.md
+    └── 02-content.md
+```
+
+A Book Mode manifest uses an ordered `[book].chapters` array. The array order, not directory sorting, controls the PDF order:
+
+```toml
+schema_version = 1
+
+[project]
+title = "Numerical Methods Handbook"
+author = "Research Group"
+direction = "ltr"
+
+[output]
+toc = true
+toc_depth = 4
+cover = true
+header_footer = true
+mathjax = true
+
+[book]
+chapters = [
+  "chapters/01-introduction.md",
+  { path = "chapters/02-methods.md", title = "Methods and Experiments" },
+  "chapters/03-results.md",
+]
+output = "dist/handbook.pdf"
+chapter_page_break = true
+```
+
+The optional chapter `title` replaces the visible level-one heading and global TOC title for that chapter without modifying the Markdown source. If a chapter has no level-one heading, Book Mode generates one from the chapter title and reports `MARDAS-W501`.
+
+Validate and inspect the complete project without launching Chromium:
+
+```bash
+mrs-md2pdf validate-book my-book
+mrs-md2pdf validate-book my-book --format json
+mrs-md2pdf explain-book my-book --format json
+```
+
+Build the PDF and optionally keep the combined renderer HTML:
+
+```bash
+mrs-md2pdf build-book my-book
+mrs-md2pdf build-book my-book -o releases/handbook.pdf
+mrs-md2pdf build-book my-book --debug-html build/handbook.html --progress on
+```
+
+Book Mode applies these rules:
+
+1. Every chapter path must be relative to `mardas.toml`, remain inside the project root after symlink resolution, use a supported Markdown extension, and appear only once.
+2. Project settings provide the shared cover, output, appearance, security, browser, font, watermark, and PDF configuration. Chapter front matter still controls chapter-local language and content metadata where applicable.
+3. Images may be stored beside a chapter or in a shared directory inside the project root, such as `assets/`. Files outside the project root remain blocked.
+4. Heading, anchor, and footnote IDs are namespaced per chapter before assembly, so repeated headings such as `# Introduction` remain unambiguous.
+5. Relative Markdown links to another listed chapter are converted to internal PDF links. A fragment such as `02-methods.md#model` resolves to the namespaced heading in that chapter. Other local file links remain inert for portable PDF output.
+6. A page break is inserted between chapters when `chapter_page_break = true`.
+7. The final PDF contains one cover, one global TOC, one nested PDF outline, one metadata set, stable named destinations, and one output artifact.
+
+Book Mode intentionally does not yet implement automatic figure/table/equation numbering, bibliography processing, or semantic `@label` cross-references. Those features require a separate document-symbol model and are planned as later, independently testable phases.
+
 # GUI Workflow
 
 Launch the GUI:

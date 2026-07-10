@@ -16,7 +16,7 @@ Run the local checks before tagging. The check helper keeps pytest isolated from
 
 ```bash
 ./scripts/check.sh
-python -m pytest -q tests/test_project_config.py
+python -m pytest -q tests/test_project_config.py tests/test_book_mode.py
 ```
 
 For a full release verification, use the consolidated release gate:
@@ -25,7 +25,7 @@ For a full release verification, use the consolidated release gate:
 ./scripts/release_gate.sh
 ```
 
-The gate runs the complete release contract: Ruff and pytest, real Chromium render smoke, guide regeneration, PDF preflight, representative or full Visual QA, deterministic wheel/sdist construction, clean-wheel installation, console-entry-point checks, packaged-asset checks, and distribution checksums. The tag workflow invokes this same gate instead of maintaining a weaker parallel command list.
+The gate runs the complete release contract: Ruff and pytest, real Chromium render smoke, guide regeneration, PDF preflight, representative or full Visual QA, deterministic wheel/sdist construction, clean-wheel installation, console-entry-point checks, packaged-asset checks, a clean-wheel multi-file Book Mode build, and distribution checksums. The tag workflow invokes this same gate instead of maintaining a weaker parallel command list.
 
 For targeted diagnosis, the underlying helpers remain available individually:
 

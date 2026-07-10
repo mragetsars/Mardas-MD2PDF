@@ -103,6 +103,12 @@ Front matter is parsed with bounded depth, node count, and scalar size. Recursiv
 YAML aliases and malformed YAML are rejected with controlled diagnostics rather
 than being silently ignored or expanded without limits.
 
+## Multi-file Book Mode boundaries
+
+Book chapter paths are trusted project declarations but remain constrained to the directory containing `mardas.toml`. Absolute chapter paths, parent-directory escapes, symlink escapes, duplicate source files, source/output collisions, and unsupported Markdown extensions are rejected before Chromium starts.
+
+Each chapter resolves relative assets from its own directory while the allowed containment boundary is the project root. This supports shared directories such as `assets/` without permitting arbitrary host-file reads. Chapter IDs are namespaced before assembly, and only relative links to another listed chapter are restored as internal PDF links; unrelated local filesystem links remain inert.
+
 ## Chromium sandboxing
 
 The CLI option `--chromium-sandbox` controls Chromium sandbox behavior:

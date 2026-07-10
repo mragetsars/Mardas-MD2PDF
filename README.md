@@ -8,7 +8,7 @@
 
 This repository contains **Mardas MD2PDF**, a Markdown-to-PDF publishing tool designed for clean Persian, English, and mixed-language documents.
 
-The project converts Markdown into print-ready PDF files with support for RTL/LTR direction handling, Persian-friendly typography, cover pages, tables of contents, PDF outline bookmarks, GitHub-style Markdown features, MathJax formulas, enhanced syntax-highlighted code, offline Mermaid flowchart-subset diagrams, local images, footnotes, callouts, safe HTML, watermarks, and a clean appearance system built around styles, palettes, and light/dark modes.
+The project converts single Markdown documents or ordered multi-file books into print-ready PDF files with support for RTL/LTR direction handling, Persian-friendly typography, cover pages, tables of contents, PDF outline bookmarks, GitHub-style Markdown features, MathJax formulas, enhanced syntax-highlighted code, offline Mermaid flowchart-subset diagrams, local images, footnotes, callouts, safe HTML, watermarks, and a clean appearance system built around styles, palettes, and light/dark modes.
 
 The main goal of the project is to make technical Markdown documents publishable as polished PDF outputs without forcing the author to leave the Markdown workflow.
 
@@ -83,6 +83,17 @@ mrs-md2pdf doctor input.md
 
 The nearest `mardas.toml` is discovered from the document directory upward. Command-line options override project values, which override equivalent front-matter values. Use `--config`, `--no-config`, and `--format json` for explicit automation workflows.
 
+Create and build an ordered multi-file book:
+
+```bash
+mrs-md2pdf init my-book --book
+mrs-md2pdf validate-book my-book
+mrs-md2pdf explain-book my-book
+mrs-md2pdf build-book my-book
+```
+
+Book Mode keeps chapter order in `[book].chapters`, namespaces heading and footnote IDs, embeds chapter-local or shared project-root assets, restores links between listed chapters, and produces one TOC, outline, cover, metadata set, and PDF artifact.
+
 Cover branding is off by default so exported PDFs belong to the document owner. Enable explicit branding only when desired:
 
 ```bash
@@ -115,10 +126,11 @@ Mardas-MD2PDF/
 │   ├── markdown.py         # Markdown parsing, front matter, TOC, math, Mermaid, footnotes, safe HTML
 │   ├── mermaid.py          # Offline Mermaid flowchart-subset-to-SVG renderer
 │   ├── renderer.py         # HTML assembly, appearance CSS, MathJax, Chromium PDF rendering
+│   ├── book.py             # Ordered chapter manifest, namespacing, cross-links, and book assembly
 │   ├── cli.py              # Conversion command-line interface
 │   ├── config.py           # Versioned mardas.toml discovery, validation, and resolution
 │   ├── diagnostics.py      # Stable text/JSON diagnostic records
-│   ├── project_commands.py # init, validate, doctor, and explain-config workflows
+│   ├── project_commands.py # Project diagnostics plus init/build/validate/explain Book Mode workflows
 │   ├── gui.py              # Local browser-based GUI backend
 │   └── assets/             # Style CSS, GUI shell, logo, and vendored MathJax files
 ├── docs/                   # Guides, changelog, release, maintenance, security, and documentation policy

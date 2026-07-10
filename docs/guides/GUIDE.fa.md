@@ -840,6 +840,83 @@ mrs-md2pdf doctor report.md --format json
 
 Warning باعث fail شدن `validate` یا `doctor` نمی‌شود، اما diagnostic سطح error کد خروج غیرصفر تولید می‌کند. فعال‌کردن `unsafe_html` یا asset راه‌دور تصمیم صریح پروژه است و به شکل warning نمایش داده می‌شود، چون trust boundary را بزرگ‌تر می‌کند و می‌تواند reproducibility ساخت را کاهش دهد.
 
+# حالت کتاب چندفایلی
+
+حالت Book Mode چند فایل Markdown را با ترتیب صریح و قطعی به یک PDF تبدیل می‌کند. این حالت برای کتاب، پایان‌نامه، گزارش بلند، جزوه درسی و مجموعه مستنداتی مناسب است که بهتر است source آن‌ها در فایل‌های کوچک‌تر و قابل مدیریت باقی بماند.
+
+برای ساخت پروژه اولیه بنویسید:
+
+```bash
+mrs-md2pdf init my-book --book
+```
+
+ساختار تولیدشده شامل `mardas.toml` و دو فصل نمونه است:
+
+```text
+my-book/
+├── mardas.toml
+└── chapters/
+    ├── 01-introduction.md
+    └── 02-content.md
+```
+
+در Book Mode ترتیب فصل‌ها فقط از آرایه مرتب `[book].chapters` گرفته می‌شود و به ترتیب نام فایل‌ها در filesystem وابسته نیست:
+
+```toml
+schema_version = 1
+
+[project]
+title = "راهنمای روش‌های عددی"
+author = "گروه پژوهشی"
+direction = "rtl"
+
+[output]
+toc = true
+toc_depth = 4
+cover = true
+header_footer = true
+mathjax = true
+
+[book]
+chapters = [
+  "chapters/01-introduction.md",
+  { path = "chapters/02-methods.md", title = "روش‌ها و آزمایش‌ها" },
+  "chapters/03-results.md",
+]
+output = "dist/handbook.pdf"
+chapter_page_break = true
+```
+
+فیلد اختیاری `title` عنوان سطح اول قابل مشاهده و عنوان همان فصل در فهرست کلی را عوض می‌کند، بدون اینکه فایل Markdown اصلی تغییر کند. اگر فصل heading سطح اول نداشته باشد، برنامه از عنوان فصل یک heading می‌سازد و diagnostic با کد `MARDAS-W501` گزارش می‌دهد.
+
+برای اعتبارسنجی و مشاهده ساختار کامل کتاب بدون اجرای Chromium بنویسید:
+
+```bash
+mrs-md2pdf validate-book my-book
+mrs-md2pdf validate-book my-book --format json
+mrs-md2pdf explain-book my-book --format json
+```
+
+برای ساخت PDF و در صورت نیاز ذخیره HTML ترکیبی renderer:
+
+```bash
+mrs-md2pdf build-book my-book
+mrs-md2pdf build-book my-book -o releases/handbook.pdf
+mrs-md2pdf build-book my-book --debug-html build/handbook.html --progress on
+```
+
+قواعد اصلی Book Mode عبارت‌اند از:
+
+1. مسیر هر فصل باید نسبت به `mardas.toml` نوشته شود، پس از resolve شدن symlink داخل project root باقی بماند، پسوند Markdown پشتیبانی‌شده داشته باشد و فقط یک بار در manifest آمده باشد.
+2. تنظیمات پروژه، جلد، output، appearance، security، مرورگر، فونت، watermark و PDF مشترک را تعیین می‌کنند. Front matter هر فصل همچنان برای زبان و metadata محلی همان فصل استفاده می‌شود.
+3. تصویرها می‌توانند کنار هر فصل یا در پوشه مشترکی مانند `assets/` داخل project root قرار بگیرند. فایل بیرون از project root همچنان مسدود است.
+4. شناسه heading، anchor و footnote پیش از ترکیب برای هر فصل namespace می‌شود؛ بنابراین heading تکراری مانند `# مقدمه` بین فصل‌ها ابهام ایجاد نمی‌کند.
+5. لینک نسبی Markdown به فصل دیگری که در manifest وجود دارد، به لینک داخلی PDF تبدیل می‌شود. Fragment مانند `02-methods.md#model` به heading namespaceشده همان فصل می‌رود. لینک فایل محلی دیگری برای قابل‌حمل ماندن PDF غیرفعال باقی می‌ماند.
+6. وقتی `chapter_page_break = true` باشد، بین فصل‌ها شکست صفحه درج می‌شود.
+7. خروجی نهایی یک جلد، یک فهرست کلی، یک outline تودرتوی PDF، یک مجموعه metadata، named destinationهای پایدار و یک فایل PDF دارد.
+
+در این نسخه شماره‌گذاری خودکار شکل، جدول و معادله، پردازش bibliography و cross-reference معنایی با syntaxهایی مانند `@label` عمداً وارد نشده‌اند. این قابلیت‌ها به مدل symbol مستقل نیاز دارند و در فازهای جداگانه و قابل آزمون پیاده‌سازی خواهند شد.
+
 # روند کار با GUI
 
 اجرای GUI:

@@ -8,7 +8,7 @@ Run the default quality gate before creating a patch or tag:
 
 ```bash
 ./scripts/check.sh
-python -m pytest -q tests/test_project_config.py
+python -m pytest -q tests/test_project_config.py tests/test_book_mode.py
 ```
 
 The script runs Ruff and pytest from the repository root. It disables third-party pytest plugin autoload by default so local virtualenv plugins cannot change release-gate behavior; set `MARDAS_ALLOW_PYTEST_PLUGINS=1` only when intentionally debugging pytest plugins. To include real Chromium render smoke tests, including PDF metadata and outline inspection, enable the optional environment flag:
@@ -22,6 +22,16 @@ For slow CI runners, `MARDAS_TIMEOUT_MS` controls the Chromium page timeout and 
 ```bash
 MARDAS_RENDER_SMOKE=1 MARDAS_TIMEOUT_MS=600000 MARDAS_RENDER_SMOKE_TIMEOUT=420 ./scripts/check.sh
 ```
+
+## Book Mode checks
+
+Changes to the book manifest, chapter assembly, ID namespacing, shared asset resolution, or cross-chapter links require the focused suite:
+
+```bash
+python -m pytest -q tests/test_book_mode.py tests/test_pdf_toc_destinations.py
+```
+
+Before release, create a representative book with at least two chapters, duplicate heading text, a shared project-root image, and a link from one chapter to a heading in another. Verify the combined HTML contains no absolute machine paths and inspect the PDF TOC, outline, page breaks, named destinations, and link annotations. The consolidated release gate also builds the starter Book Mode project from the cleanly installed wheel.
 
 ## Generated examples
 

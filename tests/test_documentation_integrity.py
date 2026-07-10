@@ -356,3 +356,40 @@ def test_guides_document_project_configuration_and_diagnostics() -> None:
         assert "--format json" in text
         assert "MARDAS-E103" in text
         assert "MARDAS-W301" in text
+
+
+def test_guides_document_multi_file_book_mode() -> None:
+    en = (ROOT / "docs/guides/GUIDE.en.md").read_text(encoding="utf-8")
+    fa = (ROOT / "docs/guides/GUIDE.fa.md").read_text(encoding="utf-8")
+
+    for marker in [
+        "# Multi-file Book Mode",
+        "mrs-md2pdf init my-book --book",
+        "mrs-md2pdf validate-book my-book",
+        "mrs-md2pdf explain-book my-book --format json",
+        "mrs-md2pdf build-book my-book",
+        "chapter_page_break = true",
+        "Relative Markdown links",
+    ]:
+        assert marker in en
+    for marker in [
+        "# حالت کتاب چندفایلی",
+        "mrs-md2pdf init my-book --book",
+        "mrs-md2pdf validate-book my-book",
+        "mrs-md2pdf explain-book my-book --format json",
+        "mrs-md2pdf build-book my-book",
+        "chapter_page_break = true",
+        "لینک نسبی Markdown",
+    ]:
+        assert marker in fa
+
+
+def test_readme_surfaces_book_mode_and_architecture_module() -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+
+    assert "ordered multi-file books" in readme
+    assert "mrs-md2pdf init my-book --book" in readme
+    assert "mrs-md2pdf validate-book my-book" in readme
+    assert "mrs-md2pdf build-book my-book" in readme
+    assert "book.py" in readme
+    assert "cross-links" in readme
