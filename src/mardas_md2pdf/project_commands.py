@@ -15,6 +15,14 @@ from bs4 import BeautifulSoup
 
 from . import __version__
 from .appearance import appearance_from_metadata, resolve_appearance
+from .book import (
+    BookManifest,
+    BookRenderBundle,
+    book_context,
+    convert_book,
+    load_book_manifest,
+    render_book,
+)
 from .config import (
     CONFIG_FILENAME,
     CONFIG_SCHEMA_VERSION,
@@ -25,7 +33,15 @@ from .config import (
 from .diagnostics import Diagnostic, format_diagnostic, has_errors, write_diagnostics
 from .markdown import MarkdownInputError, render_markdown_file
 
-PROJECT_COMMANDS = ("init", "validate", "doctor", "explain-config")
+PROJECT_COMMANDS = (
+    "init",
+    "validate",
+    "doctor",
+    "explain-config",
+    "build-book",
+    "validate-book",
+    "explain-book",
+)
 
 
 def _add_config_arguments(parser: argparse.ArgumentParser) -> None:
@@ -50,6 +66,11 @@ def _init_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--force", action="store_true", help="Replace an existing configuration file atomically"
     )
+    parser.add_argument(
+        "--book",
+        action="store_true",
+        help="Create a starter multi-file book project with two ordered chapters",
+    )
     return parser
 
 
@@ -66,15 +87,34 @@ def _init_main(argv: list[str]) -> int:
     fd, temporary_name = tempfile.mkstemp(prefix=f".{CONFIG_FILENAME}.", dir=directory)
     temporary = Path(temporary_name)
     try:
+        config_text = default_config_text()
+        if args.book:
+            config_text = config_text.replace(
+                '# [book]\n# chapters = [\n#   "chapters/01-introduction.md",\n#   "chapters/02-content.md",\n# ]\n# output = "dist/book.pdf"\n# chapter_page_break = true',
+                '[book]\nchapters = [\n  "chapters/01-introduction.md",\n  "chapters/02-content.md",\n]\noutput = "dist/book.pdf"\nchapter_page_break = true',
+            )
         with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as handle:
-            handle.write(default_config_text())
+            handle.write(config_text)
             handle.flush()
             os.fsync(handle.fileno())
         os.replace(temporary, target)
+        if args.book:
+            chapters_dir = directory / "chapters"
+            chapters_dir.mkdir(parents=True, exist_ok=True)
+            samples = {
+                chapters_dir / "01-introduction.md": "# Introduction\n\nStart writing your book here.\n",
+                chapters_dir / "02-content.md": "# Main Content\n\nContinue with the next chapter.\n",
+            }
+            for chapter_path, content in samples.items():
+                if chapter_path.exists():
+                    continue
+                chapter_path.write_text(content, encoding="utf-8", newline="\n")
     except Exception:
         temporary.unlink(missing_ok=True)
         raise
     print(f"Created project configuration: {target}")
+    if args.book:
+        print(f"Created starter book chapters: {directory / 'chapters'}")
     return 0
 
 
@@ -162,7 +202,10 @@ def _load_analysis_config(
 
 
 def _validate_document(
-    path: Path, config: LoadedProjectConfig
+    path: Path,
+    config: LoadedProjectConfig,
+    *,
+    document_root: Path | None = None,
 ) -> tuple[list[Diagnostic], dict[str, Any]]:
     diagnostics: list[Diagnostic] = []
     values = config.values
@@ -173,6 +216,7 @@ def _validate_document(
             toc_depth=int(values.get("toc_depth", 6)),
             unsafe_html=bool(values.get("unsafe_html", False)),
             allow_remote_images=bool(values.get("allow_remote_assets", False)),
+            document_root=document_root,
         )
     except (MarkdownInputError, OSError, UnicodeError, ValueError) as exc:
         diagnostics.append(
@@ -269,6 +313,9 @@ def _doctor_main(argv: list[str]) -> int:
     diagnostics = _input_diagnostics(target, required_file=False)
     config, config_diagnostics = _load_analysis_config(args, target)
     diagnostics.extend(config_diagnostics)
+    if config.values.get("book_chapters") and not has_errors(diagnostics):
+        _manifest, book_diagnostics = load_book_manifest(config)
+        diagnostics.extend(book_diagnostics)
 
     if sys.version_info < (3, 10):
         diagnostics.append(
@@ -365,6 +412,16 @@ def _metadata_value(metadata: dict[str, Any], *keys: str) -> Any:
     return None
 
 
+def _display_config_value(value: Any) -> Any:
+    if isinstance(value, Path):
+        return str(value)
+    if isinstance(value, dict):
+        return {str(key): _display_config_value(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_display_config_value(item) for item in value]
+    return value
+
+
 def _effective_config(input_path: Path, config: LoadedProjectConfig) -> dict[str, dict[str, Any]]:
     result = render_markdown_file(
         input_path,
@@ -417,7 +474,7 @@ def _effective_config(input_path: Path, config: LoadedProjectConfig) -> dict[str
 
     def add(name: str, value: Any, source: str) -> None:
         effective[name] = {
-            "value": str(value) if isinstance(value, Path) else value,
+            "value": _display_config_value(value),
             "source": source,
         }
 
@@ -534,12 +591,190 @@ def _explain_config_main(argv: list[str]) -> int:
     return 1 if has_errors(diagnostics) else 0
 
 
+
+def _book_parser(command: str) -> argparse.ArgumentParser:
+    descriptions = {
+        "build-book": "Build one deterministic PDF from the ordered chapters in mardas.toml.",
+        "validate-book": "Validate the complete multi-file book without launching Chromium.",
+        "explain-book": "Show the resolved chapter order, titles, output, and heading counts.",
+    }
+    parser = argparse.ArgumentParser(
+        prog=f"mrs-md2pdf {command}", description=descriptions[command]
+    )
+    parser.add_argument(
+        "project",
+        nargs="?",
+        type=Path,
+        default=Path.cwd(),
+        help="Project directory, mardas.toml path, or a chapter inside the project",
+    )
+    _add_config_arguments(parser)
+    parser.add_argument("--format", choices=["text", "json"], default="text")
+    if command == "build-book":
+        parser.add_argument("-o", "--output", type=Path, help="Override book.output for this build")
+        parser.add_argument("--debug-html", type=Path, help="Write the combined HTML atomically")
+        parser.add_argument(
+            "--progress",
+            choices=["auto", "on", "off"],
+            default="auto",
+            help="Show stage progress on stderr",
+        )
+    return parser
+
+
+def _book_target_and_config(
+    args: argparse.Namespace,
+) -> tuple[Path, LoadedProjectConfig, list[Diagnostic]]:
+    target = args.project.expanduser().resolve()
+    explicit = args.config
+    if target.is_file() and target.name == CONFIG_FILENAME and explicit is None:
+        explicit = target
+    start = target.parent if target.is_file() and target.name == CONFIG_FILENAME else target
+    diagnostics = _input_diagnostics(target, required_file=False)
+    if target.name == CONFIG_FILENAME and not target.is_file():
+        diagnostics = [
+            Diagnostic(
+                "MARDAS-E101",
+                "error",
+                "Project configuration file was not found or is not a regular file.",
+                path=target,
+            )
+        ]
+    result = load_project_config(start=start, explicit_path=explicit, disabled=args.no_config)
+    diagnostics.extend(result.diagnostics)
+    if not has_errors(diagnostics):
+        diagnostics.extend(_project_config_diagnostics(result.config))
+    return target, result.config, diagnostics
+
+
+def _book_validation(
+    config: LoadedProjectConfig,
+) -> tuple[BookManifest | None, BookRenderBundle | None, list[Diagnostic]]:
+    manifest, manifest_diagnostics = load_book_manifest(config)
+    diagnostics = list(manifest_diagnostics)
+    if manifest is None or has_errors(diagnostics):
+        return manifest, None, diagnostics
+
+    for chapter in manifest.chapters:
+        chapter_diagnostics, _context = _validate_document(
+            chapter.path, config, document_root=manifest.root
+        )
+        diagnostics.extend(chapter_diagnostics)
+    bundle, render_diagnostics = render_book(manifest)
+    diagnostics.extend(render_diagnostics)
+
+    if bundle is not None:
+        titles: dict[str, Path] = {}
+        for summary in bundle.chapters:
+            key = summary.title.strip().casefold()
+            previous = titles.get(key)
+            if key and previous is not None:
+                diagnostics.append(
+                    Diagnostic(
+                        "MARDAS-W503",
+                        "warning",
+                        f"Book contains duplicate chapter title: {summary.title}",
+                        path=summary.path,
+                        hint=f"The same title was first used by {previous}.",
+                    )
+                )
+            elif key:
+                titles[key] = summary.path
+    return manifest, bundle, diagnostics
+
+
+def _book_progress(mode: str, *, json_output: bool) -> Callable[[str, float], None] | None:
+    enabled = mode == "on" or (mode == "auto" and sys.stderr.isatty())
+    if json_output or not enabled:
+        return None
+
+    def report(stage: str, value: float) -> None:
+        percent = max(0, min(100, round(value * 100)))
+        print(f"[{percent:3d}%] {stage}", file=sys.stderr)
+
+    return report
+
+
+def _validate_book_main(argv: list[str]) -> int:
+    parser = _book_parser("validate-book")
+    args = parser.parse_args(argv)
+    _target, config, diagnostics = _book_target_and_config(args)
+    manifest = None
+    bundle = None
+    if not has_errors(diagnostics):
+        manifest, bundle, book_diagnostics = _book_validation(config)
+        diagnostics.extend(book_diagnostics)
+    context: dict[str, object] = {
+        "command": "validate-book",
+        "schema_version": CONFIG_SCHEMA_VERSION,
+    }
+    if manifest is not None:
+        context.update(book_context(manifest, bundle))
+    write_diagnostics(diagnostics, output_format=args.format, stream=sys.stdout, context=context)
+    return 1 if has_errors(diagnostics) else 0
+
+
+def _explain_book_main(argv: list[str]) -> int:
+    parser = _book_parser("explain-book")
+    args = parser.parse_args(argv)
+    _target, config, diagnostics = _book_target_and_config(args)
+    manifest = None
+    bundle = None
+    if not has_errors(diagnostics):
+        manifest, bundle, book_diagnostics = _book_validation(config)
+        diagnostics.extend(book_diagnostics)
+    context: dict[str, object] = {
+        "command": "explain-book",
+        "schema_version": CONFIG_SCHEMA_VERSION,
+    }
+    if manifest is not None:
+        context.update(book_context(manifest, bundle))
+    write_diagnostics(diagnostics, output_format=args.format, stream=sys.stdout, context=context)
+    return 1 if has_errors(diagnostics) else 0
+
+
+def _build_book_main(argv: list[str]) -> int:
+    parser = _book_parser("build-book")
+    args = parser.parse_args(argv)
+    _target, config, diagnostics = _book_target_and_config(args)
+    manifest = None
+    bundle = None
+    if not has_errors(diagnostics):
+        manifest, bundle, book_diagnostics = _book_validation(config)
+        diagnostics.extend(book_diagnostics)
+    if manifest is None or has_errors(diagnostics):
+        context: dict[str, object] = {"command": "build-book"}
+        if manifest is not None:
+            context.update(book_context(manifest, bundle))
+        write_diagnostics(diagnostics, output_format=args.format, stream=sys.stdout, context=context)
+        return 1
+
+    output_override = args.output.expanduser().resolve() if args.output else None
+    debug_html = args.debug_html.expanduser().resolve() if args.debug_html else None
+    output, built_bundle, build_diagnostics = convert_book(
+        manifest,
+        output_path=output_override,
+        debug_html=debug_html,
+        progress=_book_progress(args.progress, json_output=args.format == "json"),
+        bundle=bundle,
+    )
+    diagnostics.extend(build_diagnostics)
+    context = {"command": "build-book", **book_context(manifest, built_bundle or bundle)}
+    if output is not None:
+        context["output"] = str(output)
+    write_diagnostics(diagnostics, output_format=args.format, stream=sys.stdout, context=context)
+    return 1 if output is None or has_errors(diagnostics) else 0
+
+
 def run_project_command(command: str, argv: list[str]) -> int:
     handlers: dict[str, Callable[[list[str]], int]] = {
         "init": _init_main,
         "validate": _validate_main,
         "doctor": _doctor_main,
         "explain-config": _explain_config_main,
+        "build-book": _build_book_main,
+        "validate-book": _validate_book_main,
+        "explain-book": _explain_book_main,
     }
     try:
         handler = handlers[command]

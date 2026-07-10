@@ -17,6 +17,7 @@ from .renderer import BRANDING_MODES, validate_page_size
 CONFIG_FILENAME = "mardas.toml"
 CONFIG_SCHEMA_VERSION = 1
 MAX_CONFIG_BYTES = 1_048_576
+MAX_BOOK_CHAPTERS = 512
 
 
 @dataclass(frozen=True, slots=True)
@@ -64,6 +65,39 @@ def _optional_string(value: Any) -> str:
     if not isinstance(value, str):
         raise ConfigValueError("expected a string")
     return value
+
+
+def _book_chapters(value: Any) -> tuple[dict[str, str | None], ...]:
+    if not isinstance(value, list):
+        raise ConfigValueError("expected an ordered array of chapter paths")
+    if not value:
+        raise ConfigValueError("expected at least one chapter")
+    if len(value) > MAX_BOOK_CHAPTERS:
+        raise ConfigValueError(f"expected no more than {MAX_BOOK_CHAPTERS} chapters")
+
+    chapters: list[dict[str, str | None]] = []
+    for index, item in enumerate(value, start=1):
+        if isinstance(item, str):
+            path_value = _string(item)
+            title = None
+        elif isinstance(item, dict):
+            unknown = set(item) - {"path", "title"}
+            if unknown:
+                names = ", ".join(sorted(str(key) for key in unknown))
+                raise ConfigValueError(
+                    f"chapter {index} contains unsupported keys: {names}"
+                )
+            if "path" not in item:
+                raise ConfigValueError(f"chapter {index} requires a path")
+            path_value = _string(item["path"])
+            raw_title = item.get("title")
+            title = _string(raw_title) if raw_title is not None else None
+        else:
+            raise ConfigValueError(
+                f"chapter {index} must be a path string or a table with path/title"
+            )
+        chapters.append({"path": path_value, "title": title})
+    return tuple(chapters)
 
 
 def _boolean(value: Any) -> bool:
@@ -157,6 +191,9 @@ CONFIG_FIELDS: tuple[ConfigField, ...] = (
     ConfigField("browser", "chromium_sandbox", "chromium_sandbox", _choice(["auto", "on", "off"])),
     ConfigField("browser", "timeout_ms", "timeout_ms", _integer(1_000, 3_600_000)),
     ConfigField("fonts", "directory", "font_dir", _string, path_value=True),
+    ConfigField("book", "chapters", "book_chapters", _book_chapters),
+    ConfigField("book", "output", "book_output", _string, path_value=True),
+    ConfigField("book", "chapter_page_break", "book_chapter_page_break", _boolean),
 )
 
 _ALLOWED_SECTIONS = {field.section for field in CONFIG_FIELDS}
@@ -203,6 +240,15 @@ show_logo = true
 [security]
 unsafe_html = false
 allow_remote_assets = false
+
+# Enable multi-file Book Mode by listing chapters in deterministic order.
+# [book]
+# chapters = [
+#   "chapters/01-introduction.md",
+#   "chapters/02-content.md",
+# ]
+# output = "dist/book.pdf"
+# chapter_page_break = true
 
 [browser]
 chromium_sandbox = "auto"
@@ -374,7 +420,41 @@ def load_project_config(
                 )
             )
             continue
-        if field.path_value:
+        if field.dest == "book_chapters":
+            resolved_chapters: list[dict[str, Any]] = []
+            project_root = config_path.parent.resolve()
+            for chapter in value:
+                chapter_path = Path(str(chapter["path"])).expanduser()
+                if chapter_path.is_absolute():
+                    diagnostics.append(
+                        Diagnostic(
+                            "MARDAS-E116",
+                            "error",
+                            "Book chapter paths must be relative to the project configuration.",
+                            path=config_path,
+                            hint="Keep every chapter inside the project root and use a relative path.",
+                        )
+                    )
+                    continue
+                resolved_path = (project_root / chapter_path).resolve()
+                try:
+                    resolved_path.relative_to(project_root)
+                except ValueError:
+                    diagnostics.append(
+                        Diagnostic(
+                            "MARDAS-E117",
+                            "error",
+                            "Book chapter path escapes the project root.",
+                            path=resolved_path,
+                            hint="Move the chapter inside the project or remove parent-directory traversal.",
+                        )
+                    )
+                    continue
+                resolved_chapters.append(
+                    {"path": resolved_path, "title": chapter.get("title")}
+                )
+            value = tuple(resolved_chapters)
+        elif field.path_value:
             path = Path(value).expanduser()
             if not path.is_absolute():
                 path = config_path.parent / path
@@ -402,6 +482,8 @@ def apply_config_values(
 
     sources: dict[str, str] = {}
     for dest, value in config.values.items():
+        if dest.startswith("book_"):
+            continue
         if dest in explicit_destinations:
             sources[dest] = "command line"
             continue

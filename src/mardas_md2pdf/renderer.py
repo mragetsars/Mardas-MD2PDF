@@ -2766,23 +2766,13 @@ def _merge_pdfs(
         writer.close()
 
 
-def convert(options: PdfOptions) -> Path:
+def convert_render_result(result: MarkdownRenderResult, options: PdfOptions) -> Path:
+    """Render an already parsed Markdown result with the standard PDF pipeline."""
     progress = options.progress
-    _report_progress(progress, "Reading Markdown", 0.03)
-
     options.input_path = Path(options.input_path)
     options.output_path = Path(options.output_path)
     options.debug_html = Path(options.debug_html) if options.debug_html else None
     _validate_conversion_paths(options)
-    result = render_markdown_file(
-        options.input_path,
-        toc=options.toc,
-        toc_depth=options.toc_depth,
-        appearance_style=options.style,
-        appearance_mode=options.mode,
-        unsafe_html=options.unsafe_html,
-        allow_remote_images=options.allow_remote_assets,
-    )
     _apply_resolved_appearance(result.metadata, options)
     _report_progress(progress, "Markdown parsed", 0.16)
 
@@ -2793,7 +2783,13 @@ def convert(options: PdfOptions) -> Path:
 
     options.output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    full_debug_html = build_html(result, options, include_cover=True, include_content=True, include_watermark=True)
+    full_debug_html = build_html(
+        result,
+        options,
+        include_cover=True,
+        include_content=True,
+        include_watermark=True,
+    )
     if options.debug_html:
         _atomic_write_text(options.debug_html, full_debug_html)
     _report_progress(progress, "HTML prepared", 0.28)
@@ -2817,14 +2813,41 @@ def convert(options: PdfOptions) -> Path:
             try:
                 if options.cover:
                     cover_pdf = tmp / "cover.pdf"
-                    cover_html = build_html(result, options, include_cover=True, include_content=False, include_watermark=False, cover_full_bleed=True)
+                    cover_html = build_html(
+                        result,
+                        options,
+                        include_cover=True,
+                        include_content=False,
+                        include_watermark=False,
+                        cover_full_bleed=True,
+                    )
                     _report_progress(progress, "Rendering cover", 0.48)
-                    _render_pdf(page, cover_html, options, cover_pdf, display_footer=False, footer_context=footer_context)
+                    _render_pdf(
+                        page,
+                        cover_html,
+                        options,
+                        cover_pdf,
+                        display_footer=False,
+                        footer_context=footer_context,
+                    )
 
                     content_pdf = tmp / "content.pdf"
-                    content_html = build_html(result, options, include_cover=False, include_content=True, include_watermark=True)
+                    content_html = build_html(
+                        result,
+                        options,
+                        include_cover=False,
+                        include_content=True,
+                        include_watermark=True,
+                    )
                     _report_progress(progress, "Rendering content", 0.72)
-                    _render_pdf(page, content_html, options, content_pdf, display_footer=True, footer_context=footer_context)
+                    _render_pdf(
+                        page,
+                        content_html,
+                        options,
+                        content_pdf,
+                        display_footer=True,
+                        footer_context=footer_context,
+                    )
 
                     _report_progress(progress, "Merging PDF parts", 0.91)
                     cover_page_count = len(PdfReader(str(cover_pdf)).pages)
@@ -2838,9 +2861,22 @@ def convert(options: PdfOptions) -> Path:
                     )
                 else:
                     content_pdf = tmp / "content.pdf"
-                    html_text = build_html(result, options, include_cover=False, include_content=True, include_watermark=True)
+                    html_text = build_html(
+                        result,
+                        options,
+                        include_cover=False,
+                        include_content=True,
+                        include_watermark=True,
+                    )
                     _report_progress(progress, "Rendering PDF", 0.72)
-                    _render_pdf(page, html_text, options, content_pdf, display_footer=True, footer_context=footer_context)
+                    _render_pdf(
+                        page,
+                        html_text,
+                        options,
+                        content_pdf,
+                        display_footer=True,
+                        footer_context=footer_context,
+                    )
 
                     _report_progress(progress, "Writing metadata", 0.91)
                     _copy_pdf_with_metadata(
@@ -2854,3 +2890,20 @@ def convert(options: PdfOptions) -> Path:
                 browser.close()
     _report_progress(progress, "PDF created", 1.0)
     return options.output_path
+
+
+def convert(options: PdfOptions) -> Path:
+    progress = options.progress
+    _report_progress(progress, "Reading Markdown", 0.03)
+
+    options.input_path = Path(options.input_path)
+    result = render_markdown_file(
+        options.input_path,
+        toc=options.toc,
+        toc_depth=options.toc_depth,
+        appearance_style=options.style,
+        appearance_mode=options.mode,
+        unsafe_html=options.unsafe_html,
+        allow_remote_images=options.allow_remote_assets,
+    )
+    return convert_render_result(result, options)

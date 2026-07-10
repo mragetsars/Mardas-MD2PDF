@@ -1853,7 +1853,12 @@ def _is_path_inside(path: Path, root: Path) -> bool:
     return True
 
 
-def _local_image_candidates(src: str, base_dir: Path) -> list[Path]:
+def _local_image_candidates(
+    src: str,
+    base_dir: Path,
+    *,
+    document_root: Path | None = None,
+) -> list[Path]:
     """Return safe local filesystem candidates for an image src.
 
     Markdown image paths are treated as document-local assets. Remote URLs and
@@ -1876,6 +1881,9 @@ def _local_image_candidates(src: str, base_dir: Path) -> list[Path]:
         return []
 
     base_dir = base_dir.resolve(strict=False)
+    allowed_root = (document_root or base_dir).resolve(strict=False)
+    if not _is_path_inside(base_dir, allowed_root):
+        return []
     candidates = [base_dir / raw_path]
 
     # A common authoring mistake is to keep the Markdown reference as
@@ -1888,7 +1896,7 @@ def _local_image_candidates(src: str, base_dir: Path) -> list[Path]:
     unique: list[Path] = []
     seen: set[str] = set()
     for candidate in candidates:
-        if not _is_path_inside(candidate, base_dir):
+        if not _is_path_inside(candidate, allowed_root):
             continue
         key = str(candidate.resolve(strict=False))
         if key not in seen:
@@ -2061,7 +2069,13 @@ def block_remote_images(body_html: str) -> str:
     return str(soup)
 
 
-def embed_local_images(body_html: str, base_dir: str | Path, *, allow_remote_images: bool = False) -> str:
+def embed_local_images(
+    body_html: str,
+    base_dir: str | Path,
+    *,
+    document_root: str | Path | None = None,
+    allow_remote_images: bool = False,
+) -> str:
     """Inline document-local images and block unsafe unresolved image reads.
 
     Chromium can render relative image paths when every asset is present beside
@@ -2084,7 +2098,11 @@ def embed_local_images(body_html: str, base_dir: str | Path, *, allow_remote_ima
         if not src:
             continue
         embedded = False
-        for candidate in _local_image_candidates(src, root):
+        for candidate in _local_image_candidates(
+            src,
+            root,
+            document_root=Path(document_root) if document_root is not None else None,
+        ):
             data_uri = _image_file_to_data_uri(candidate)
             if not data_uri:
                 continue
@@ -2729,6 +2747,7 @@ def render_markdown_file(
     appearance_mode: str | None = None,
     unsafe_html: bool = False,
     allow_remote_images: bool = False,
+    document_root: str | Path | None = None,
 ) -> MarkdownRenderResult:
     input_path = Path(path)
     text = input_path.read_text(encoding="utf-8-sig")
@@ -2745,6 +2764,7 @@ def render_markdown_file(
     result.body_html = embed_local_images(
         result.body_html,
         input_path.resolve().parent,
+        document_root=document_root,
         allow_remote_images=allow_remote_images,
     )
     return result
