@@ -305,7 +305,7 @@ Only English text.
         result,
         PdfOptions(input_path=input_path, output_path=tmp_path / "english.pdf", page_size="Letter"),
     )
-    assert "size: Letter;" in html
+    assert "size: 8.5in 11in;" in html
     assert '<html lang="en" dir="ltr">' in html
     assert "md2pdf-dir-ltr" in html
 

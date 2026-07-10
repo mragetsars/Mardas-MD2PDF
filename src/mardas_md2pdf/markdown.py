@@ -264,6 +264,8 @@ HIGHLIGHT_TRAILING_NEWLINE_RE = re.compile(
     r'(<span class="hll">.*?)(\r?\n)(</span>)',
     re.DOTALL,
 )
+PROTECTED_CODE_TOKEN_PREFIX = "\ue000MD2PDFCODE"
+PROTECTED_CODE_TOKEN_SUFFIX = "\ue001"
 
 
 def _normalize_highlight_line_breaks(highlighted_html: str) -> str:
@@ -1185,6 +1187,107 @@ def _replace_outside_inline_code(
         output.append(text[start : close + len(marker)])
         index = close + len(marker)
     return "".join(output)
+
+
+def _protected_code_token(index: int) -> str:
+    return f"{PROTECTED_CODE_TOKEN_PREFIX}{index:08d}{PROTECTED_CODE_TOKEN_SUFFIX}"
+
+
+def _protect_code_regions(markdown: str) -> tuple[str, list[str]]:
+    """Protect fenced, indented, and multiline inline code before preprocessing."""
+    protected: list[str] = []
+
+    def store(value: str) -> str:
+        token = _protected_code_token(len(protected))
+        protected.append(value)
+        return token
+
+    lines = markdown.splitlines(keepends=True)
+    block_output: list[str] = []
+    index = 0
+    while index < len(lines):
+        line = lines[index]
+        fence_match = FENCE_RE.match(line)
+        if fence_match:
+            marker = fence_match.group(1)
+            marker_char = marker[0]
+            marker_len = len(marker)
+            end = index + 1
+            while end < len(lines):
+                closing = FENCE_RE.match(lines[end])
+                if (
+                    closing
+                    and closing.group(1)[0] == marker_char
+                    and len(closing.group(1)) >= marker_len
+                ):
+                    end += 1
+                    break
+                end += 1
+            segment = "".join(lines[index:end])
+            ending = "\r\n" if segment.endswith("\r\n") else ("\n" if segment.endswith("\n") else "")
+            block_output.append(store(segment) + ending)
+            index = end
+            continue
+
+        if line.startswith(("    ", "\t")):
+            end = index + 1
+            while end < len(lines):
+                candidate = lines[end]
+                if candidate.startswith(("    ", "\t")) or not candidate.strip():
+                    end += 1
+                    continue
+                break
+            segment = "".join(lines[index:end])
+            ending = "\r\n" if segment.endswith("\r\n") else ("\n" if segment.endswith("\n") else "")
+            block_output.append(store(segment) + ending)
+            index = end
+            continue
+
+        block_output.append(line)
+        index += 1
+
+    text = "".join(block_output)
+    inline_output: list[str] = []
+    cursor = 0
+    while cursor < len(text):
+        opening = re.search(r"`+", text[cursor:])
+        if not opening:
+            inline_output.append(text[cursor:])
+            break
+        start = cursor + opening.start()
+        marker = opening.group(0)
+        inline_output.append(text[cursor:start])
+        search_from = start + len(marker)
+        close = -1
+        while True:
+            candidate = text.find(marker, search_from)
+            if candidate < 0:
+                break
+            before_is_tick = candidate > 0 and text[candidate - 1] == "`"
+            after_index = candidate + len(marker)
+            after_is_tick = after_index < len(text) and text[after_index] == "`"
+            if not before_is_tick and not after_is_tick:
+                close = candidate
+                break
+            search_from = candidate + len(marker)
+        if close < 0:
+            inline_output.append(text[start:])
+            break
+        end = close + len(marker)
+        inline_output.append(store(text[start:end]))
+        cursor = end
+    return "".join(inline_output), protected
+
+
+def _restore_code_regions(markdown: str, protected: list[str]) -> str:
+    for index, value in enumerate(protected):
+        token = _protected_code_token(index)
+        if value.endswith("\r\n"):
+            markdown = markdown.replace(token + "\r\n", value)
+        elif value.endswith("\n"):
+            markdown = markdown.replace(token + "\n", value)
+        markdown = markdown.replace(token, value)
+    return markdown
 
 
 def _fence_transition(
@@ -2526,6 +2629,7 @@ def render_markdown(
     unsafe_html: bool = False,
     allow_remote_images: bool = False,
 ) -> MarkdownRenderResult:
+    markdown = markdown.removeprefix("\ufeff")
     metadata, markdown_body = extract_frontmatter(markdown)
     title = guess_title(markdown_body, metadata)
     lang = normalize_language(metadata.get("lang"), "auto")
@@ -2533,6 +2637,7 @@ def render_markdown(
     markdown_body = preprocess_pdf_directives(markdown_body)
     markdown_body, footnotes = extract_footnotes(markdown_body)
     footnote_entries = _normalize_footnotes(footnotes)
+    markdown_body, protected_code = _protect_code_regions(markdown_body)
     markdown_body = replace_footnote_refs(
         markdown_body,
         footnotes=footnote_entries,
@@ -2540,6 +2645,7 @@ def render_markdown(
         text_hint=markdown_body,
     )
     markdown_body = protect_and_transform_math(markdown_body)
+    markdown_body = _restore_code_regions(markdown_body, protected_code)
 
     md = MarkdownIt(
         "gfm-like",
@@ -2612,7 +2718,7 @@ def render_markdown_file(
     allow_remote_images: bool = False,
 ) -> MarkdownRenderResult:
     input_path = Path(path)
-    text = input_path.read_text(encoding="utf-8")
+    text = input_path.read_text(encoding="utf-8-sig")
     result = render_markdown(
         text,
         toc=toc,
