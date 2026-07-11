@@ -17,6 +17,11 @@ The project follows semantic versioning for user-visible behavior. Patch release
 - Extended the release gate to generate and verify the SBOM, release manifest, and checksums after clean-wheel installation.
 - Defined offline distribution as a verified Python wheelhouse bundle rather than an unverified standalone executable; Chromium and a Python runtime remain explicit external prerequisites.
 
+### Fixed
+- Made the large-document benchmark importable on Windows and normalized macOS peak-RSS reporting to KiB.
+- Canonicalized Studio export roots so resolved artifacts remain consistently related to their temporary root on macOS and other symlinked temporary directories.
+- Made cross-platform path assertions and Windows absolute-path security fixtures portable without weakening the underlying boundary checks.
+
 ### Security
 - Added OIDC/Sigstore-backed SLSA build-provenance and SPDX SBOM attestations for GitHub-hosted release artifacts without storing long-lived signing keys in the repository.
 - Rejected release and bundle path traversal, symlink members, duplicate inventory entries, unlisted or missing files, unexpected versions, oversized artifacts, malformed SPDX data, and checksum mismatches.

@@ -29,7 +29,7 @@ def test_frontmatter_branding_cannot_read_absolute_or_parent_files(tmp_path: Pat
 
     for reference in (str(outside), "../outside.png"):
         result = render_markdown(
-            f'---\nbranding: full\nbrand_logo: "{reference}"\n---\n\n# Report\n'
+            f"---\nbranding: full\nbrand_logo: {json.dumps(reference)}\n---\n\n# Report\n"
         )
         with pytest.raises(DocumentAssetError, match="document directory"):
             build_html(result, PdfOptions(input_path=input_path, output_path=document_dir / "out.pdf"))
@@ -61,7 +61,9 @@ def test_studio_reports_unsafe_frontmatter_asset_without_disclosing_file(tmp_pat
     thread = Thread(target=server.serve_forever, daemon=True)
     thread.start()
     try:
-        markdown = f'---\nbranding: full\nbrand_logo: "{outside}"\n---\n\n# Report\n'
+        markdown = (
+            f"---\nbranding: full\nbrand_logo: {json.dumps(str(outside))}\n---\n\n# Report\n"
+        )
         body = json.dumps({"markdown": markdown, "options": {"branding": "full"}})
         connection = HTTPConnection("127.0.0.1", server.server_port, timeout=10)
         connection.request(

@@ -6,7 +6,7 @@ import threading
 
 import pytest
 
-from mardas_md2pdf import renderer
+from mardas_md2pdf import renderer, studio_jobs
 from mardas_md2pdf.book import load_book_manifest, render_book
 from mardas_md2pdf.config import load_project_config
 from mardas_md2pdf.render_pool import RenderPool, RenderQueueFullError
@@ -86,6 +86,32 @@ def test_render_future_records_real_progress_and_timings() -> None:
     assert snapshot.progress == 1.0
     assert snapshot.queue_wait_ms is not None
     assert snapshot.render_ms is not None
+
+
+def test_studio_export_manager_canonicalizes_temporary_root(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    real_root = tmp_path / "real-export-root"
+    real_root.mkdir()
+    alias_root = tmp_path / "alias-export-root"
+    try:
+        alias_root.symlink_to(real_root, target_is_directory=True)
+    except OSError:
+        pytest.skip("directory symlinks are unavailable")
+
+    class AliasTemporaryDirectory:
+        name = str(alias_root)
+
+        def __init__(self, *args, **kwargs) -> None:
+            pass
+
+        def cleanup(self) -> None:
+            pass
+
+    monkeypatch.setattr(studio_jobs.tempfile, "TemporaryDirectory", AliasTemporaryDirectory)
+
+    with StudioExportManager(workers=1, queue_size=1, idle_timeout=10) as manager:
+        assert manager.root == real_root.resolve(strict=True)
 
 
 def test_studio_export_manager_writes_results_outside_memory(tmp_path: Path) -> None:

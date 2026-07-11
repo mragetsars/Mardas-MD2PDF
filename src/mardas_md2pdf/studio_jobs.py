@@ -55,7 +55,7 @@ class StudioExportManager:
         self.max_jobs = max_jobs
         self.ttl_seconds = float(ttl_seconds)
         self._root = tempfile.TemporaryDirectory(prefix="mardas-studio-exports-")
-        self.root = Path(self._root.name)
+        self.root = Path(self._root.name).resolve(strict=True)
         self.pool = RenderPool(
             workers=workers,
             queue_size=queue_size,

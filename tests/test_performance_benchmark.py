@@ -47,3 +47,57 @@ def test_large_document_benchmark_help_is_executable() -> None:
     assert "pages500" in completed.stdout
     assert "--mode" in completed.stdout
     assert "--repeats" in completed.stdout
+
+
+def test_large_document_benchmark_help_survives_missing_resource_module() -> None:
+    code = r"""
+import builtins
+import runpy
+import sys
+
+original_import = builtins.__import__
+
+
+def guarded_import(name, globals=None, locals=None, fromlist=(), level=0):
+    if name == "resource":
+        raise ModuleNotFoundError("No module named 'resource'")
+    return original_import(name, globals, locals, fromlist, level)
+
+
+builtins.__import__ = guarded_import
+script = sys.argv[1]
+sys.argv = [script, "--help"]
+runpy.run_path(script, run_name="__main__")
+"""
+    completed = subprocess.run(
+        [sys.executable, "-c", code, str(SCRIPT)],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    assert "pages500" in completed.stdout
+
+
+def test_peak_rss_kib_is_optional_and_normalizes_macos_units(monkeypatch) -> None:
+    module = _benchmark_module()
+
+    monkeypatch.setattr(module, "_resource", None)
+    assert module._peak_rss_kib() is None
+
+    class FakeResource:
+        RUSAGE_SELF = object()
+
+        @staticmethod
+        def getrusage(_scope):
+            return type("Usage", (), {"ru_maxrss": 4096})()
+
+    monkeypatch.setattr(module, "_resource", FakeResource)
+    monkeypatch.setattr(module.sys, "platform", "darwin")
+    assert module._peak_rss_kib() == 4
+
+    monkeypatch.setattr(module.sys, "platform", "linux")
+    assert module._peak_rss_kib() == 4096

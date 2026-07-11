@@ -202,7 +202,9 @@ def test_explain_book_uses_manifest_title_override(tmp_path: Path, capsys) -> No
     payload = json.loads(capsys.readouterr().out)
     assert payload["chapters"][1]["title"] == "Methods Override"
     assert payload["title"] == "Ordered Research Book"
-    assert payload["output"].endswith("dist/research-book.pdf")
+    output = Path(payload["output"])
+    assert output.name == "research-book.pdf"
+    assert output.parent.name == "dist"
 
 
 def test_init_book_creates_config_and_ordered_sample_chapters(tmp_path: Path) -> None:
@@ -354,7 +356,9 @@ def test_explain_config_serializes_book_manifest_values(tmp_path: Path, capsys) 
     payload = json.loads(capsys.readouterr().out)
     chapters = payload["effective"]["book_chapters"]["value"]
     assert Path(chapters[0]["path"]).name == "01-introduction.md"
-    assert payload["effective"]["book_output"]["value"].endswith("dist/research-book.pdf")
+    output = Path(payload["effective"]["book_output"]["value"])
+    assert output.name == "research-book.pdf"
+    assert output.parent.name == "dist"
 
 
 def test_doctor_validates_book_manifest_paths(tmp_path: Path, capsys) -> None:

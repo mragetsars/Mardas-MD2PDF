@@ -7,13 +7,17 @@ import gc
 import hashlib
 import json
 import platform
-import resource
 import statistics
 import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
+
+try:
+    import resource as _resource
+except ImportError:  # Windows has no POSIX resource module.
+    _resource = None
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 SOURCE_ROOT = REPOSITORY_ROOT / "src"
@@ -155,6 +159,18 @@ def _modes(value: str) -> Iterable[bool]:
     return (False, True)
 
 
+def _peak_rss_kib() -> int | None:
+    """Return process peak RSS in KiB when the platform exposes it."""
+
+    if _resource is None:
+        return None
+    peak = int(_resource.getrusage(_resource.RUSAGE_SELF).ru_maxrss)
+    if sys.platform == "darwin":
+        # macOS reports bytes; Linux reports KiB.
+        return peak // 1024
+    return peak
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -200,7 +216,7 @@ def main(argv: list[str] | None = None) -> int:
         "version": __version__,
         "python": sys.version,
         "platform": platform.platform(),
-        "peak_rss_kib": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
+        "peak_rss_kib": _peak_rss_kib(),
         "results": results,
     }
     report_path = (args.output or output_dir / "benchmark.json").expanduser().resolve()
