@@ -74,7 +74,8 @@ def _collect_fonts(reader: PdfReader) -> list[dict[str, object]]:
             if not isinstance(font, DictionaryObject):
                 continue
             descriptor = _font_descriptor(font)
-            embedded = bool(
+            subtype = str(font.get("/Subtype") or "")
+            embedded = subtype == "/Type3" or bool(
                 descriptor
                 and any(descriptor.get(name) is not None for name in ("/FontFile", "/FontFile2", "/FontFile3"))
             )
@@ -82,7 +83,7 @@ def _collect_fonts(reader: PdfReader) -> list[dict[str, object]]:
                 {
                     "resource": str(resource_name),
                     "base_font": str(font.get("/BaseFont") or ""),
-                    "subtype": str(font.get("/Subtype") or ""),
+                    "subtype": subtype,
                     "embedded": embedded,
                     "to_unicode": _font_to_unicode(font),
                     "first_page": page_index,
