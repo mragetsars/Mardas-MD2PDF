@@ -101,8 +101,31 @@ def appearance_contrast_metrics(appearance: Appearance) -> dict[str, object]:
     }
 
 
+def _mask_inline_code(line: str) -> str:
+    """Replace matched Markdown code spans with spaces while preserving columns."""
+    output: list[str] = []
+    index = 0
+    while index < len(line):
+        marker_match = re.search(r"`+", line[index:])
+        if marker_match is None:
+            output.append(line[index:])
+            break
+        start = index + marker_match.start()
+        marker = marker_match.group(0)
+        content_start = start + len(marker)
+        close = line.find(marker, content_start)
+        if close == -1:
+            output.append(line[index:])
+            break
+        output.append(line[index:start])
+        end = close + len(marker)
+        output.append(" " * (end - start))
+        index = end
+    return "".join(output)
+
+
 def _source_lines(markdown: str) -> list[tuple[int, str]]:
-    """Return source lines that are not inside fenced or indented code blocks."""
+    """Return source lines outside code blocks with inline code masked."""
     lines = markdown.removeprefix("\ufeff").splitlines()
     output: list[tuple[int, str]] = []
     fence: str | None = None
@@ -126,7 +149,7 @@ def _source_lines(markdown: str) -> list[tuple[int, str]]:
             continue
         if line.startswith("    ") or line.startswith("\t"):
             continue
-        output.append((index, line))
+        output.append((index, _mask_inline_code(line)))
     return output
 
 
@@ -338,6 +361,9 @@ def _rendered_semantic_diagnostics(path: Path, result: MarkdownRenderResult) -> 
             )
 
     for table in tables:
+        classes = set(table.get("class", []))
+        if "codehilitetable" in classes or table.get("role") == "presentation":
+            continue
         header_cells = table.find_all("th")
         if not header_cells:
             diagnostics.append(

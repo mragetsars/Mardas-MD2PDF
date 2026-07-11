@@ -205,8 +205,8 @@ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest -q \
   tests/test_markdown.py \
   tests/test_pdf_output.py
 
-mrs-md2pdf audit-accessibility docs/guides/GUIDE.en.md --format json --fail-on warning
-mrs-md2pdf audit-accessibility docs/guides/GUIDE.fa.md --format json --fail-on warning
+mrs-md2pdf audit-accessibility docs/guides/GUIDE.en.md --format json --fail-on error
+mrs-md2pdf audit-accessibility docs/guides/GUIDE.fa.md --format json --fail-on error
 mrs-md2pdf audit-pdf examples/GUIDE.en.pdf --profile all --format json --fail-on never
 mrs-md2pdf audit-pdf examples/GUIDE.fa.pdf --profile all --format json --fail-on never
 ```

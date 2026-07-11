@@ -105,3 +105,26 @@ def test_audit_book_accessibility_reports_chapter_paths(tmp_path: Path, capsys) 
     assert payload["command"] == "audit-book-accessibility"
     assert [item["path"] for item in payload["files"]] == ["chapters/one.md", "chapters/two.md"]
     assert payload["summary"]["warning"] >= 1
+
+
+def test_accessibility_audit_ignores_literal_inline_code_and_code_layout_tables(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "literal.md"
+    path.write_text(
+        "---\nlang: en-US\n---\n# Literal examples\n\n"
+        "The sanitizer supports `<img>` and `<table>` elements.\n\n"
+        "```python linenos\nprint('accessible code')\n```\n",
+        encoding="utf-8",
+    )
+    result = render_markdown_file(path)
+    audit = audit_markdown_result(
+        path=path,
+        markdown=path.read_text(encoding="utf-8"),
+        result=result,
+        appearance=resolve_appearance(),
+    )
+    codes = {item.code for item in audit.diagnostics}
+    assert "MARDAS-A204" not in codes
+    assert "MARDAS-A401" not in codes
+    assert "MARDAS-A402" not in codes
