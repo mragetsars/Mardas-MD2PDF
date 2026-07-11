@@ -86,6 +86,7 @@ from pathlib import Path
 root = Path(sys.argv[1])
 config = root / "mardas.toml"
 text = config.read_text(encoding="utf-8")
+text = text.replace('# language = "fa-IR"', 'language = "en-US"', 1)
 text = text.replace(
     '[bibliography]\nenabled = false',
     '[bibliography]\nenabled = true',
@@ -148,6 +149,9 @@ printf '%s\n' '# Project command smoke' > "$project_smoke/report.md"
 "$venv_bin/mrs-md2pdf" explain-book "$project_smoke" --format json > "$project_smoke/explain-book.json"
 "$venv_bin/mrs-md2pdf" build-book "$project_smoke" --format json --progress off > "$project_smoke/build-book.json"
 test -s "$project_smoke/dist/book.pdf"
+"$venv_bin/mrs-md2pdf" audit-accessibility "$project_smoke/report.md" --format json > "$project_smoke/audit-accessibility.json"
+"$venv_bin/mrs-md2pdf" audit-book-accessibility "$project_smoke" --format json > "$project_smoke/audit-book-accessibility.json"
+"$venv_bin/mrs-md2pdf" audit-pdf "$project_smoke/dist/book.pdf" --format json --fail-on never > "$project_smoke/audit-pdf.json"
 "$venv_python" - "$project_smoke" <<'PY_PROJECT'
 import json
 import sys
@@ -161,6 +165,9 @@ for name in (
     "validate-book",
     "explain-book",
     "build-book",
+    "audit-accessibility",
+    "audit-book-accessibility",
+    "audit-pdf",
 ):
     payload = json.loads((root / f"{name}.json").read_text(encoding="utf-8"))
     if not payload.get("ok"):
@@ -176,6 +183,18 @@ if book.get("cited_entries") != 2:
     raise SystemExit("Citation smoke did not resolve both cited keys")
 if book.get("bibliography_entries") != 2:
     raise SystemExit("Citation smoke did not generate both bibliography entries")
+source_audit = json.loads((root / "audit-accessibility.json").read_text(encoding="utf-8"))
+book_audit = json.loads((root / "audit-book-accessibility.json").read_text(encoding="utf-8"))
+pdf_audit = json.loads((root / "audit-pdf.json").read_text(encoding="utf-8"))
+if source_audit.get("summary", {}).get("error") != 0:
+    raise SystemExit("Installed-wheel source accessibility audit reported an error")
+if book_audit.get("summary", {}).get("error") != 0:
+    raise SystemExit("Installed-wheel Book Mode accessibility audit reported an error")
+metrics = pdf_audit.get("metrics", {})
+if metrics.get("language") != "en-us" or not metrics.get("xmp_metadata"):
+    raise SystemExit("Installed-wheel PDF audit did not observe language and XMP metadata")
+if metrics.get("compliance_claims", {}).get("pdfua") is not False:
+    raise SystemExit("PDF audit must not make an unverified PDF/UA compliance claim")
 
 from pypdf import PdfReader
 reader = PdfReader(str(root / "dist" / "book.pdf"))
