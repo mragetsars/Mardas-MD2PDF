@@ -35,8 +35,8 @@ PALETTES: dict[str, dict[str, str]] = {
         "quote": "#eff6ff",
     },
     "emerald": {
-        "accent": "#059669",
-        "accent_2": "#0d9488",
+        "accent": "#047857",
+        "accent_2": "#0f766e",
         "accent_soft": "#ecfdf5",
         "accent_line": "#34d399",
         "quote": "#ecfdf5",
@@ -49,8 +49,8 @@ PALETTES: dict[str, dict[str, str]] = {
         "quote": "#f5f3ff",
     },
     "amber": {
-        "accent": "#d97706",
-        "accent_2": "#b45309",
+        "accent": "#b45309",
+        "accent_2": "#92400e",
         "accent_soft": "#fffbeb",
         "accent_line": "#f59e0b",
         "quote": "#fffbeb",

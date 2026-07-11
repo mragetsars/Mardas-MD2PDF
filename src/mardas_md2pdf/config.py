@@ -165,6 +165,20 @@ def _choice(choices: tuple[str, ...] | list[str]) -> Callable[[Any], str]:
     return validate
 
 
+
+
+def _language_tag(value: Any) -> str:
+    result = _string(value).replace("_", "-")
+    if result.lower() in {"auto", "und"}:
+        return result.lower()
+    if len(result) > 35 or not re.fullmatch(r"[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*", result):
+        raise ConfigValueError("expected a BCP 47 language tag such as fa-IR or en-US")
+    parts = result.split("-")
+    normalized = [parts[0].lower()]
+    for part in parts[1:]:
+        normalized.append(part.upper() if len(part) == 2 and part.isalpha() else part)
+    return "-".join(normalized)
+
 def _page_size(value: Any) -> str:
     try:
         return validate_page_size(_string(value))
@@ -185,6 +199,7 @@ CONFIG_FIELDS: tuple[ConfigField, ...] = (
     ConfigField("project", "title", "title", _optional_string),
     ConfigField("project", "author", "author", _optional_string),
     ConfigField("project", "description", "description", _optional_string),
+    ConfigField("project", "language", "document_language", _language_tag),
     ConfigField("project", "direction", "document_direction", _choice(["auto", "rtl", "ltr"])),
     ConfigField("output", "toc", "toc", _boolean),
     ConfigField("output", "toc_depth", "toc_depth", _integer(1, 6)),
@@ -249,6 +264,7 @@ def default_config_text() -> str:
 # title = "My document"
 # author = "Author name"
 # description = "Short document summary"
+# language = "fa-IR"
 direction = "auto"
 
 [output]

@@ -41,6 +41,9 @@ PROJECT_COMMANDS = (
     "build-book",
     "validate-book",
     "explain-book",
+    "audit-accessibility",
+    "audit-book-accessibility",
+    "audit-pdf",
 )
 
 
@@ -230,6 +233,7 @@ def _validate_document(
             path,
             toc=bool(values.get("toc", False)),
             toc_depth=int(values.get("toc_depth", 6)),
+            language=values.get("document_language"),
             unsafe_html=bool(values.get("unsafe_html", False)),
             allow_remote_images=bool(values.get("allow_remote_assets", False)),
             document_root=document_root,
@@ -670,6 +674,240 @@ def _explain_config_main(argv: list[str]) -> int:
     return 1 if has_errors(diagnostics) else 0
 
 
+def _audit_parser(command: str) -> argparse.ArgumentParser:
+    descriptions = {
+        "audit-accessibility": "Audit Markdown accessibility without launching Chromium.",
+        "audit-book-accessibility": "Audit all ordered Book Mode chapters for accessibility.",
+        "audit-pdf": "Inspect PDF accessibility and archival-readiness signals.",
+    }
+    parser = argparse.ArgumentParser(
+        prog=f"mrs-md2pdf {command}", description=descriptions[command]
+    )
+    parser.add_argument("input", type=Path)
+    if command != "audit-pdf":
+        _add_config_arguments(parser)
+    else:
+        parser.add_argument(
+            "--profile",
+            choices=["accessibility", "archival", "all"],
+            default="all",
+            help="Limit the PDF audit to accessibility, archival, or all readiness checks.",
+        )
+    parser.add_argument("--format", choices=["text", "json"], default="text")
+    parser.add_argument(
+        "--fail-on",
+        choices=["error", "warning", "never"],
+        default="error",
+        help="Choose which diagnostic severity makes the command return a non-zero status.",
+    )
+    return parser
+
+
+def _audit_exit_status(diagnostics: list[Diagnostic], fail_on: str) -> int:
+    if fail_on == "never":
+        return 0
+    if fail_on == "warning":
+        return 1 if any(item.severity in {"error", "warning"} for item in diagnostics) else 0
+    return 1 if has_errors(diagnostics) else 0
+
+
+def _render_for_accessibility(
+    path: Path,
+    config: LoadedProjectConfig,
+    *,
+    document_root: Path | None = None,
+    defer_reference_resolution: bool = False,
+    defer_citation_resolution: bool = False,
+):
+    values = config.values
+    return render_markdown_file(
+        path,
+        toc=bool(values.get("toc", False)),
+        toc_depth=int(values.get("toc_depth", 6)),
+        appearance_style=values.get("style"),
+        appearance_mode=values.get("mode"),
+        language=values.get("document_language"),
+        unsafe_html=bool(values.get("unsafe_html", False)),
+        allow_remote_images=bool(values.get("allow_remote_assets", False)),
+        document_root=document_root,
+        references_enabled=values.get("references_enabled"),
+        numbering_scope=values.get("numbering_scope"),
+        list_of_figures=values.get("list_of_figures"),
+        list_of_tables=values.get("list_of_tables"),
+        list_of_equations=values.get("list_of_equations"),
+        list_of_listings=values.get("list_of_listings"),
+        defer_reference_resolution=defer_reference_resolution,
+        citations_enabled=values.get("citations_enabled"),
+        bibliography_sources=values.get("bibliography_sources"),
+        citation_style=values.get("citation_style"),
+        bibliography_title=values.get("bibliography_title"),
+        bibliography_include_uncited=values.get("bibliography_include_uncited"),
+        defer_citation_resolution=defer_citation_resolution,
+    )
+
+
+def _audit_accessibility_main(argv: list[str]) -> int:
+    from .accessibility import audit_markdown_result, diagnostic_counts
+
+    parser = _audit_parser("audit-accessibility")
+    args = parser.parse_args(argv)
+    path = args.input.expanduser().resolve()
+    diagnostics = _input_diagnostics(path, required_file=True)
+    config = LoadedProjectConfig(None, path.parent, {})
+    if not diagnostics:
+        config, config_diagnostics = _load_analysis_config(args, path)
+        diagnostics.extend(config_diagnostics)
+
+    metrics: dict[str, object] = {}
+    if not has_errors(diagnostics):
+        try:
+            result = _render_for_accessibility(path, config, document_root=config.root)
+            diagnostics.extend(result.diagnostics)
+            appearance = resolve_appearance(
+                style=config.values.get("style") or appearance_from_metadata(result.metadata).style,
+                palette=config.values.get("palette") or appearance_from_metadata(result.metadata).palette,
+                mode=config.values.get("mode") or appearance_from_metadata(result.metadata).mode,
+            )
+            audit = audit_markdown_result(
+                path=path,
+                markdown=path.read_text(encoding="utf-8-sig"),
+                result=result,
+                appearance=appearance,
+                configured_language=config.values.get("document_language"),
+            )
+            diagnostics.extend(audit.diagnostics)
+            metrics = audit.metrics
+        except (MarkdownInputError, OSError, UnicodeError, ValueError) as exc:
+            diagnostics.append(
+                Diagnostic(
+                    "MARDAS-A900",
+                    "error",
+                    f"Accessibility audit could not analyze the document: {exc}",
+                    path=path,
+                )
+            )
+
+    context = {
+        "command": "audit-accessibility",
+        "input": str(path),
+        "summary": diagnostic_counts(diagnostics),
+        "metrics": metrics,
+        "compliance_claims": {
+            "wcag": False,
+            "pdfua": False,
+            "note": "Source-level readiness checks only; manual and independent validation remain required.",
+        },
+    }
+    write_diagnostics(diagnostics, output_format=args.format, stream=sys.stdout, context=context)
+    return _audit_exit_status(diagnostics, args.fail_on)
+
+
+def _audit_book_accessibility_main(argv: list[str]) -> int:
+    from .accessibility import audit_markdown_result, diagnostic_counts
+
+    parser = _audit_parser("audit-book-accessibility")
+    args = parser.parse_args(argv)
+    target = args.input.expanduser().resolve()
+    explicit = args.config
+    if target.is_file() and target.name == CONFIG_FILENAME and explicit is None:
+        explicit = target
+    start = target.parent if target.is_file() else target
+    diagnostics = _input_diagnostics(target, required_file=False)
+    result = load_project_config(start=start, explicit_path=explicit, disabled=args.no_config)
+    config = result.config
+    diagnostics.extend(result.diagnostics)
+    diagnostics.extend(_project_config_diagnostics(config) if not has_errors(diagnostics) else [])
+    manifest = None
+    file_metrics: list[dict[str, object]] = []
+    if not has_errors(diagnostics):
+        manifest, manifest_diagnostics = load_book_manifest(config)
+        diagnostics.extend(manifest_diagnostics)
+
+    if manifest is not None and not has_errors(diagnostics):
+        _validated_manifest, _bundle, book_diagnostics = _book_validation(config)
+        diagnostics.extend(book_diagnostics)
+
+    if manifest is not None and not has_errors(diagnostics):
+        for chapter in manifest.chapters:
+            try:
+                rendered = _render_for_accessibility(
+                    chapter.path,
+                    config,
+                    document_root=manifest.root,
+                    defer_reference_resolution=bool(config.values.get("references_enabled", False)),
+                    defer_citation_resolution=bool(config.values.get("citations_enabled", False)),
+                )
+                diagnostics.extend(rendered.diagnostics)
+                metadata_appearance = appearance_from_metadata(rendered.metadata)
+                appearance = resolve_appearance(
+                    style=config.values.get("style") or metadata_appearance.style,
+                    palette=config.values.get("palette") or metadata_appearance.palette,
+                    mode=config.values.get("mode") or metadata_appearance.mode,
+                )
+                audit = audit_markdown_result(
+                    path=chapter.path,
+                    markdown=chapter.path.read_text(encoding="utf-8-sig"),
+                    result=rendered,
+                    appearance=appearance,
+                    configured_language=config.values.get("document_language"),
+                )
+                diagnostics.extend(audit.diagnostics)
+                try:
+                    relative = chapter.path.relative_to(manifest.root).as_posix()
+                except ValueError:
+                    relative = chapter.path.name
+                file_metrics.append({"path": relative, **audit.metrics})
+            except (MarkdownInputError, OSError, UnicodeError, ValueError) as exc:
+                diagnostics.append(
+                    Diagnostic(
+                        "MARDAS-A900",
+                        "error",
+                        f"Accessibility audit could not analyze the chapter: {exc}",
+                        path=chapter.path,
+                    )
+                )
+
+    context: dict[str, object] = {
+        "command": "audit-book-accessibility",
+        "input": str(target),
+        "summary": diagnostic_counts(diagnostics),
+        "files": file_metrics,
+        "compliance_claims": {
+            "wcag": False,
+            "pdfua": False,
+            "note": "Source-level readiness checks only; manual and independent validation remain required.",
+        },
+    }
+    if manifest is not None:
+        context.update(book_context(manifest, None))
+    write_diagnostics(diagnostics, output_format=args.format, stream=sys.stdout, context=context)
+    return _audit_exit_status(diagnostics, args.fail_on)
+
+
+def _audit_pdf_main(argv: list[str]) -> int:
+    from .pdf_audit import audit_pdf, diagnostic_counts
+
+    parser = _audit_parser("audit-pdf")
+    args = parser.parse_args(argv)
+    path = args.input.expanduser().resolve()
+    if not path.is_file():
+        diagnostics = [
+            Diagnostic("MARDAS-P800", "error", "PDF input is not a regular file.", path=path)
+        ]
+        metrics: dict[str, object] = {"path": str(path), "profile": args.profile}
+    else:
+        result = audit_pdf(path, profile=args.profile)
+        diagnostics = list(result.diagnostics)
+        metrics = result.metrics
+    context = {
+        "command": "audit-pdf",
+        "summary": diagnostic_counts(diagnostics),
+        "metrics": metrics,
+    }
+    write_diagnostics(diagnostics, output_format=args.format, stream=sys.stdout, context=context)
+    return _audit_exit_status(diagnostics, args.fail_on)
+
+
 def _book_parser(command: str) -> argparse.ArgumentParser:
     descriptions = {
         "build-book": "Build one deterministic PDF from the ordered chapters in mardas.toml.",
@@ -908,6 +1146,9 @@ def run_project_command(command: str, argv: list[str]) -> int:
         "build-book": _build_book_main,
         "validate-book": _validate_book_main,
         "explain-book": _explain_book_main,
+        "audit-accessibility": _audit_accessibility_main,
+        "audit-book-accessibility": _audit_book_accessibility_main,
+        "audit-pdf": _audit_pdf_main,
     }
     try:
         handler = handlers[command]

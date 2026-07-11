@@ -423,6 +423,7 @@ def render_book(
                 toc_depth=int(config_values.get("toc_depth", 6)),
                 appearance_style=config_values.get("style"),
                 appearance_mode=config_values.get("mode"),
+                language=config_values.get("document_language"),
                 unsafe_html=bool(config_values.get("unsafe_html", False)),
                 allow_remote_images=bool(config_values.get("allow_remote_assets", False)),
                 document_root=manifest.root,
@@ -537,6 +538,9 @@ def render_book(
         value = config_values.get(config_key)
         if value not in (None, ""):
             first_metadata[key] = value
+    language = config_values.get("document_language")
+    if language not in (None, "", "auto"):
+        first_metadata["lang"] = language
     direction = config_values.get("document_direction")
     if direction not in (None, "", "auto"):
         first_metadata["dir"] = direction
@@ -639,6 +643,7 @@ def book_pdf_options(
         h1_page_break=bool(values.get("h1_page_break", False)),
         debug_html=debug_html.expanduser().resolve(strict=False) if debug_html else None,
         page_size=str(values.get("page_size", "A4")),
+        document_language=values.get("document_language"),
         document_direction=values.get("document_direction"),
         margin_top=str(values.get("margin_top", "18mm")),
         margin_bottom=str(values.get("margin_bottom", "20mm")),

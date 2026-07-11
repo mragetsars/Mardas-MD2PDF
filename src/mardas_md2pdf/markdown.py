@@ -103,6 +103,7 @@ GLOBAL_SAFE_ATTRS = {
     "role",
     "aria-label",
     "aria-describedby",
+    "aria-labelledby",
     "aria-hidden",
     "data-lang",
     "data-line-start",
@@ -2325,6 +2326,56 @@ def normalize_semantic_captions(soup: BeautifulSoup) -> None:
             _apply_caption_profile(caption)
 
 
+def enhance_accessibility_semantics(soup: BeautifulSoup) -> None:
+    """Add deterministic HTML associations used by browsers and source audits.
+
+    Chromium does not currently emit a verified tagged PDF for this project, so
+    these attributes are HTML-level improvements rather than a PDF/UA claim.
+    """
+    used_ids = {str(tag.get("id")) for tag in soup.find_all(id=True) if tag.get("id")}
+
+    def allocate(prefix: str) -> str:
+        index = 1
+        while True:
+            candidate = f"md2pdf-{prefix}-{index:03d}"
+            if candidate not in used_ids:
+                used_ids.add(candidate)
+                return candidate
+            index += 1
+
+    for figure in soup.find_all("figure"):
+        classes = set(figure.get("class", []))
+        if classes.intersection({"code-block", "mermaid-diagram"}) or figure.find("img") is None:
+            continue
+        caption = figure.find("figcaption", recursive=False)
+        if caption is not None:
+            caption_id = str(caption.get("id") or allocate("figure-caption"))
+            caption["id"] = caption_id
+            figure["role"] = figure.get("role") or "group"
+            figure["aria-labelledby"] = caption_id
+
+    for table in soup.find_all("table"):
+        caption = table.find("caption", recursive=False)
+        if caption is not None:
+            caption_id = str(caption.get("id") or allocate("table-caption"))
+            caption["id"] = caption_id
+            table["aria-describedby"] = caption_id
+
+        thead = table.find("thead")
+        if thead is not None:
+            for header in thead.find_all("th"):
+                header["scope"] = header.get("scope") or "col"
+
+        for row in table.find_all("tr"):
+            direct_cells = row.find_all(["th", "td"], recursive=False)
+            if not direct_cells:
+                continue
+            for position, cell in enumerate(direct_cells):
+                if cell.name != "th" or cell.get("scope"):
+                    continue
+                cell["scope"] = "row" if position == 0 and row.find_parent("tbody") else "col"
+
+
 def promote_image_caption_pairs(soup: BeautifulSoup) -> None:
     """Turn common Markdown image-caption pairs into semantic figures.
 
@@ -2671,6 +2722,7 @@ def postprocess_html(
         if summary is not None:
             summary["class"] = list(set(summary.get("class", []) + ["md2pdf-summary"]))
 
+    enhance_accessibility_semantics(soup)
     return str(soup), reference_diagnostics + citation_diagnostics
 
 
@@ -2753,6 +2805,7 @@ def render_markdown(
     code_style: str | None = None,
     appearance_style: str | None = None,
     appearance_mode: str | None = None,
+    language: str | None = None,
     unsafe_html: bool = False,
     allow_remote_images: bool = False,
     references_enabled: bool | None = None,
@@ -2772,6 +2825,8 @@ def render_markdown(
 ) -> MarkdownRenderResult:
     markdown = markdown.removeprefix("\ufeff")
     metadata, markdown_body = extract_frontmatter(markdown)
+    if language is not None:
+        metadata["lang"] = normalize_language(language, "auto")
     if code_style is None:
         metadata_appearance = appearance_from_metadata(metadata)
         appearance = resolve_appearance(
@@ -3041,6 +3096,7 @@ def render_markdown_file(
     code_style: str | None = None,
     appearance_style: str | None = None,
     appearance_mode: str | None = None,
+    language: str | None = None,
     unsafe_html: bool = False,
     allow_remote_images: bool = False,
     document_root: str | Path | None = None,
@@ -3117,6 +3173,7 @@ def render_markdown_file(
         code_style=code_style,
         appearance_style=appearance_style,
         appearance_mode=appearance_mode,
+        language=language,
         unsafe_html=unsafe_html,
         allow_remote_images=allow_remote_images,
         references_enabled=references_enabled,

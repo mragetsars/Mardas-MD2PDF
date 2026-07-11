@@ -92,6 +92,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--author", help="Override author metadata")
     parser.add_argument("--description", help="Override summary/description metadata")
     parser.add_argument(
+        "--lang",
+        dest="document_language",
+        help="Declare the document language with a BCP 47 tag such as fa-IR or en-US.",
+    )
+    parser.add_argument(
         "--toc",
         dest="toc",
         action="store_true",
@@ -521,6 +526,7 @@ def _conversion_main(argv: list[str]) -> int:
         h1_page_break=args.h1_page_break,
         debug_html=args.debug_html,
         page_size=page_size,
+        document_language=args.document_language,
         document_direction=args.document_direction,
         margin_top=args.margin_top,
         margin_bottom=args.margin_bottom,

@@ -23,7 +23,15 @@ from urllib.parse import quote, unquote
 
 from playwright.sync_api import Browser, BrowserContext, Page, Playwright, sync_playwright
 from pypdf import PdfReader, PdfWriter
-from pypdf.generic import ArrayObject, DictionaryObject, Fit, NameObject, NumberObject, TextStringObject
+from pypdf.generic import (
+    ArrayObject,
+    BooleanObject,
+    DictionaryObject,
+    Fit,
+    NameObject,
+    NumberObject,
+    TextStringObject,
+)
 
 from .appearance import (
     Appearance,
@@ -112,6 +120,7 @@ class PdfOptions:
     h1_page_break: bool = False
     debug_html: Path | None = None
     page_size: str = "A4"
+    document_language: str | None = None
     document_direction: str | None = None
     margin_top: str = "18mm"
     margin_bottom: str = "20mm"
@@ -803,7 +812,7 @@ def _metadata_items(value: Any) -> list[str]:
 def _footer_context(result: MarkdownRenderResult, options: PdfOptions, title: str) -> FooterContext:
     """Build the small running metadata line used in page footers."""
     metadata = result.metadata
-    raw_lang = _stringify_metadata_value(metadata.get("lang"))
+    raw_lang = _stringify_metadata_value(options.document_language or metadata.get("lang"))
     document_direction = _resolved_document_direction(result, options, raw_lang)
     lang = raw_lang or ("fa" if document_direction == "rtl" else "en")
 
@@ -2107,7 +2116,7 @@ def build_html(
         if options.description is not None
         else _first_metadata_value(metadata, "description", "summary")
     )
-    raw_lang = _stringify_metadata_value(metadata.get("lang"))
+    raw_lang = _stringify_metadata_value(options.document_language or metadata.get("lang"))
     document_direction = _resolved_document_direction(result, options, raw_lang)
     lang = raw_lang or ("fa" if document_direction == "rtl" else "en")
     labels = _localized_labels(lang)
@@ -2370,6 +2379,86 @@ def _keywords_metadata(metadata: dict[str, Any]) -> str:
     if isinstance(value, (list, tuple, set)):
         return ", ".join(_metadata_items(value))
     return _stringify_metadata_value(value, item_separator=", ")
+
+
+def _pdf_date_to_iso(value: str) -> str:
+    match = re.fullmatch(
+        r"D:(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})(Z|[+-]\d{2}'?\d{2}'?)?",
+        value,
+    )
+    if not match:
+        return ""
+    year, month, day, hour, minute, second, zone = match.groups()
+    if not zone or zone == "Z":
+        suffix = "Z"
+    else:
+        compact = zone.replace("'", "")
+        suffix = f"{compact[:3]}:{compact[3:]}"
+    return f"{year}-{month}-{day}T{hour}:{minute}:{second}{suffix}"
+
+
+def _xmp_packet(metadata: dict[str, str], *, lang: str | None) -> bytes:
+    title = html.escape(str(metadata.get("/Title") or "Document"))
+    author = html.escape(str(metadata.get("/Author") or ""))
+    subject = html.escape(str(metadata.get("/Subject") or ""))
+    keywords = html.escape(str(metadata.get("/Keywords") or ""))
+    creator = html.escape(str(metadata.get("/Creator") or "Mardas MD2PDF"))
+    producer = html.escape(str(metadata.get("/Producer") or "Mardas MD2PDF"))
+    language = html.escape(normalize_language(lang, "und"))
+    created = html.escape(_pdf_date_to_iso(str(metadata.get("/CreationDate") or "")))
+    modified = html.escape(_pdf_date_to_iso(str(metadata.get("/ModDate") or "")))
+    author_xml = (
+        f"<dc:creator><rdf:Seq><rdf:li>{author}</rdf:li></rdf:Seq></dc:creator>"
+        if author
+        else ""
+    )
+    description_xml = (
+        f'<dc:description><rdf:Alt><rdf:li xml:lang="x-default">{subject}</rdf:li></rdf:Alt></dc:description>'
+        if subject
+        else ""
+    )
+    keywords_xml = f"<pdf:Keywords>{keywords}</pdf:Keywords>" if keywords else ""
+    create_xml = f"<xmp:CreateDate>{created}</xmp:CreateDate>" if created else ""
+    modify_xml = f"<xmp:ModifyDate>{modified}</xmp:ModifyDate>" if modified else ""
+    packet = (
+        '<?xpacket begin="\ufeff" id="W5M0MpCehiHzreSzNTczkc9d"?>\n'
+        '<x:xmpmeta xmlns:x="adobe:ns:meta/">\n'
+        '  <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">\n'
+        '    <rdf:Description rdf:about=""\n'
+        '      xmlns:dc="http://purl.org/dc/elements/1.1/"\n'
+        '      xmlns:pdf="http://ns.adobe.com/pdf/1.3/"\n'
+        '      xmlns:xmp="http://ns.adobe.com/xap/1.0/">\n'
+        '      <dc:format>application/pdf</dc:format>\n'
+        f'      <dc:title><rdf:Alt><rdf:li xml:lang="x-default">{title}</rdf:li></rdf:Alt></dc:title>\n'
+        f'      {author_xml}\n'
+        f'      {description_xml}\n'
+        f'      <dc:language><rdf:Bag><rdf:li>{language}</rdf:li></rdf:Bag></dc:language>\n'
+        f'      <pdf:Producer>{producer}</pdf:Producer>\n'
+        f'      {keywords_xml}\n'
+        f'      <xmp:CreatorTool>{creator}</xmp:CreatorTool>\n'
+        f'      {create_xml}\n'
+        f'      {modify_xml}\n'
+        '    </rdf:Description>\n'
+        '  </rdf:RDF>\n'
+        '</x:xmpmeta>\n'
+        '<?xpacket end="w"?>'
+    )
+    return packet.encode("utf-8")
+
+
+def _apply_pdf_catalog_metadata(
+    writer: PdfWriter, metadata: dict[str, str], *, lang: str | None
+) -> None:
+    language = normalize_language(lang, "und")
+    writer.root_object[NameObject("/Lang")] = TextStringObject(language)
+    preferences = writer.root_object.get("/ViewerPreferences")
+    if hasattr(preferences, "get_object"):
+        preferences = preferences.get_object()
+    if not isinstance(preferences, DictionaryObject):
+        preferences = DictionaryObject()
+        writer.root_object[NameObject("/ViewerPreferences")] = preferences
+    preferences[NameObject("/DisplayDocTitle")] = BooleanObject(True)
+    writer.xmp_metadata = _xmp_packet(metadata, lang=language)
 
 
 def _pdf_metadata(result: MarkdownRenderResult, options: PdfOptions, title: str) -> dict[str, str]:
@@ -3002,6 +3091,7 @@ def _copy_pdf_with_metadata(
         _rewrite_pdf_link_annotation_destinations(writer, named_destinations)
         _add_pdf_page_labels(writer, content_start_page=outline_start_page, lang=page_label_lang)
         writer.add_metadata(metadata)
+        _apply_pdf_catalog_metadata(writer, metadata, lang=page_label_lang)
         if outline_source_entries:
             _add_pdf_outline(
                 writer,
@@ -3048,6 +3138,7 @@ def _merge_pdfs(
         _add_pdf_page_labels(writer, content_start_page=outline_start_page, lang=page_label_lang)
         if metadata:
             writer.add_metadata(metadata)
+            _apply_pdf_catalog_metadata(writer, metadata, lang=page_label_lang)
         if outline_source_entries:
             _add_pdf_outline(
                 writer,
@@ -3207,6 +3298,7 @@ def convert(options: PdfOptions, *, session: RenderSession | None = None) -> Pat
         toc_depth=options.toc_depth,
         appearance_style=options.style,
         appearance_mode=options.mode,
+        language=options.document_language,
         unsafe_html=options.unsafe_html,
         allow_remote_images=options.allow_remote_assets,
         references_enabled=options.references_enabled,
