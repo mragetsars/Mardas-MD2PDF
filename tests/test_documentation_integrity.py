@@ -314,7 +314,7 @@ def test_ci_uploads_visual_qa_artifacts():
     assert "scripts/audit_appearance_matrix.py" in workflow
     assert "scripts/audit_pdf_features.py" in workflow
     assert "scripts/audit_studio_visual.py" in workflow
-    assert "actions/upload-artifact@v4" in workflow
+    assert "actions/upload-artifact@v7" in workflow
     assert "build/visual-qa/" in workflow
 
 

@@ -4,6 +4,13 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
 
+if [[ -z "${SOURCE_DATE_EPOCH:-}" ]]; then
+  SOURCE_DATE_EPOCH="$(git log -1 --format=%ct 2>/dev/null || printf '946684800')"
+fi
+export SOURCE_DATE_EPOCH
+export PYTHONHASHSEED="${PYTHONHASHSEED:-0}"
+export TZ="${TZ:-UTC}"
+
 run_visual_qa="${MARDAS_RELEASE_VISUAL_QA:-0}"
 preflight_pages="${MARDAS_PREFLIGHT_PAGES:-1,2,3}"
 preflight_timeout="${MARDAS_PREFLIGHT_TIMEOUT:-60}"
@@ -293,8 +300,24 @@ for module in ("render_pool.py", "studio_jobs.py"):
         raise SystemExit(f"Missing packaged performance module: {module}")
 PY
 
-(
-  cd dist
-  rm -f CHECKSUMS.sha256
-  sha256sum ./*.whl ./*.tar.gz > CHECKSUMS.sha256
-)
+release_version="$($venv_python -c 'from importlib import metadata; print(metadata.version("mardas-md2pdf"))')"
+sdist_path="$(find dist -maxdepth 1 -type f -name '*.tar.gz' -print -quit)"
+if [[ -z "$sdist_path" ]]; then
+  echo "Release gate failed: source distribution was not produced." >&2
+  exit 1
+fi
+source_revision="$(git rev-parse HEAD 2>/dev/null || printf 'unknown')"
+python scripts/generate_sbom.py \
+  --python "$venv_python" \
+  --distribution mardas-md2pdf \
+  --artifact "$wheel_path" \
+  --artifact "$sdist_path" \
+  --source-revision "$source_revision" \
+  --source-date-epoch "$SOURCE_DATE_EPOCH" \
+  --output "dist/mardas-md2pdf-${release_version}.spdx.json"
+python scripts/finalize_release_artifacts.py \
+  --artifact-dir dist \
+  --version "$release_version" \
+  --source-revision "$source_revision" \
+  --source-date-epoch "$SOURCE_DATE_EPOCH" \
+  --require-sbom

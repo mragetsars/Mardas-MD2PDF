@@ -41,6 +41,11 @@ def test_maintenance_scripts_are_executable() -> None:
         "scripts/normalize_sdist.py",
         "scripts/clean_workspace.sh",
         "scripts/release_gate.sh",
+        "scripts/release_provenance.py",
+        "scripts/generate_sbom.py",
+        "scripts/finalize_release_artifacts.py",
+        "scripts/build_offline_bundle.py",
+        "scripts/cross_platform_smoke.py",
     ]:
         path = ROOT / relative_path
         assert path.is_file()
@@ -127,7 +132,9 @@ def test_release_gate_consolidates_release_checks() -> None:
     assert "MARDAS_RELEASE_VISUAL_QA" in script
     assert "python -m venv" in script
     assert "pip check" in script
-    assert "CHECKSUMS.sha256" in script
+    assert "scripts/generate_sbom.py" in script
+    assert "scripts/finalize_release_artifacts.py" in script
+    assert "--require-sbom" in script
     assert "./scripts/release_gate.sh" in release_doc
 
 
@@ -137,6 +144,11 @@ def test_release_workflow_runs_the_complete_release_gate() -> None:
     assert "./scripts/release_gate.sh" in workflow
     assert "MARDAS_RELEASE_VISUAL_QA: '1'" in workflow
     assert "./scripts/check.sh" not in workflow
+    assert "scripts/build_offline_bundle.py" in workflow
+    assert "scripts/finalize_release_artifacts.py" in workflow
+    assert "actions/attest@v4" in workflow
+    assert "subject-checksums" in workflow
+    assert "sbom-path" in workflow
 
 
 def test_check_render_smoke_uses_process_tree_safe_command_runner() -> None:
