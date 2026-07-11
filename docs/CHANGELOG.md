@@ -4,6 +4,35 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.20.0 - 2026-07-11
+
+### Added
+- Added `audit-accessibility`, `audit-book-accessibility`, and `audit-pdf` commands with human-readable and JSON output plus configurable `--fail-on error|warning|never` release behavior.
+- Added bounded source diagnostics for document language, heading hierarchy, image alternative text, link purpose, table headers/captions, and built-in theme contrast.
+- Added PDF readiness inspection for catalog language, XMP metadata, font embedding, ToUnicode maps, tagging signals, JavaScript, attachments, output intents, encryption, and PDF/A identifiers.
+- Added project-level `language` configuration and a `--lang` conversion override using validated BCP 47-style language tags.
+
+### Changed
+- Added catalog `/Lang`, viewer `DisplayDocTitle`, document information metadata, and XMP metadata to generated PDFs without adding unverified tagging or PDF/A conformance flags.
+- Added deterministic figure/caption and table/caption relationships plus table-header `scope` attributes to rendered HTML where they can be derived safely.
+- Improved the light emerald and amber palette accent colors to meet the built-in 4.5:1 normal-text contrast threshold.
+- Extended the clean-wheel release gate to run source, Book Mode, and PDF readiness audits from the installed distribution.
+
+### Fixed
+- Classified Type 3 PDF fonts as embedded when their glyph programs are present in `/CharProcs`, avoiding false unembedded-font warnings in readiness reports.
+- Kept exact code-listing and Mermaid markup stable while limiting new ARIA figure associations to image figures with explicit captions.
+- Ignored literal inline-code examples and syntax-highlighting layout tables during source audits so accessibility diagnostics reflect real document semantics.
+
+### Security
+- Kept all accessibility and PDF audits local and bounded by the existing document, project, and file-size trust boundaries; no document content is sent to a network service.
+- Kept compliance claims explicit and conservative: built-in audits do not claim WCAG, PDF/UA, or PDF/A conformance and never fabricate structure trees, output intents, or PDF/A identifiers.
+
+### Tests
+- Added source-audit, Book Mode audit, PDF-structure audit, language/XMP metadata, font-classification, semantic-HTML, palette-contrast, installed-wheel, and release-gate regression coverage.
+
+### Notes
+- Formal PDF/UA or PDF/A conformance still requires an independent validator and manual review; current Chromium output remains explicitly reported as unverified/untagged where applicable.
+
 ## 1.19.0 - 2026-07-10
 
 ### Added
