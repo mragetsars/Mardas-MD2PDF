@@ -4,6 +4,35 @@ All notable changes to Mardas MD2PDF are tracked here.
 
 The project follows semantic versioning for user-visible behavior. Patch releases may include documentation, generated guide PDF refreshes, regression tests, and narrowly scoped renderer/Studio fixes.
 
+## 1.21.0 - 2026-07-11
+
+### Added
+- Added cross-platform Linux, Windows, and macOS CI matrices with clean-wheel Unicode-path PDF rendering on every supported runner family.
+- Added deterministic SPDX 2.3 runtime SBOM generation from a clean installed-wheel environment, including exact runtime dependency versions and release-artifact SHA-256 digests.
+- Added validated `RELEASE-MANIFEST.json` and `CHECKSUMS.sha256` inventories plus platform-specific offline Python wheel bundles with self-verifying installers.
+- Added scheduled CodeQL analysis and weekly Dependabot maintenance for Python and GitHub Actions dependencies.
+
+### Changed
+- Updated maintained GitHub Actions to their current Node 24-compatible major releases and separated core verification, platform wheel smoke, offline-bundle construction, and final attestation jobs.
+- Extended the release gate to generate and verify the SBOM, release manifest, and checksums after clean-wheel installation.
+- Defined offline distribution as a verified Python wheelhouse bundle rather than an unverified standalone executable; Chromium and a Python runtime remain explicit external prerequisites.
+
+### Security
+- Added OIDC/Sigstore-backed SLSA build-provenance and SPDX SBOM attestations for GitHub-hosted release artifacts without storing long-lived signing keys in the repository.
+- Rejected release and bundle path traversal, symlink members, duplicate inventory entries, unlisted or missing files, unexpected versions, oversized artifacts, malformed SPDX data, and checksum mismatches.
+- Kept offline installation index-free with checksum verification before virtual-environment creation and package installation.
+
+### CI
+- Added complete pytest coverage on Linux Python 3.10-3.13 and Windows/macOS Python 3.12-3.13, plus wheel-built Chromium rendering on all three operating systems.
+- Added artifact retention, release-file aggregation, provenance attestation, and SBOM attestation to the tag/manual release workflow while retaining explicit maintainer control of GitHub Release publication.
+
+### Tests
+- Added release-provenance, deterministic SPDX, manifest/checksum, offline-bundle, archive-boundary, workflow-contract, and cross-platform smoke regression coverage.
+
+### Notes
+- GitHub attestations are created only by the hosted release workflow; local builds can generate and verify matching manifests, checksums, SBOM structure, and offline bundles but cannot reproduce GitHub's OIDC identity locally.
+- Offline bundles include Python wheels only. A compatible Python interpreter and Chromium installation are still required for PDF rendering.
+
 ## 1.20.0 - 2026-07-11
 
 ### Added
