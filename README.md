@@ -192,6 +192,36 @@ mrs-md2pdf audit-pdf dist/book.pdf --profile all
 
 Source audits check declared language, heading hierarchy, image alternative text, link names, table headers/captions, and the selected theme's text contrast. PDF audits inspect catalog language, XMP metadata, font embedding, ToUnicode maps, tagging signals, JavaScript, attachments, output intents, and PDF/A identifiers. JSON output and `--fail-on error|warning|never` make the commands suitable for CI. These are readiness checks: Mardas MD2PDF does **not** claim PDF/UA or PDF/A conformance without an independent standards validator.
 
+## Release Verification and Offline Bundles
+
+Tagged release workflows verify the project on Linux, Windows, and macOS, build deterministic wheel/source artifacts, generate an SPDX 2.3 runtime SBOM, and create platform-specific offline Python wheel bundles. The bundles contain the project wheel and resolved runtime dependency wheels, but deliberately do not claim to include Chromium or a standalone Python runtime.
+
+Verify a downloaded release directory before installing:
+
+```bash
+sha256sum -c CHECKSUMS.sha256
+python scripts/finalize_release_artifacts.py \
+  --artifact-dir . \
+  --version X.Y.Z \
+  --require-sbom \
+  --verify-only
+```
+
+Official GitHub artifacts can also be verified against their signed provenance:
+
+```bash
+gh attestation verify mardas_md2pdf-X.Y.Z-py3-none-any.whl \
+  --repo mragetsars/Mardas-MD2PDF
+```
+
+An offline Python bundle is installed from its extracted directory:
+
+```bash
+python install.py --target mardas-md2pdf-venv
+```
+
+The installer verifies the embedded checksums and invokes pip with `--no-index`. PDF rendering still requires a compatible Chromium executable; the optional `python -m playwright install chromium` step may require network access.
+
 The Studio interface groups export settings into Document, Appearance, Branding, Layout, and Advanced sections. Appearance and branding choices use visual cards, while advanced controls such as watermarks and local assets stay collapsed until needed. The **Open Bundle** and **Save Bundle** controls handle portable `.mardas.json` snapshots containing Markdown, export options, and attached assets; they are separate from the live on-disk Project Workspace opened with `--project`. Studio also supports drag-and-drop asset management, auto-scaling PDF-like renderer-backed preview, Fast approximate browser-local preview, debug HTML export, and a command palette via **Ctrl/Cmd+K**. In Project Workspace mode, **Ctrl/Cmd+S** saves the active project file; **Ctrl/Cmd+Shift+S** saves a portable bundle, and **Ctrl/Cmd+Enter** exports the normal single-document PDF. The complete Studio walkthrough lives in the guides.
 
 ## Repository Structure

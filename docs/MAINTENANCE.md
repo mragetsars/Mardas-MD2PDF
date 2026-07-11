@@ -161,7 +161,19 @@ The script removes the previous `dist/` directory before building so stale packa
 
 ## Release artifacts workflow
 
-The `Release Artifacts` GitHub Actions workflow runs on `v*` tags and manual dispatch. It invokes `scripts/release_gate.sh` as the single release contract, including Chromium smoke, guide rebuild and PDF preflight, Visual QA, deterministic distribution builds, clean-wheel installation, packaged-asset and entry-point verification, and checksum generation before uploading artifacts.
+The `Release Artifacts` GitHub Actions workflow runs on `v*` tags and manual dispatch. It invokes `scripts/release_gate.sh` as the single release contract, including Chromium smoke, guide rebuild and PDF preflight, Visual QA, deterministic distribution builds, clean-wheel installation, packaged-asset and entry-point verification, SPDX SBOM generation, release-manifest validation, and checksum generation.
+
+After the core artifacts pass, Linux, Windows, and macOS runners each resolve a platform-specific offline wheelhouse and build a deterministic offline Python bundle with `scripts/build_offline_bundle.py`. A final Linux job combines the core files, guide PDFs, and offline bundles, revalidates the complete manifest, then creates SLSA provenance and SBOM attestations through GitHub's OIDC/Sigstore service.
+
+Useful local commands:
+
+```bash
+python scripts/generate_sbom.py --help
+python scripts/build_offline_bundle.py --help
+python scripts/finalize_release_artifacts.py --help
+```
+
+`CHECKSUMS.sha256` covers every file in the manifest-governed `release-X.Y.Z` artifact plus `RELEASE-MANIFEST.json`, but never includes itself. Signed Sigstore bundles are uploaded separately as `release-attestations-X.Y.Z` with their own checksum inventory, because attestations are created only after the release payload has been finalized. Offline bundles contain another checksum inventory for their internal files. Chromium is intentionally excluded from the offline bundle and must be provided separately.
 
 ## Patch set hygiene
 

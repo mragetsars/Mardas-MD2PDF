@@ -153,6 +153,16 @@ Bibliography sources are local project inputs. Project/front-matter paths must r
 
 Citation rendering never performs DOI lookup, URL retrieval, or remote metadata discovery. DOI and URL fields may become ordinary `https` links in the final bibliography, but they are not fetched during conversion. Citation keys are validated internal identifiers; duplicate keys, malformed sources/groups, repeated source files, and undefined citations fail before Chromium starts. Citation-like text in code, existing links, scripts, styles, and literal contexts remains unchanged.
 
+## Release supply-chain boundary
+
+Release metadata is generated from files already produced by the release gate and from the dependency closure installed in a clean wheel environment. The SPDX generator records exact installed runtime versions and release-artifact digests; it does not execute package code or contact metadata services.
+
+`RELEASE-MANIFEST.json` and `CHECKSUMS.sha256` use flat relative filenames only. Verification rejects absolute paths, parent traversal, duplicate names, symlinks, unlisted files, missing files, oversized artifacts, and digest mismatches. Offline bundle verification applies the same restrictions to ZIP members and rejects symlink entries or checksum inventories that reference files outside the archive root.
+
+The offline bundle installer verifies all embedded files before creating a virtual environment and installs only from its local wheelhouse with `--no-index`. It does not claim to include Chromium or a Python runtime. A tampered extracted bundle must be treated as untrusted even when the original GitHub artifact had a valid attestation.
+
+GitHub release provenance uses short-lived OIDC/Sigstore signing through `actions/attest`; no long-lived signing key is stored in the repository. The manifest-governed release payload and the post-finalization Sigstore bundles are uploaded separately, and each has its own checksum inventory. Attestations prove which workflow and source revision produced an artifact, but they do not replace checksum verification, source review, dependency review, or an explicit maintainer release decision.
+
 ## Reporting issues
 
 For security-related issues, use a private report when available. Share minimal

@@ -1311,6 +1311,41 @@ For debugging CI failures, save the intermediate HTML as an artifact:
 mrs-md2pdf docs/report.md -o build/report.pdf --debug-html build/report.html
 ```
 
+## Verifying Release Artifacts
+
+Official release artifacts include a deterministic wheel, source distribution, English/Persian guide PDFs, an SPDX 2.3 runtime SBOM, `RELEASE-MANIFEST.json`, and `CHECKSUMS.sha256`. Platform-specific offline Python bundles are built separately on Linux, Windows, and macOS.
+
+Verify checksums before installation:
+
+```bash
+sha256sum -c CHECKSUMS.sha256
+```
+
+Verify the release inventory and SBOM structure from a repository checkout:
+
+```bash
+python scripts/finalize_release_artifacts.py \
+  --artifact-dir path/to/release \
+  --version X.Y.Z \
+  --require-sbom \
+  --verify-only
+```
+
+A GitHub-hosted artifact can also be checked against signed build provenance:
+
+```bash
+gh attestation verify artifact-name \
+  --repo mragetsars/Mardas-MD2PDF
+```
+
+After extracting an offline Python bundle, run:
+
+```bash
+python install.py --target mardas-md2pdf-venv
+```
+
+The bundle installs Python wheels without contacting a package index. It does not include Chromium or a standalone Python runtime; browser installation remains a separate, explicit step.
+
 # Troubleshooting
 
 ## Chromium is missing

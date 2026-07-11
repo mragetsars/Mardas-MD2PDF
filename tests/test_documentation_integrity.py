@@ -338,6 +338,8 @@ def test_guides_cover_retired_feature_reference_topics():
         "ارجاع متقابل و شماره‌گذاری",
         "Bibliography and Citations",
         "کتاب‌نامه و استناد",
+        "Verifying Release Artifacts",
+        "اعتبارسنجی فایل‌های Release",
     ]
     for marker in required:
         assert marker in combined

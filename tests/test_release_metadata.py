@@ -239,3 +239,24 @@ def test_release_gate_verifies_accessibility_and_archival_audits() -> None:
     release_doc = _read("docs/RELEASE.md")
     assert "Accessibility and archival-readiness release checks" in release_doc
     assert "independent validator" in release_doc
+
+
+def test_release_docs_describe_sbom_attestations_and_offline_bundles() -> None:
+    release_doc = _read("docs/RELEASE.md")
+    maintenance_doc = _read("docs/MAINTENANCE.md")
+    security_doc = _read("docs/SECURITY.md")
+    readme = _read("README.md")
+
+    for marker in (
+        "SPDX 2.3",
+        "RELEASE-MANIFEST.json",
+        "CHECKSUMS.sha256",
+        "scripts/build_offline_bundle.py",
+        "gh attestation verify",
+    ):
+        assert marker in release_doc
+    assert "Cross-platform distribution and provenance" in release_doc
+    assert "Release supply-chain boundary" in security_doc
+    assert "Release Verification and Offline Bundles" in readme
+    assert "offline Python bundle" in maintenance_doc
+    assert "Chromium is intentionally excluded" in maintenance_doc

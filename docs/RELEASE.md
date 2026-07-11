@@ -75,6 +75,56 @@ The release gate writes PDF preflight data to `build/release/pdf-preflight.json`
 
 Open the generated PDFs and visually check the cover, table of contents, generated reference lists, numbered figures/tables/equations/listings, cross-reference links, grouped/narrative citations, the generated bibliography, page numbers, code blocks, formulas, Mermaid diagrams, local images, wide tables, blocked-image placeholders, watermarks, and footnotes. When changing appearance CSS or palette behavior, also run `python scripts/audit_appearance_matrix.py --output-dir build/appearance-audit --render-png --resume` and review the full style/palette/mode matrix. Guide builds and Python distributions honor a deterministic `SOURCE_DATE_EPOCH`; the distribution helper additionally normalizes source-archive metadata so repeated builds from one commit are byte-identical. In offline or pre-provisioned release environments, `MARDAS_BUILD_NO_ISOLATION=1 ./scripts/build_dist.sh` reuses the current environment instead of creating an isolated build environment.
 
+## Cross-platform distribution and provenance
+
+The supported release pipeline has three distinct contracts:
+
+1. `CI` runs the complete pytest suite across Linux, Windows, and macOS, with Python compatibility coverage from 3.10 through 3.13.
+2. A wheel-render smoke installs Chromium and renders a Unicode-path mixed RTL/LTR PDF from the built wheel on all three operating systems.
+3. `Release Artifacts` builds the deterministic core distributions, platform-specific offline Python bundles, an SPDX 2.3 SBOM, a release manifest, and signed GitHub attestations.
+
+The local release gate writes the following core files under `dist/`:
+
+```text
+mardas_md2pdf-X.Y.Z-py3-none-any.whl
+mardas_md2pdf-X.Y.Z.tar.gz
+mardas-md2pdf-X.Y.Z.spdx.json
+RELEASE-MANIFEST.json
+CHECKSUMS.sha256
+```
+
+Generate or verify those files directly when diagnosing a release runner:
+
+```bash
+python scripts/generate_sbom.py \
+  --python path/to/clean-venv/bin/python \
+  --artifact dist/mardas_md2pdf-X.Y.Z-py3-none-any.whl \
+  --artifact dist/mardas_md2pdf-X.Y.Z.tar.gz \
+  --output dist/mardas-md2pdf-X.Y.Z.spdx.json
+
+python scripts/finalize_release_artifacts.py \
+  --artifact-dir dist \
+  --version X.Y.Z \
+  --require-sbom
+```
+
+Every release manifest records exact file sizes and SHA-256 digests. Verification rejects extra files, missing files, path traversal, symlink artifacts, checksum mismatches, duplicate inventory entries, malformed SPDX data, or an unexpected project version.
+
+The tag workflow creates one offline Python wheel bundle per runner platform with `scripts/build_offline_bundle.py`. Each archive contains an offline wheelhouse, deterministic bundle metadata, an installer, and its own checksum list. It does **not** contain Chromium or an embedded Python runtime. Test the bundle after extraction with:
+
+```bash
+python install.py --target mardas-md2pdf-venv
+mardas-md2pdf-venv/bin/mrs-md2pdf --version
+```
+
+GitHub-hosted release jobs use `actions/attest` to create signed SLSA build-provenance and SPDX SBOM attestations. Verify an artifact after download:
+
+```bash
+gh attestation verify artifact-name --repo mragetsars/Mardas-MD2PDF
+```
+
+The workflow uploads the manifest-governed release payload and the generated Sigstore bundles as separate artifacts. The attestation artifact has its own checksum inventory because signatures are produced only after the release payload is finalized. The workflow does not create or publish a GitHub Release automatically; publishing remains an explicit maintainer action.
+
 ## Commit style
 
 Keep commit subjects short and conventional. Existing history uses subjects such as:

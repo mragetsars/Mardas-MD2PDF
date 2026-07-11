@@ -1232,6 +1232,41 @@ mrs-md2pdf docs/report.md -o build/report.pdf \
 mrs-md2pdf docs/report.md -o build/report.pdf --debug-html build/report.html
 ```
 
+## اعتبارسنجی فایل‌های Release
+
+خروجی رسمی release شامل wheel بازتولیدپذیر، source distribution، PDF راهنماهای فارسی و English، فایل SBOM با قالب SPDX 2.3، فایل `RELEASE-MANIFEST.json` و فایل `CHECKSUMS.sha256` است. بسته‌های نصب آفلاین Python برای Linux، Windows و macOS به‌صورت جداگانه ساخته می‌شوند.
+
+قبل از نصب، checksumها را بررسی کنید:
+
+```bash
+sha256sum -c CHECKSUMS.sha256
+```
+
+برای کنترل manifest و ساختار SBOM از داخل checkout پروژه استفاده کنید:
+
+```bash
+python scripts/finalize_release_artifacts.py \
+  --artifact-dir path/to/release \
+  --version X.Y.Z \
+  --require-sbom \
+  --verify-only
+```
+
+فایل دریافت‌شده از GitHub را می‌توان در برابر provenance امضاشده نیز بررسی کرد:
+
+```bash
+gh attestation verify artifact-name \
+  --repo mragetsars/Mardas-MD2PDF
+```
+
+پس از استخراج بسته آفلاین Python، فرمان زیر را اجرا کنید:
+
+```bash
+python install.py --target mardas-md2pdf-venv
+```
+
+این بسته wheelهای Python را بدون تماس با package index نصب می‌کند. Chromium و Python مستقل داخل آن قرار ندارند؛ نصب browser یک مرحله جداگانه و صریح است.
+
 # رفع اشکال
 
 ## پیدا نشدن Chromium
