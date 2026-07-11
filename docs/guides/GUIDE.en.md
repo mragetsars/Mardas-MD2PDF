@@ -1153,6 +1153,57 @@ The `cold` mode launches Chromium for each conversion. The `session` mode keeps 
 
 Completed Studio PDFs remain in private bounded temporary storage only until download or expiry and are streamed to the browser. Cancellation is cooperative: a currently executing Chromium `page.pdf()` call completes before the next safe cancellation checkpoint.
 
+# Accessibility and Archival Readiness
+
+Declare the document language explicitly so HTML, PDF metadata, assistive tools, and localized labels receive a stable language signal:
+
+```toml
+[project]
+language = "en-US"
+direction = "ltr"
+```
+
+The same setting can be supplied in front matter with `lang: en-US` or for one conversion with `--lang en-US`.
+
+Run the source audit before opening Chromium:
+
+```bash
+mrs-md2pdf audit-accessibility report.md
+mrs-md2pdf audit-accessibility report.md --format json --fail-on warning
+mrs-md2pdf audit-book-accessibility path/to/book
+```
+
+The source audit checks heading hierarchy, alternative text, link names, table headers and captions, declared language, and the selected appearance contrast. It reports stable `MARDAS-A...` diagnostic codes with file and line information where available.
+
+Use descriptive text and semantic table structure:
+
+```markdown
+![Pipeline from Markdown input to PDF output](images/architecture.png)
+
+*Figure. Publishing pipeline overview.*
+
+| Stage | Accessible output |
+| :--- | :--- |
+| Source audit | Structured diagnostics |
+| PDF audit | Metadata and font readiness report |
+
+Table: Accessibility verification stages
+
+Read the [security and accessibility guidance](../SECURITY.md).
+```
+
+Rendered image figures are associated with their captions. Table captions receive deterministic identifiers, column/row headers receive `scope`, and tables reference their captions. These HTML improvements support browser semantics, but they do not by themselves create a verified tagged PDF.
+
+Inspect the final artifact separately:
+
+```bash
+mrs-md2pdf audit-pdf output.pdf --profile accessibility
+mrs-md2pdf audit-pdf output.pdf --profile archival
+mrs-md2pdf audit-pdf output.pdf --profile all --format json --fail-on never
+```
+
+Generated PDFs include catalog `/Lang`, viewer title preferences, document information metadata, and XMP metadata. The PDF audit reports font embedding, ToUnicode maps, tagging signals, output intents, JavaScript, attachments, and PDF/A identifiers. Current Chromium output is not claimed to be PDF/UA compliant, and the project does not add a false structure tree or PDF/A identifier. Formal conformance requires an independent validator and manual accessibility review.
+
 # GUI Workflow
 
 Launch the GUI for a standalone document:

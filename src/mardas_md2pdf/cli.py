@@ -81,7 +81,8 @@ def build_parser() -> argparse.ArgumentParser:
         ),
         epilog=(
             "Project workflows: `mrs-md2pdf init`, `validate`, `doctor`, `explain-config`, "
-            "`validate-book`, `explain-book`, and `build-book`. Legacy conversion syntax remains "
+            "`validate-book`, `explain-book`, `build-book`, `audit-accessibility`, "
+            "`audit-book-accessibility`, and `audit-pdf`. Legacy conversion syntax remains "
             "`mrs-md2pdf input.md [options]`."
         ),
     )

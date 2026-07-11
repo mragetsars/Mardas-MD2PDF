@@ -481,3 +481,30 @@ def test_readme_surfaces_book_mode_and_architecture_module() -> None:
     assert "mrs-md2pdf build-book my-book" in readme
     assert "book.py" in readme
     assert "cross-links" in readme
+
+
+def test_docs_describe_accessibility_and_archival_readiness_without_false_claims():
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    maintenance = (ROOT / "docs/MAINTENANCE.md").read_text(encoding="utf-8")
+    release = (ROOT / "docs/RELEASE.md").read_text(encoding="utf-8")
+    security = (ROOT / "docs/SECURITY.md").read_text(encoding="utf-8")
+    en = (ROOT / "docs/guides/GUIDE.en.md").read_text(encoding="utf-8")
+    fa = (ROOT / "docs/guides/GUIDE.fa.md").read_text(encoding="utf-8")
+    combined = "\n".join((readme, maintenance, release, security, en, fa))
+
+    for command in (
+        "audit-accessibility",
+        "audit-book-accessibility",
+        "audit-pdf",
+    ):
+        assert command in combined
+
+    assert "tests/test_accessibility_audit.py" in maintenance
+    assert "tests/test_pdf_accessibility_audit.py" in maintenance
+    assert "PDF/UA or PDF/A conformance" in readme
+    assert "independent validator" in combined
+    assert "does **not** claim PDF/UA or PDF/A conformance" in readme
+    assert "Accessibility and Archival Readiness" in en
+    assert "دسترس‌پذیری و آمادگی آرشیوی" in fa
+    assert "not claimed to be PDF/UA compliant" in en
+    assert "does **not** claim PDF/UA or PDF/A conformance" in readme

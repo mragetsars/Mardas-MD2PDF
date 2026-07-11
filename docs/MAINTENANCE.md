@@ -193,3 +193,22 @@ after patch sets have been applied.
 ## Release gate
 
 Run `./scripts/release_gate.sh` before tagging a release. The gate installs the newly built wheel into a fresh virtual environment, verifies both console entry points and required packaged assets, and writes `dist/CHECKSUMS.sha256`. Set `MARDAS_RELEASE_VISUAL_QA=1` when the full chunked visual matrix is required instead of the reduced smoke matrix.
+
+## Accessibility and archival-readiness checks
+
+Changes to Markdown semantics, captions, tables, images, link processing, language metadata, PDF post-processing, fonts, or document metadata require:
+
+```bash
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest -q \
+  tests/test_accessibility_audit.py \
+  tests/test_pdf_accessibility_audit.py \
+  tests/test_markdown.py \
+  tests/test_pdf_output.py
+
+mrs-md2pdf audit-accessibility docs/guides/GUIDE.en.md --format json --fail-on warning
+mrs-md2pdf audit-accessibility docs/guides/GUIDE.fa.md --format json --fail-on warning
+mrs-md2pdf audit-pdf examples/GUIDE.en.pdf --profile all --format json --fail-on never
+mrs-md2pdf audit-pdf examples/GUIDE.fa.pdf --profile all --format json --fail-on never
+```
+
+Review source diagnostics for language, heading order, alternative text, link purpose, table headers/captions, and palette contrast. Review PDF metrics for `/Lang`, XMP, font embedding, ToUnicode, tagging, output intents, JavaScript, and attachments. Do not convert the absence of a structure tree or PDF/A identifier into a passing result by adding unsupported catalog flags. Independent PDF/UA/PDF/A validation remains outside the built-in audit.

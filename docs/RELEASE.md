@@ -103,3 +103,16 @@ The `Release Artifacts` workflow runs on `v*` tags and uploads the Python distri
 ## Maintenance docs
 
 See [`docs/MAINTENANCE.md`](./MAINTENANCE.md) for the daily check, example-generation, distribution-build, and patch-set workflow.
+
+## Accessibility and archival-readiness release checks
+
+Before tagging a release that changes rendering, metadata, fonts, themes, images, tables, or navigation:
+
+```bash
+mrs-md2pdf audit-accessibility docs/guides/GUIDE.en.md --format json --fail-on warning
+mrs-md2pdf audit-accessibility docs/guides/GUIDE.fa.md --format json --fail-on warning
+mrs-md2pdf audit-pdf examples/GUIDE.en.pdf --profile all --format json --fail-on never
+mrs-md2pdf audit-pdf examples/GUIDE.fa.pdf --profile all --format json --fail-on never
+```
+
+The clean-wheel release gate must execute `audit-accessibility`, `audit-book-accessibility`, and `audit-pdf`. Confirm that generated PDFs declare language and contain XMP metadata, all ordinary fonts are embedded with usable ToUnicode mappings where applicable, and no unexpected JavaScript or attachments appear. An untagged Chromium PDF or missing PDF/A output intent must remain an explicit readiness limitation; the release notes must not claim PDF/UA or PDF/A conformance without independent validator evidence.

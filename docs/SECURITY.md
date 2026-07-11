@@ -159,3 +159,17 @@ For security-related issues, use a private report when available. Share minimal
 reproduction steps and avoid attaching confidential documents. Include whether
 `--unsafe-html`, `--allow-remote-assets`, custom branding assets, or non-local
 Studio binding were used.
+
+## Accessibility and archival audit boundaries
+
+The accessibility commands analyze trusted local project text and generated PDF structure without sending content to a network service:
+
+```bash
+mrs-md2pdf audit-accessibility document.md
+mrs-md2pdf audit-book-accessibility path/to/book
+mrs-md2pdf audit-pdf output.pdf --profile all
+```
+
+Source audits are bounded by the existing Markdown, configuration, bibliography, and Book Mode limits. PDF audit opens only the explicitly supplied local file and reports metadata, fonts, tagging signals, actions, attachments, and archival indicators. Audit output avoids claiming PDF/UA, WCAG, or PDF/A conformance. A structure tree, output intent, or PDF/A identifier must never be fabricated merely to silence an audit; formal compliance requires an independent validator and manual review.
+
+Generated PDFs declare a catalog language when the source or project declares one, include XMP/document metadata, and request display of the document title. They do not currently claim a verified tagged-PDF structure. Treat `audit-pdf` as a readiness and risk report rather than a certification tool.

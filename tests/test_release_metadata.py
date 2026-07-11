@@ -208,3 +208,22 @@ def test_release_gate_verifies_current_packaged_asset_names() -> None:
         assert asset in script
     for obsolete in ["base.css", "style_modern.css", "mardas-logo.svg"]:
         assert obsolete not in script
+
+
+def test_release_gate_verifies_accessibility_and_archival_audits() -> None:
+    script = _read("scripts/release_gate.sh")
+    for command in (
+        "audit-accessibility",
+        "audit-book-accessibility",
+        "audit-pdf",
+    ):
+        assert command in script
+    assert "audit-accessibility.json" in script
+    assert "audit-book-accessibility.json" in script
+    assert "audit-pdf.json" in script
+    assert "compliance_claims" in script
+    assert "pdfua" in script
+
+    release_doc = _read("docs/RELEASE.md")
+    assert "Accessibility and archival-readiness release checks" in release_doc
+    assert "independent validator" in release_doc

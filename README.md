@@ -181,6 +181,17 @@ python scripts/benchmark_large_documents.py \
   --output-dir build/performance
 ```
 
+
+Audit source accessibility before rendering and inspect the final PDF without making unverified standards claims:
+
+```bash
+mrs-md2pdf audit-accessibility report.md
+mrs-md2pdf audit-book-accessibility path/to/book
+mrs-md2pdf audit-pdf dist/book.pdf --profile all
+```
+
+Source audits check declared language, heading hierarchy, image alternative text, link names, table headers/captions, and the selected theme's text contrast. PDF audits inspect catalog language, XMP metadata, font embedding, ToUnicode maps, tagging signals, JavaScript, attachments, output intents, and PDF/A identifiers. JSON output and `--fail-on error|warning|never` make the commands suitable for CI. These are readiness checks: Mardas MD2PDF does **not** claim PDF/UA or PDF/A conformance without an independent standards validator.
+
 The Studio interface groups export settings into Document, Appearance, Branding, Layout, and Advanced sections. Appearance and branding choices use visual cards, while advanced controls such as watermarks and local assets stay collapsed until needed. The **Open Bundle** and **Save Bundle** controls handle portable `.mardas.json` snapshots containing Markdown, export options, and attached assets; they are separate from the live on-disk Project Workspace opened with `--project`. Studio also supports drag-and-drop asset management, auto-scaling PDF-like renderer-backed preview, Fast approximate browser-local preview, debug HTML export, and a command palette via **Ctrl/Cmd+K**. In Project Workspace mode, **Ctrl/Cmd+S** saves the active project file; **Ctrl/Cmd+Shift+S** saves a portable bundle, and **Ctrl/Cmd+Enter** exports the normal single-document PDF. The complete Studio walkthrough lives in the guides.
 
 ## Repository Structure

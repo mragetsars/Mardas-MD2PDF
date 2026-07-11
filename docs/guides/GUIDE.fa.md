@@ -1074,6 +1074,57 @@ python scripts/benchmark_large_documents.py \
 
 PDFهای تکمیل‌شده Studio فقط تا زمان دانلود یا انقضا در فضای موقت خصوصی و محدود نگه‌داری و به‌صورت streaming ارسال می‌شوند. لغو کار تعاملی است؛ اگر `page.pdf()` در Chromium در حال اجرا باشد، آن فراخوانی تا checkpoint امن بعدی کامل می‌شود.
 
+# دسترس‌پذیری و آمادگی آرشیوی
+
+زبان سند را به‌صورت صریح مشخص کنید تا HTML، metadata فایل PDF، ابزارهای کمکی و برچسب‌های محلی‌سازی‌شده سیگنال زبانی پایداری دریافت کنند:
+
+```toml
+[project]
+language = "fa-IR"
+direction = "rtl"
+```
+
+همین مقدار را می‌توان در front matter با `lang: fa-IR` یا برای یک تبدیل با `--lang fa-IR` تعیین کرد.
+
+پیش از اجرای Chromium، audit منبع را اجرا کنید:
+
+```bash
+mrs-md2pdf audit-accessibility report.md
+mrs-md2pdf audit-accessibility report.md --format json --fail-on warning
+mrs-md2pdf audit-book-accessibility path/to/book
+```
+
+این audit ساختار headingها، متن جایگزین تصویر، نام لینک‌ها، header و caption جدول، زبان اعلام‌شده و کنتراست appearance انتخاب‌شده را بررسی می‌کند. خطاها و هشدارها با کدهای پایدار `MARDAS-A...` و در صورت امکان با نام فایل و شماره خط گزارش می‌شوند.
+
+از متن توصیفی و ساختار معنایی جدول استفاده کنید:
+
+```markdown
+![جریان تبدیل ورودی Markdown به خروجی PDF](images/architecture.png)
+
+*شکل. نمای کلی فرایند انتشار.*
+
+| مرحله | خروجی قابل بررسی |
+| :--- | :--- |
+| Audit منبع | Diagnostic ساخت‌یافته |
+| Audit فایل PDF | گزارش metadata و آمادگی فونت |
+
+جدول: مرحله‌های ارزیابی دسترس‌پذیری
+
+[راهنمای امنیت و دسترس‌پذیری](../SECURITY.md) را مطالعه کنید.
+```
+
+در HTML نهایی، شکل‌های تصویری به caption خود متصل می‌شوند، caption جدول شناسه پایدار می‌گیرد، headerهای سطر و ستون `scope` دریافت می‌کنند و جدول به caption خود ارجاع می‌دهد. این بهبودهای HTML به‌تنهایی به معنای tagged PDF یا انطباق PDF/UA نیستند.
+
+فایل نهایی را نیز جداگانه بررسی کنید:
+
+```bash
+mrs-md2pdf audit-pdf output.pdf --profile accessibility
+mrs-md2pdf audit-pdf output.pdf --profile archival
+mrs-md2pdf audit-pdf output.pdf --profile all --format json --fail-on never
+```
+
+PDFهای تولیدشده `/Lang` در catalog، تنظیم نمایش عنوان، metadata اطلاعات سند و XMP metadata دارند. audit فایل PDF وضعیت embedding فونت‌ها، ToUnicode، tagging، output intent، JavaScript، attachment و شناسه‌های PDF/A را گزارش می‌کند. خروجی فعلی Chromium به‌عنوان PDF/UA compliant معرفی نمی‌شود و پروژه structure tree یا شناسه PDF/A جعلی اضافه نمی‌کند. انطباق رسمی به validator مستقل و بازبینی دستی دسترس‌پذیری نیاز دارد.
+
 # روند کار با GUI
 
 اجرای GUI برای یک سند مستقل:
